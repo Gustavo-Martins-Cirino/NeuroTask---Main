@@ -1,0 +1,739 @@
+import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
+
+export const runtime = "nodejs"
+
+interface ChatMessage {
+  role: "user" | "assistant"
+  content: string
+}
+
+const BASE_PROMPT = `Você é a Neuro IA, a assistente de produtividade do NeuroTask — um app de tarefas, time blocking e gamificação.
+
+Seu papel:
+- Ajudar o usuário a organizar o dia, priorizar tarefas e refletir sobre o foco.
+- Você PODE agir no app através das ferramentas disponíveis: criar, listar, editar e excluir tarefas, blocos de tempo (time blocks) e notas.
+- CONFIRME ANTES DE AGIR: nunca crie, edite ou exclua nada sem confirmar antes. Ao identificar um pedido claro, NÃO chame a ferramenta ainda — primeiro descreva o que vai fazer (título, dia, início e fim, prioridade) e pergunte "Posso confirmar?". Só chame a ferramenta de criar/editar/excluir DEPOIS que o usuário confirmar de forma explícita (ex.: "sim", "pode", "confirma", "isso mesmo"). Nunca diga que fez algo sem ter realmente chamado a ferramenta.
+- NÃO transforme desabafos ou reflexões em tarefas. Se o usuário disser coisas como "estou cansado", "quero ficar mais inteligente", "que dia corrido", apenas converse, acolha ou dê um conselho curto — só proponha uma tarefa se ele CLARAMENTE pedir para adicionar/agendar algo.
+- Tarefas (tasks) aparecem na lista de Tarefas. Blocos de tempo (time blocks) aparecem no Calendário. Se o usuário quer algo "agendado" num horário, use um bloco de tempo; se é só um item a fazer, use uma tarefa.
+- IMPORTANTE: quando o usuário mencionar um horário específico para uma tarefa (ex.: "às 11h", "amanhã 14h30"), SEMPRE inclua esse horário no campo due_date (ISO 8601, com a hora). O app agenda automaticamente essa tarefa no calendário.
+- INTERPRETAÇÃO DE HORÁRIOS (use a data/hora atual fornecida abaixo): respeite SEMPRE o dia que o usuário disser. Se ele disser "hoje", use a data de HOJE, mesmo que o horário já tenha passado — NUNCA jogue para amanhã por conta própria. Se o período do dia for ambíguo (ex.: "8:30" e não dá pra saber se é manhã ou noite), PERGUNTE ao usuário qual dos dois antes de agendar (ex.: "Você quer dizer 8:30 da manhã ou 20:30?"), em vez de adivinhar.
+- CONFLITOS E DESCANSO: fique atento a choques de horário e a tarefas muito próximas. Se o sistema avisar de conflito ou de proximidade ao criar um bloco, repasse isso ao usuário e sugira ajustar o horário ou incluir um intervalo de descanso.
+- PRECISÃO: nunca invente uma tarefa a partir de uma fala solta ou de um provável erro de transcrição de voz. Na dúvida, pergunte.
+- Para editar ou excluir, primeiro liste para descobrir o id correto, depois aja.
+- Seja direta, calorosa e prática. Respostas curtas em português do Brasil. Confirme o que você efetivamente fez.`
+
+type Provider = "groq" | "gemini" | "anthropic"
+
+interface ProviderConfig {
+  provider: Provider
+  apiKey: string
+  model: string
+}
+
+function resolveProvider(): ProviderConfig | null {
+  if (process.env.GROQ_API_KEY) {
+    return {
+      provider: "groq",
+      apiKey: process.env.GROQ_API_KEY,
+      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+    }
+  }
+  if (process.env.GEMINI_API_KEY) {
+    return {
+      provider: "gemini",
+      apiKey: process.env.GEMINI_API_KEY,
+      model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+    }
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    return {
+      provider: "anthropic",
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      model: process.env.ANTHROPIC_MODEL || "claude-opus-4-8",
+    }
+  }
+  return null
+}
+
+// ---- Ferramentas (formato OpenAI/Groq) ----
+const TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "create_task",
+      description: "Cria uma nova tarefa para o usuário.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Título da tarefa" },
+          description: { type: ["string", "null"], description: "Detalhes opcionais" },
+          priority: { type: ["string", "null"], enum: ["low", "medium", "high", "urgent", null], description: "Prioridade (padrão medium)" },
+          due_date: { type: ["string", "null"], description: "Data/hora limite em ISO 8601, opcional" },
+        },
+        required: ["title"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_tasks",
+      description: "Lista as tarefas do usuário (id, título, status, prioridade, prazo).",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_task",
+      description: "Atualiza uma tarefa existente pelo id.",
+      parameters: {
+        type: "object",
+        properties: {
+          task_id: { type: "string" },
+          title: { type: ["string", "null"] },
+          description: { type: ["string", "null"] },
+          status: { type: ["string", "null"], enum: ["pending", "in_progress", "completed", "cancelled", null] },
+          priority: { type: ["string", "null"], enum: ["low", "medium", "high", "urgent", null] },
+          due_date: { type: ["string", "null"], description: "ISO 8601" },
+        },
+        required: ["task_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_task",
+      description: "Exclui uma tarefa pelo id.",
+      parameters: {
+        type: "object",
+        properties: { task_id: { type: "string" } },
+        required: ["task_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_time_block",
+      description: "Cria um bloco de tempo no calendário.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          start_time: { type: "string", description: "Início em ISO 8601" },
+          end_time: { type: "string", description: "Fim em ISO 8601" },
+          description: { type: ["string", "null"] },
+          color: { type: ["string", "null"], description: "Cor hex, ex #6366f1" },
+        },
+        required: ["title", "start_time", "end_time"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_time_blocks",
+      description: "Lista blocos de tempo do usuário a partir de hoje.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_time_block",
+      description: "Exclui um bloco de tempo pelo id.",
+      parameters: {
+        type: "object",
+        properties: { block_id: { type: "string" } },
+        required: ["block_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_note",
+      description: "Cria uma nota para o usuário.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: ["string", "null"] },
+          content: { type: "string" },
+        },
+        required: ["content"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_notes",
+      description: "Lista as notas do usuário (id, título, trecho do conteúdo).",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_note",
+      description: "Atualiza uma nota existente pelo id.",
+      parameters: {
+        type: "object",
+        properties: {
+          note_id: { type: "string" },
+          title: { type: ["string", "null"] },
+          content: { type: ["string", "null"] },
+        },
+        required: ["note_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_note",
+      description: "Exclui uma nota pelo id.",
+      parameters: {
+        type: "object",
+        properties: { note_id: { type: "string" } },
+        required: ["note_id"],
+      },
+    },
+  },
+]
+
+type ToolArgs = Record<string, unknown>
+
+// Verifica choque de horário e proximidade (< 15 min) com outros blocos do mesmo dia
+async function checkConflicts(
+  supabase: SupabaseClient,
+  blockId: string,
+  startISO: string,
+  endISO: string
+): Promise<string | null> {
+  const start = new Date(startISO).getTime()
+  const end = new Date(endISO).getTime()
+  if (isNaN(start) || isNaN(end)) return null
+  const dayStart = new Date(startISO)
+  dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(dayStart)
+  dayEnd.setDate(dayEnd.getDate() + 1)
+  const { data } = await supabase
+    .from("time_blocks")
+    .select("title, start_time, end_time")
+    .neq("id", blockId)
+    .gte("start_time", dayStart.toISOString())
+    .lt("start_time", dayEnd.toISOString())
+  if (!data || data.length === 0) return null
+  for (const b of data) {
+    const bs = new Date(b.start_time).getTime()
+    const be = new Date(b.end_time).getTime()
+    if (start < be && end > bs) {
+      return `⚠️ Esse horário choca com "${b.title}", que já está agendado. Quer ajustar?`
+    }
+  }
+  const GAP = 15 * 60 * 1000
+  for (const b of data) {
+    const bs = new Date(b.start_time).getTime()
+    const be = new Date(b.end_time).getTime()
+    const gap = start >= be ? start - be : bs - end
+    if (gap >= 0 && gap <= GAP) {
+      return `Ficou bem colado a "${b.title}" (menos de 15 min de intervalo). Que tal um descanso entre os dois?`
+    }
+  }
+  return null
+}
+
+async function executeTool(
+  name: string,
+  args: ToolArgs,
+  supabase: SupabaseClient,
+  userId: string
+): Promise<unknown> {
+  try {
+    switch (name) {
+      case "create_task": {
+        const { data, error } = await supabase
+          .from("tasks")
+          .insert({
+            user_id: userId,
+            title: args.title,
+            description: args.description ?? null,
+            status: "pending",
+            priority: args.priority ?? "medium",
+            due_date: args.due_date ?? null,
+          })
+          .select("id, title")
+          .single()
+        if (error) return { ok: false, error: error.message }
+        // Se a tarefa tem um horário específico, agenda também um bloco no calendário
+        let scheduled = false
+        let warning: string | null = null
+        if (typeof args.due_date === "string" && args.due_date) {
+          const timePart = args.due_date.split("T")[1]
+          const start = new Date(args.due_date)
+          if (timePart && !/^00:00(:00)?/.test(timePart) && !isNaN(start.getTime())) {
+            const end = new Date(start.getTime() + 60 * 60 * 1000)
+            const { data: block, error: blockErr } = await supabase
+              .from("time_blocks")
+              .insert({
+                user_id: userId,
+                title: args.title,
+                start_time: start.toISOString(),
+                end_time: end.toISOString(),
+                color: "#6366f1",
+                task_id: data.id,
+              })
+              .select("id")
+              .single()
+            if (!blockErr && block) {
+              scheduled = true
+              warning = await checkConflicts(supabase, block.id, start.toISOString(), end.toISOString())
+            }
+          }
+        }
+        return { ok: true, created: data, scheduled, warning }
+      }
+      case "list_tasks": {
+        const { data, error } = await supabase
+          .from("tasks")
+          .select("id, title, status, priority, due_date")
+          .order("created_at", { ascending: false })
+        if (error) return { ok: false, error: error.message }
+        return { ok: true, tasks: data }
+      }
+      case "update_task": {
+        const patch: ToolArgs = {}
+        for (const k of ["title", "description", "status", "priority", "due_date"]) {
+          // ignora ausentes e null (não sobrescreve colunas obrigatórias com null)
+          if (args[k] !== undefined && args[k] !== null) patch[k] = args[k]
+        }
+        const { error } = await supabase.from("tasks").update(patch).eq("id", args.task_id)
+        if (error) return { ok: false, error: error.message }
+        return { ok: true }
+      }
+      case "delete_task": {
+        const { error } = await supabase.from("tasks").delete().eq("id", args.task_id)
+        if (error) return { ok: false, error: error.message }
+        return { ok: true }
+      }
+      case "create_time_block": {
+        const { data, error } = await supabase
+          .from("time_blocks")
+          .insert({
+            user_id: userId,
+            title: args.title,
+            description: args.description ?? null,
+            start_time: args.start_time,
+            end_time: args.end_time,
+            color: args.color ?? "#6366f1",
+          })
+          .select("id, title, start_time")
+          .single()
+        if (error) return { ok: false, error: error.message }
+        const warning = await checkConflicts(supabase, data.id, args.start_time as string, args.end_time as string)
+        return { ok: true, created: data, warning }
+      }
+      case "list_time_blocks": {
+        const { data, error } = await supabase
+          .from("time_blocks")
+          .select("id, title, start_time, end_time")
+          .gte("start_time", new Date(Date.now() - 86_400_000).toISOString())
+          .order("start_time", { ascending: true })
+        if (error) return { ok: false, error: error.message }
+        return { ok: true, time_blocks: data }
+      }
+      case "delete_time_block": {
+        const { error } = await supabase.from("time_blocks").delete().eq("id", args.block_id)
+        if (error) return { ok: false, error: error.message }
+        return { ok: true }
+      }
+      case "create_note": {
+        const { data, error } = await supabase
+          .from("notes")
+          .insert({
+            user_id: userId,
+            title: args.title ?? "",
+            content: args.content ?? "",
+          })
+          .select("id, title")
+          .single()
+        if (error) return { ok: false, error: error.message }
+        return { ok: true, created: data }
+      }
+      case "list_notes": {
+        const { data, error } = await supabase
+          .from("notes")
+          .select("id, title, content")
+          .order("updated_at", { ascending: false })
+        if (error) return { ok: false, error: error.message }
+        const notes = (data ?? []).map((n) => ({
+          id: n.id,
+          title: n.title,
+          excerpt: (n.content ?? "").slice(0, 200),
+        }))
+        return { ok: true, notes }
+      }
+      case "update_note": {
+        const patch: ToolArgs = {}
+        for (const k of ["title", "content"]) {
+          if (args[k] !== undefined && args[k] !== null) patch[k] = args[k]
+        }
+        patch.updated_at = new Date().toISOString()
+        const { error } = await supabase.from("notes").update(patch).eq("id", args.note_id)
+        if (error) return { ok: false, error: error.message }
+        return { ok: true }
+      }
+      case "delete_note": {
+        const { error } = await supabase.from("notes").delete().eq("id", args.note_id)
+        if (error) return { ok: false, error: error.message }
+        return { ok: true }
+      }
+      default:
+        return { ok: false, error: `Ferramenta desconhecida: ${name}` }
+    }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erro ao executar a ferramenta" }
+  }
+}
+
+interface OpenAIToolCall {
+  id: string
+  function: { name: string; arguments: string }
+}
+interface OpenAIMessage {
+  role: string
+  content: string | null
+  tool_calls?: OpenAIToolCall[]
+  tool_call_id?: string
+}
+
+// Confirmação amigável por ferramenta executada
+function confirm(name: string, args: ToolArgs, result: unknown): string {
+  const r = result as { ok?: boolean; error?: string }
+  if (!r?.ok) return `⚠️ Não consegui completar "${name}": ${r?.error ?? "erro desconhecido"}.`
+  switch (name) {
+    case "create_task": {
+      const r2 = result as { scheduled?: boolean; warning?: string }
+      return `✅ Criei a tarefa "${args.title}"${r2?.scheduled ? " e agendei no calendário" : ""}.${r2?.warning ? " " + r2.warning : ""}`
+    }
+    case "create_time_block": {
+      const w = (result as { warning?: string })?.warning
+      return `✅ Agendei "${args.title}" no calendário.${w ? " " + w : ""}`
+    }
+    case "update_task":
+      return `✅ Atualizei a tarefa.`
+    case "delete_task":
+      return `✅ Excluí a tarefa.`
+    case "delete_time_block":
+      return `✅ Excluí o bloco do calendário.`
+    case "create_note":
+      return `✅ Criei a nota${args.title ? ` "${args.title}"` : ""}.`
+    case "update_note":
+      return `✅ Atualizei a nota.`
+    case "delete_note":
+      return `✅ Excluí a nota.`
+    default:
+      return `✅ Pronto (${name}).`
+  }
+}
+
+// Recupera tool calls de um failed_generation do Groq/Llama e executa de verdade.
+// Retorna uma mensagem de confirmação, ou null se nada pôde ser recuperado.
+async function recoverFailedToolCalls(
+  detail: string,
+  supabase: SupabaseClient,
+  userId: string
+): Promise<string | null> {
+  let failedGen: string
+  try {
+    const parsed = JSON.parse(detail)
+    failedGen = parsed?.error?.failed_generation ?? ""
+  } catch {
+    return null
+  }
+  if (!failedGen) return null
+
+  // Formatos vistos: <function=NAME>{...}</function> e <function=NAME({...})</function>
+  const regex = /<function=([a-zA-Z_]+)\s*>?\s*\(?\s*(\{[\s\S]*?\})\s*\)?\s*<\/function>/g
+  const lines: string[] = []
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(failedGen)) !== null) {
+    const [, name, jsonArgs] = match
+    let args: ToolArgs = {}
+    try {
+      args = JSON.parse(jsonArgs)
+    } catch {
+      continue
+    }
+    const result = await executeTool(name, args, supabase, userId)
+    lines.push(confirm(name, args, result))
+  }
+
+  return lines.length > 0 ? lines.join("\n") : null
+}
+
+// Chamada ao Groq com retry automático em caso de rate limit (429)
+async function groqChat(cfg: ProviderConfig, payload: Record<string, unknown>): Promise<Response> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cfg.apiKey}`,
+      },
+      body: JSON.stringify({ model: cfg.model, temperature: 0, ...payload }),
+    })
+
+    if (res.status !== 429) return res
+
+    // Lê o tempo sugerido pelo Groq e espera (limitado a 10s)
+    const detail = await res.clone().text().catch(() => "")
+    const m = detail.match(/try again in ([\d.]+)s/)
+    const waitMs = Math.min(10_000, Math.ceil((m ? parseFloat(m[1]) : 3) * 1000) + 300)
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, waitMs))
+      continue
+    }
+    return res // esgotou as tentativas
+  }
+  // inalcançável, mas o TS exige
+  return new Response("", { status: 500 })
+}
+
+// Loop agêntico para provedores compatíveis com OpenAI (Groq)
+async function runOpenAIAgent(
+  cfg: ProviderConfig,
+  system: string,
+  messages: ChatMessage[],
+  supabase: SupabaseClient,
+  userId: string
+): Promise<string> {
+  const convo: OpenAIMessage[] = [
+    { role: "system", content: system },
+    ...messages.map((m) => ({ role: m.role, content: m.content })),
+  ]
+
+  for (let i = 0; i < 4; i++) {
+    const res = await groqChat(cfg, {
+      messages: convo,
+      tools: TOOLS,
+      tool_choice: "auto",
+      max_tokens: 800,
+    })
+
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "")
+      // Rede de segurança: o Llama às vezes gera o tool call num formato que o
+      // parser do Groq rejeita (tool_use_failed). Recuperamos a intenção do
+      // failed_generation, executamos de verdade e confirmamos.
+      const recovered = await recoverFailedToolCalls(detail, supabase, userId)
+      if (recovered) return recovered
+      if (res.status === 429) {
+        return "A IA gratuita atingiu o limite de uso por minuto. Aguarde alguns segundos e tente de novo — de preferência com uma mensagem curta."
+      }
+      throw new Error(`Groq ${res.status}: ${detail}`)
+    }
+
+    const data = await res.json()
+    const msg: OpenAIMessage = data.choices?.[0]?.message ?? { role: "assistant", content: "" }
+    convo.push(msg)
+
+    if (msg.tool_calls && msg.tool_calls.length > 0) {
+      for (const call of msg.tool_calls) {
+        let parsed: ToolArgs = {}
+        try {
+          parsed = JSON.parse(call.function.arguments || "{}")
+        } catch {
+          parsed = {}
+        }
+        const result = await executeTool(call.function.name, parsed, supabase, userId)
+        console.log(
+          `[neuro-ia] tool=${call.function.name} args=${JSON.stringify(parsed)} result=${JSON.stringify(result)}`
+        )
+        convo.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify(result),
+        })
+      }
+      continue // deixa o modelo reagir aos resultados
+    }
+
+    return msg.content ?? "Pronto."
+  }
+
+  // Esgotou as iterações: força uma resposta de texto (sem mais ferramentas)
+  // resumindo o que foi feito com base nos resultados já no histórico.
+  try {
+    const res = await groqChat(cfg, {
+      messages: [
+        ...convo,
+        {
+          role: "user",
+          content:
+            "Resuma para mim, em uma ou duas frases, o que você efetivamente conseguiu fazer com base nos resultados das ferramentas acima. Não chame mais ferramentas.",
+        },
+      ],
+      tool_choice: "none",
+      max_tokens: 300,
+    })
+    if (res.ok) {
+      const data = await res.json()
+      const text = data.choices?.[0]?.message?.content
+      if (text) return text
+    }
+  } catch {
+    /* cai no fallback abaixo */
+  }
+
+  return "Tentei executar as ações, mas algo deu errado. Confira o resultado e tente novamente."
+}
+
+// Streaming simples de texto (Gemini / Anthropic — sem ferramentas por enquanto)
+async function streamText(
+  cfg: ProviderConfig,
+  system: string,
+  messages: ChatMessage[]
+): Promise<Response> {
+  let upstream: Response
+  let extract: (e: unknown) => string | null
+
+  if (cfg.provider === "gemini") {
+    upstream = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${cfg.model}:streamGenerateContent?alt=sse&key=${cfg.apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents: messages.map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }],
+          })),
+        }),
+      }
+    )
+    extract = (e) => {
+      const ev = e as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
+      return ev.candidates?.[0]?.content?.parts?.[0]?.text ?? null
+    }
+  } else {
+    upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": cfg.apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({ model: cfg.model, max_tokens: 2048, stream: true, system, messages }),
+    })
+    extract = (e) => {
+      const ev = e as { type?: string; delta?: { type?: string; text?: string } }
+      if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") return ev.delta.text ?? null
+      return null
+    }
+  }
+
+  if (!upstream.ok || !upstream.body) {
+    const detail = await upstream.text().catch(() => "")
+    return new Response(`Erro ao falar com a IA (${cfg.provider}). ${detail}`.trim(), {
+      status: upstream.status || 502,
+    })
+  }
+
+  const decoder = new TextDecoder()
+  const encoder = new TextEncoder()
+  const reader = upstream.body.getReader()
+  let buffer = ""
+
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      const { done, value } = await reader.read()
+      if (done) {
+        controller.close()
+        return
+      }
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split("\n")
+      buffer = lines.pop() ?? ""
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed.startsWith("data:")) continue
+        const payload = trimmed.slice(5).trim()
+        if (!payload || payload === "[DONE]") continue
+        try {
+          const text = extract(JSON.parse(payload))
+          if (text) controller.enqueue(encoder.encode(text))
+        } catch {
+          /* ignora */
+        }
+      }
+    },
+    cancel() {
+      reader.cancel()
+    },
+  })
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
+  })
+}
+
+export async function POST(req: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return new Response("Não autorizado", { status: 401 })
+
+  const cfg = resolveProvider()
+  if (!cfg) {
+    return new Response(
+      "A Neuro IA ainda não está configurada. Adicione GROQ_API_KEY (grátis em console.groq.com) ou GEMINI_API_KEY (grátis em aistudio.google.com) ao .env.local e reinicie o servidor.",
+      { status: 503 }
+    )
+  }
+
+  let body: { messages?: ChatMessage[]; dayNotes?: string; now?: string; mode?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return new Response("Requisição inválida", { status: 400 })
+  }
+
+  const messages = (body.messages ?? []).filter(
+    (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
+  )
+  if (messages.length === 0) return new Response("Envie ao menos uma mensagem", { status: 400 })
+
+  let system = BASE_PROMPT
+  if (body.now) {
+    system += `\n\nData e hora atuais do usuário: ${body.now}. Use isso para resolver "hoje", "amanhã", horários, etc. Sempre forneça datas em ISO 8601.`
+  }
+  if (body.dayNotes?.trim()) {
+    system += `\n\nAnotações do dia do usuário:\n"""\n${body.dayNotes.trim()}\n"""`
+  }
+  if (body.mode === "voice") {
+    system += `\n\nMODO VOZ (conversa falada em tempo real): responda de forma curta, natural e conversacional, como uma pessoa falando. Em geral 1 a 3 frases. Evite listas longas, markdown, asteriscos, emojis e símbolos — o texto será lido em voz alta. Se precisar destacar um conceito, cite no máximo 3 pontos-chave bem curtos, em frases simples.`
+  }
+
+  // Groq → loop com ferramentas (cria/edita/exclui de verdade)
+  if (cfg.provider === "groq") {
+    try {
+      const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id)
+      return new Response(finalText, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
+      })
+    } catch (e) {
+      return new Response(
+        `Erro ao falar com a IA (groq). ${e instanceof Error ? e.message : ""}`.trim(),
+        { status: 502 }
+      )
+    }
+  }
+
+  // Gemini / Anthropic → chat em streaming (sem ferramentas por enquanto)
+  return streamText(cfg, system, messages)
+}

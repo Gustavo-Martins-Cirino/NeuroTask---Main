@@ -1,0 +1,22 @@
+# v0 sandbox internal files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+.snowflake/
+.v0-trash/
+.vercel/
+
+# Environment variables (segredos — nunca commitar)
+.env
+.env.*
+!.env.example
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Common ignores
+node_modules
+.next/
+.DS_Store
