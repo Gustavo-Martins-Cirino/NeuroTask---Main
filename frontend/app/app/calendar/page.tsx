@@ -221,7 +221,11 @@ export default function CalendarPage() {
     setDialogOpen(true)
   }
 
+  // Evita que o clique num bloco "vaze" para a célula atrás e abra "Novo Bloco"
+  const suppressSlotClickRef = useRef(0)
+
   const handleSlotClick = (day: Date, hour: number) => {
+    if (performance.now() - suppressSlotClickRef.current < 350) return
     const start = new Date(day)
     start.setHours(hour, 0, 0, 0)
     openNew(start)
@@ -303,6 +307,7 @@ export default function CalendarPage() {
       dragRef.current = null
       setDrag(null)
       if (!d) return
+      suppressSlotClickRef.current = performance.now()
 
       // Clique simples (não arrastou) → abrir edição
       if (!d.moved) {
@@ -655,7 +660,23 @@ export default function CalendarPage() {
                                 <div
                                   key={occ.key}
                                   onPointerDown={virtual ? undefined : (e) => startDrag(e, block, "move")}
-                                  onClick={virtual ? () => openEdit(block) : undefined}
+                                  onPointerUp={virtual ? undefined : (e) => {
+                                    // Clique sem arrasto → edita aqui mesmo (não depende do listener global)
+                                    const d = dragRef.current
+                                    if (d && d.id === block.id && !d.moved) {
+                                      e.stopPropagation()
+                                      dragRef.current = null
+                                      setDrag(null)
+                                      suppressSlotClickRef.current = performance.now()
+                                      setDraft((prev) => {
+                                        const copy = { ...prev }
+                                        delete copy[d.id]
+                                        return copy
+                                      })
+                                      openEdit(block)
+                                    }
+                                  }}
+                                  onClick={virtual ? (e) => { e.stopPropagation(); openEdit(block) } : (e) => e.stopPropagation()}
                                   className={cn(
                                     "absolute left-1 right-1 z-10 touch-none select-none overflow-hidden rounded-lg p-2 text-left shadow-sm",
                                     virtual

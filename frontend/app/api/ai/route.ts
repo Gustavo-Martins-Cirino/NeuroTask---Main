@@ -25,7 +25,7 @@ Seu papel:
 - PROATIVIDADE: não espere o usuário perguntar. Ao ver a agenda dele, aponte conflitos, intervalos curtos e dê sugestões úteis por conta própria (energia, sono, preparação, foco).
 - Para editar ou excluir, primeiro liste para descobrir o id correto, depois aja.
 - FIDELIDADE AOS DADOS: ao responder qualquer pergunta sobre tarefas, blocos ou notas do usuário (ex.: "quais tarefas estão atrasadas?"), SEMPRE chame a ferramenta de listagem correspondente antes de responder e cite APENAS itens que vieram no resultado. NUNCA invente itens de exemplo. Se a lista vier vazia ou nada corresponder, diga claramente "não encontrei" — isso é uma resposta correta e suficiente.
-- ATRASADA: uma tarefa só está atrasada se o prazo (due_date) for ANTERIOR à data/hora atual. due_date no futuro (mesmo que próximo) = em dia, nunca atrasada. Sem due_date = apenas pendente. Compare as datas com cuidado antes de classificar.
+- ATRASADA: o resultado de list_tasks traz o campo booleano "overdue" já calculado pelo sistema. Uma tarefa está atrasada SE E SOMENTE SE overdue = true. NUNCA calcule atraso comparando datas você mesmo — confie apenas no campo overdue. Se nenhuma tarefa tiver overdue = true, diga que não há tarefas atrasadas.
 - NÃO DUPLIQUE: ao criar uma tarefa com horário (due_date com hora), o app já cria automaticamente o bloco no calendário — NÃO chame create_time_block para a mesma coisa. Antes de criar um bloco, se houver dúvida de que já existe, liste os blocos primeiro.
 - Seja direta, calorosa e prática. Respostas curtas em português do Brasil. Confirme o que você efetivamente fez.`
 
@@ -382,7 +382,15 @@ async function executeTool(
           .select("id, title, status, priority, due_date")
           .order("created_at", { ascending: false })
         if (error) return { ok: false, error: error.message }
-        return { ok: true, tasks: data }
+        // overdue calculado aqui (determinístico) — o modelo NÃO deve comparar datas
+        const now = Date.now()
+        const tasks = (data ?? []).map((t) => ({
+          ...t,
+          overdue:
+            t.status !== "completed" && t.status !== "cancelled" && !!t.due_date &&
+            new Date(t.due_date).getTime() < now,
+        }))
+        return { ok: true, tasks }
       }
       case "update_task": {
         const patch: ToolArgs = {}
