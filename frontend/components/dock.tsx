@@ -10,7 +10,7 @@ import {
   LayoutDashboard,
   Star,
   FileText,
-  Sparkles,
+  Brain,
   Zap,
 } from "lucide-react"
 import Link from "next/link"
@@ -122,7 +122,7 @@ export function Dock() {
       <nav className="flex flex-col gap-1 rounded-2xl border border-border/50 bg-card/80 p-2 shadow-lg backdrop-blur-xl">
         <div className="mb-2 flex h-10 items-center gap-3 overflow-hidden rounded-xl px-1">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+            <Brain className="h-5 w-5 text-primary-foreground" />
           </div>
           <AnimatePresence initial={false}>
             {expanded && (

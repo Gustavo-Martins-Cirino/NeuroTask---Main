@@ -42,7 +42,7 @@ frontend/
 │   ├── sound-mixer.tsx       # Mixer: seções Sons/Músicas/Foco (ver public/sounds/README.md)
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
-│   ├── owl-mascot.tsx        # Coruja SVG animada (mascote da Neuro IA no modo voz)
+│   ├── robot-mascot.tsx      # Robozinho SVG animado (mascote da Neuro IA no modo voz)
 │   ├── page-transition.tsx   # Transições de página (AnimatePresence)
 │   ├── rich-text-editor.tsx  # Editor das notas
 │   ├── date-picker.tsx

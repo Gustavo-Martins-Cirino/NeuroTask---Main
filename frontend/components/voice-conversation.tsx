@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Hand, Loader2, Mic, AudioLines } from "lucide-react"
-import { OwlMascot } from "@/components/owl-mascot"
+import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
+import { RobotMascot } from "@/components/robot-mascot"
+import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
 
 type Status = "idle" | "listening" | "thinking" | "speaking"
 interface Msg { role: "user" | "assistant"; content: string }
@@ -66,21 +67,29 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
   const [interim, setInterim] = useState("")
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const [voiceURI, setVoiceURI] = useState("")
+  const [rate, setRate] = useState(1.75)
   const [supported, setSupported] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [resting, setResting] = useState(false)
+  const [holding, setHolding] = useState(false)
 
   const phaseRef = useRef<Status>("idle")
   const messagesRef = useRef<Msg[]>([])
   const voicesRef = useRef<SpeechSynthesisVoice[]>([])
   const voiceURIRef = useRef("")
-  const interruptRef = useRef<() => void>(() => {})
+  const rateRef = useRef(1.75)
+  const startHoldRef = useRef<() => void>(() => {})
+  const endHoldRef = useRef<() => void>(() => {})
+  const submitRef = useRef<(t: string) => void>(() => {})
+  const retryRef = useRef<() => void>(() => {})
 
   phaseRef.current = status
   messagesRef.current = messages
   voicesRef.current = voices
   voiceURIRef.current = voiceURI
+  rateRef.current = rate
 
-  // Vozes do sistema (prioriza pt-BR)
+  // Vozes do sistema (prefere pt-BR mais naturais)
   useEffect(() => {
     const synth = typeof window !== "undefined" ? window.speechSynthesis : null
     if (!synth) return
@@ -89,7 +98,9 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       const pt = all.filter((v) => v.lang?.toLowerCase().startsWith("pt"))
       const list = pt.length ? pt : all
       setVoices(list)
-      setVoiceURI((prev) => prev || list[0]?.voiceURI || "")
+      // Voz robótica (combina com o robozinho): prefere as sintéticas, evita as "naturais"
+      const preferred = list.find((v) => !/google|natural/i.test(v.name)) || list[0]
+      setVoiceURI((prev) => prev || preferred?.voiceURI || "")
     }
     load()
     synth.addEventListener("voiceschanged", load)
@@ -102,109 +113,44 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     if (!Ctor) { setSupported(false); return }
     setSupported(true)
     setError(null)
+    setResting(false)
+    setHolding(false)
     setMessages([])
     setInterim("")
 
     const synth = window.speechSynthesis
     let disposed = false
+    let holdRec: RecognitionLike | null = null
     let buffer = ""
     let interimText = ""
-    let silenceTimer: ReturnType<typeof setTimeout> | null = null
-    let speakStart = 0
 
     const setPhase = (s: Status) => { phaseRef.current = s; setStatus(s) }
+    const goIdle = () => { if (!disposed) setPhase("idle") }
 
-    const rec = new Ctor()
-    rec.lang = "pt-BR"
-    rec.continuous = true
-    rec.interimResults = true
-
-    rec.onresult = (e: any) => {
-      if (phaseRef.current === "thinking") return
-      // Barge-in: se a IA está falando e o usuário fala, interrompe e captura
-      // (carência de 500ms p/ não cortar no eco do início da fala da IA)
-      if (phaseRef.current === "speaking") {
-        if (performance.now() - speakStart > 500) interrupt()
-        else return
-      }
-      let it = ""
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i]
-        if (r.isFinal) buffer += r[0].transcript + " "
-        else it += r[0].transcript
-      }
-      interimText = it
-      setInterim(it)
-      if (silenceTimer) clearTimeout(silenceTimer)
-      if (buffer.trim() || it.trim()) silenceTimer = setTimeout(finishUtterance, 1200)
-    }
-    rec.onerror = (e: any) => {
-      if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
-        setError("Permissão de microfone negada.")
-        disposed = true
-      }
-    }
-    rec.onend = () => {
-      if (!disposed) { try { rec.start() } catch {} }
-    }
-
-    function finishUtterance() {
-      if (disposed || phaseRef.current !== "listening") return
-      const text = (buffer + " " + interimText).replace(/\s+/g, " ").trim()
-      buffer = ""
-      interimText = ""
-      setInterim("")
-      if (text) onUtterance(text)
-    }
-
-    async function onUtterance(text: string) {
-      if (disposed) return
-      if (silenceTimer) clearTimeout(silenceTimer)
-      const history = [...messagesRef.current, { role: "user" as const, content: text }]
-      setMessages(history)
-      setPhase("thinking")
-      try {
-        const res = await fetch("/api/ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history.slice(-8), now: new Date().toLocaleString("pt-BR"), mode: "voice" }),
-        })
-        const reply = (await res.text()).trim() || "Desculpe, não consegui responder agora."
-        if (disposed) return
-        setMessages((m) => [...m, { role: "assistant", content: reply }])
-        speak(reply)
-      } catch {
-        if (disposed) return
-        setMessages((m) => [...m, { role: "assistant", content: "Tive um problema de conexão." }])
-        backToListening()
-      }
-    }
-
-    function backToListening() {
-      if (disposed) return
-      buffer = ""
-      interimText = ""
-      setInterim("")
-      setPhase("listening")
+    function handleRateLimit(reply: string): boolean {
+      if (reply !== "__RATE_LIMIT__") return false
+      setResting(true)
+      goIdle()
+      setMessages((m) => [...m, { role: "assistant", content: "Estou descansando um pouquinho 😴 O limite gratuito da IA chegou por agora." }])
+      return true
     }
 
     function speak(text: string) {
-      if (disposed || !synth) { backToListening(); return }
+      if (disposed || !synth) { goIdle(); return }
       try { synth.cancel() } catch {}
       const clean = stripForSpeech(text)
       const chunks = clean.match(/[^.!?]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) ?? [clean]
       const v = voicesRef.current.find((x) => x.voiceURI === voiceURIRef.current)
       setPhase("speaking")
-      speakStart = performance.now()
       let idx = 0
       const next = () => {
         if (disposed || phaseRef.current !== "speaking") return
-        if (idx >= chunks.length) { backToListening(); return }
+        if (idx >= chunks.length) { goIdle(); return }
         const u = new SpeechSynthesisUtterance(chunks[idx++])
         if (v) u.voice = v
         u.lang = v?.lang || "pt-BR"
-        u.rate = 1.15
-        u.pitch = 1
+        u.rate = rateRef.current
+        u.pitch = 0.7 // tom mais grave/mecânico (robótico)
         u.onend = next
         u.onerror = next
         try { synth.speak(u) } catch { next() }
@@ -212,30 +158,137 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       next()
     }
 
-    function interrupt() {
-      if (phaseRef.current !== "speaking") return
-      backToListening() // muda a fase ANTES de cancelar p/ o next() não retomar
-      try { synth?.cancel() } catch {}
+    function interruptSpeech() {
+      if (phaseRef.current === "speaking") {
+        setPhase("idle")
+        try { synth?.cancel() } catch {}
+      }
     }
-    interruptRef.current = interrupt
 
-    setPhase("listening")
-    try { rec.start() } catch {}
+    async function onUtterance(text: string) {
+      if (disposed) return
+      if (!text.trim()) { goIdle(); return }
+      const history = [...messagesRef.current, { role: "user" as const, content: text }]
+      setMessages(history)
+      setPhase("thinking")
+      try {
+        const res = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history.slice(-8), now: new Date().toLocaleString("pt-BR"), mode: "voice", tz: new Date().getTimezoneOffset() }),
+        })
+        const reply = (await res.text()).trim() || "Desculpe, não consegui responder agora."
+        if (disposed) return
+        if (handleRateLimit(reply)) return
+        setMessages((m) => [...m, { role: "assistant", content: reply }])
+        speak(reply)
+      } catch {
+        if (disposed) return
+        setMessages((m) => [...m, { role: "assistant", content: "Tive um problema de conexão." }])
+        goIdle()
+      }
+    }
+
+    // Push-to-talk: captura só enquanto o botão é segurado
+    function startHold() {
+      if (disposed || phaseRef.current === "thinking") return
+      interruptSpeech()
+      try { holdRec?.abort() } catch {}
+      const r = new Ctor!()
+      r.lang = "pt-BR"
+      r.continuous = true
+      r.interimResults = true
+      buffer = ""
+      interimText = ""
+      setInterim("")
+      r.onresult = (e: any) => {
+        let it = ""
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const res = e.results[i]
+          if (res.isFinal) buffer += res[0].transcript + " "
+          else it += res[0].transcript
+        }
+        interimText = it
+        setInterim(it)
+      }
+      r.onerror = (e: any) => {
+        if (e?.error === "not-allowed" || e?.error === "service-not-allowed") setError("Permissão de microfone negada.")
+      }
+      r.onend = () => {
+        const text = (buffer + " " + interimText).replace(/\s+/g, " ").trim()
+        buffer = ""
+        interimText = ""
+        setInterim("")
+        if (!disposed) onUtterance(text)
+      }
+      holdRec = r
+      setHolding(true)
+      setPhase("listening")
+      try { r.start() } catch {}
+    }
+    function endHold() {
+      setHolding(false)
+      if (holdRec) { try { holdRec.stop() } catch {} }
+    }
+
+    startHoldRef.current = startHold
+    endHoldRef.current = endHold
+    submitRef.current = (t: string) => {
+      if (disposed || phaseRef.current === "thinking") return
+      interruptSpeech()
+      onUtterance(t)
+    }
+
+    async function doBriefing() {
+      const cached = getCachedBriefing()
+      if (cached) {
+        setMessages([{ role: "assistant", content: cached }])
+        speak(cached)
+        return
+      }
+      setPhase("thinking")
+      try {
+        const res = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: [], mode: "briefing", now: new Date().toLocaleString("pt-BR"), tz: new Date().getTimezoneOffset() }),
+        })
+        const reply = (await res.text()).trim()
+        if (disposed) return
+        if (handleRateLimit(reply)) return
+        if (reply) {
+          setCachedBriefing(reply)
+          setMessages([{ role: "assistant", content: reply }])
+          speak(reply)
+        } else {
+          goIdle()
+        }
+      } catch {
+        if (!disposed) goIdle()
+      }
+    }
+    retryRef.current = () => { setResting(false); doBriefing() }
+
+    doBriefing()
 
     return () => {
       disposed = true
-      if (silenceTimer) clearTimeout(silenceTimer)
-      try { rec.onend = null; rec.abort() } catch {}
+      try { holdRec?.abort() } catch {}
       try { synth?.cancel() } catch {}
     }
   }, [open])
 
-  const statusLabel =
-    status === "listening" ? "Ouvindo…" :
-    status === "thinking" ? "Pensando…" :
-    status === "speaking" ? "Falando…" : "Iniciando…"
+  const statusLabel = resting
+    ? "Descansando 😴"
+    : holding ? "Ouvindo…"
+    : status === "thinking" ? "Pensando…"
+    : status === "speaking" ? "Falando…"
+    : "Segure o microfone para falar"
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")
+  const needsConfirm =
+    !resting && !holding && status === "idle" && !!lastAssistant &&
+    /(posso confirmar|confirmar\?|confirma\?)/i.test(lastAssistant.content)
 
   return (
     <AnimatePresence>
@@ -250,20 +303,21 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
             <X className="h-6 w-6" />
           </button>
 
-          {voices.length > 0 && (
-            <div className="absolute left-6 top-6 flex items-center gap-2 text-sm text-muted-foreground">
-              <AudioLines className="h-4 w-4" />
-              <select
-                value={voiceURI}
-                onChange={(e) => setVoiceURI(e.target.value)}
-                className="max-w-[200px] rounded-lg border border-border/50 bg-transparent px-2 py-1 text-xs outline-none focus:border-primary/40"
-              >
-                {voices.map((v) => (
-                  <option key={v.voiceURI} value={v.voiceURI}>{v.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="absolute left-6 top-6 flex items-center gap-1.5">
+            <select
+              value={rate}
+              onChange={(e) => setRate(Number(e.target.value))}
+              className="cursor-pointer rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground shadow-sm outline-none backdrop-blur transition-colors hover:border-border focus:border-primary/50"
+              title="Velocidade da voz"
+            >
+              <option value={1}>1x</option>
+              <option value={1.15}>1.15x</option>
+              <option value={1.3}>1.3x</option>
+              <option value={1.5}>1.5x</option>
+              <option value={1.75}>1.75x</option>
+              <option value={2}>2x</option>
+            </select>
+          </div>
 
           {!supported ? (
             <div className="max-w-sm px-6 text-center">
@@ -276,42 +330,100 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
             <div className="max-w-sm px-6 text-center"><p className="text-muted-foreground">{error}</p></div>
           ) : (
             <div className="flex w-full max-w-lg flex-col items-center px-6">
-              <OwlMascot status={status} />
+              <RobotMascot status={resting ? "resting" : holding ? "listening" : status} />
 
               <p className="mt-1 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                {status === "thinking" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {status === "thinking" && !resting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {statusLabel}
               </p>
 
-              <p className="mt-3 min-h-6 text-center text-lg text-foreground">{interim}</p>
+              {holding && <p className="mt-3 min-h-6 text-center text-lg text-foreground">{interim}</p>}
 
-              {lastAssistant && (
+              {lastAssistant && !holding && (
                 <motion.div
                   key={lastAssistant.content}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-3 max-h-[28vh] w-full overflow-y-auto rounded-2xl border border-border/40 bg-card/50 p-4 text-foreground scrollbar-thin"
+                  className="mt-3 max-h-[26vh] w-full overflow-y-auto rounded-2xl border border-border/40 bg-card/50 p-4 text-foreground scrollbar-thin"
                 >
                   <RichText text={lastAssistant.content} />
                 </motion.div>
               )}
 
-              <button
-                onClick={() => interruptRef.current()}
-                disabled={status !== "speaking"}
-                className="mt-6 flex items-center gap-2 rounded-full border border-border/50 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-30"
-              >
-                <Hand className="h-4 w-4" />
-                Interromper
-              </button>
+              {resting ? (
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+                    <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="text-muted-foreground">
+                      Acorde a Neuro com o plano ilimitado <span className="text-[10px] opacity-70">(em breve)</span>
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => retryRef.current()}
+                    className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Tentar de novo
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {needsConfirm && (
+                    <div className="mt-5 flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => submitRef.current("sim")}
+                        className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      >
+                        <Check className="h-4 w-4" />
+                        Sim
+                      </button>
+                      <button
+                        onClick={() => submitRef.current("não")}
+                        className="flex items-center gap-2 rounded-full border border-border/60 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                      >
+                        <X className="h-4 w-4" />
+                        Não
+                      </button>
+                    </div>
+                  )}
 
-              <p className="mt-3 text-center text-xs text-muted-foreground/60">
-                Fale naturalmente — quando você pausar, a Neuro responde. Use fones para melhor resultado.
-              </p>
+                  {/* Botão segurar-para-falar */}
+                  <button
+                    onPointerDown={(e) => {
+                      e.preventDefault()
+                      try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
+                      startHoldRef.current()
+                    }}
+                    onPointerUp={(e) => {
+                      try { e.currentTarget.releasePointerCapture(e.pointerId) } catch {}
+                      endHoldRef.current()
+                    }}
+                    onPointerCancel={() => endHoldRef.current()}
+                    disabled={status === "thinking"}
+                    className={cnMic(holding, status === "thinking")}
+                    aria-label="Segure para falar"
+                  >
+                    {holding && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500/40" />}
+                    <Mic className="relative h-7 w-7" />
+                  </button>
+
+                  <p className="mt-3 text-center text-xs text-muted-foreground/60">
+                    Segure o botão para falar e solte para enviar. Use fones para melhor resultado.
+                  </p>
+                </>
+              )}
             </div>
           )}
         </motion.div>
       )}
     </AnimatePresence>
   )
+}
+
+function cnMic(holding: boolean, disabled: boolean): string {
+  // Botão estático (não muda de tamanho/posição — o usuário segura ele)
+  const base = "relative mt-6 flex h-20 w-20 touch-none select-none items-center justify-center rounded-full text-white shadow-lg transition-colors"
+  if (disabled) return base + " bg-muted text-muted-foreground opacity-50"
+  if (holding) return base + " bg-red-500"
+  return base + " bg-primary hover:opacity-90"
 }

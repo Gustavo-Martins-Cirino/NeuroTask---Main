@@ -640,10 +640,9 @@ export default function CalendarPage() {
                             {occurrencesForDay(day).map((occ) => {
                               const { start, end, block, virtual } = occ
                               const top = (minutesFromMidnight(start) / 60) * HOUR_HEIGHT
-                              const height = Math.max(
-                                24,
-                                ((end.getTime() - start.getTime()) / 3_600_000) * HOUR_HEIGHT
-                              )
+                              const rawHeight = ((end.getTime() - start.getTime()) / 3_600_000) * HOUR_HEIGHT
+                              // não deixa o bloco ultrapassar o fim do dia (meia-noite fica no topo do dia seguinte)
+                              const height = Math.max(24, Math.min(rawHeight, 24 * HOUR_HEIGHT - top))
                               const dragging = !virtual && drag?.id === block.id
                               return (
                                 <div

@@ -14,14 +14,27 @@ Seu papel:
 - Ajudar o usuário a organizar o dia, priorizar tarefas e refletir sobre o foco.
 - Você PODE agir no app através das ferramentas disponíveis: criar, listar, editar e excluir tarefas, blocos de tempo (time blocks) e notas.
 - CONFIRME ANTES DE AGIR: nunca crie, edite ou exclua nada sem confirmar antes. Ao identificar um pedido claro, NÃO chame a ferramenta ainda — primeiro descreva o que vai fazer (título, dia, início e fim, prioridade) e pergunte "Posso confirmar?". Só chame a ferramenta de criar/editar/excluir DEPOIS que o usuário confirmar de forma explícita (ex.: "sim", "pode", "confirma", "isso mesmo"). Nunca diga que fez algo sem ter realmente chamado a ferramenta.
+- NUNCA escreva a sintaxe de uma ferramenta no texto da resposta (nada de "<function=...>" ou JSON de ferramenta). Descreva em linguagem natural o que pretende fazer; a chamada da ferramenta é feita pelo mecanismo próprio, invisível ao usuário.
 - NÃO transforme desabafos ou reflexões em tarefas. Se o usuário disser coisas como "estou cansado", "quero ficar mais inteligente", "que dia corrido", apenas converse, acolha ou dê um conselho curto — só proponha uma tarefa se ele CLARAMENTE pedir para adicionar/agendar algo.
 - Tarefas (tasks) aparecem na lista de Tarefas. Blocos de tempo (time blocks) aparecem no Calendário. Se o usuário quer algo "agendado" num horário, use um bloco de tempo; se é só um item a fazer, use uma tarefa.
 - IMPORTANTE: quando o usuário mencionar um horário específico para uma tarefa (ex.: "às 11h", "amanhã 14h30"), SEMPRE inclua esse horário no campo due_date (ISO 8601, com a hora). O app agenda automaticamente essa tarefa no calendário.
 - INTERPRETAÇÃO DE HORÁRIOS (use a data/hora atual fornecida abaixo): respeite SEMPRE o dia que o usuário disser. Se ele disser "hoje", use a data de HOJE, mesmo que o horário já tenha passado — NUNCA jogue para amanhã por conta própria. Se o período do dia for ambíguo (ex.: "8:30" e não dá pra saber se é manhã ou noite), PERGUNTE ao usuário qual dos dois antes de agendar (ex.: "Você quer dizer 8:30 da manhã ou 20:30?"), em vez de adivinhar.
 - CONFLITOS E DESCANSO: fique atento a choques de horário e a tarefas muito próximas. Se o sistema avisar de conflito ou de proximidade ao criar um bloco, repasse isso ao usuário e sugira ajustar o horário ou incluir um intervalo de descanso.
 - PRECISÃO: nunca invente uma tarefa a partir de uma fala solta ou de um provável erro de transcrição de voz. Na dúvida, pergunte.
+- LINGUAGEM NATURAL: ao confirmar ou mencionar horários, fale de forma natural em português (ex.: "amanhã das 8h às 9h", "dia 15 deste mês"). NUNCA leia datas em formato técnico/ISO/americano (nada de "2026-06-15T08:00").
+- PROATIVIDADE: não espere o usuário perguntar. Ao ver a agenda dele, aponte conflitos, intervalos curtos e dê sugestões úteis por conta própria (energia, sono, preparação, foco).
 - Para editar ou excluir, primeiro liste para descobrir o id correto, depois aja.
 - Seja direta, calorosa e prática. Respostas curtas em português do Brasil. Confirme o que você efetivamente fez.`
+
+// Remove sintaxe de tool call que o Llama às vezes vaza no texto (<function=...>...</function>)
+function sanitizeOut(text: string): string {
+  return text
+    .replace(/<function[\s\S]*?<\/function>/gi, "")
+    .replace(/<function=[^>]*>?/gi, "")
+    .replace(/<\/?function[^>]*>/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+}
 
 type Provider = "groq" | "gemini" | "anthropic"
 
@@ -207,6 +220,27 @@ const TOOLS = [
 
 type ToolArgs = Record<string, unknown>
 
+// Sufixo de fuso a partir do offset em minutos do getTimezoneOffset() (UTC-3 → 180 → "-03:00")
+function tzSuffix(offsetMin: number): string {
+  const sign = offsetMin > 0 ? "-" : "+"
+  const abs = Math.abs(offsetMin)
+  const hh = String(Math.floor(abs / 60)).padStart(2, "0")
+  const mm = String(abs % 60).padStart(2, "0")
+  return `${sign}${hh}:${mm}`
+}
+
+// Normaliza um datetime: se vier "local" (sem Z/offset), anexa o fuso do usuário.
+// Corrige o bug de horário local ser interpretado como UTC (deslocamento de fuso).
+function normalizeDT(v: unknown, tzMin: number): unknown {
+  if (typeof v !== "string") return v
+  if (/[zZ]$/.test(v) || /[+-]\d{2}:?\d{2}$/.test(v)) return v // já tem fuso
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) {
+    const s = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v) ? v + ":00" : v
+    return s + tzSuffix(tzMin)
+  }
+  return v
+}
+
 // Verifica choque de horário e proximidade (< 15 min) com outros blocos do mesmo dia
 async function checkConflicts(
   supabase: SupabaseClient,
@@ -247,15 +281,57 @@ async function checkConflicts(
   return null
 }
 
+// Lê o estado atual do usuário (para a IA ser proativa no briefing)
+async function gatherContext(supabase: SupabaseClient, tzMin: number): Promise<string> {
+  const local = new Date(Date.now() - tzMin * 60000)
+  const today = `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`
+  const dayStart = new Date(Date.now())
+  dayStart.setHours(0, 0, 0, 0)
+  const in2 = new Date(dayStart)
+  in2.setDate(in2.getDate() + 2)
+
+  const [tasksR, blocksR, remR, favTR, favNR] = await Promise.all([
+    supabase.from("tasks").select("title, priority").not("status", "in", "(completed,cancelled)").limit(15),
+    supabase.from("time_blocks").select("title, start_time, end_time").gte("start_time", dayStart.toISOString()).lt("start_time", in2.toISOString()).order("start_time", { ascending: true }),
+    supabase.from("reminders").select("content, remind_time").eq("remind_date", today),
+    supabase.from("tasks").select("title").eq("is_favorite", true).limit(8),
+    supabase.from("notes").select("title").eq("is_favorite", true).limit(8),
+  ])
+
+  const fmt = (iso: string) => {
+    const loc = new Date(new Date(iso).getTime() - tzMin * 60000)
+    return `${String(loc.getUTCHours()).padStart(2, "0")}:${String(loc.getUTCMinutes()).padStart(2, "0")}`
+  }
+
+  const lines: string[] = [`Hoje é ${today}.`]
+  const blocks = blocksR.data ?? []
+  if (blocks.length) {
+    lines.push("Blocos no calendário (hoje/amanhã):")
+    for (const b of blocks) lines.push(`- ${fmt(b.start_time)}–${fmt(b.end_time)} ${b.title}`)
+  } else {
+    lines.push("Nenhum bloco agendado para hoje/amanhã.")
+  }
+  const tasks = tasksR.data ?? []
+  if (tasks.length) lines.push("Tarefas pendentes: " + tasks.map((t) => t.title).join(", "))
+  const rem = remR.data ?? []
+  if (rem.length) lines.push("Lembretes de hoje: " + rem.map((r) => `${r.remind_time ? r.remind_time.slice(0, 5) + " " : ""}${r.content}`).join("; "))
+  const favs = [...(favTR.data ?? []).map((f) => f.title), ...(favNR.data ?? []).map((f) => f.title)].filter(Boolean)
+  if (favs.length) lines.push("Favoritos do usuário (dê atenção): " + favs.join(", "))
+
+  return lines.join("\n")
+}
+
 async function executeTool(
   name: string,
   args: ToolArgs,
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  tzMin: number
 ): Promise<unknown> {
   try {
     switch (name) {
       case "create_task": {
+        const dueDate = normalizeDT(args.due_date, tzMin)
         const { data, error } = await supabase
           .from("tasks")
           .insert({
@@ -264,7 +340,7 @@ async function executeTool(
             description: args.description ?? null,
             status: "pending",
             priority: args.priority ?? "medium",
-            due_date: args.due_date ?? null,
+            due_date: dueDate ?? null,
           })
           .select("id, title")
           .single()
@@ -272,9 +348,9 @@ async function executeTool(
         // Se a tarefa tem um horário específico, agenda também um bloco no calendário
         let scheduled = false
         let warning: string | null = null
-        if (typeof args.due_date === "string" && args.due_date) {
-          const timePart = args.due_date.split("T")[1]
-          const start = new Date(args.due_date)
+        if (typeof dueDate === "string" && dueDate) {
+          const timePart = dueDate.split("T")[1]
+          const start = new Date(dueDate)
           if (timePart && !/^00:00(:00)?/.test(timePart) && !isNaN(start.getTime())) {
             const end = new Date(start.getTime() + 60 * 60 * 1000)
             const { data: block, error: blockErr } = await supabase
@@ -311,6 +387,7 @@ async function executeTool(
           // ignora ausentes e null (não sobrescreve colunas obrigatórias com null)
           if (args[k] !== undefined && args[k] !== null) patch[k] = args[k]
         }
+        if (patch.due_date) patch.due_date = normalizeDT(patch.due_date, tzMin)
         const { error } = await supabase.from("tasks").update(patch).eq("id", args.task_id)
         if (error) return { ok: false, error: error.message }
         return { ok: true }
@@ -321,20 +398,22 @@ async function executeTool(
         return { ok: true }
       }
       case "create_time_block": {
+        const startT = normalizeDT(args.start_time, tzMin) as string
+        const endT = normalizeDT(args.end_time, tzMin) as string
         const { data, error } = await supabase
           .from("time_blocks")
           .insert({
             user_id: userId,
             title: args.title,
             description: args.description ?? null,
-            start_time: args.start_time,
-            end_time: args.end_time,
+            start_time: startT,
+            end_time: endT,
             color: args.color ?? "#6366f1",
           })
           .select("id, title, start_time")
           .single()
         if (error) return { ok: false, error: error.message }
-        const warning = await checkConflicts(supabase, data.id, args.start_time as string, args.end_time as string)
+        const warning = await checkConflicts(supabase, data.id, startT, endT)
         return { ok: true, created: data, warning }
       }
       case "list_time_blocks": {
@@ -446,7 +525,8 @@ function confirm(name: string, args: ToolArgs, result: unknown): string {
 async function recoverFailedToolCalls(
   detail: string,
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  tzMin: number
 ): Promise<string | null> {
   let failedGen: string
   try {
@@ -469,7 +549,7 @@ async function recoverFailedToolCalls(
     } catch {
       continue
     }
-    const result = await executeTool(name, args, supabase, userId)
+    const result = await executeTool(name, args, supabase, userId, tzMin)
     lines.push(confirm(name, args, result))
   }
 
@@ -510,7 +590,8 @@ async function runOpenAIAgent(
   system: string,
   messages: ChatMessage[],
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  tzMin: number
 ): Promise<string> {
   const convo: OpenAIMessage[] = [
     { role: "system", content: system },
@@ -530,10 +611,10 @@ async function runOpenAIAgent(
       // Rede de segurança: o Llama às vezes gera o tool call num formato que o
       // parser do Groq rejeita (tool_use_failed). Recuperamos a intenção do
       // failed_generation, executamos de verdade e confirmamos.
-      const recovered = await recoverFailedToolCalls(detail, supabase, userId)
+      const recovered = await recoverFailedToolCalls(detail, supabase, userId, tzMin)
       if (recovered) return recovered
       if (res.status === 429) {
-        return "A IA gratuita atingiu o limite de uso por minuto. Aguarde alguns segundos e tente de novo — de preferência com uma mensagem curta."
+        return "__RATE_LIMIT__"
       }
       throw new Error(`Groq ${res.status}: ${detail}`)
     }
@@ -550,7 +631,7 @@ async function runOpenAIAgent(
         } catch {
           parsed = {}
         }
-        const result = await executeTool(call.function.name, parsed, supabase, userId)
+        const result = await executeTool(call.function.name, parsed, supabase, userId, tzMin)
         console.log(
           `[neuro-ia] tool=${call.function.name} args=${JSON.stringify(parsed)} result=${JSON.stringify(result)}`
         )
@@ -696,17 +777,16 @@ export async function POST(req: Request) {
     )
   }
 
-  let body: { messages?: ChatMessage[]; dayNotes?: string; now?: string; mode?: string }
+  let body: { messages?: ChatMessage[]; dayNotes?: string; now?: string; mode?: string; tz?: number }
   try {
     body = await req.json()
   } catch {
     return new Response("Requisição inválida", { status: 400 })
   }
 
-  const messages = (body.messages ?? []).filter(
+  let messages = (body.messages ?? []).filter(
     (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
   )
-  if (messages.length === 0) return new Response("Envie ao menos uma mensagem", { status: 400 })
 
   let system = BASE_PROMPT
   if (body.now) {
@@ -718,12 +798,20 @@ export async function POST(req: Request) {
   if (body.mode === "voice") {
     system += `\n\nMODO VOZ (conversa falada em tempo real): responda de forma curta, natural e conversacional, como uma pessoa falando. Em geral 1 a 3 frases. Evite listas longas, markdown, asteriscos, emojis e símbolos — o texto será lido em voz alta. Se precisar destacar um conceito, cite no máximo 3 pontos-chave bem curtos, em frases simples.`
   }
+  if (body.mode === "briefing") {
+    const ctx = await gatherContext(supabase, body.tz ?? 0)
+    system += `\n\nCONTEXTO ATUAL DO USUÁRIO (leia com atenção antes de responder):\n"""\n${ctx}\n"""`
+    system += `\n\nEste é o INÍCIO da conversa. Cumprimente o usuário e faça um briefing curto e PROATIVO do dia: aponte conflitos e intervalos curtos entre os blocos, dê 1 ou 2 dicas úteis (energia, sono, preparação, foco) e, se fizer sentido, PROPONHA (com confirmação) uma tarefa de preparação. Termine oferecendo ajuda. Seja calorosa, natural e concisa. Responda em texto normal (sem markdown pesado).`
+    messages = [{ role: "user", content: "Oi! Me dê as boas-vindas e um panorama do meu dia." }]
+  }
+
+  if (messages.length === 0) return new Response("Envie ao menos uma mensagem", { status: 400 })
 
   // Groq → loop com ferramentas (cria/edita/exclui de verdade)
   if (cfg.provider === "groq") {
     try {
-      const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id)
-      return new Response(finalText, {
+      const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0)
+      return new Response(sanitizeOut(finalText), {
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
       })
     } catch (e) {

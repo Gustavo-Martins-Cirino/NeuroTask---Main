@@ -1,12 +1,20 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Header } from "@/components/header"
-import { Bot, Send, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines } from "lucide-react"
+import { Bot, Send, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { VoiceConversation } from "@/components/voice-conversation"
+import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface ChatMessage {
   role: "user" | "assistant"
@@ -25,6 +33,35 @@ function localDateKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
+// Traduz o sinal de limite da IA para uma mensagem amigável (sem jargão técnico)
+function prettyReply(t: string): string {
+  return t.trim() === "__RATE_LIMIT__"
+    ? "A Neuro está descansando 😴 O limite gratuito da IA chegou por agora — tente de novo em instantes."
+    : t
+}
+
+// ---- Histórico de conversas (até 3 não-fixadas; fixadas são preservadas) ----
+interface Convo { id: string; title: string; messages: ChatMessage[]; pinned: boolean; updatedAt: number }
+const CONVOS_KEY = "neurotask-ai-convos"
+const MAX_UNPINNED = 3
+
+function newConvo(): Convo {
+  return { id: Math.random().toString(36).slice(2), title: "Nova conversa", messages: [], pinned: false, updatedAt: Date.now() }
+}
+function titleFrom(messages: ChatMessage[]): string {
+  const firstUser = messages.find((m) => m.role === "user")
+  const src = firstUser ?? messages.find((m) => m.role === "assistant" && m.content.trim())
+  return src ? src.content.replace(/\s+/g, " ").trim().slice(0, 40) || "Nova conversa" : "Nova conversa"
+}
+function pruneConvos(list: Convo[]): Convo[] {
+  const pinned = list.filter((c) => c.pinned)
+  const unpinned = list.filter((c) => !c.pinned).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, MAX_UNPINNED)
+  return [...pinned, ...unpinned].sort((a, b) => b.updatedAt - a.updatedAt)
+}
+function saveConvos(list: Convo[]) {
+  try { localStorage.setItem(CONVOS_KEY, JSON.stringify(list)) } catch {}
+}
+
 export default function AiPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
@@ -33,36 +70,87 @@ export default function AiPage() {
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
+  const [convos, setConvos] = useState<Convo[]>([])
+  const [activeId, setActiveId] = useState<string>("")
+  const bootedRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const monitorCtxRef = useRef<AudioContext | null>(null)
   const rafRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    const supabase = createClient()
-    supabase
-      .from("day_notes")
-      .select("content")
-      .eq("note_date", localDateKey())
-      .maybeSingle()
-      .then(({ data }) => setDayNotes(data?.content ?? ""))
-    const saved = localStorage.getItem("neurotask-ai-chat")
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) setMessages(parsed)
-      } catch {
-        /* ignora histórico inválido */
-      }
-    }
+  const runBriefing = useCallback(() => {
+    const cached = getCachedBriefing()
+    if (cached) { setMessages([{ role: "assistant", content: cached }]); return }
+    setLoading(true)
+    setMessages([{ role: "assistant", content: "" }])
+    fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: [], mode: "briefing", now: new Date().toLocaleString("pt-BR"), tz: new Date().getTimezoneOffset() }),
+    })
+      .then((r) => r.text())
+      .then((t) => {
+        const raw = t.trim()
+        setCachedBriefing(raw)
+        setMessages([{ role: "assistant", content: prettyReply(raw) || "Olá! Como posso ajudar você hoje?" }])
+      })
+      .catch(() => setMessages([{ role: "assistant", content: "Olá! Como posso ajudar você hoje?" }]))
+      .finally(() => setLoading(false))
   }, [])
 
+  // Carrega anotações do dia + conversas (migra o formato antigo de conversa única)
   useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem("neurotask-ai-chat", JSON.stringify(messages))
+    const supabase = createClient()
+    supabase.from("day_notes").select("content").eq("note_date", localDateKey()).maybeSingle()
+      .then(({ data }) => setDayNotes(data?.content ?? ""))
+
+    if (bootedRef.current) return // roda uma única vez (evita duplicar no StrictMode)
+    bootedRef.current = true
+
+    let list: Convo[] = []
+    try {
+      const raw = localStorage.getItem(CONVOS_KEY)
+      if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) list = p }
+    } catch { /* ignora */ }
+    if (list.length === 0) {
+      try {
+        const old = localStorage.getItem("neurotask-ai-chat")
+        if (old) {
+          const arr = JSON.parse(old)
+          if (Array.isArray(arr) && arr.length) list = [{ ...newConvo(), messages: arr, title: titleFrom(arr) }]
+          localStorage.removeItem("neurotask-ai-chat")
+        }
+      } catch { /* ignora */ }
     }
-  }, [messages])
+    if (list.length > 0) {
+      const active = [...list].sort((a, b) => b.updatedAt - a.updatedAt)[0]
+      setConvos(list)
+      setActiveId(active.id)
+      setMessages(active.messages)
+      // Sem conteúdo real (placeholder vazio / conversa nova) → refaz o briefing
+      if (!active.messages.some((m) => m.content.trim())) runBriefing()
+    } else {
+      const c = newConvo()
+      setConvos([c])
+      setActiveId(c.id)
+      runBriefing()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Sincroniza a conversa ativa com as mensagens atuais (ignora o placeholder vazio)
+  useEffect(() => {
+    if (!activeId || !messages.some((m) => m.content.trim())) return
+    setConvos((prev) => {
+      const next = prev.map((c) =>
+        c.id === activeId ? { ...c, messages, title: titleFrom(messages), updatedAt: Date.now() } : c
+      )
+      saveConvos(next)
+      return next
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, activeId])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
@@ -89,6 +177,7 @@ export default function AiPage() {
           messages: nextMessages.slice(-8),
           dayNotes,
           now: new Date().toLocaleString("pt-BR"),
+          tz: new Date().getTimezoneOffset(),
         }),
       })
 
@@ -114,7 +203,7 @@ export default function AiPage() {
         acc += decoder.decode(value, { stream: true })
         setMessages((prev) => {
           const copy = [...prev]
-          copy[copy.length - 1] = { role: "assistant", content: acc }
+          copy[copy.length - 1] = { role: "assistant", content: prettyReply(acc) }
           return copy
         })
       }
@@ -219,9 +308,44 @@ export default function AiPage() {
 
   const isEmpty = messages.length === 0
 
-  const clearChat = () => {
+  const newConversation = () => {
+    const c = newConvo()
+    setConvos((prev) => pruneConvos([c, ...prev]))
+    setActiveId(c.id)
     setMessages([])
-    localStorage.removeItem("neurotask-ai-chat")
+    runBriefing()
+  }
+  const switchConvo = (id: string) => {
+    if (id === activeId) return
+    const c = convos.find((x) => x.id === id)
+    if (!c) return
+    setActiveId(id)
+    setMessages(c.messages)
+  }
+  const togglePin = (id: string) => {
+    setConvos((prev) => {
+      const next = prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))
+      saveConvos(next)
+      return next
+    })
+  }
+  const deleteConvo = (id: string) => {
+    const next = convos.filter((c) => c.id !== id)
+    if (id === activeId) {
+      if (next.length > 0) {
+        const nx = [...next].sort((a, b) => b.updatedAt - a.updatedAt)[0]
+        setActiveId(nx.id)
+        setMessages(nx.messages)
+      } else {
+        const c = newConvo()
+        next.push(c)
+        setActiveId(c.id)
+        setMessages([])
+        runBriefing()
+      }
+    }
+    setConvos(next)
+    saveConvos(next)
   }
 
   return (
@@ -234,14 +358,46 @@ export default function AiPage() {
           <AudioLines className="h-3.5 w-3.5" />
           Conversar
         </button>
-        {!isEmpty && (
-          <button
-            onClick={clearChat}
-            className="rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            Nova conversa
-          </button>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <MessagesSquare className="h-3.5 w-3.5" />
+              Conversas
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuItem onClick={newConversation} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nova conversa
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {[...convos].sort((a, b) => b.updatedAt - a.updatedAt).map((c) => (
+              <div key={c.id} className={cn("flex items-center gap-1 rounded-md px-1", c.id === activeId && "bg-accent")}>
+                <button
+                  onClick={() => switchConvo(c.id)}
+                  className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pl-1 text-left text-sm"
+                >
+                  {c.pinned && <Pin className="h-3 w-3 shrink-0 text-primary" />}
+                  <span className="truncate">{c.title || "Nova conversa"}</span>
+                </button>
+                <button
+                  onClick={() => togglePin(c.id)}
+                  title={c.pinned ? "Desafixar" : "Fixar"}
+                  className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {c.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={() => deleteConvo(c.id)}
+                  title="Excluir"
+                  className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </Header>
 
       <VoiceConversation open={voiceOpen} onClose={() => setVoiceOpen(false)} />
