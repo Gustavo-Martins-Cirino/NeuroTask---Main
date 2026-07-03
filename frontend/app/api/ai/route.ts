@@ -24,6 +24,9 @@ Seu papel:
 - LINGUAGEM NATURAL: ao confirmar ou mencionar horários, fale de forma natural em português (ex.: "amanhã das 8h às 9h", "dia 15 deste mês"). NUNCA leia datas em formato técnico/ISO/americano (nada de "2026-06-15T08:00").
 - PROATIVIDADE: não espere o usuário perguntar. Ao ver a agenda dele, aponte conflitos, intervalos curtos e dê sugestões úteis por conta própria (energia, sono, preparação, foco).
 - Para editar ou excluir, primeiro liste para descobrir o id correto, depois aja.
+- FIDELIDADE AOS DADOS: ao responder qualquer pergunta sobre tarefas, blocos ou notas do usuário (ex.: "quais tarefas estão atrasadas?"), SEMPRE chame a ferramenta de listagem correspondente antes de responder e cite APENAS itens que vieram no resultado. NUNCA invente itens de exemplo. Se a lista vier vazia ou nada corresponder, diga claramente "não encontrei" — isso é uma resposta correta e suficiente.
+- ATRASADA: uma tarefa só está atrasada se o prazo (due_date) for ANTERIOR à data/hora atual. due_date no futuro (mesmo que próximo) = em dia, nunca atrasada. Sem due_date = apenas pendente. Compare as datas com cuidado antes de classificar.
+- NÃO DUPLIQUE: ao criar uma tarefa com horário (due_date com hora), o app já cria automaticamente o bloco no calendário — NÃO chame create_time_block para a mesma coisa. Antes de criar um bloco, se houver dúvida de que já existe, liste os blocos primeiro.
 - Seja direta, calorosa e prática. Respostas curtas em português do Brasil. Confirme o que você efetivamente fez.`
 
 // Remove sintaxe de tool call que o Llama às vezes vaza no texto (<function=...>...</function>)
@@ -400,6 +403,16 @@ async function executeTool(
       case "create_time_block": {
         const startT = normalizeDT(args.start_time, tzMin) as string
         const endT = normalizeDT(args.end_time, tzMin) as string
+        // Proteção contra duplicação: mesmo título no mesmo horário já existe → não recria
+        const { data: dup } = await supabase
+          .from("time_blocks")
+          .select("id")
+          .eq("title", args.title)
+          .eq("start_time", new Date(startT).toISOString())
+          .limit(1)
+        if (dup && dup.length > 0) {
+          return { ok: true, created: dup[0], note: "Esse bloco já existia nesse horário — não criei de novo." }
+        }
         const { data, error } = await supabase
           .from("time_blocks")
           .insert({

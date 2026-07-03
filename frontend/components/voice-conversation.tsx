@@ -67,7 +67,6 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
   const [interim, setInterim] = useState("")
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const [voiceURI, setVoiceURI] = useState("")
-  const [rate, setRate] = useState(1.75)
   const [supported, setSupported] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [resting, setResting] = useState(false)
@@ -77,7 +76,6 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
   const messagesRef = useRef<Msg[]>([])
   const voicesRef = useRef<SpeechSynthesisVoice[]>([])
   const voiceURIRef = useRef("")
-  const rateRef = useRef(1.75)
   const startHoldRef = useRef<() => void>(() => {})
   const endHoldRef = useRef<() => void>(() => {})
   const submitRef = useRef<(t: string) => void>(() => {})
@@ -87,7 +85,6 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
   messagesRef.current = messages
   voicesRef.current = voices
   voiceURIRef.current = voiceURI
-  rateRef.current = rate
 
   // Vozes do sistema (prefere pt-BR mais naturais)
   useEffect(() => {
@@ -98,8 +95,10 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       const pt = all.filter((v) => v.lang?.toLowerCase().startsWith("pt"))
       const list = pt.length ? pt : all
       setVoices(list)
-      // Voz robótica (combina com o robozinho): prefere as sintéticas, evita as "naturais"
-      const preferred = list.find((v) => !/google|natural/i.test(v.name)) || list[0]
+      // Voz robótica MASCULINA (combina com o robozinho)
+      const male = list.find((v) => /daniel|male|homem|masculin|ant[oô]nio|felipe|jo[aã]o/i.test(v.name))
+      const synthetic = list.find((v) => !/google|natural|female|feminin|luciana|francisca|maria|hel[oô]|vit[oó]ria|camila/i.test(v.name))
+      const preferred = male || synthetic || list[0]
       setVoiceURI((prev) => prev || preferred?.voiceURI || "")
     }
     load()
@@ -149,7 +148,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
         const u = new SpeechSynthesisUtterance(chunks[idx++])
         if (v) u.voice = v
         u.lang = v?.lang || "pt-BR"
-        u.rate = rateRef.current
+        u.rate = 1.75
         u.pitch = 0.7 // tom mais grave/mecânico (robótico)
         u.onend = next
         u.onerror = next
@@ -303,22 +302,6 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
             <X className="h-6 w-6" />
           </button>
 
-          <div className="absolute left-6 top-6 flex items-center gap-1.5">
-            <select
-              value={rate}
-              onChange={(e) => setRate(Number(e.target.value))}
-              className="cursor-pointer rounded-full border border-border/60 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground shadow-sm outline-none backdrop-blur transition-colors hover:border-border focus:border-primary/50"
-              title="Velocidade da voz"
-            >
-              <option value={1}>1x</option>
-              <option value={1.15}>1.15x</option>
-              <option value={1.3}>1.3x</option>
-              <option value={1.5}>1.5x</option>
-              <option value={1.75}>1.75x</option>
-              <option value={2}>2x</option>
-            </select>
-          </div>
-
           {!supported ? (
             <div className="max-w-sm px-6 text-center">
               <Mic className="mx-auto h-10 w-10 text-muted-foreground/50" />
@@ -337,18 +320,21 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
                 {statusLabel}
               </p>
 
-              {holding && <p className="mt-3 min-h-6 text-center text-lg text-foreground">{interim}</p>}
-
-              {lastAssistant && !holding && (
-                <motion.div
-                  key={lastAssistant.content}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-3 max-h-[26vh] w-full overflow-y-auto rounded-2xl border border-border/40 bg-card/50 p-4 text-foreground scrollbar-thin"
-                >
-                  <RichText text={lastAssistant.content} />
-                </motion.div>
-              )}
+              {/* Área de mensagem com altura fixa — mantém o botão do microfone no mesmo lugar */}
+              <div className="mt-3 flex h-[30vh] w-full flex-col items-center overflow-y-auto scrollbar-thin">
+                {holding ? (
+                  <p className="text-center text-lg text-foreground">{interim}</p>
+                ) : lastAssistant ? (
+                  <motion.div
+                    key={lastAssistant.content}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full rounded-2xl border border-border/40 bg-card/50 p-4 text-foreground"
+                  >
+                    <RichText text={lastAssistant.content} />
+                  </motion.div>
+                ) : null}
+              </div>
 
               {resting ? (
                 <div className="mt-6 flex flex-col items-center gap-3">
@@ -368,24 +354,27 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
                 </div>
               ) : (
                 <>
-                  {needsConfirm && (
-                    <div className="mt-5 flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => submitRef.current("sim")}
-                        className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                      >
-                        <Check className="h-4 w-4" />
-                        Sim
-                      </button>
-                      <button
-                        onClick={() => submitRef.current("não")}
-                        className="flex items-center gap-2 rounded-full border border-border/60 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
-                      >
-                        <X className="h-4 w-4" />
-                        Não
-                      </button>
-                    </div>
-                  )}
+                  {/* Altura reservada — Sim/Não aparece sem empurrar o microfone */}
+                  <div className="mt-5 flex h-11 items-center justify-center gap-2">
+                    {needsConfirm && (
+                      <>
+                        <button
+                          onClick={() => submitRef.current("sim")}
+                          className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                        >
+                          <Check className="h-4 w-4" />
+                          Sim
+                        </button>
+                        <button
+                          onClick={() => submitRef.current("não")}
+                          className="flex items-center gap-2 rounded-full border border-border/60 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                        >
+                          <X className="h-4 w-4" />
+                          Não
+                        </button>
+                      </>
+                    )}
+                  </div>
 
                   {/* Botão segurar-para-falar */}
                   <button

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
+import { DatePicker } from "@/components/date-picker"
 import type { TimeBlock, Task } from "@/lib/types"
 import { Loader2 } from "lucide-react"
 
@@ -47,6 +48,13 @@ const colors = [
   { value: "#3b82f6", label: "Azul" },
 ]
 
+function toDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+function toHM(d: Date): string {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+}
+
 export function TimeBlockDialog({
   open,
   onOpenChange,
@@ -56,32 +64,45 @@ export function TimeBlockDialog({
   tasks,
   onSuccess,
 }: TimeBlockDialogProps) {
-  const formatDateTimeLocal = (date: Date) => {
-    const pad = (n: number) => n.toString().padStart(2, "0")
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-  }
-
-  const [title, setTitle] = useState(timeBlock?.title || "")
-  const [description, setDescription] = useState(timeBlock?.description || "")
-  const [startTime, setStartTime] = useState(
-    timeBlock?.start_time
-      ? formatDateTimeLocal(new Date(timeBlock.start_time))
-      : defaultStart
-        ? formatDateTimeLocal(defaultStart)
-        : ""
-  )
-  const [endTime, setEndTime] = useState(
-    timeBlock?.end_time
-      ? formatDateTimeLocal(new Date(timeBlock.end_time))
-      : defaultEnd
-        ? formatDateTimeLocal(defaultEnd)
-        : ""
-  )
-  const [color, setColor] = useState(timeBlock?.color || "#6366f1")
-  const [taskId, setTaskId] = useState(timeBlock?.task_id || "none")
-  const [recurrence, setRecurrence] = useState(timeBlock?.recurrence_rule || "none")
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [date, setDate] = useState(() => toDateKey(new Date()))
+  const [startTime, setStartTime] = useState("09:00")
+  const [endTime, setEndTime] = useState("10:00")
+  const [color, setColor] = useState("#6366f1")
+  const [taskId, setTaskId] = useState("none")
+  const [recurrence, setRecurrence] = useState("none")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Preenche os campos sempre que o dialog abre (edição traz os dados do bloco)
+  useEffect(() => {
+    if (!open) return
+    if (timeBlock) {
+      const s = new Date(timeBlock.start_time)
+      const e = new Date(timeBlock.end_time)
+      setTitle(timeBlock.title)
+      setDescription(timeBlock.description || "")
+      setDate(toDateKey(s))
+      setStartTime(toHM(s))
+      setEndTime(toHM(e))
+      setColor(timeBlock.color || "#6366f1")
+      setTaskId(timeBlock.task_id || "none")
+      setRecurrence(timeBlock.recurrence_rule || "none")
+    } else {
+      const s = defaultStart ?? new Date()
+      const e = defaultEnd ?? new Date(s.getTime() + 60 * 60 * 1000)
+      setTitle("")
+      setDescription("")
+      setDate(toDateKey(s))
+      setStartTime(toHM(s))
+      setEndTime(toHM(e))
+      setColor("#6366f1")
+      setTaskId("none")
+      setRecurrence("none")
+    }
+    setError(null)
+  }, [open, timeBlock, defaultStart, defaultEnd])
 
   const supabase = createClient()
 
@@ -97,11 +118,16 @@ export function TimeBlockDialog({
       return
     }
 
+    const start = new Date(`${date}T${startTime}:00`)
+    const end = new Date(`${date}T${endTime}:00`)
+    // Fim menor/igual ao início → cruza a meia-noite (termina no dia seguinte)
+    if (end.getTime() <= start.getTime()) end.setDate(end.getDate() + 1)
+
     const blockData = {
       title,
       description: description || null,
-      start_time: new Date(startTime).toISOString(),
-      end_time: new Date(endTime).toISOString(),
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
       color,
       task_id: taskId === "none" ? null : taskId,
       recurrence_rule: recurrence === "none" ? null : recurrence,
@@ -139,7 +165,7 @@ export function TimeBlockDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{timeBlock ? "Editar Bloco" : "Novo Bloco de Tempo"}</DialogTitle>
@@ -171,12 +197,17 @@ export function TimeBlockDialog({
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>Data</Label>
+              <DatePicker value={date} onChange={setDate} />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startTime">Início</Label>
                 <Input
                   id="startTime"
-                  type="datetime-local"
+                  type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   required
@@ -187,7 +218,7 @@ export function TimeBlockDialog({
                 <Label htmlFor="endTime">Fim</Label>
                 <Input
                   id="endTime"
-                  type="datetime-local"
+                  type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
                   required

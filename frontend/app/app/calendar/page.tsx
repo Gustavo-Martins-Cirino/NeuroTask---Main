@@ -372,12 +372,19 @@ export default function CalendarPage() {
   const occurrencesForDay = (day: Date): Occurrence[] => {
     const dayStart = new Date(day)
     dayStart.setHours(0, 0, 0, 0)
+    const prevDay = new Date(dayStart)
+    prevDay.setDate(prevDay.getDate() - 1)
     const result: Occurrence[] = []
     for (const b of blocks) {
       const { start, end } = effectiveTimes(b)
       const duration = end.getTime() - start.getTime()
       if (isSameDay(start, day)) {
         result.push({ key: b.id, block: b, start, end, virtual: false })
+        continue
+      }
+      // Continuação de bloco que cruza a meia-noite (começou ontem, termina hoje)
+      if (isSameDay(start, prevDay) && end.getTime() > dayStart.getTime()) {
+        result.push({ key: `${b.id}-cont`, block: b, start: dayStart, end, virtual: true })
         continue
       }
       if (b.is_recurring && b.recurrence_rule) {
@@ -558,8 +565,8 @@ export default function CalendarPage() {
               </div>
             ) : (
               <>
-                {/* Day headers */}
-                <div className="flex border-b border-border/40">
+                {/* Day headers (reserva o espaço da barra de rolagem p/ alinhar com o corpo) */}
+                <div className="flex overflow-y-auto border-b border-border/40 [scrollbar-gutter:stable]">
                   <div className="flex w-16 shrink-0 items-center justify-center py-3 text-[10px] font-medium uppercase text-muted-foreground">
                     {tzLabel}
                   </div>
@@ -592,7 +599,7 @@ export default function CalendarPage() {
                 </div>
 
                 {/* Time grid */}
-                <div ref={scrollRef} className="scrollbar-thin flex-1 overflow-y-auto">
+                <div ref={scrollRef} className="scrollbar-thin flex-1 overflow-y-auto [scrollbar-gutter:stable]">
                   <div className="flex pt-3">
                     {/* Hour labels */}
                     <div className="w-16 shrink-0">
