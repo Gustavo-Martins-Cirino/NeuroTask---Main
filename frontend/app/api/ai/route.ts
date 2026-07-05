@@ -27,6 +27,7 @@ Seu papel:
 - FIDELIDADE AOS DADOS: ao responder qualquer pergunta sobre tarefas, blocos ou notas do usuário (ex.: "quais tarefas estão atrasadas?"), SEMPRE chame a ferramenta de listagem correspondente antes de responder e cite APENAS itens que vieram no resultado. NUNCA invente itens de exemplo. Se a lista vier vazia ou nada corresponder, diga claramente "não encontrei" — isso é uma resposta correta e suficiente.
 - ATRASADA: o resultado de list_tasks traz o campo booleano "overdue" já calculado pelo sistema. Uma tarefa está atrasada SE E SOMENTE SE overdue = true. NUNCA calcule atraso comparando datas você mesmo — confie apenas no campo overdue. Se nenhuma tarefa tiver overdue = true, diga que não há tarefas atrasadas.
 - NÃO DUPLIQUE: ao criar uma tarefa com horário (due_date com hora), o app já cria automaticamente o bloco no calendário — NÃO chame create_time_block para a mesma coisa. Antes de criar um bloco, se houver dúvida de que já existe, liste os blocos primeiro.
+- DURAÇÃO DO BLOCO: end_time deve ficar no MESMO dia do start_time, exceto quando o período realmente cruza a meia-noite (ex.: dormir 23:00 → 07:00 do dia seguinte). Se início e fim são horários do mesmo dia (ex.: 00:00 às 07:00), o fim é NO MESMO dia — nunca some um dia ao fim nesse caso.
 - Seja direta, calorosa e prática. Respostas curtas em português do Brasil. Confirme o que você efetivamente fez.`
 
 // Remove sintaxe de tool call que o Llama às vezes vaza no texto (<function=...>...</function>)
@@ -410,7 +411,18 @@ async function executeTool(
       }
       case "create_time_block": {
         const startT = normalizeDT(args.start_time, tzMin) as string
-        const endT = normalizeDT(args.end_time, tzMin) as string
+        let endT = normalizeDT(args.end_time, tzMin) as string
+        // Trava determinística: o modelo às vezes soma um dia ao fim indevidamente.
+        // Nenhum bloco pode durar mais de 24h; fim antes do início ganha +1 dia.
+        {
+          const s = new Date(startT)
+          let e2 = new Date(endT)
+          if (!isNaN(s.getTime()) && !isNaN(e2.getTime())) {
+            while (e2.getTime() - s.getTime() > 24 * 3_600_000) e2 = new Date(e2.getTime() - 24 * 3_600_000)
+            if (e2.getTime() <= s.getTime()) e2 = new Date(e2.getTime() + 24 * 3_600_000)
+            endT = e2.toISOString()
+          }
+        }
         // Proteção contra duplicação: mesmo título no mesmo horário já existe → não recria
         const { data: dup } = await supabase
           .from("time_blocks")
@@ -831,6 +843,28 @@ export async function POST(req: Request) {
   // Groq → loop com ferramentas (cria/edita/exclui de verdade)
   if (cfg.provider === "groq") {
     try {
+      // Briefing: chamada única SEM ferramentas (o contexto já foi injetado) —
+      // economiza muitos tokens do limite gratuito por minuto.
+      if (body.mode === "briefing") {
+        const res = await groqChat(cfg, {
+          messages: [{ role: "system", content: system }, ...messages],
+          max_tokens: 500,
+        })
+        if (!res.ok) {
+          if (res.status === 429) {
+            return new Response("__RATE_LIMIT__", {
+              headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
+            })
+          }
+          throw new Error(`Groq ${res.status}`)
+        }
+        const data = await res.json()
+        const text = data.choices?.[0]?.message?.content ?? "Olá! Como posso ajudar você hoje?"
+        return new Response(sanitizeOut(text), {
+          headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
+        })
+      }
+
       const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0)
       return new Response(sanitizeOut(finalText), {
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },

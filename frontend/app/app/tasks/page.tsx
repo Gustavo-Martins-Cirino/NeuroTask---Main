@@ -132,9 +132,24 @@ export default function TasksPage() {
     if (!open) setEditingTask(null)
   }
 
-  const inList = (t: Task) => (t.list_id ?? null) === activeListId
-  const active = tasks.filter((t) => inList(t) && t.status !== "completed" && t.status !== "cancelled")
-  const completed = tasks.filter((t) => inList(t) && t.status === "completed")
+  // Geral mostra TODAS as tarefas (agrupadas por seção); as demais abas filtram pela lista
+  const inScope = (t: Task) => activeList === GENERAL || (t.list_id ?? null) === activeListId
+  const active = tasks.filter((t) => inScope(t) && t.status !== "completed" && t.status !== "cancelled")
+  const completed = tasks.filter((t) => inScope(t) && t.status === "completed")
+
+  const groupsFor = (items: Task[]) => {
+    const groups: { key: string; label: string; items: Task[] }[] = []
+    const general = items.filter((t) => !t.list_id)
+    if (general.length) groups.push({ key: "__geral__", label: "Geral", items: general })
+    for (const l of lists) {
+      const its = items.filter((t) => t.list_id === l.id)
+      if (its.length) groups.push({ key: l.id, label: l.name, items: its })
+    }
+    const known = new Set(lists.map((l) => l.id))
+    const orphan = items.filter((t) => t.list_id && !known.has(t.list_id))
+    if (orphan.length) groups.push({ key: "__outras__", label: "Outras", items: orphan })
+    return groups
+  }
 
   const renderTasks = (items: Task[]) => (
     <div className={cn(view === "grid" ? "grid gap-3 sm:grid-cols-2" : "space-y-3")}>
@@ -244,6 +259,17 @@ export default function TasksPage() {
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <ListTodo className="h-12 w-12 text-muted-foreground/40" />
                 <p className="mt-4 text-muted-foreground">Nenhuma tarefa por aqui. Que tal adicionar uma?</p>
+              </div>
+            ) : activeList === GENERAL ? (
+              <div className="space-y-6">
+                {groupsFor(active).map((g) => (
+                  <section key={g.key}>
+                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {g.label} <span className="opacity-60">({g.items.length})</span>
+                    </h2>
+                    {renderTasks(g.items)}
+                  </section>
+                ))}
               </div>
             ) : (
               renderTasks(active)
