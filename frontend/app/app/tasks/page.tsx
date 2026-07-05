@@ -9,6 +9,7 @@ import { TaskDialog } from "@/components/task-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
 import { awardXp, xpForTask } from "@/lib/gamification"
+import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import type { Task, TaskStatus, TaskList } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -109,6 +110,26 @@ export default function TasksPage() {
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
     const previous = tasks.find((t) => t.id === taskId)
     const wasCompleted = previous?.status === "completed"
+
+    // Tarefa recorrente concluída → ganha XP e o prazo avança para a próxima ocorrência
+    if (status === "completed" && !wasCompleted && previous?.recurrence_rule) {
+      const base = previous.due_date ? new Date(previous.due_date) : new Date()
+      const next = nextFutureOccurrence(base, previous.recurrence_rule)
+      if (next) {
+        await supabase
+          .from("tasks")
+          .update({ status: "pending", completed_at: null, due_date: next.toISOString() })
+          .eq("id", taskId)
+        awardXp(xpForTask(previous.priority))
+        toast.success("Tarefa recorrente concluída! 🔁", {
+          description: `Próxima ocorrência: ${next.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })}`,
+        })
+        window.dispatchEvent(new Event("neurotask:tasks-changed"))
+        fetchTasks()
+        return
+      }
+    }
+
     const updateData: Partial<Task> = { status }
     updateData.completed_at = status === "completed" ? new Date().toISOString() : null
     await supabase.from("tasks").update(updateData).eq("id", taskId)

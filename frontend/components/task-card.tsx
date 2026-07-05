@@ -16,8 +16,9 @@ import { Confetti } from "@/components/confetti"
 import { motion } from "framer-motion"
 import {
   MoreHorizontal, Pencil, Trash2, Clock, AlertCircle,
-  ArrowUp, ArrowRight, ArrowDown, Check, Play, Star,
+  ArrowUp, ArrowRight, ArrowDown, Check, Play, Star, Repeat,
 } from "lucide-react"
+import { recurrenceLabel } from "@/lib/task-recurrence"
 
 interface TaskCardProps {
   task: Task
@@ -179,6 +180,13 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleFavor
               {task.estimated_minutes >= 60
                 ? `${task.estimated_minutes / 60}h`
                 : `${task.estimated_minutes}min`}
+            </Badge>
+          )}
+
+          {task.recurrence_rule && recurrenceLabel(task.recurrence_rule) && (
+            <Badge variant="secondary" className="bg-primary/10 text-xs text-primary">
+              <Repeat className="mr-1 h-3 w-3" />
+              {recurrenceLabel(task.recurrence_rule)}
             </Badge>
           )}
 

@@ -19,7 +19,10 @@ export function XpBar({
   const progress = Math.min(100, Math.max(0, (currentXp / xpForNextLevel) * 100))
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div
+      className={cn("flex items-center gap-3", className)}
+      title="Conclua tarefas para ganhar XP — Baixa +5 · Média +10 · Alta +20 · Urgente +30. A cada 100 XP você sobe de nível!"
+    >
       <div className="flex items-center gap-2">
         <div className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary/15 px-1.5 text-xs font-bold text-primary">
           {level}

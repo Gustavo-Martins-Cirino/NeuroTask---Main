@@ -59,6 +59,8 @@ export default function DashboardPage() {
   })
   const [userName, setUserName] = useState("")
   const [reminders, setReminders] = useState<Reminder[]>([])
+  const [todayBlocks, setTodayBlocks] = useState<{ id: string; title: string; start_time: string; end_time: string }[]>([])
+  const [todayTasks, setTodayTasks] = useState<{ id: string; title: string; priority: string }[]>([])
   const supabase = createClient()
 
   useEffect(() => {
@@ -68,32 +70,45 @@ export default function DashboardPage() {
         setUserName(user.user_metadata?.name || user.email?.split("@")[0] || "")
       }
 
-      const { data: tasks } = await supabase
-        .from("tasks")
-        .select("status")
-
-      if (tasks) {
-        setStats({
-          totalTasks: tasks.length,
-          completedTasks: tasks.filter((t) => t.status === "completed").length,
-          pendingTasks: tasks.filter((t) => t.status === "pending" || t.status === "in_progress").length,
-          todayBlocks: 0,
-        })
-      }
-
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
 
+      const { data: tasks } = await supabase
+        .from("tasks")
+        .select("id, title, status, priority, due_date")
+
+      if (tasks) {
+        setStats((prev) => ({
+          ...prev,
+          totalTasks: tasks.length,
+          completedTasks: tasks.filter((t) => t.status === "completed").length,
+          pendingTasks: tasks.filter((t) => t.status === "pending" || t.status === "in_progress").length,
+        }))
+        setTodayTasks(
+          tasks
+            .filter(
+              (t) =>
+                (t.status === "pending" || t.status === "in_progress") &&
+                t.due_date &&
+                new Date(t.due_date) >= today &&
+                new Date(t.due_date) < tomorrow
+            )
+            .slice(0, 5)
+        )
+      }
+
       const { data: blocks } = await supabase
         .from("time_blocks")
-        .select("id")
+        .select("id, title, start_time, end_time")
         .gte("start_time", today.toISOString())
         .lt("start_time", tomorrow.toISOString())
+        .order("start_time", { ascending: true })
 
       if (blocks) {
         setStats((prev) => ({ ...prev, todayBlocks: blocks.length }))
+        setTodayBlocks(blocks)
       }
 
       const { data: rem } = await supabase
@@ -187,6 +202,85 @@ export default function DashboardPage() {
                 </div>
               </motion.div>
             ))}
+          </motion.div>
+
+          {/* Agora + Tarefas de hoje (preenchem o dia de forma útil) */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="grid gap-4 md:grid-cols-2"
+          >
+            <div className="rounded-2xl border border-border/40 bg-card/50 p-5 backdrop-blur-sm">
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                <Clock className="h-4 w-4" /> Agora
+              </h3>
+              {(() => {
+                const nowMs = Date.now()
+                const fmt = (iso: string) =>
+                  new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                const current = todayBlocks.find(
+                  (b) => new Date(b.start_time).getTime() <= nowMs && new Date(b.end_time).getTime() > nowMs
+                )
+                const next = todayBlocks.find((b) => new Date(b.start_time).getTime() > nowMs)
+                if (current)
+                  return (
+                    <div className="mt-3">
+                      <p className="font-semibold text-foreground">{current.title}</p>
+                      <p className="text-sm text-muted-foreground">até {fmt(current.end_time)}</p>
+                      {next && (
+                        <p className="mt-2 text-xs text-muted-foreground/70">
+                          Depois: {next.title} às {fmt(next.start_time)}
+                        </p>
+                      )}
+                    </div>
+                  )
+                if (next)
+                  return (
+                    <div className="mt-3">
+                      <p className="text-sm text-muted-foreground">Próximo bloco</p>
+                      <p className="font-semibold text-foreground">{next.title}</p>
+                      <p className="text-sm text-muted-foreground">às {fmt(next.start_time)}</p>
+                    </div>
+                  )
+                return (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Nenhum bloco pela frente hoje.{" "}
+                    <Link href="/app/calendar" className="text-primary hover:underline">
+                      Planejar o dia
+                    </Link>
+                  </p>
+                )
+              })()}
+            </div>
+
+            <div className="rounded-2xl border border-border/40 bg-card/50 p-5 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  <ListTodo className="h-4 w-4" /> Tarefas de hoje
+                </h3>
+                <Link href="/app/tasks" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                  Ver todas <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              {todayTasks.length === 0 ? (
+                <p className="mt-3 text-sm text-muted-foreground">Nada com prazo para hoje. 🎉</p>
+              ) : (
+                <ul className="mt-3 space-y-1.5">
+                  {todayTasks.map((t) => (
+                    <li key={t.id} className="flex items-center gap-2 text-sm text-foreground">
+                      <span
+                        className={cn(
+                          "h-2 w-2 shrink-0 rounded-full",
+                          t.priority === "urgent" ? "bg-red-500" : t.priority === "high" ? "bg-amber-500" : t.priority === "medium" ? "bg-blue-500" : "bg-emerald-500"
+                        )}
+                      />
+                      <span className="truncate">{t.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </motion.div>
 
           {orderedReminders.length > 0 && (

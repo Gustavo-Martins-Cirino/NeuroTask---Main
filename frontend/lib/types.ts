@@ -14,6 +14,7 @@ export interface Task {
   completed_at: string | null
   list_id: string | null
   is_favorite: boolean
+  recurrence_rule: string | null // daily | weekly | monthly | yearly | every:N (dias)
   created_at: string
   updated_at: string
 }

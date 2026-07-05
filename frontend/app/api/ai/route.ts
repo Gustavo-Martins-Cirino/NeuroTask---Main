@@ -245,6 +245,27 @@ function normalizeDT(v: unknown, tzMin: number): unknown {
   return v
 }
 
+// Normaliza título para comparação (minúsculas, sem acentos/pontuação)
+function normTitle(s: unknown): string {
+  return String(s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+// Títulos "iguais na prática" (pega erros de digitação tipo "manhã" vs "manhão")
+function similarTitles(a: string, b: string): boolean {
+  const na = normTitle(a)
+  const nb = normTitle(b)
+  if (!na || !nb) return false
+  if (na === nb) return true
+  if (na.length >= 6 && nb.length >= 6 && (na.includes(nb) || nb.includes(na))) return true
+  return false
+}
+
 // Verifica choque de horário e proximidade (< 15 min) com outros blocos do mesmo dia
 async function checkConflicts(
   supabase: SupabaseClient,
@@ -336,6 +357,16 @@ async function executeTool(
     switch (name) {
       case "create_task": {
         const dueDate = normalizeDT(args.due_date, tzMin)
+        // Anti-duplicação: tarefa pendente com título igual/parecido já existe → não recria
+        const { data: existing } = await supabase
+          .from("tasks")
+          .select("id, title")
+          .not("status", "in", "(completed,cancelled)")
+          .limit(30)
+        const dupTask = (existing ?? []).find((t) => similarTitles(t.title, String(args.title ?? "")))
+        if (dupTask) {
+          return { ok: true, created: dupTask, note: `Já existe uma tarefa igual/parecida ("${dupTask.title}") — não criei outra.` }
+        }
         const { data, error } = await supabase
           .from("tasks")
           .insert({
@@ -423,15 +454,32 @@ async function executeTool(
             endT = e2.toISOString()
           }
         }
-        // Proteção contra duplicação: mesmo título no mesmo horário já existe → não recria
-        const { data: dup } = await supabase
-          .from("time_blocks")
-          .select("id")
-          .eq("title", args.title)
-          .eq("start_time", new Date(startT).toISOString())
-          .limit(1)
-        if (dup && dup.length > 0) {
-          return { ok: true, created: dup[0], note: "Esse bloco já existia nesse horário — não criei de novo." }
+        // Anti-duplicação: bloco de título igual/parecido no mesmo dia, sobrepondo
+        // ou colado (< 45 min) → não recria (pega o caso "café da manhã"/"manhão")
+        {
+          const s = new Date(startT)
+          const e2 = new Date(endT)
+          const dayIni = new Date(s)
+          dayIni.setHours(0, 0, 0, 0)
+          const dayFim = new Date(dayIni)
+          dayFim.setDate(dayFim.getDate() + 1)
+          const { data: sameDay } = await supabase
+            .from("time_blocks")
+            .select("id, title, start_time, end_time")
+            .gte("start_time", dayIni.toISOString())
+            .lt("start_time", dayFim.toISOString())
+          const GAP = 45 * 60 * 1000
+          const dup = (sameDay ?? []).find((b) => {
+            if (!similarTitles(b.title, String(args.title ?? ""))) return false
+            const bs = new Date(b.start_time).getTime()
+            const be = new Date(b.end_time).getTime()
+            const overlap = s.getTime() < be && e2.getTime() > bs
+            const gap = s.getTime() >= be ? s.getTime() - be : bs - e2.getTime()
+            return overlap || (gap >= 0 && gap <= GAP)
+          })
+          if (dup) {
+            return { ok: true, created: dup, note: `Já existe um bloco igual/parecido ("${dup.title}") nesse período — não criei outro.` }
+          }
         }
         const { data, error } = await supabase
           .from("time_blocks")
@@ -529,12 +577,14 @@ function confirm(name: string, args: ToolArgs, result: unknown): string {
   if (!r?.ok) return `⚠️ Não consegui completar "${name}": ${r?.error ?? "erro desconhecido"}.`
   switch (name) {
     case "create_task": {
-      const r2 = result as { scheduled?: boolean; warning?: string }
+      const r2 = result as { scheduled?: boolean; warning?: string; note?: string }
+      if (r2?.note) return `ℹ️ ${r2.note}`
       return `✅ Criei a tarefa "${args.title}"${r2?.scheduled ? " e agendei no calendário" : ""}.${r2?.warning ? " " + r2.warning : ""}`
     }
     case "create_time_block": {
-      const w = (result as { warning?: string })?.warning
-      return `✅ Agendei "${args.title}" no calendário.${w ? " " + w : ""}`
+      const r3 = result as { warning?: string; note?: string }
+      if (r3?.note) return `ℹ️ ${r3.note}`
+      return `✅ Agendei "${args.title}" no calendário.${r3?.warning ? " " + r3.warning : ""}`
     }
     case "update_task":
       return `✅ Atualizei a tarefa.`

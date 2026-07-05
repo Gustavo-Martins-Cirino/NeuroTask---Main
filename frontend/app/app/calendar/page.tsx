@@ -414,6 +414,13 @@ export default function CalendarPage() {
         <div className="flex items-center justify-between gap-4 px-6 py-3">
           <div className="flex items-center gap-2">
             <button
+              onClick={() => openNew()}
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Novo bloco
+            </button>
+            <button
               onClick={goToday}
               className="rounded-lg border border-border/50 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
             >
@@ -537,7 +544,7 @@ export default function CalendarPage() {
                       >
                         <button
                           onClick={(e) => { e.stopPropagation(); goToDay(day) }}
-                          title={hol}
+                          title={hol ? `${hol} · Abrir o dia` : "Abrir o dia"}
                           className={cn(
                             "ml-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors hover:bg-accent",
                             today ? "bg-primary text-primary-foreground hover:bg-primary" : hol ? "text-emerald-500" : outside ? "text-muted-foreground/50" : "text-foreground"
@@ -656,6 +663,8 @@ export default function CalendarPage() {
                               // não deixa o bloco ultrapassar o fim do dia (meia-noite fica no topo do dia seguinte)
                               const height = Math.max(24, Math.min(rawHeight, 24 * HOUR_HEIGHT - top))
                               const dragging = !virtual && drag?.id === block.id
+                              // Blocos longos (sono/rotina, ≥ 5h) ficam discretos p/ não dominar a tela
+                              const isLong = end.getTime() - start.getTime() >= 5 * 3_600_000
                               return (
                                 <div
                                   key={occ.key}
@@ -688,8 +697,8 @@ export default function CalendarPage() {
                                   style={{
                                     top,
                                     height,
-                                    backgroundColor: `${block.color}22`,
-                                    borderLeft: `3px solid ${block.color}`,
+                                    backgroundColor: `${block.color}${isLong ? "0d" : "22"}`,
+                                    borderLeft: `3px solid ${block.color}${isLong ? "66" : ""}`,
                                   }}
                                 >
                                   <p className="flex items-center gap-1 truncate text-xs font-semibold" style={{ color: block.color }}>

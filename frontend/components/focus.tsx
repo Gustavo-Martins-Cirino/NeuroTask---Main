@@ -4,6 +4,7 @@ import { createContext, useContext, useCallback, useEffect, useRef, useState } f
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
 import { awardXp, xpForTask } from "@/lib/gamification"
+import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { SoundMixer } from "@/components/sound-mixer"
 import type { Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -149,7 +150,21 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
 
   const completeTask = async () => {
     if (focusTask) {
-      await supabase.from("tasks").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", focusTask.id)
+      if (focusTask.recurrence_rule) {
+        // Tarefa recorrente: o prazo avança para a próxima ocorrência
+        const base = focusTask.due_date ? new Date(focusTask.due_date) : new Date()
+        const next = nextFutureOccurrence(base, focusTask.recurrence_rule)
+        await supabase
+          .from("tasks")
+          .update(
+            next
+              ? { status: "pending", completed_at: null, due_date: next.toISOString() }
+              : { status: "completed", completed_at: new Date().toISOString() }
+          )
+          .eq("id", focusTask.id)
+      } else {
+        await supabase.from("tasks").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", focusTask.id)
+      }
       awardXp(xpForTask(focusTask.priority))
       window.dispatchEvent(new Event("neurotask:tasks-changed"))
     }

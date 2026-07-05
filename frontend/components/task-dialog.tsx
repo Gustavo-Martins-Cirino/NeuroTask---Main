@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
 import { DatePicker } from "@/components/date-picker"
+import { RECURRENCE_OPTIONS } from "@/lib/task-recurrence"
 import type { Task, TaskPriority } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Loader2, ArrowDown, ArrowRight, ArrowUp, AlertCircle, Minus, Plus } from "lucide-react"
@@ -63,6 +64,8 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
   const [dueMode, setDueMode] = useState<DueMode>("none")
   const [days, setDays] = useState(3)
   const [customDate, setCustomDate] = useState("")
+  const [recurrence, setRecurrence] = useState("none")
+  const [everyDays, setEveryDays] = useState(2)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
@@ -81,6 +84,15 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
       setCustomDate("")
     }
     setDays(3)
+    const rule = task?.recurrence_rule ?? "none"
+    const everyMatch = rule.match(/^every:(\d+)$/)
+    if (everyMatch) {
+      setRecurrence("every")
+      setEveryDays(Math.max(1, Number(everyMatch[1])))
+    } else {
+      setRecurrence(rule)
+      setEveryDays(2)
+    }
     setError(null)
   }, [open, task])
 
@@ -125,6 +137,8 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
       estimated_minutes: estimated,
       due_date: resolveDueDate(),
       list_id: task ? task.list_id : listId,
+      recurrence_rule:
+        recurrence === "none" ? null : recurrence === "every" ? `every:${Math.max(1, everyDays)}` : recurrence,
       user_id: user.id,
     }
 
@@ -257,6 +271,48 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
               </div>
               {dueMode === "date" && (
                 <DatePicker value={customDate} onChange={setCustomDate} />
+              )}
+            </div>
+
+            {/* Repetição */}
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Repetir</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                {RECURRENCE_OPTIONS.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => setRecurrence(o.value)}
+                    className={cn(chipBase, recurrence === o.value ? chipOn : chipOff)}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+                {/* Personalizado: a cada N dias */}
+                <div className={cn("flex items-center gap-1 rounded-full border px-1 py-0.5", recurrence === "every" ? chipOn : chipOff)}>
+                  <button
+                    type="button"
+                    onClick={() => { setRecurrence("every"); setEveryDays((d) => Math.max(1, d - 1)) }}
+                    className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-accent"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <button type="button" onClick={() => setRecurrence("every")} className="min-w-20 text-center text-xs font-medium">
+                    {recurrence === "every" ? `a cada ${everyDays} dia${everyDays > 1 ? "s" : ""}` : "Personalizado"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setRecurrence("every"); setEveryDays((d) => d + 1) }}
+                    className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-accent"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+              {recurrence !== "none" && (
+                <p className="text-[11px] text-muted-foreground/70">
+                  Ao concluir, o prazo avança automaticamente para a próxima ocorrência.
+                </p>
               )}
             </div>
 
