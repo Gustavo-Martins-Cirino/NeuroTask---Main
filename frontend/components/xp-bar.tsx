@@ -32,7 +32,7 @@ export function XpBar({
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="hidden items-center gap-2 sm:flex">
         <div className="relative h-1.5 w-24 overflow-hidden rounded-full bg-muted">
           <motion.div
             className="absolute inset-y-0 left-0 rounded-full bg-primary"

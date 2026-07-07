@@ -162,7 +162,7 @@ export default function DashboardPage() {
     <div className="flex min-h-screen flex-col">
       <Header title="Início" icon={<LayoutDashboard className="h-4 w-4" />} />
 
-      <div className="flex-1 px-6 py-8 md:px-10">
+      <div className="flex-1 px-4 py-8 md:px-10">
         <div className="mx-auto w-full max-w-5xl space-y-10">
           <motion.div
             initial={{ opacity: 0, y: 8 }}

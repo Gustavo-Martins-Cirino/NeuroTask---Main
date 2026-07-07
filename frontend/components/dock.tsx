@@ -111,13 +111,54 @@ export function Dock() {
     )
   }
 
+  const renderMobileItem = (item: (typeof allItems)[number]) => {
+    const isActive =
+      pathname === item.href ||
+      (item.href !== "/app" && pathname.startsWith(item.href))
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-label={item.label}
+        className={cn(
+          "relative flex h-14 flex-1 items-center justify-center transition-colors",
+          isActive ? "text-primary" : "text-muted-foreground"
+        )}
+      >
+        {isActive && (
+          <motion.span
+            layoutId="dock-active-dot"
+            className="absolute top-1.5 h-1 w-6 rounded-full bg-primary"
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+          />
+        )}
+        <item.icon className="h-5 w-5" />
+      </Link>
+    )
+  }
+
   return (
+    <>
+    {/* Barra inferior (mobile) */}
+    <nav className="fixed inset-x-0 bottom-0 z-50 flex items-stretch justify-around border-t border-border/50 bg-card/90 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+      {navItems.map(renderMobileItem)}
+      <button
+        onClick={() => openFocus()}
+        aria-label="Modo Foco"
+        className="flex h-14 flex-1 items-center justify-center text-muted-foreground transition-colors"
+      >
+        <Zap className="h-5 w-5" />
+      </button>
+      {bottomItems.map(renderMobileItem)}
+    </nav>
+
+    {/* Dock lateral (desktop) */}
     <motion.aside
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
       animate={{ width: expanded ? 232 : 72 }}
       transition={{ type: "spring", stiffness: 400, damping: 35 }}
-      className="fixed left-4 top-1/2 z-50 -translate-y-1/2"
+      className="fixed left-4 top-1/2 z-50 hidden -translate-y-1/2 md:block"
     >
       <nav className="flex flex-col gap-1 rounded-2xl border border-border/50 bg-card/80 p-2 shadow-lg backdrop-blur-xl">
         <div className="mb-2 flex h-10 items-center gap-3 overflow-hidden rounded-xl px-1">
@@ -162,5 +203,6 @@ export function Dock() {
         {bottomItems.map(renderItem)}
       </nav>
     </motion.aside>
+    </>
   )
 }

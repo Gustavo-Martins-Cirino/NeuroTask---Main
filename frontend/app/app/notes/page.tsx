@@ -99,9 +99,9 @@ export default function NotesPage() {
     <div className="flex min-h-screen flex-col">
       <Header title="Notas" icon={<FileText className="h-4 w-4" />} />
 
-      <div className="flex flex-1 gap-4 px-6 py-4">
+      <div className="flex flex-1 flex-col gap-4 px-3 py-4 md:flex-row md:px-6">
         {/* Lista */}
-        <aside className="flex w-64 shrink-0 flex-col gap-2">
+        <aside className="flex w-full shrink-0 flex-col gap-2 md:w-64">
           <button
             onClick={createNote}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02]"
@@ -110,7 +110,7 @@ export default function NotesPage() {
             Nova nota
           </button>
 
-          <div className="scrollbar-thin flex-1 space-y-1 overflow-y-auto">
+          <div className="scrollbar-thin max-h-48 flex-1 space-y-1 overflow-y-auto md:max-h-none">
             {loading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -150,7 +150,7 @@ export default function NotesPage() {
         </aside>
 
         {/* Editor */}
-        <main className="flex flex-1 flex-col rounded-2xl border border-border/40 bg-card/30">
+        <main className="flex min-h-[55vh] flex-1 flex-col rounded-2xl border border-border/40 bg-card/30 md:min-h-0">
           {active ? (
             <motion.div
               key={active.id}

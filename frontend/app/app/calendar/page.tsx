@@ -411,8 +411,8 @@ export default function CalendarPage() {
 
       <div className="flex flex-1 flex-col">
         {/* Toolbar */}
-        <div className="flex items-center justify-between gap-4 px-6 py-3">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 md:gap-4 md:px-6">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => openNew()}
               className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
@@ -460,9 +460,9 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="flex flex-1 gap-4 px-6 pb-6">
+        <div className="flex flex-1 flex-col gap-4 px-3 pb-6 md:px-6 lg:flex-row">
           {/* Calendar grid */}
-          <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/30">
+          <div className="flex min-h-[65vh] flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/30 lg:min-h-0">
             {view === "ano" ? (
               <div className="scrollbar-thin flex-1 overflow-y-auto p-4">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -511,7 +511,8 @@ export default function CalendarPage() {
                 </div>
               </div>
             ) : view === "mes" ? (
-              <div className="flex flex-1 flex-col">
+              <div className="flex min-h-0 flex-1 flex-col overflow-x-auto">
+              <div className="flex min-h-0 min-w-[560px] flex-1 flex-col md:min-w-0">
                 {/* Cabeçalho de dias da semana */}
                 <div className="grid grid-cols-7 border-b border-border/40">
                   {DAY_LABELS.map((l) => (
@@ -575,8 +576,10 @@ export default function CalendarPage() {
                   })}
                 </div>
               </div>
+              </div>
             ) : (
-              <>
+              <div className="flex min-h-0 flex-1 flex-col overflow-x-auto">
+              <div className={cn("flex min-h-0 flex-1 flex-col", view === "semana" && "min-w-[760px] md:min-w-0")}>
                 {/* Day headers (reserva o espaço da barra de rolagem p/ alinhar com o corpo) */}
                 <div className="flex overflow-y-auto border-b border-border/40 [scrollbar-gutter:stable]">
                   <div className="flex w-16 shrink-0 items-center justify-center py-3 text-[10px] font-medium uppercase text-muted-foreground">
@@ -725,7 +728,8 @@ export default function CalendarPage() {
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
+              </div>
             )}
           </div>
 
@@ -767,6 +771,12 @@ export default function CalendarPage() {
               )}
             </AnimatePresence>
           </motion.aside>
+
+          {/* Painel contextual (mobile — abaixo do calendário) */}
+          <div className="rounded-2xl border border-border/40 bg-card/30 p-4 lg:hidden">
+            <p className="mb-4 text-sm font-semibold">Painel Contextual</p>
+            <ContextualNotes anchor={anchor} />
+          </div>
         </div>
       </div>
 

@@ -45,7 +45,7 @@ export default function FavoritesPage() {
     <div className="flex min-h-screen flex-col">
       <Header title="Favoritos" icon={<Star className="h-4 w-4" />} />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-6">
+      <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 md:px-6">
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

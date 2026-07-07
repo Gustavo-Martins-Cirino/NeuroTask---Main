@@ -205,7 +205,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 right-6 z-40 w-64 rounded-2xl border border-border/50 bg-card/90 p-4 shadow-lg backdrop-blur-xl"
+            className="fixed bottom-20 right-4 z-40 w-64 rounded-2xl border border-border/50 bg-card/90 p-4 shadow-lg backdrop-blur-xl md:bottom-6 md:right-6"
           >
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
@@ -352,7 +352,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             exit={{ opacity: 0, scale: 0.9, y: 12 }}
             onClick={() => setMinimized(false)}
             aria-label="Restaurar modo foco"
-            className="fixed bottom-6 right-6 z-[110] flex items-center gap-3 rounded-2xl border border-border/50 bg-card/90 px-4 py-3 shadow-lg backdrop-blur-xl transition-transform hover:scale-[1.03]"
+            className="fixed bottom-20 right-4 z-[110] flex items-center gap-3 rounded-2xl border border-border/50 bg-card/90 px-4 py-3 shadow-lg backdrop-blur-xl transition-transform hover:scale-[1.03] md:bottom-6 md:right-6"
           >
             <span className="relative flex h-2.5 w-2.5 shrink-0">
               {running && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />}

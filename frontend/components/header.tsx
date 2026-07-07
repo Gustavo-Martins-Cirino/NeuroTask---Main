@@ -76,18 +76,18 @@ export function Header({ title, icon, children }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-background/70 px-6 backdrop-blur-xl">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 bg-background/70 px-3 backdrop-blur-xl md:px-6">
+      <div className="flex min-w-0 items-center gap-2 md:gap-3">
         {icon && (
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary sm:flex">
             {icon}
           </span>
         )}
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">{title}</h1>
+        <h1 className="truncate text-base font-semibold tracking-tight text-foreground md:text-lg">{title}</h1>
         {children}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-2 md:gap-4">
         <XpBar
           level={gamification.level}
           currentXp={gamification.currentXp}

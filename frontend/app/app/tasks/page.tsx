@@ -204,7 +204,7 @@ export default function TasksPage() {
         </Button>
       </Header>
 
-      <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-6">
+      <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 md:px-6">
         {/* Listas + visualização */}
         <div className="mb-5 flex items-center justify-between gap-3">
           <div className="scrollbar-thin flex items-center gap-1.5 overflow-x-auto">

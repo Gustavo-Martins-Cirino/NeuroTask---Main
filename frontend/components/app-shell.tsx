@@ -15,7 +15,7 @@ export function AppShell({ children }: AppShellProps) {
       <ReminderNotifier />
       <div className="min-h-screen bg-background">
         <Dock />
-        <main className="pl-24">
+        <main className="pb-20 md:pb-0 md:pl-24">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
