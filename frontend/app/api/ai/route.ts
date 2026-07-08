@@ -23,13 +23,14 @@ Seu papel:
 - PRECISÃO: nunca invente uma tarefa a partir de uma fala solta ou de um provável erro de transcrição de voz. Na dúvida, pergunte.
 - LINGUAGEM NATURAL: ao confirmar ou mencionar horários, fale de forma natural em português (ex.: "amanhã das 8h às 9h", "dia 15 deste mês"). NUNCA leia datas em formato técnico/ISO/americano (nada de "2026-06-15T08:00").
 - PROATIVIDADE: não espere o usuário perguntar. Ao ver a agenda dele, aponte conflitos, intervalos curtos e dê sugestões úteis por conta própria (energia, sono, preparação, foco).
-- PLANEJAMENTO RETROATIVO: quando o usuário citar um compromisso com horário e pedir para planejar o dia/noite em função dele (ex.: "tenho faculdade amanhã às 8:30, organiza pra mim"), chame plan_day_backwards com confirm=false. O SISTEMA calcula a cadeia (dormir → acordar → preparo → refeição → deslocamento → compromisso) usando as atividades de rotina e o sono desejado do usuário. Apresente as linhas do campo "proposal" em linguagem natural e pergunte "Posso confirmar?". SÓ após o sim explícito, chame plan_day_backwards de novo com os MESMOS argumentos e confirm=true para criar os blocos. NUNCA calcule essa cadeia você mesmo nem crie os blocos um a um.
+- PLANEJAMENTO RETROATIVO: quando o usuário citar um compromisso com horário e pedir para planejar o dia/noite em função dele, chame plan_day_backwards com confirm=false. O SISTEMA calcula a cadeia (dormir → acordar → preparo → refeição → deslocamento → compromisso) usando as atividades de rotina e o sono desejado do usuário. Apresente as linhas do campo "proposal" em linguagem natural e pergunte "Posso confirmar?". SÓ após o sim explícito, chame plan_day_backwards de novo com os MESMOS argumentos e confirm=true para criar os blocos. NUNCA calcule essa cadeia você mesmo nem crie os blocos um a um.
 - Para editar ou excluir, primeiro liste para descobrir o id correto, depois aja.
 - FIDELIDADE AOS DADOS: ao responder qualquer pergunta sobre tarefas, blocos ou notas do usuário (ex.: "quais tarefas estão atrasadas?"), SEMPRE chame a ferramenta de listagem correspondente antes de responder e cite APENAS itens que vieram no resultado. NUNCA invente itens de exemplo. Se a lista vier vazia ou nada corresponder, diga claramente "não encontrei" — isso é uma resposta correta e suficiente.
 - ATRASADA: o resultado de list_tasks traz o campo booleano "overdue" já calculado pelo sistema. Uma tarefa está atrasada SE E SOMENTE SE overdue = true. NUNCA calcule atraso comparando datas você mesmo — confie apenas no campo overdue. Se nenhuma tarefa tiver overdue = true, diga que não há tarefas atrasadas.
 - NÃO DUPLIQUE: ao criar uma tarefa com horário (due_date com hora), o app já cria automaticamente o bloco no calendário — NÃO chame create_time_block para a mesma coisa. Antes de criar um bloco, se houver dúvida de que já existe, liste os blocos primeiro.
 - DURAÇÃO DO BLOCO: end_time deve ficar no MESMO dia do start_time, exceto quando o período realmente cruza a meia-noite (ex.: dormir 23:00 → 07:00 do dia seguinte). Se início e fim são horários do mesmo dia (ex.: 00:00 às 07:00), o fim é NO MESMO dia — nunca some um dia ao fim nesse caso.
-- Seja direta, calorosa e prática. Respostas curtas em português do Brasil. Confirme o que você efetivamente fez.`
+- Seja direta, calorosa e prática. Respostas curtas em português do Brasil. Confirme o que você efetivamente fez.
+- Os exemplos citados nestas instruções são ILUSTRATIVOS — NUNCA os trate como dados reais do usuário nem os mencione como se fossem compromissos/tarefas dele. Fale apenas do que vier das ferramentas ou do que o usuário disser.`
 
 // Remove sintaxe de tool call que o Llama às vezes vaza no texto (<function=...>...</function>)
 function sanitizeOut(text: string): string {
@@ -179,7 +180,7 @@ const TOOLS = [
       parameters: {
         type: "object",
         properties: {
-          anchor_title: { type: "string", description: "Nome do compromisso âncora (ex.: Faculdade)" },
+          anchor_title: { type: "string", description: "Nome do compromisso âncora, exatamente como o usuário disse" },
           anchor_start: { type: "string", description: "Início do compromisso em ISO 8601 com hora" },
           anchor_end: { type: ["string", "null"], description: "Fim do compromisso em ISO 8601 (opcional; padrão 1h após o início)" },
           confirm: { type: "boolean", description: "false = só propor; true = criar os blocos (somente após confirmação do usuário)" },
@@ -364,44 +365,83 @@ async function checkConflicts(
   return null
 }
 
-// Lê o estado atual do usuário (para a IA ser proativa no briefing)
-async function gatherContext(supabase: SupabaseClient, tzMin: number): Promise<string> {
-  const local = new Date(Date.now() - tzMin * 60000)
-  const today = `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`
-  const dayStart = new Date(Date.now())
-  dayStart.setHours(0, 0, 0, 0)
-  const in2 = new Date(dayStart)
-  in2.setDate(in2.getDate() + 2)
+// Briefing do dia 100% DETERMINÍSTICO — zero chamada de IA: sem alucinação,
+// sem gastar limite de tokens. A "voz" da Neuro é montada por template a
+// partir dos dados reais do usuário.
+async function buildBriefing(supabase: SupabaseClient, tzMin: number): Promise<string> {
+  const nowLoc = new Date(Date.now() - tzMin * 60_000)
+  const y = nowLoc.getUTCFullYear()
+  const mo = nowLoc.getUTCMonth()
+  const d = nowLoc.getUTCDate()
+  const h = nowLoc.getUTCHours()
+  const greet = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite"
+  const todayKey = `${y}-${String(mo + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
 
-  const [tasksR, blocksR, remR, favTR, favNR] = await Promise.all([
-    supabase.from("tasks").select("title, priority").not("status", "in", "(completed,cancelled)").limit(15),
-    supabase.from("time_blocks").select("title, start_time, end_time").gte("start_time", dayStart.toISOString()).lt("start_time", in2.toISOString()).order("start_time", { ascending: true }),
-    supabase.from("reminders").select("content, remind_time").eq("remind_date", today),
-    supabase.from("tasks").select("title").eq("is_favorite", true).limit(8),
-    supabase.from("notes").select("title").eq("is_favorite", true).limit(8),
+  // meia-noite local do usuário em tempo real (epoch)
+  const dayStart = new Date(Date.UTC(y, mo, d) + tzMin * 60_000)
+  const dayEnd = new Date(dayStart.getTime() + 24 * 3_600_000)
+  const twoDays = new Date(dayStart.getTime() + 48 * 3_600_000)
+
+  const [blocksR, tasksR, remR] = await Promise.all([
+    supabase
+      .from("time_blocks")
+      .select("title, start_time, end_time")
+      .gte("start_time", dayStart.toISOString())
+      .lt("start_time", twoDays.toISOString())
+      .order("start_time", { ascending: true }),
+    supabase.from("tasks").select("title, due_date").not("status", "in", "(completed,cancelled)").limit(30),
+    supabase.from("reminders").select("content, remind_time").eq("remind_date", todayKey),
   ])
 
-  const fmt = (iso: string) => {
-    const loc = new Date(new Date(iso).getTime() - tzMin * 60000)
-    return `${String(loc.getUTCHours()).padStart(2, "0")}:${String(loc.getUTCMinutes()).padStart(2, "0")}`
-  }
-
-  const lines: string[] = [`Hoje é ${today}.`]
   const blocks = blocksR.data ?? []
-  if (blocks.length) {
-    lines.push("Blocos no calendário (hoje/amanhã):")
-    for (const b of blocks) lines.push(`- ${fmt(b.start_time)}–${fmt(b.end_time)} ${b.title}`)
-  } else {
-    lines.push("Nenhum bloco agendado para hoje/amanhã.")
-  }
-  const tasks = tasksR.data ?? []
-  if (tasks.length) lines.push("Tarefas pendentes: " + tasks.map((t) => t.title).join(", "))
-  const rem = remR.data ?? []
-  if (rem.length) lines.push("Lembretes de hoje: " + rem.map((r) => `${r.remind_time ? r.remind_time.slice(0, 5) + " " : ""}${r.content}`).join("; "))
-  const favs = [...(favTR.data ?? []).map((f) => f.title), ...(favNR.data ?? []).map((f) => f.title)].filter(Boolean)
-  if (favs.length) lines.push("Favoritos do usuário (dê atenção): " + favs.join(", "))
+  const todayBlocks = blocks.filter((b) => new Date(b.start_time).getTime() < dayEnd.getTime())
+  const tomorrowBlocks = blocks.filter((b) => new Date(b.start_time).getTime() >= dayEnd.getTime())
 
-  return lines.join("\n")
+  const out: string[] = [`${greet}! Aqui está o panorama do seu dia:`]
+
+  if (todayBlocks.length === 0) {
+    out.push("Sua agenda de hoje está livre — bom momento para planejar blocos de foco.")
+  } else {
+    out.push(
+      todayBlocks
+        .map((b) => `• ${fmtHM(new Date(b.start_time), tzMin)}–${fmtHM(new Date(b.end_time), tzMin)} ${b.title}`)
+        .join("\n")
+    )
+    // intervalos curtos e sobreposições (regras, não IA)
+    for (let i = 0; i < todayBlocks.length - 1; i++) {
+      const aEnd = new Date(todayBlocks[i].end_time).getTime()
+      const bStart = new Date(todayBlocks[i + 1].start_time).getTime()
+      const gapMin = Math.round((bStart - aEnd) / 60_000)
+      if (bStart < aEnd) {
+        out.push(`⚠️ "${todayBlocks[i].title}" e "${todayBlocks[i + 1].title}" estão sobrepostos — vale ajustar.`)
+      } else if (gapMin >= 0 && gapMin < 30) {
+        out.push(`⚠️ Só ${gapMin} min entre "${todayBlocks[i].title}" e "${todayBlocks[i + 1].title}" — respire um pouco entre eles.`)
+      }
+    }
+  }
+
+  const overdue = (tasksR.data ?? []).filter((t) => t.due_date && new Date(t.due_date).getTime() < Date.now())
+  if (overdue.length > 0) {
+    const names = overdue.slice(0, 3).map((t) => `"${t.title}"`).join(", ")
+    out.push(`📌 ${overdue.length === 1 ? "1 tarefa atrasada" : `${overdue.length} tarefas atrasadas`}: ${names}${overdue.length > 3 ? "…" : ""}.`)
+  }
+
+  const rem = remR.data ?? []
+  if (rem.length > 0) {
+    out.push(
+      `🔔 Lembretes de hoje: ${rem
+        .map((r) => `${r.remind_time ? r.remind_time.slice(0, 5) + " " : ""}${r.content}`)
+        .join("; ")}.`
+    )
+  }
+
+  if (tomorrowBlocks.length > 0) {
+    const first = tomorrowBlocks[0]
+    out.push(`Amanhã cedo: ${fmtHM(new Date(first.start_time), tzMin)} ${first.title}.`)
+  }
+
+  out.push("Precisa de algo? Posso criar tarefas, agendar blocos ou planejar seu dia a partir de um compromisso.")
+  return out.join("\n\n")
 }
 
 async function executeTool(
@@ -822,7 +862,7 @@ async function runOpenAIAgent(
       messages: convo,
       tools: TOOLS,
       tool_choice: "auto",
-      max_tokens: 800,
+      max_tokens: 512,
     })
 
     if (!res.ok) {
@@ -879,7 +919,7 @@ async function runOpenAIAgent(
         },
       ],
       tool_choice: "none",
-      max_tokens: 300,
+      max_tokens: 220,
     })
     if (res.ok) {
       const data = await res.json()
@@ -1017,11 +1057,13 @@ export async function POST(req: Request) {
   if (body.mode === "voice") {
     system += `\n\nMODO VOZ (conversa falada em tempo real): responda de forma curta, natural e conversacional, como uma pessoa falando. Em geral 1 a 3 frases. Evite listas longas, markdown, asteriscos, emojis e símbolos — o texto será lido em voz alta. Se precisar destacar um conceito, cite no máximo 3 pontos-chave bem curtos, em frases simples.`
   }
+  // Briefing: 100% determinístico (algoritmo, não IA) — factual, instantâneo
+  // e sem consumir o limite de tokens.
   if (body.mode === "briefing") {
-    const ctx = await gatherContext(supabase, body.tz ?? 0)
-    system += `\n\nCONTEXTO ATUAL DO USUÁRIO (leia com atenção antes de responder):\n"""\n${ctx}\n"""`
-    system += `\n\nEste é o INÍCIO da conversa. Cumprimente o usuário e faça um briefing curto e PROATIVO do dia: aponte conflitos e intervalos curtos entre os blocos, dê 1 ou 2 dicas úteis (energia, sono, preparação, foco) e, se fizer sentido, PROPONHA (com confirmação) uma tarefa de preparação. Termine oferecendo ajuda. Seja calorosa, natural e concisa. Responda em texto normal (sem markdown pesado).`
-    messages = [{ role: "user", content: "Oi! Me dê as boas-vindas e um panorama do meu dia." }]
+    const text = await buildBriefing(supabase, body.tz ?? 0)
+    return new Response(text, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
+    })
   }
 
   if (messages.length === 0) return new Response("Envie ao menos uma mensagem", { status: 400 })
@@ -1029,29 +1071,21 @@ export async function POST(req: Request) {
   // Groq → loop com ferramentas (cria/edita/exclui de verdade)
   if (cfg.provider === "groq") {
     try {
-      // Briefing: chamada única SEM ferramentas (o contexto já foi injetado) —
-      // economiza muitos tokens do limite gratuito por minuto.
-      if (body.mode === "briefing") {
-        const res = await groqChat(cfg, {
-          messages: [{ role: "system", content: system }, ...messages],
-          max_tokens: 500,
-        })
-        if (!res.ok) {
-          if (res.status === 429) {
-            return new Response("__RATE_LIMIT__", {
-              headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
-            })
-          }
-          throw new Error(`Groq ${res.status}`)
+      const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0)
+
+      // Limite do Groq atingido → tenta o Gemini como reserva (sem ferramentas)
+      if (finalText === "__RATE_LIMIT__" && process.env.GEMINI_API_KEY) {
+        const gcfg: ProviderConfig = {
+          provider: "gemini",
+          apiKey: process.env.GEMINI_API_KEY,
+          model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
         }
-        const data = await res.json()
-        const text = data.choices?.[0]?.message?.content ?? "Olá! Como posso ajudar você hoje?"
-        return new Response(sanitizeOut(text), {
-          headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
-        })
+        const fallbackSystem =
+          system +
+          "\n\nMODO RESERVA: as ferramentas estão temporariamente indisponíveis. Converse normalmente, mas NUNCA afirme ter criado/editado/excluído algo — se o usuário pedir uma ação, diga que fará assim que possível."
+        return streamText(gcfg, fallbackSystem, messages)
       }
 
-      const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0)
       return new Response(sanitizeOut(finalText), {
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
       })

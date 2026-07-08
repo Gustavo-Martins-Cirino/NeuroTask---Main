@@ -174,7 +174,7 @@ export default function AiPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           // envia só as últimas mensagens para economizar tokens (limite gratuito do Groq)
-          messages: nextMessages.slice(-8),
+          messages: nextMessages.slice(-6),
           dayNotes,
           now: new Date().toLocaleString("pt-BR"),
           tz: new Date().getTimezoneOffset(),

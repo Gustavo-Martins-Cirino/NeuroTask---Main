@@ -227,17 +227,17 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                 <div className={cn("flex items-center gap-1 rounded-full border px-1 py-0.5", isCustomTime ? chipOn : chipOff)}>
                   <button
                     type="button"
-                    onClick={() => setEstimated((v) => Math.max(0, (v ?? 0) - 15) || null)}
+                    onClick={() => setEstimated((v) => Math.max(0, (v ?? 0) - 5) || null)}
                     className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-accent"
                   >
                     <Minus className="h-3 w-3" />
                   </button>
                   <span className="min-w-12 text-center text-xs font-medium">
-                    {isCustomTime ? fmtMinutes(estimated!) : "Personalizar"}
+                    {isCustomTime ? fmtMinutes(estimated!) : estimated != null ? fmtMinutes(estimated) : "Personalizar"}
                   </span>
                   <button
                     type="button"
-                    onClick={() => setEstimated((v) => (v ?? 0) + 15)}
+                    onClick={() => setEstimated((v) => (v ?? 0) + 5)}
                     className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-accent"
                   >
                     <Plus className="h-3 w-3" />

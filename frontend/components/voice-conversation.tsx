@@ -174,7 +174,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
         const res = await fetch("/api/ai", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history.slice(-8), now: new Date().toLocaleString("pt-BR"), mode: "voice", tz: new Date().getTimezoneOffset() }),
+          body: JSON.stringify({ messages: history.slice(-6), now: new Date().toLocaleString("pt-BR"), mode: "voice", tz: new Date().getTimezoneOffset() }),
         })
         const reply = (await res.text()).trim() || "Desculpe, não consegui responder agora."
         if (disposed) return
