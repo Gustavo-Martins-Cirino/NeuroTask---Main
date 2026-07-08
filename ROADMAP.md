@@ -26,13 +26,20 @@ Google Calendar). É um **copiloto de rotina**:
 ### Fase 2 — O copiloto (diferencial)
 - [ ] **Planejamento retroativo**: ferramenta da Neuro "planejar a partir do compromisso X"
       (encadeia blocos de trás pra frente usando estimated_minutes + perfil de rotina).
-- [x] **Perfil de rotina** em Configurações (`routine_profile`): se arrumar, refeição,
-      deslocamento, horas de sono, toggle de avisos.
+- [x] **Perfil de rotina** em Configurações (`routine_profile`): horas de sono + toggle de avisos.
+- [x] **Atividades de rotina** (`routine_activities`): biblioteca nomeada com duração
+      ("Deslocamento → Trabalho" 30min, "Se arrumar (evento)" 60min) — decisão de design:
+      valores fixos únicos não representam rotinas reais (variam por destino/ocasião).
+      Viram blocos de 1 toque no dialog do calendário e alimentarão o planejador.
 - [x] **Avisos inline no calendário** (determinísticos, `lib/calendar-warnings.ts`): sono
       curto entre dias / bloco de sono curto / tela perto de dormir; dispensáveis; toggle.
 - [ ] **Check-in pós-horário**: bloco terminou sem conclusão → notificação "Conseguiu fazer X?"
       (concluir / reagendar). Respostas alimentam o autoconhecimento.
 - [ ] **Autoconhecimento v1**: tempo real vs. estimado por tipo de tarefa; médias no dashboard.
+- [ ] **Rotina aprendida** (camada implícita, determinística — sem ML pesado): minerar padrões
+      recorrentes nos blocos reais (título normalizado × horário × duração) e SUGERIR, via
+      Neuro, novas atividades de rotina ("você cria 'Almoço' todo dia ~12h — salvar?") e
+      ajustes de duração ("você leva 55min, não 45 — ajustar?"). Usuário sempre confirma.
 
 ### Fase 3 — Hábito e gamificação com propósito
 - [ ] **Anti-farm de XP** (antes das moedas): XP só para tarefa com vida > 10 min,

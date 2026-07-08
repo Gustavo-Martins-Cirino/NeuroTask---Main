@@ -7,8 +7,12 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus } from "lucide-react"
-import { fetchRoutine, saveRoutine, DEFAULT_ROUTINE, type RoutineProfile } from "@/lib/routine"
+import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2 } from "lucide-react"
+import {
+  fetchRoutine, saveRoutine, DEFAULT_ROUTINE, type RoutineProfile,
+  fetchActivities, addActivity, updateActivityDuration, deleteActivity,
+  ACTIVITY_CATEGORIES, categoryColor, type RoutineActivity, type ActivityCategory,
+} from "@/lib/routine"
 
 const themeOptions = [
   { value: "light", label: "Claro", icon: Sun },
@@ -97,10 +101,39 @@ export default function SettingsPage() {
   const [routine, setRoutine] = useState<RoutineProfile>({ ...DEFAULT_ROUTINE })
   const [routineSaving, setRoutineSaving] = useState(false)
   const [routineSaved, setRoutineSaved] = useState(false)
+  const [activities, setActivities] = useState<RoutineActivity[]>([])
+  const [newName, setNewName] = useState("")
+  const [newCategory, setNewCategory] = useState<ActivityCategory>("deslocamento")
+  const [newDuration, setNewDuration] = useState(30)
+  const [addingActivity, setAddingActivity] = useState(false)
 
   useEffect(() => {
     fetchRoutine().then(setRoutine)
+    fetchActivities().then(setActivities)
   }, [])
+
+  const handleAddActivity = async () => {
+    const name = newName.trim()
+    if (!name) return
+    setAddingActivity(true)
+    const { activity } = await addActivity({ name, category: newCategory, duration_minutes: newDuration })
+    setAddingActivity(false)
+    if (activity) {
+      setActivities((prev) => [...prev, activity])
+      setNewName("")
+    }
+  }
+
+  const handleActivityDuration = (id: string, v: number) => {
+    const value = Math.max(5, v)
+    setActivities((prev) => prev.map((a) => (a.id === id ? { ...a, duration_minutes: value } : a)))
+    updateActivityDuration(id, value)
+  }
+
+  const handleDeleteActivity = (id: string) => {
+    setActivities((prev) => prev.filter((a) => a.id !== id))
+    deleteActivity(id)
+  }
 
   const handleSaveRoutine = async () => {
     setRoutineSaving(true)
@@ -205,30 +238,6 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <RoutineField
-                  label="Se arrumar"
-                  value={routine.get_ready_minutes}
-                  suffix="min"
-                  step={5}
-                  min={5}
-                  onChange={(v) => setRoutine({ ...routine, get_ready_minutes: v })}
-                />
-                <RoutineField
-                  label="Refeição"
-                  value={routine.meal_minutes}
-                  suffix="min"
-                  step={5}
-                  min={5}
-                  onChange={(v) => setRoutine({ ...routine, meal_minutes: v })}
-                />
-                <RoutineField
-                  label="Deslocamento"
-                  value={routine.commute_minutes}
-                  suffix="min"
-                  step={5}
-                  min={0}
-                  onChange={(v) => setRoutine({ ...routine, commute_minutes: v })}
-                />
-                <RoutineField
                   label="Sono desejado"
                   value={routine.sleep_hours}
                   suffix="h"
@@ -272,6 +281,105 @@ export default function SettingsPage() {
                 {routineSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : routineSaved ? <Check className="h-4 w-4" /> : null}
                 {routineSaved ? "Salvo" : "Salvar rotina"}
               </button>
+
+              {/* Minhas atividades de rotina */}
+              <div className="space-y-2 border-t border-border/40 pt-4">
+                <p className="text-sm font-medium">Minhas atividades</p>
+                <p className="text-xs text-muted-foreground">
+                  Atividades nomeadas com duração — viram blocos de 1 toque no calendário e alimentam
+                  o planejamento da Neuro. Ex.: &quot;Deslocamento → Trabalho&quot;, &quot;Se arrumar (evento)&quot;.
+                </p>
+
+                {activities.length > 0 && (
+                  <ul className="space-y-1.5 pt-1">
+                    {activities.map((a) => (
+                      <li key={a.id} className="flex items-center gap-2 rounded-xl border border-border/50 px-3 py-2">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: categoryColor(a.category) }} />
+                        <span className="min-w-0 flex-1 truncate text-sm">{a.name}</span>
+                        <span className="flex shrink-0 items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleActivityDuration(a.id, a.duration_minutes - 5)}
+                            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="min-w-14 text-center text-xs font-semibold tabular-nums">{a.duration_minutes} min</span>
+                          <button
+                            type="button"
+                            onClick={() => handleActivityDuration(a.id, a.duration_minutes + 5)}
+                            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteActivity(a.id)}
+                          aria-label="Excluir atividade"
+                          className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {/* Adicionar atividade */}
+                <div className="space-y-2 rounded-xl border border-dashed border-border/60 p-3">
+                  <input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleAddActivity() }}
+                    placeholder="Nome — ex.: Deslocamento → Trabalho"
+                    className="h-9 w-full rounded-lg border border-border/50 bg-transparent px-3 text-sm outline-none transition-colors focus:border-primary/40"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {ACTIVITY_CATEGORIES.map((c) => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onClick={() => setNewCategory(c.value)}
+                        className={cn(
+                          "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                          newCategory === c.value
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border/50 text-muted-foreground hover:border-border"
+                        )}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                    <span className="ml-auto flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setNewDuration((v) => Math.max(5, v - 5))}
+                        className="flex h-6 w-6 items-center justify-center rounded-full border border-border/50 text-muted-foreground hover:bg-accent"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="min-w-14 text-center text-xs font-semibold tabular-nums">{newDuration} min</span>
+                      <button
+                        type="button"
+                        onClick={() => setNewDuration((v) => v + 5)}
+                        className="flex h-6 w-6 items-center justify-center rounded-full border border-border/50 text-muted-foreground hover:bg-accent"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddActivity}
+                    disabled={addingActivity || !newName.trim()}
+                    className="flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition-opacity disabled:opacity-40"
+                  >
+                    {addingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                    Adicionar atividade
+                  </button>
+                </div>
+              </div>
             </div>
           </Section>
 

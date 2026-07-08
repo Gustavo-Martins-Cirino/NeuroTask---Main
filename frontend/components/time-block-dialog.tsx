@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
 import { DatePicker } from "@/components/date-picker"
+import { fetchActivities, categoryColor, type RoutineActivity } from "@/lib/routine"
 import type { TimeBlock, Task } from "@/lib/types"
 import { Loader2 } from "lucide-react"
 
@@ -74,6 +75,7 @@ export function TimeBlockDialog({
   const [recurrence, setRecurrence] = useState("none")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activities, setActivities] = useState<RoutineActivity[]>([])
 
   // Preenche os campos sempre que o dialog abre (edição traz os dados do bloco)
   useEffect(() => {
@@ -103,6 +105,23 @@ export function TimeBlockDialog({
     }
     setError(null)
   }, [open, timeBlock, defaultStart, defaultEnd])
+
+  useEffect(() => {
+    if (open) fetchActivities().then(setActivities)
+  }, [open])
+
+  // Aplica uma atividade de rotina: título + duração (fim) + cor da categoria
+  const applyActivity = (a: RoutineActivity) => {
+    setTitle(a.name)
+    setColor(categoryColor(a.category))
+    const [h, m] = startTime.split(":").map(Number)
+    if (!isNaN(h) && !isNaN(m)) {
+      const total = h * 60 + m + a.duration_minutes
+      const eh = Math.floor(total / 60) % 24
+      const em = total % 60
+      setEndTime(`${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`)
+    }
+  }
 
   const supabase = createClient()
 
@@ -185,6 +204,27 @@ export function TimeBlockDialog({
                 required
               />
             </div>
+
+            {/* Rotinas — preenchem título, duração e cor com 1 toque */}
+            {activities.length > 0 && (
+              <div className="space-y-2">
+                <Label>Rotinas</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {activities.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => applyActivity(a)}
+                      className="flex items-center gap-1.5 rounded-full border border-border/50 px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: categoryColor(a.category) }} />
+                      {a.name}
+                      <span className="opacity-60">{a.duration_minutes}min</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="description">Descrição</Label>

@@ -40,3 +40,59 @@ export async function saveRoutine(profile: RoutineProfile): Promise<string | nul
     .upsert({ user_id: user.id, ...profile, updated_at: new Date().toISOString() })
   return error?.message ?? null
 }
+
+// ---- Atividades de rotina (biblioteca nomeada com duração) ----
+
+export type ActivityCategory = "preparo" | "deslocamento" | "refeicao" | "outro"
+
+export interface RoutineActivity {
+  id: string
+  name: string
+  category: ActivityCategory
+  duration_minutes: number
+}
+
+export const ACTIVITY_CATEGORIES: { value: ActivityCategory; label: string; color: string }[] = [
+  { value: "preparo", label: "Preparo", color: "#8b5cf6" },
+  { value: "deslocamento", label: "Deslocamento", color: "#06b6d4" },
+  { value: "refeicao", label: "Refeição", color: "#f97316" },
+  { value: "outro", label: "Outro", color: "#6366f1" },
+]
+
+export function categoryColor(category: string): string {
+  return ACTIVITY_CATEGORIES.find((c) => c.value === category)?.color ?? "#6366f1"
+}
+
+export async function fetchActivities(): Promise<RoutineActivity[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("routine_activities")
+    .select("id, name, category, duration_minutes")
+    .order("created_at", { ascending: true })
+  return (data as RoutineActivity[]) ?? []
+}
+
+export async function addActivity(
+  a: Omit<RoutineActivity, "id">
+): Promise<{ activity?: RoutineActivity; error?: string }> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Você precisa estar logado" }
+  const { data, error } = await supabase
+    .from("routine_activities")
+    .insert({ user_id: user.id, ...a })
+    .select("id, name, category, duration_minutes")
+    .single()
+  if (error) return { error: error.message }
+  return { activity: data as RoutineActivity }
+}
+
+export async function updateActivityDuration(id: string, duration_minutes: number): Promise<void> {
+  const supabase = createClient()
+  await supabase.from("routine_activities").update({ duration_minutes }).eq("id", id)
+}
+
+export async function deleteActivity(id: string): Promise<void> {
+  const supabase = createClient()
+  await supabase.from("routine_activities").delete().eq("id", id)
+}
