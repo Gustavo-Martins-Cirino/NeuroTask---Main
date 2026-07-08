@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -13,18 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
 import { DatePicker } from "@/components/date-picker"
 import { fetchActivities, categoryColor, type RoutineActivity } from "@/lib/routine"
 import type { TimeBlock, Task } from "@/lib/types"
-import { Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Loader2, ChevronDown, Check } from "lucide-react"
 
 interface TimeBlockDialogProps {
   open: boolean
@@ -36,24 +29,64 @@ interface TimeBlockDialogProps {
   onSuccess: () => void
 }
 
-const colors = [
-  { value: "#6366f1", label: "Indigo" },
-  { value: "#8b5cf6", label: "Violet" },
-  { value: "#ec4899", label: "Rosa" },
-  { value: "#f43f5e", label: "Vermelho" },
-  { value: "#f97316", label: "Laranja" },
-  { value: "#eab308", label: "Amarelo" },
-  { value: "#22c55e", label: "Verde" },
-  { value: "#14b8a6", label: "Teal" },
-  { value: "#06b6d4", label: "Cyan" },
-  { value: "#3b82f6", label: "Azul" },
+const COLORS = [
+  "#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#f97316",
+  "#eab308", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6",
 ]
+
+const RECURRENCE_OPTIONS = [
+  { value: "none", label: "Não repete" },
+  { value: "daily", label: "Diariamente" },
+  { value: "weekly", label: "Semanalmente" },
+  { value: "weekdays", label: "Dias úteis (seg–sex)" },
+]
+
+type OptKey = "" | "date" | "color" | "task" | "repeat"
 
 function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 function toHM(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+}
+function dateLabel(dateKey: string): string {
+  const d = new Date(dateKey + "T00:00:00")
+  if (isNaN(d.getTime())) return dateKey
+  return d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })
+}
+
+// Linha compacta expansível (opções discretas: data, cor, tarefa, repetir)
+function OptionRow({
+  label,
+  value,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string
+  value: React.ReactNode
+  open: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-xl border border-border/40">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
+      >
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+          {value}
+          <ChevronDown
+            className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+          />
+        </span>
+      </button>
+      {open && <div className="border-t border-border/40 p-3">{children}</div>}
+    </div>
+  )
 }
 
 export function TimeBlockDialog({
@@ -73,6 +106,7 @@ export function TimeBlockDialog({
   const [color, setColor] = useState("#6366f1")
   const [taskId, setTaskId] = useState("none")
   const [recurrence, setRecurrence] = useState("none")
+  const [expanded, setExpanded] = useState<OptKey>("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activities, setActivities] = useState<RoutineActivity[]>([])
@@ -103,6 +137,7 @@ export function TimeBlockDialog({
       setTaskId("none")
       setRecurrence("none")
     }
+    setExpanded("")
     setError(null)
   }, [open, timeBlock, defaultStart, defaultEnd])
 
@@ -182,6 +217,11 @@ export function TimeBlockDialog({
     onSuccess()
   }
 
+  const toggle = (k: OptKey) => setExpanded((cur) => (cur === k ? "" : k))
+  const pendingTasks = tasks.filter((t) => t.status !== "completed" && t.status !== "cancelled")
+  const linkedTask = pendingTasks.find((t) => t.id === taskId)
+  const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === recurrence)?.label ?? "Não repete"
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
@@ -207,39 +247,31 @@ export function TimeBlockDialog({
 
             {/* Rotinas — preenchem título, duração e cor com 1 toque */}
             {activities.length > 0 && (
-              <div className="space-y-2">
-                <Label>Rotinas</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {activities.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => applyActivity(a)}
-                      className="flex items-center gap-1.5 rounded-full border border-border/50 px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground"
-                    >
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: categoryColor(a.category) }} />
-                      {a.name}
-                      <span className="opacity-60">{a.duration_minutes}min</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-1.5">
+                {activities.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => applyActivity(a)}
+                    className="flex items-center gap-1.5 rounded-full border border-border/50 px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+                  >
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: categoryColor(a.category) }} />
+                    {a.name}
+                    <span className="opacity-60">{a.duration_minutes}min</span>
+                  </button>
+                ))}
               </div>
             )}
 
             <div className="space-y-2">
               <Label htmlFor="description">Descrição</Label>
-              <Textarea
+              <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Detalhes opcionais..."
-                rows={2}
+                className="min-h-16 max-h-40 w-full resize-none overflow-y-auto rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors [field-sizing:content] placeholder:text-muted-foreground focus:border-ring/50"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Data</Label>
-              <DatePicker value={date} onChange={setDate} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -266,68 +298,110 @@ export function TimeBlockDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Cor</Label>
-                <Select value={color} onValueChange={setColor}>
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-4 w-4 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {colors.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-4 w-4 rounded-full"
-                            style={{ backgroundColor: c.value }}
-                          />
-                          {c.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Vincular Tarefa</Label>
-                <Select value={taskId} onValueChange={setTaskId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Nenhuma" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhuma</SelectItem>
-                    {tasks
-                      .filter((t) => t.status !== "completed" && t.status !== "cancelled")
-                      .map((task) => (
-                        <SelectItem key={task.id} value={task.id}>
-                          {task.title}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
+            {/* Opções discretas — expandem só se o usuário quiser mexer */}
             <div className="space-y-2">
-              <Label>Repetir</Label>
-              <Select value={recurrence} onValueChange={setRecurrence}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Não repete</SelectItem>
-                  <SelectItem value="daily">Diariamente</SelectItem>
-                  <SelectItem value="weekly">Semanalmente</SelectItem>
-                  <SelectItem value="weekdays">Dias úteis (seg–sex)</SelectItem>
-                </SelectContent>
-              </Select>
+              <OptionRow
+                label="Data"
+                value={<span className="capitalize">{dateLabel(date)}</span>}
+                open={expanded === "date"}
+                onToggle={() => toggle("date")}
+              >
+                <DatePicker value={date} onChange={(v) => { setDate(v); setExpanded("") }} />
+              </OptionRow>
+
+              <OptionRow
+                label="Cor"
+                value={<span className="h-4 w-4 rounded-full" style={{ backgroundColor: color }} />}
+                open={expanded === "color"}
+                onToggle={() => toggle("color")}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => { setColor(c); setExpanded("") }}
+                      aria-label={`Cor ${c}`}
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-full transition-transform hover:scale-110",
+                        color === c && "ring-2 ring-foreground/60 ring-offset-2 ring-offset-background"
+                      )}
+                      style={{ backgroundColor: c }}
+                    >
+                      {color === c && <Check className="h-3.5 w-3.5 text-white" />}
+                    </button>
+                  ))}
+                </div>
+              </OptionRow>
+
+              <OptionRow
+                label="Vincular tarefa"
+                value={
+                  <span className="max-w-40 truncate">
+                    {linkedTask ? linkedTask.title : <span className="text-muted-foreground">Nenhuma</span>}
+                  </span>
+                }
+                open={expanded === "task"}
+                onToggle={() => toggle("task")}
+              >
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Liga este bloco a uma tarefa da sua lista — o bloco vira o horário de fazê-la.
+                </p>
+                <div className="max-h-40 space-y-1 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => { setTaskId("none"); setExpanded("") }}
+                    className={cn(
+                      "block w-full rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-accent",
+                      taskId === "none" && "bg-accent font-medium"
+                    )}
+                  >
+                    Nenhuma
+                  </button>
+                  {pendingTasks.map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => { setTaskId(task.id); setExpanded("") }}
+                      className={cn(
+                        "block w-full truncate rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-accent",
+                        taskId === task.id && "bg-accent font-medium"
+                      )}
+                    >
+                      {task.title}
+                    </button>
+                  ))}
+                </div>
+              </OptionRow>
+
+              <OptionRow
+                label="Repetir"
+                value={
+                  recurrence === "none"
+                    ? <span className="text-muted-foreground">Não repete</span>
+                    : <span>{recurrenceLabel}</span>
+                }
+                open={expanded === "repeat"}
+                onToggle={() => toggle("repeat")}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {RECURRENCE_OPTIONS.map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => { setRecurrence(o.value); setExpanded("") }}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                        recurrence === o.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/50 text-muted-foreground hover:border-border"
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </OptionRow>
             </div>
 
             {error && (
