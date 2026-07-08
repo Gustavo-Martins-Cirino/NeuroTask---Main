@@ -17,18 +17,19 @@ Google Calendar). É um **copiloto de rotina**:
 
 ## Fases
 
-### Fase 1 — Fundação de uso real (pré-requisito de tudo)
-- [ ] **Deploy na Vercel** + configuração do Supabase (Confirm email ativado, redirect URLs).
-      Auth + RLS já existem no código; o bloqueador é operacional.
-- [ ] Acesso mobile (HTTPS destrava microfone e notificações).
+### Fase 1 — Fundação de uso real (pré-requisito de tudo) ✅
+- [x] **Deploy na Vercel** + configuração do Supabase (Confirm email, redirect URLs,
+      callback cross-device via token_hash).
+- [x] Acesso mobile (HTTPS + responsividade completa: barra inferior, grades roláveis).
+- [x] SMTP próprio (Brevo) + template de e-mail com a marca.
 
 ### Fase 2 — O copiloto (diferencial)
 - [ ] **Planejamento retroativo**: ferramenta da Neuro "planejar a partir do compromisso X"
       (encadeia blocos de trás pra frente usando estimated_minutes + perfil de rotina).
-- [ ] **Perfil de rotina** em Configurações: tempo para se arrumar, refeições, deslocamento,
-      horas de sono desejadas.
-- [ ] **Avisos inline no calendário** (determinísticos, sem LLM): tarefa com tela perto do
-      sono; fim tarde + compromisso cedo (< 7h de sono); toggle em Configurações.
+- [x] **Perfil de rotina** em Configurações (`routine_profile`): se arrumar, refeição,
+      deslocamento, horas de sono, toggle de avisos.
+- [x] **Avisos inline no calendário** (determinísticos, `lib/calendar-warnings.ts`): sono
+      curto entre dias / bloco de sono curto / tela perto de dormir; dispensáveis; toggle.
 - [ ] **Check-in pós-horário**: bloco terminou sem conclusão → notificação "Conseguiu fazer X?"
       (concluir / reagendar). Respostas alimentam o autoconhecimento.
 - [ ] **Autoconhecimento v1**: tempo real vs. estimado por tipo de tarefa; médias no dashboard.

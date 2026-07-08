@@ -9,7 +9,9 @@ import type { TimeBlock, Task, Reminder } from "@/lib/types"
 import { REMINDER_COLORS } from "@/lib/reminders"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown, Plus, Trash2, Clock, Repeat } from "lucide-react"
+import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
+import { fetchRoutine, type RoutineProfile } from "@/lib/routine"
+import { computeWarnings } from "@/lib/calendar-warnings"
 
 type ViewMode = "dia" | "semana" | "mes" | "ano"
 
@@ -94,6 +96,8 @@ export default function CalendarPage() {
   const [defaultEnd, setDefaultEnd] = useState<Date | undefined>()
   const [panelOpen, setPanelOpen] = useState(true)
   const [now, setNow] = useState(() => new Date())
+  const [routine, setRoutine] = useState<RoutineProfile | null>(null)
+  const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set())
   const [holidays, setHolidays] = useState<Record<string, string>>({})
   const fetchedYears = useRef<Set<number>>(new Set())
   const [draft, setDraft] = useState<Record<string, { start: string; end: string }>>({})
@@ -193,6 +197,16 @@ export default function CalendarPage() {
     const id = setInterval(() => setNow(new Date()), 60_000)
     return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    fetchRoutine().then(setRoutine)
+  }, [])
+
+  // Avisos inteligentes (determinísticos) sobre os blocos visíveis
+  const warnings = useMemo(() => {
+    if (!routine?.calendar_warnings) return []
+    return computeWarnings(blocks, routine.sleep_hours).filter((w) => !dismissedWarnings.has(w.id))
+  }, [blocks, routine, dismissedWarnings])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -459,6 +473,35 @@ export default function CalendarPage() {
             ))}
           </div>
         </div>
+
+        {/* Avisos inteligentes (desativáveis em Configurações → Rotina) */}
+        <AnimatePresence initial={false}>
+          {warnings.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-1.5 overflow-hidden px-3 pb-2 md:px-6"
+            >
+              {warnings.map((w) => (
+                <div
+                  key={w.id}
+                  className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+                >
+                  <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="min-w-0 flex-1">{w.text}</span>
+                  <button
+                    onClick={() => setDismissedWarnings((prev) => new Set(prev).add(w.id))}
+                    aria-label="Dispensar aviso"
+                    className="shrink-0 opacity-60 transition-opacity hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="flex flex-1 flex-col gap-4 px-3 pb-6 md:px-6 lg:flex-row">
           {/* Calendar grid */}
