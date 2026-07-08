@@ -23,6 +23,7 @@ Seu papel:
 - PRECISÃO: nunca invente uma tarefa a partir de uma fala solta ou de um provável erro de transcrição de voz. Na dúvida, pergunte.
 - LINGUAGEM NATURAL: ao confirmar ou mencionar horários, fale de forma natural em português (ex.: "amanhã das 8h às 9h", "dia 15 deste mês"). NUNCA leia datas em formato técnico/ISO/americano (nada de "2026-06-15T08:00").
 - PROATIVIDADE: não espere o usuário perguntar. Ao ver a agenda dele, aponte conflitos, intervalos curtos e dê sugestões úteis por conta própria (energia, sono, preparação, foco).
+- PLANEJAMENTO RETROATIVO: quando o usuário citar um compromisso com horário e pedir para planejar o dia/noite em função dele (ex.: "tenho faculdade amanhã às 8:30, organiza pra mim"), chame plan_day_backwards com confirm=false. O SISTEMA calcula a cadeia (dormir → acordar → preparo → refeição → deslocamento → compromisso) usando as atividades de rotina e o sono desejado do usuário. Apresente as linhas do campo "proposal" em linguagem natural e pergunte "Posso confirmar?". SÓ após o sim explícito, chame plan_day_backwards de novo com os MESMOS argumentos e confirm=true para criar os blocos. NUNCA calcule essa cadeia você mesmo nem crie os blocos um a um.
 - Para editar ou excluir, primeiro liste para descobrir o id correto, depois aja.
 - FIDELIDADE AOS DADOS: ao responder qualquer pergunta sobre tarefas, blocos ou notas do usuário (ex.: "quais tarefas estão atrasadas?"), SEMPRE chame a ferramenta de listagem correspondente antes de responder e cite APENAS itens que vieram no resultado. NUNCA invente itens de exemplo. Se a lista vier vazia ou nada corresponder, diga claramente "não encontrei" — isso é uma resposta correta e suficiente.
 - ATRASADA: o resultado de list_tasks traz o campo booleano "overdue" já calculado pelo sistema. Uma tarefa está atrasada SE E SOMENTE SE overdue = true. NUNCA calcule atraso comparando datas você mesmo — confie apenas no campo overdue. Se nenhuma tarefa tiver overdue = true, diga que não há tarefas atrasadas.
@@ -172,6 +173,24 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "plan_day_backwards",
+      description:
+        "Planeja de trás pra frente a partir de um compromisso-âncora: o sistema calcula dormir → acordar → preparo → refeição → deslocamento → compromisso usando as atividades de rotina e o sono desejado do usuário. Com confirm=false apenas propõe (nada é criado); após o usuário confirmar explicitamente, chame de novo com os MESMOS argumentos e confirm=true para criar os blocos.",
+      parameters: {
+        type: "object",
+        properties: {
+          anchor_title: { type: "string", description: "Nome do compromisso âncora (ex.: Faculdade)" },
+          anchor_start: { type: "string", description: "Início do compromisso em ISO 8601 com hora" },
+          anchor_end: { type: ["string", "null"], description: "Fim do compromisso em ISO 8601 (opcional; padrão 1h após o início)" },
+          confirm: { type: "boolean", description: "false = só propor; true = criar os blocos (somente após confirmação do usuário)" },
+        },
+        required: ["anchor_title", "anchor_start", "confirm"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_note",
       description: "Cria uma nota para o usuário.",
       parameters: {
@@ -264,6 +283,45 @@ function similarTitles(a: string, b: string): boolean {
   if (na === nb) return true
   if (na.length >= 6 && nb.length >= 6 && (na.includes(nb) || nb.includes(na))) return true
   return false
+}
+
+// Formata hora local do usuário (o servidor pode estar em UTC)
+function fmtHM(d: Date, tzMin: number): string {
+  const loc = new Date(d.getTime() - tzMin * 60_000)
+  return `${String(loc.getUTCHours()).padStart(2, "0")}:${String(loc.getUTCMinutes()).padStart(2, "0")}`
+}
+function fmtDM(d: Date, tzMin: number): string {
+  const loc = new Date(d.getTime() - tzMin * 60_000)
+  return `${String(loc.getUTCDate()).padStart(2, "0")}/${String(loc.getUTCMonth() + 1).padStart(2, "0")}`
+}
+
+// Bloco de título igual/parecido no mesmo dia, sobrepondo ou colado (< 45 min)
+async function findSimilarSameDay(
+  supabase: SupabaseClient,
+  title: string,
+  start: Date,
+  end: Date
+): Promise<{ id: string; title: string } | null> {
+  const dayIni = new Date(start)
+  dayIni.setHours(0, 0, 0, 0)
+  const dayFim = new Date(dayIni)
+  dayFim.setDate(dayFim.getDate() + 1)
+  const { data: sameDay } = await supabase
+    .from("time_blocks")
+    .select("id, title, start_time, end_time")
+    .gte("start_time", dayIni.toISOString())
+    .lt("start_time", dayFim.toISOString())
+  const GAP = 45 * 60 * 1000
+  return (
+    (sameDay ?? []).find((b) => {
+      if (!similarTitles(b.title, title)) return false
+      const bs = new Date(b.start_time).getTime()
+      const be = new Date(b.end_time).getTime()
+      const overlap = start.getTime() < be && end.getTime() > bs
+      const gap = start.getTime() >= be ? start.getTime() - be : bs - end.getTime()
+      return overlap || (gap >= 0 && gap <= GAP)
+    }) ?? null
+  )
 }
 
 // Verifica choque de horário e proximidade (< 15 min) com outros blocos do mesmo dia
@@ -454,29 +512,9 @@ async function executeTool(
             endT = e2.toISOString()
           }
         }
-        // Anti-duplicação: bloco de título igual/parecido no mesmo dia, sobrepondo
-        // ou colado (< 45 min) → não recria (pega o caso "café da manhã"/"manhão")
+        // Anti-duplicação (pega o caso "café da manhã"/"manhão")
         {
-          const s = new Date(startT)
-          const e2 = new Date(endT)
-          const dayIni = new Date(s)
-          dayIni.setHours(0, 0, 0, 0)
-          const dayFim = new Date(dayIni)
-          dayFim.setDate(dayFim.getDate() + 1)
-          const { data: sameDay } = await supabase
-            .from("time_blocks")
-            .select("id, title, start_time, end_time")
-            .gte("start_time", dayIni.toISOString())
-            .lt("start_time", dayFim.toISOString())
-          const GAP = 45 * 60 * 1000
-          const dup = (sameDay ?? []).find((b) => {
-            if (!similarTitles(b.title, String(args.title ?? ""))) return false
-            const bs = new Date(b.start_time).getTime()
-            const be = new Date(b.end_time).getTime()
-            const overlap = s.getTime() < be && e2.getTime() > bs
-            const gap = s.getTime() >= be ? s.getTime() - be : bs - e2.getTime()
-            return overlap || (gap >= 0 && gap <= GAP)
-          })
+          const dup = await findSimilarSameDay(supabase, String(args.title ?? ""), new Date(startT), new Date(endT))
           if (dup) {
             return { ok: true, created: dup, note: `Já existe um bloco igual/parecido ("${dup.title}") nesse período — não criei outro.` }
           }
@@ -510,6 +548,99 @@ async function executeTool(
         const { error } = await supabase.from("time_blocks").delete().eq("id", args.block_id)
         if (error) return { ok: false, error: error.message }
         return { ok: true }
+      }
+      case "plan_day_backwards": {
+        const anchorTitle = String(args.anchor_title ?? "Compromisso")
+        const anchorStart = new Date(normalizeDT(args.anchor_start, tzMin) as string)
+        if (isNaN(anchorStart.getTime())) return { ok: false, error: "anchor_start inválido (use ISO 8601 com hora)" }
+        let anchorEnd = args.anchor_end
+          ? new Date(normalizeDT(args.anchor_end, tzMin) as string)
+          : new Date(anchorStart.getTime() + 3_600_000)
+        if (isNaN(anchorEnd.getTime()) || anchorEnd.getTime() <= anchorStart.getTime()) {
+          anchorEnd = new Date(anchorStart.getTime() + 3_600_000)
+        }
+
+        // Rotina do usuário (atividades nomeadas + sono desejado)
+        const [{ data: actsRaw }, { data: prof }] = await Promise.all([
+          supabase.from("routine_activities").select("name, category, duration_minutes"),
+          supabase.from("routine_profile").select("sleep_hours").maybeSingle(),
+        ])
+        const acts = actsRaw ?? []
+        const sleepH = Number(prof?.sleep_hours ?? 8)
+        const notes: string[] = []
+
+        // Escolhe a atividade de cada categoria: melhor match com o nome do
+        // compromisso (ex.: "faculdade" → "Deslocamento → Faculdade"), senão a única/primeira
+        const pick = (cat: string, fallbackName: string, fallbackDur: number) => {
+          const cands = acts.filter((a) => a.category === cat)
+          if (cands.length === 0) return { name: fallbackName, dur: fallbackDur }
+          if (cands.length === 1) return { name: cands[0].name, dur: cands[0].duration_minutes }
+          const tokens = normTitle(anchorTitle).split(" ").filter((t) => t.length >= 4)
+          const match = cands.find((c) => tokens.some((t) => normTitle(c.name).includes(t)))
+          if (match) return { name: match.name, dur: match.duration_minutes }
+          notes.push(`Usei "${cands[0].name}"; você também tem: ${cands.slice(1).map((c) => c.name).join(", ")} — me avise se preferir outra.`)
+          return { name: cands[0].name, dur: cands[0].duration_minutes }
+        }
+        const prep = pick("preparo", "Se arrumar", 45)
+        const meal = pick("refeicao", "Café da manhã", 20)
+        const move = pick("deslocamento", "Deslocamento", 30)
+
+        // Cadeia de trás pra frente (determinística)
+        const min = 60_000
+        const moveStart = new Date(anchorStart.getTime() - move.dur * min)
+        const mealStart = new Date(moveStart.getTime() - meal.dur * min)
+        const wake = new Date(mealStart.getTime() - prep.dur * min)
+        const sleepStart = new Date(wake.getTime() - sleepH * 3_600_000)
+
+        const plan = [
+          { title: "Dormir", start: sleepStart, end: wake, color: "#6366f1" },
+          { title: prep.name, start: wake, end: mealStart, color: "#8b5cf6" },
+          { title: meal.name, start: mealStart, end: moveStart, color: "#f97316" },
+          { title: move.name, start: moveStart, end: anchorStart, color: "#06b6d4" },
+          { title: anchorTitle, start: anchorStart, end: anchorEnd, color: "#3b82f6" },
+        ]
+        const proposal = plan.map(
+          (p) => `${fmtDM(p.start, tzMin)} ${fmtHM(p.start, tzMin)}–${fmtHM(p.end, tzMin)} · ${p.title}`
+        )
+        if (sleepStart.getTime() < Date.now() && !args.confirm) {
+          notes.push(`O horário ideal de deitar (${fmtHM(sleepStart, tzMin)}) já passou — vale dormir assim que possível.`)
+        }
+
+        if (!args.confirm) {
+          return {
+            ok: true,
+            proposal,
+            wake_time: fmtHM(wake, tzMin),
+            sleep_time: fmtHM(sleepStart, tzMin),
+            notes,
+            instruction: "Apresente a proposta e pergunte se pode confirmar. NÃO crie nada ainda.",
+          }
+        }
+
+        // confirm=true → cria os blocos (pulando o que já existir parecido)
+        let created = 0
+        const skipped: string[] = []
+        for (const p of plan) {
+          const dup = await findSimilarSameDay(supabase, p.title, p.start, p.end)
+          if (dup) {
+            skipped.push(p.title)
+            continue
+          }
+          const { error } = await supabase.from("time_blocks").insert({
+            user_id: userId,
+            title: p.title,
+            start_time: p.start.toISOString(),
+            end_time: p.end.toISOString(),
+            color: p.color,
+          })
+          if (!error) created++
+        }
+        return {
+          ok: true,
+          created,
+          skipped_existing: skipped,
+          proposal,
+        }
       }
       case "create_note": {
         const { data, error } = await supabase
@@ -592,6 +723,11 @@ function confirm(name: string, args: ToolArgs, result: unknown): string {
       return `✅ Excluí a tarefa.`
     case "delete_time_block":
       return `✅ Excluí o bloco do calendário.`
+    case "plan_day_backwards": {
+      const r4 = result as { created?: number; proposal?: string[] }
+      if (typeof r4?.created === "number") return `✅ Plano criado: ${r4.created} bloco(s) no calendário.`
+      return `📋 Proposta de plano:\n${(r4?.proposal ?? []).join("\n")}\nPosso confirmar?`
+    }
     case "create_note":
       return `✅ Criei a nota${args.title ? ` "${args.title}"` : ""}.`
     case "update_note":

@@ -24,8 +24,12 @@ Google Calendar). É um **copiloto de rotina**:
 - [x] SMTP próprio (Brevo) + template de e-mail com a marca.
 
 ### Fase 2 — O copiloto (diferencial)
-- [ ] **Planejamento retroativo**: ferramenta da Neuro "planejar a partir do compromisso X"
-      (encadeia blocos de trás pra frente usando estimated_minutes + perfil de rotina).
+- [x] **Planejamento retroativo**: ferramenta plan_day_backwards — a Neuro extrai o
+      compromisso-âncora e o SISTEMA calcula a cadeia (dormir → acordar → preparo →
+      refeição → deslocamento → âncora) com as atividades de rotina e o sono desejado.
+      Fluxo propor (confirm=false) → usuário confirma → criar (confirm=true, recálculo
+      determinístico). Match de atividade por destino (ex.: "faculdade" → "Deslocamento
+      → Faculdade"); dedupe ao criar; fallbacks quando a biblioteca está vazia.
 - [x] **Perfil de rotina** em Configurações (`routine_profile`): horas de sono + toggle de avisos.
 - [x] **Atividades de rotina** (`routine_activities`): biblioteca nomeada com duração
       ("Deslocamento → Trabalho" 30min, "Se arrumar (evento)" 60min) — decisão de design:
