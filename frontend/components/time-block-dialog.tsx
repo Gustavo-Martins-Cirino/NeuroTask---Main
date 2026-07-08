@@ -55,20 +55,89 @@ function dateLabel(dateKey: string): string {
   return d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })
 }
 
-// Seletor de horário no tema do app (o nativo do navegador não é estilizável)
+// Seletor de horário estilo "wheel" (iOS): duas rodinhas com scroll magnético,
+// faixa central destacada e fade nas bordas. O input nativo não é estilizável.
+const ITEM_H = 32
+const WHEEL_H = 160
+const WHEEL_PAD = (WHEEL_H - ITEM_H) / 2
+
+function WheelColumn({
+  values,
+  selected,
+  onSelect,
+}: {
+  values: string[]
+  selected: string
+  onSelect: (v: string) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const guard = useRef(0)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    // posiciona no valor atual (ou no mais próximo) sem disparar onSelect
+    const num = parseInt(selected, 10)
+    let idx = values.indexOf(selected)
+    if (idx < 0 && !isNaN(num)) {
+      idx = values.reduce(
+        (best, v, i) =>
+          Math.abs(parseInt(v, 10) - num) < Math.abs(parseInt(values[best], 10) - num) ? i : best,
+        0
+      )
+    }
+    guard.current = Date.now() + 400
+    ref.current?.scrollTo({ top: Math.max(0, idx) * ITEM_H })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const onScroll = () => {
+    if (Date.now() < guard.current) return
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => {
+      const el = ref.current
+      if (!el) return
+      const idx = Math.min(values.length - 1, Math.max(0, Math.round(el.scrollTop / ITEM_H)))
+      if (values[idx] !== selected) onSelect(values[idx])
+    }, 90)
+  }
+
+  const clickItem = (v: string, i: number) => {
+    onSelect(v)
+    guard.current = Date.now() + 450
+    ref.current?.scrollTo({ top: i * ITEM_H, behavior: "smooth" })
+  }
+
+  return (
+    <div
+      ref={ref}
+      onScroll={onScroll}
+      className="h-40 flex-1 snap-y snap-mandatory overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      style={{ paddingTop: WHEEL_PAD, paddingBottom: WHEEL_PAD }}
+    >
+      {values.map((v, i) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => clickItem(v, i)}
+          className={cn(
+            "flex h-8 w-full snap-center items-center justify-center text-sm tabular-nums transition-colors",
+            v === selected ? "text-base font-bold text-primary" : "text-muted-foreground/70 hover:text-foreground"
+          )}
+        >
+          {v}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<HTMLDivElement>(null)
 
-  const options: string[] = []
-  for (let h = 0; h < 24; h++)
-    for (let m = 0; m < 60; m += 15)
-      options.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`)
-  if (value && !options.includes(value)) {
-    options.push(value)
-    options.sort()
-  }
+  const [hh = "09", mm = "00"] = value.split(":")
+  const hours = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"))
+  const minutes = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"))
 
   useEffect(() => {
     if (!open) return
@@ -76,11 +145,6 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: s
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener("pointerdown", onDown)
-    // centraliza o horário selecionado
-    requestAnimationFrame(() => {
-      const el = listRef.current?.querySelector<HTMLElement>("[data-selected='true']")
-      el?.scrollIntoView({ block: "center" })
-    })
     return () => document.removeEventListener("pointerdown", onDown)
   }, [open])
 
@@ -90,30 +154,28 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: s
         type="button"
         aria-label={label}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm transition-colors focus:border-ring/50 focus:outline-none"
+        className={cn(
+          "flex h-9 w-full items-center justify-between rounded-md border bg-transparent px-3 text-sm transition-colors focus:outline-none",
+          open ? "border-primary/50" : "border-input focus:border-ring/50"
+        )}
       >
         <span className="tabular-nums">{value}</span>
-        <Clock className="h-4 w-4 text-muted-foreground" />
+        <Clock className={cn("h-4 w-4 transition-colors", open ? "text-primary" : "text-muted-foreground")} />
       </button>
+
       {open && (
-        <div
-          ref={listRef}
-          className="scrollbar-thin absolute inset-x-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
-        >
-          {options.map((t) => (
-            <button
-              key={t}
-              type="button"
-              data-selected={t === value}
-              onClick={() => { onChange(t); setOpen(false) }}
-              className={cn(
-                "block w-full rounded-md px-3 py-1.5 text-left text-sm tabular-nums transition-colors hover:bg-accent",
-                t === value && "bg-accent font-semibold text-primary"
-              )}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="absolute inset-x-0 z-50 mt-1.5 rounded-2xl border border-border bg-popover p-2 shadow-xl">
+          <div className="relative flex">
+            {/* faixa central (o "cursor" da rodinha) */}
+            <div className="pointer-events-none absolute inset-x-1 top-1/2 z-0 h-8 -translate-y-1/2 rounded-xl bg-primary/10 ring-1 ring-primary/25" />
+            {/* fades superior e inferior */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 rounded-t-2xl bg-gradient-to-b from-popover to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 rounded-b-2xl bg-gradient-to-t from-popover to-transparent" />
+
+            <WheelColumn values={hours} selected={hh} onSelect={(h) => onChange(`${h}:${mm}`)} />
+            <div className="z-0 flex w-4 items-center justify-center text-sm font-bold text-muted-foreground">:</div>
+            <WheelColumn values={minutes} selected={mm} onSelect={(m) => onChange(`${hh}:${m}`)} />
+          </div>
         </div>
       )}
     </div>
