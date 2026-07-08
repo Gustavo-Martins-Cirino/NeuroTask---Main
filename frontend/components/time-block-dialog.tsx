@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,7 +17,7 @@ import { DatePicker } from "@/components/date-picker"
 import { fetchActivities, categoryColor, type RoutineActivity } from "@/lib/routine"
 import type { TimeBlock, Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { Loader2, ChevronDown, Check } from "lucide-react"
+import { Loader2, ChevronDown, Check, Clock } from "lucide-react"
 
 interface TimeBlockDialogProps {
   open: boolean
@@ -53,6 +53,71 @@ function dateLabel(dateKey: string): string {
   const d = new Date(dateKey + "T00:00:00")
   if (isNaN(d.getTime())) return dateKey
   return d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })
+}
+
+// Seletor de horário no tema do app (o nativo do navegador não é estilizável)
+function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  const options: string[] = []
+  for (let h = 0; h < 24; h++)
+    for (let m = 0; m < 60; m += 15)
+      options.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`)
+  if (value && !options.includes(value)) {
+    options.push(value)
+    options.sort()
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("pointerdown", onDown)
+    // centraliza o horário selecionado
+    requestAnimationFrame(() => {
+      const el = listRef.current?.querySelector<HTMLElement>("[data-selected='true']")
+      el?.scrollIntoView({ block: "center" })
+    })
+    return () => document.removeEventListener("pointerdown", onDown)
+  }, [open])
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-label={label}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm transition-colors focus:border-ring/50 focus:outline-none"
+      >
+        <span className="tabular-nums">{value}</span>
+        <Clock className="h-4 w-4 text-muted-foreground" />
+      </button>
+      {open && (
+        <div
+          ref={listRef}
+          className="scrollbar-thin absolute inset-x-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
+        >
+          {options.map((t) => (
+            <button
+              key={t}
+              type="button"
+              data-selected={t === value}
+              onClick={() => { onChange(t); setOpen(false) }}
+              className={cn(
+                "block w-full rounded-md px-3 py-1.5 text-left text-sm tabular-nums transition-colors hover:bg-accent",
+                t === value && "bg-accent font-semibold text-primary"
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // Linha compacta expansível (opções discretas: data, cor, tarefa, repetir)
@@ -276,25 +341,13 @@ export function TimeBlockDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startTime">Início</Label>
-                <Input
-                  id="startTime"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  required
-                />
+                <Label>Início</Label>
+                <TimeSelect label="Horário de início" value={startTime} onChange={setStartTime} />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="endTime">Fim</Label>
-                <Input
-                  id="endTime"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  required
-                />
+                <Label>Fim</Label>
+                <TimeSelect label="Horário de fim" value={endTime} onChange={setEndTime} />
               </div>
             </div>
 
