@@ -8,29 +8,20 @@ interface ChatMessage {
   content: string
 }
 
-const BASE_PROMPT = `Você é a Neuro IA, a assistente de produtividade do NeuroTask — um app de tarefas, time blocking e gamificação.
+const BASE_PROMPT = `Você é a Neuro IA, assistente de produtividade do NeuroTask (tarefas, time blocking, gamificação). Português do Brasil, direta, calorosa, respostas curtas.
 
-Seu papel:
-- Ajudar o usuário a organizar o dia, priorizar tarefas e refletir sobre o foco.
-- Você PODE agir no app através das ferramentas disponíveis: criar, listar, editar e excluir tarefas, blocos de tempo (time blocks) e notas.
-- CONFIRME ANTES DE AGIR: nunca crie, edite ou exclua nada sem confirmar antes. Ao identificar um pedido claro, NÃO chame a ferramenta ainda — primeiro descreva o que vai fazer (título, dia, início e fim, prioridade) e pergunte "Posso confirmar?". Só chame a ferramenta de criar/editar/excluir DEPOIS que o usuário confirmar de forma explícita (ex.: "sim", "pode", "confirma", "isso mesmo"). Nunca diga que fez algo sem ter realmente chamado a ferramenta.
-- NUNCA escreva a sintaxe de uma ferramenta no texto da resposta (nada de "<function=...>" ou JSON de ferramenta). Descreva em linguagem natural o que pretende fazer; a chamada da ferramenta é feita pelo mecanismo próprio, invisível ao usuário.
-- NÃO transforme desabafos ou reflexões em tarefas. Se o usuário disser coisas como "estou cansado", "quero ficar mais inteligente", "que dia corrido", apenas converse, acolha ou dê um conselho curto — só proponha uma tarefa se ele CLARAMENTE pedir para adicionar/agendar algo.
-- Tarefas (tasks) aparecem na lista de Tarefas. Blocos de tempo (time blocks) aparecem no Calendário. Se o usuário quer algo "agendado" num horário, use um bloco de tempo; se é só um item a fazer, use uma tarefa.
-- IMPORTANTE: quando o usuário mencionar um horário específico para uma tarefa (ex.: "às 11h", "amanhã 14h30"), SEMPRE inclua esse horário no campo due_date (ISO 8601, com a hora). O app agenda automaticamente essa tarefa no calendário.
-- INTERPRETAÇÃO DE HORÁRIOS (use a data/hora atual fornecida abaixo): respeite SEMPRE o dia que o usuário disser. Se ele disser "hoje", use a data de HOJE, mesmo que o horário já tenha passado — NUNCA jogue para amanhã por conta própria. Se o período do dia for ambíguo (ex.: "8:30" e não dá pra saber se é manhã ou noite), PERGUNTE ao usuário qual dos dois antes de agendar (ex.: "Você quer dizer 8:30 da manhã ou 20:30?"), em vez de adivinhar.
-- CONFLITOS E DESCANSO: fique atento a choques de horário e a tarefas muito próximas. Se o sistema avisar de conflito ou de proximidade ao criar um bloco, repasse isso ao usuário e sugira ajustar o horário ou incluir um intervalo de descanso.
-- PRECISÃO: nunca invente uma tarefa a partir de uma fala solta ou de um provável erro de transcrição de voz. Na dúvida, pergunte.
-- LINGUAGEM NATURAL: ao confirmar ou mencionar horários, fale de forma natural em português (ex.: "amanhã das 8h às 9h", "dia 15 deste mês"). NUNCA leia datas em formato técnico/ISO/americano (nada de "2026-06-15T08:00").
-- PROATIVIDADE: não espere o usuário perguntar. Ao ver a agenda dele, aponte conflitos, intervalos curtos e dê sugestões úteis por conta própria (energia, sono, preparação, foco).
-- PLANEJAMENTO RETROATIVO: quando o usuário citar um compromisso com horário e pedir para planejar o dia/noite em função dele, chame plan_day_backwards com confirm=false. O SISTEMA calcula a cadeia (dormir → acordar → preparo → refeição → deslocamento → compromisso) usando as atividades de rotina e o sono desejado do usuário. Apresente as linhas do campo "proposal" em linguagem natural e pergunte "Posso confirmar?". SÓ após o sim explícito, chame plan_day_backwards de novo com os MESMOS argumentos e confirm=true para criar os blocos. NUNCA calcule essa cadeia você mesmo nem crie os blocos um a um.
-- Para editar ou excluir, primeiro liste para descobrir o id correto, depois aja.
-- FIDELIDADE AOS DADOS: ao responder qualquer pergunta sobre tarefas, blocos ou notas do usuário (ex.: "quais tarefas estão atrasadas?"), SEMPRE chame a ferramenta de listagem correspondente antes de responder e cite APENAS itens que vieram no resultado. NUNCA invente itens de exemplo. Se a lista vier vazia ou nada corresponder, diga claramente "não encontrei" — isso é uma resposta correta e suficiente.
-- ATRASADA: o resultado de list_tasks traz o campo booleano "overdue" já calculado pelo sistema. Uma tarefa está atrasada SE E SOMENTE SE overdue = true. NUNCA calcule atraso comparando datas você mesmo — confie apenas no campo overdue. Se nenhuma tarefa tiver overdue = true, diga que não há tarefas atrasadas.
-- NÃO DUPLIQUE: ao criar uma tarefa com horário (due_date com hora), o app já cria automaticamente o bloco no calendário — NÃO chame create_time_block para a mesma coisa. Antes de criar um bloco, se houver dúvida de que já existe, liste os blocos primeiro.
-- DURAÇÃO DO BLOCO: end_time deve ficar no MESMO dia do start_time, exceto quando o período realmente cruza a meia-noite (ex.: dormir 23:00 → 07:00 do dia seguinte). Se início e fim são horários do mesmo dia (ex.: 00:00 às 07:00), o fim é NO MESMO dia — nunca some um dia ao fim nesse caso.
-- Seja direta, calorosa e prática. Respostas curtas em português do Brasil. Confirme o que você efetivamente fez.
-- Os exemplos citados nestas instruções são ILUSTRATIVOS — NUNCA os trate como dados reais do usuário nem os mencione como se fossem compromissos/tarefas dele. Fale apenas do que vier das ferramentas ou do que o usuário disser.`
+AGENDA: a seção "AGENDA" abaixo traz os dados REAIS do usuário. Use-a como fonte da verdade para perguntas sobre o dia, blocos, tarefas e lembretes — responda direto por ela, SEM chamar ferramentas de listagem. Nunca invente itens; se não houver, diga "não encontrei". Atrasada = somente o que estiver listado como atrasado (nunca calcule por datas). Seja proativa: aponte conflitos e intervalos curtos que vir na agenda.
+
+AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
+- Proponha e pergunte "Posso confirmar?" ANTES de criar/editar/excluir; só aja após "sim" explícito. Nunca diga que fez sem chamar a ferramenta; nunca escreva sintaxe de ferramenta no texto.
+- Desabafo ("estou cansado") não vira tarefa — apenas converse. Na dúvida (fala solta, transcrição estranha), pergunte.
+- Editar/excluir: liste antes para obter o id.
+- Tarefa com horário: coloque a hora no due_date (ISO 8601) — o app cria o bloco no calendário sozinho; NÃO chame create_time_block para a mesma coisa.
+- Datas: respeite o dia dito ("hoje" é hoje, mesmo que a hora já tenha passado). Hora ambígua (manhã ou noite)? Pergunte antes. end_time no MESMO dia do start_time, salvo cruzar a meia-noite. Ao falar, use datas naturais ("amanhã das 8h às 9h"), nunca ISO.
+- Planejar a partir de um compromisso: plan_day_backwards (confirm=false propõe; após o sim, repita com os MESMOS argumentos e confirm=true). Nunca calcule a cadeia você mesmo nem crie os blocos um a um.
+- Repasse ao usuário qualquer warning/note retornado (conflito, duplicata, proximidade).
+
+Exemplos destas instruções são ilustrativos — nunca os trate como dados do usuário.`
 
 // Remove sintaxe de tool call que o Llama às vezes vaza no texto (<function=...>...</function>)
 function sanitizeOut(text: string): string {
@@ -176,14 +167,14 @@ const TOOLS = [
     function: {
       name: "plan_day_backwards",
       description:
-        "Planeja de trás pra frente a partir de um compromisso-âncora: o sistema calcula dormir → acordar → preparo → refeição → deslocamento → compromisso usando as atividades de rotina e o sono desejado do usuário. Com confirm=false apenas propõe (nada é criado); após o usuário confirmar explicitamente, chame de novo com os MESMOS argumentos e confirm=true para criar os blocos.",
+        "Planeja de trás pra frente a partir de um compromisso-âncora (o sistema calcula sono/preparo/refeição/deslocamento). confirm=false só propõe; confirm=true (após o sim do usuário, mesmos argumentos) cria os blocos.",
       parameters: {
         type: "object",
         properties: {
-          anchor_title: { type: "string", description: "Nome do compromisso âncora, exatamente como o usuário disse" },
-          anchor_start: { type: "string", description: "Início do compromisso em ISO 8601 com hora" },
-          anchor_end: { type: ["string", "null"], description: "Fim do compromisso em ISO 8601 (opcional; padrão 1h após o início)" },
-          confirm: { type: "boolean", description: "false = só propor; true = criar os blocos (somente após confirmação do usuário)" },
+          anchor_title: { type: "string", description: "Nome do compromisso, como o usuário disse" },
+          anchor_start: { type: "string", description: "Início ISO 8601 com hora" },
+          anchor_end: { type: ["string", "null"], description: "Fim ISO 8601 (opcional)" },
+          confirm: { type: "boolean" },
         },
         required: ["anchor_title", "anchor_start", "confirm"],
       },
@@ -442,6 +433,51 @@ async function buildBriefing(supabase: SupabaseClient, tzMin: number): Promise<s
 
   out.push("Precisa de algo? Posso criar tarefas, agendar blocos ou planejar seu dia a partir de um compromisso.")
   return out.join("\n\n")
+}
+
+// Agenda compacta injetada em TODA conversa: perguntas sobre o dia são
+// respondidas em 1 chamada, sem rodadas extras de ferramentas (economia grande
+// de tokens) e sem risco de alucinação.
+async function buildDayContext(supabase: SupabaseClient, tzMin: number): Promise<string> {
+  const nowLoc = new Date(Date.now() - tzMin * 60_000)
+  const y = nowLoc.getUTCFullYear()
+  const mo = nowLoc.getUTCMonth()
+  const d = nowLoc.getUTCDate()
+  const todayKey = `${y}-${String(mo + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+  const dayStart = new Date(Date.UTC(y, mo, d) + tzMin * 60_000)
+  const dayEnd = new Date(dayStart.getTime() + 24 * 3_600_000)
+  const twoDays = new Date(dayStart.getTime() + 48 * 3_600_000)
+
+  const [blocksR, tasksR, remR] = await Promise.all([
+    supabase
+      .from("time_blocks")
+      .select("title, start_time, end_time")
+      .gte("start_time", dayStart.toISOString())
+      .lt("start_time", twoDays.toISOString())
+      .order("start_time", { ascending: true }),
+    supabase.from("tasks").select("title, due_date").not("status", "in", "(completed,cancelled)").limit(20),
+    supabase.from("reminders").select("content, remind_time").eq("remind_date", todayKey),
+  ])
+
+  const blocks = blocksR.data ?? []
+  const hoje = blocks.filter((b) => new Date(b.start_time).getTime() < dayEnd.getTime())
+  const amanha = blocks.filter((b) => new Date(b.start_time).getTime() >= dayEnd.getTime())
+  const tasks = tasksR.data ?? []
+  const overdue = tasks.filter((t) => t.due_date && new Date(t.due_date).getTime() < Date.now())
+  const rem = remR.data ?? []
+  const fb = (b: { title: string; start_time: string; end_time: string }) =>
+    `${fmtHM(new Date(b.start_time), tzMin)}-${fmtHM(new Date(b.end_time), tzMin)} ${b.title}`
+
+  const parts = [`AGENDA (dados reais · hoje ${todayKey}, agora ${fmtHM(new Date(), tzMin)}):`]
+  parts.push(`Blocos hoje: ${hoje.length ? hoje.map(fb).join("; ") : "nenhum"}`)
+  if (amanha.length) parts.push(`Blocos amanhã: ${amanha.map(fb).join("; ")}`)
+  parts.push(`Tarefas pendentes (${tasks.length}): ${tasks.slice(0, 12).map((t) => t.title).join(", ") || "nenhuma"}`)
+  if (overdue.length) parts.push(`Atrasadas: ${overdue.slice(0, 6).map((t) => t.title).join(", ")}`)
+  if (rem.length)
+    parts.push(
+      `Lembretes hoje: ${rem.map((r) => `${r.remind_time ? r.remind_time.slice(0, 5) + " " : ""}${r.content}`).join("; ")}`
+    )
+  return parts.join("\n")
 }
 
 async function executeTool(
@@ -829,10 +865,10 @@ async function groqChat(cfg: ProviderConfig, payload: Record<string, unknown>): 
 
     if (res.status !== 429) return res
 
-    // Lê o tempo sugerido pelo Groq e espera (limitado a 10s)
+    // Lê o tempo sugerido pelo Groq e espera (limitado a 16s)
     const detail = await res.clone().text().catch(() => "")
     const m = detail.match(/try again in ([\d.]+)s/)
-    const waitMs = Math.min(10_000, Math.ceil((m ? parseFloat(m[1]) : 3) * 1000) + 300)
+    const waitMs = Math.min(16_000, Math.ceil((m ? parseFloat(m[1]) : 3) * 1000) + 300)
     if (attempt < 2) {
       await new Promise((r) => setTimeout(r, waitMs))
       continue
@@ -1067,6 +1103,9 @@ export async function POST(req: Request) {
   }
 
   if (messages.length === 0) return new Response("Envie ao menos uma mensagem", { status: 400 })
+
+  // Injeta a agenda real compacta — fonte da verdade p/ perguntas sobre o dia
+  system += `\n\n${await buildDayContext(supabase, body.tz ?? 0)}`
 
   // Groq → loop com ferramentas (cria/edita/exclui de verdade)
   if (cfg.provider === "groq") {
