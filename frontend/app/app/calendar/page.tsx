@@ -597,11 +597,8 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={day.toISOString()}
-                        onClick={() => {
-                          const start = new Date(day)
-                          start.setHours(9, 0, 0, 0)
-                          openNew(start)
-                        }}
+                        onClick={() => goToDay(day)}
+                        title="Abrir o dia"
                         className={cn(
                           "flex min-h-0 cursor-pointer flex-col gap-0.5 border-b border-l border-border/20 p-1 transition-colors hover:bg-accent/30",
                           outside && "bg-muted/20"
