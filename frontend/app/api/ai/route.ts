@@ -860,7 +860,14 @@ async function groqChat(cfg: ProviderConfig, payload: Record<string, unknown>): 
         "Content-Type": "application/json",
         Authorization: `Bearer ${cfg.apiKey}`,
       },
-      body: JSON.stringify({ model: cfg.model, temperature: 0, ...payload }),
+      body: JSON.stringify({
+        model: cfg.model,
+        temperature: 0,
+        // gpt-oss é modelo de raciocínio: esforço baixo = resposta/tool call
+        // rápida sem gastar o teto de tokens "pensando"
+        ...(cfg.model.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
+        ...payload,
+      }),
     })
 
     if (res.status !== 429) return res
@@ -898,7 +905,9 @@ async function runOpenAIAgent(
       messages: convo,
       tools: TOOLS,
       tool_choice: "auto",
-      max_tokens: 512,
+      // Folga para modelos de raciocínio (o "pensar" consome deste teto);
+      // sem isso o tool call era truncado e a ação nunca acontecia
+      max_tokens: 1024,
     })
 
     if (!res.ok) {

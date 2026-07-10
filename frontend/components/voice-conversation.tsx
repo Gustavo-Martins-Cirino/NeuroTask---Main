@@ -22,6 +22,8 @@ interface RecognitionLike {
   onerror: ((e: any) => void) | null
 }
 
+const IS_MOBILE = typeof navigator !== "undefined" && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
+
 function getRecognitionCtor(): (new () => RecognitionLike) | null {
   if (typeof window === "undefined") return null
   const w = window as any
@@ -95,10 +97,15 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       const pt = all.filter((v) => v.lang?.toLowerCase().startsWith("pt"))
       const list = pt.length ? pt : all
       setVoices(list)
-      // Voz robótica MASCULINA (combina com o robozinho)
-      const male = list.find((v) => /daniel|male|homem|masculin|ant[oô]nio|felipe|jo[aã]o/i.test(v.name))
-      const synthetic = list.find((v) => !/google|natural|female|feminin|luciana|francisca|maria|hel[oô]|vit[oó]ria|camila/i.test(v.name))
-      const preferred = male || synthetic || list[0]
+      // Voz masculina NATURAL (menos robótica): prioriza nomes masculinos,
+      // com preferência pelas vozes "Natural/Online/Google"
+      const isMale = (v: SpeechSynthesisVoice) => /daniel|ant[oô]nio|felipe|thiago|jo[aã]o|male|masculin/i.test(v.name)
+      const isNatural = (v: SpeechSynthesisVoice) => /natural|online|google/i.test(v.name)
+      const preferred =
+        list.find((v) => isMale(v) && isNatural(v)) ||
+        list.find(isMale) ||
+        list.find(isNatural) ||
+        list[0]
       setVoiceURI((prev) => prev || preferred?.voiceURI || "")
     }
     load()
@@ -148,8 +155,9 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
         const u = new SpeechSynthesisUtterance(chunks[idx++])
         if (v) u.voice = v
         u.lang = v?.lang || "pt-BR"
-        u.rate = 1.75
-        u.pitch = 0.7 // tom mais grave/mecânico (robótico)
+        // O TTS do Android escala a velocidade diferente do desktop
+        u.rate = IS_MOBILE ? 1.1 : 1.75
+        u.pitch = 1
         u.onend = next
         u.onerror = next
         try { synth.speak(u) } catch { next() }
