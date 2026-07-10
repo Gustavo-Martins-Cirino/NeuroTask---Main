@@ -29,9 +29,29 @@ const IS_SAFARI =
   /Safari/i.test(navigator.userAgent) &&
   !/Chrome|CriOS|Edg|FxiOS|Android/i.test(navigator.userAgent)
 
-// Android/iOS bloqueiam mudo o speak() que não nasce de um toque do usuário.
-// Chamar isto DENTRO de um clique/toque destrava o TTS para a sessão.
+// Elemento de áudio único da voz da Neuro (voz do servidor, igual em todo
+// dispositivo). Reutilizar o MESMO elemento mantém a permissão de reprodução
+// concedida no primeiro toque (exigência de mobile).
+let sharedAudio: HTMLAudioElement | null = null
+export function getSharedAudio(): HTMLAudioElement {
+  if (!sharedAudio) sharedAudio = new Audio()
+  return sharedAudio
+}
+
+// Android/iOS bloqueiam mudo qualquer áudio/fala que não nasça de um toque.
+// Chamar isto DENTRO de um clique/toque destrava a reprodução para a sessão.
 export function unlockSpeech() {
+  try {
+    const a = getSharedAudio()
+    if (!a.src) {
+      // 1 quadro de silêncio (WAV mínimo) só para "carimbar" a permissão
+      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="
+    }
+    a.muted = true
+    a.play().then(() => { a.pause(); a.muted = false }).catch(() => { a.muted = false })
+  } catch {
+    /* ignora */
+  }
   try {
     const synth = window.speechSynthesis
     if (!synth) return
@@ -169,29 +189,56 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       return true
     }
 
-    function speak(text: string) {
+    // Voz ÚNICA (servidor): mesmo áudio em qualquer dispositivo/navegador
+    async function speak(text: string) {
+      const clean = stripForSpeech(text)
+      if (disposed || !clean) { goIdle(); return }
+      setPhase("speaking")
+      try {
+        const res = await fetch("/api/ai/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: clean }),
+        })
+        if (!res.ok) throw new Error("tts indisponível")
+        const blob = await res.blob()
+        if (disposed || phaseRef.current !== "speaking") return
+        const audio = getSharedAudio()
+        try { audio.pause() } catch {}
+        const url = URL.createObjectURL(blob)
+        audio.src = url
+        audio.onended = () => {
+          URL.revokeObjectURL(url)
+          if (!disposed && phaseRef.current === "speaking") goIdle()
+        }
+        audio.onerror = () => {
+          URL.revokeObjectURL(url)
+          if (!disposed && phaseRef.current === "speaking") goIdle()
+        }
+        await audio.play()
+      } catch {
+        speakFallback(clean) // reserva: TTS do navegador
+      }
+    }
+
+    function speakFallback(clean: string) {
       if (disposed || !synth) { goIdle(); return }
       try { synth.cancel() } catch {}
-      const clean = stripForSpeech(text)
       const chunks = clean.match(/[^.!?]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) ?? [clean]
       const v = voicesRef.current.find((x) => x.voiceURI === voiceURIRef.current)
-      setPhase("speaking")
       let idx = 0
       const next = () => {
         if (disposed || phaseRef.current !== "speaking") return
         if (idx >= chunks.length) { goIdle(); return }
         const u = new SpeechSynthesisUtterance(chunks[idx++])
-        // No celular, forçar uma voz específica costuma falhar em silêncio
-        // (vozes "network" do Android) — usa a voz padrão do sistema
         if (v && !IS_MOBILE) u.voice = v
         u.lang = "pt-BR"
-        // O TTS do celular escala a velocidade diferente do desktop
-        u.rate = IS_MOBILE ? 0.9 : 1.75
+        u.rate = IS_MOBILE ? 0.9 : 1.5
         u.pitch = 1
         u.onend = next
         u.onerror = next
         try {
-          synth.resume() // Android fica "pausado" após cancel() e emudece
+          synth.resume()
           synth.speak(u)
         } catch { next() }
       }
@@ -201,6 +248,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     function interruptSpeech() {
       if (phaseRef.current === "speaking") {
         setPhase("idle")
+        try { const a = getSharedAudio(); a.pause(); a.currentTime = 0 } catch {}
         try { synth?.cancel() } catch {}
       }
     }
@@ -368,6 +416,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       try { holdRec?.abort() } catch {}
       try { if (mediaRec && mediaRec.state !== "inactive") mediaRec.stop() } catch {}
       mediaStream?.getTracks().forEach((t) => t.stop())
+      try { sharedAudio?.pause() } catch {}
       try { synth?.cancel() } catch {}
     }
   }, [open])

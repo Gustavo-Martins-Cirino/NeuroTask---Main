@@ -1,2 +1,3 @@
 allowBuilds:
+  msedge-tts: true
   sharp: true
