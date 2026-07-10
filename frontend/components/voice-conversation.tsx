@@ -140,7 +140,11 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
   useEffect(() => {
     if (!open) return
     const Ctor = getRecognitionCtor()
-    if (!Ctor) { setSupported(false); return }
+    const canWhisper = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia
+    // Safari: o reconhecimento ao vivo é instável → grava e transcreve via
+    // Whisper (servidor) ao soltar o botão. Sem nenhum dos dois → sem suporte.
+    const USE_WHISPER = (!Ctor || IS_SAFARI) && canWhisper
+    if (!Ctor && !canWhisper) { setSupported(false); return }
     setSupported(true)
     setError(null)
     setResting(false)
@@ -182,7 +186,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
         if (v && !IS_MOBILE) u.voice = v
         u.lang = "pt-BR"
         // O TTS do celular escala a velocidade diferente do desktop
-        u.rate = IS_MOBILE ? 1.0 : 1.75
+        u.rate = IS_MOBILE ? 0.9 : 1.75
         u.pitch = 1
         u.onend = next
         u.onerror = next
@@ -225,11 +229,57 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       }
     }
 
+    // ---- Caminho Whisper (Safari e navegadores sem SpeechRecognition) ----
+    let mediaRec: MediaRecorder | null = null
+    let mediaStream: MediaStream | null = null
+
+    async function startHoldWhisper() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        if (disposed) { stream.getTracks().forEach((t) => t.stop()); return }
+        mediaStream = stream
+        const chunks: Blob[] = []
+        const mr = new MediaRecorder(stream)
+        mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data) }
+        mr.onstop = async () => {
+          mediaStream?.getTracks().forEach((t) => t.stop())
+          mediaStream = null
+          const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" })
+          if (disposed || blob.size === 0) { goIdle(); return }
+          setPhase("thinking")
+          try {
+            const form = new FormData()
+            const ext = (mr.mimeType || "").includes("mp4") ? "mp4" : "webm"
+            form.append("file", blob, `audio.${ext}`)
+            const res = await fetch("/api/ai/transcribe", { method: "POST", body: form })
+            const data = res.ok ? await res.json() : { text: "" }
+            if (disposed) return
+            if (data.text?.trim()) {
+              onUtterance(data.text.trim())
+            } else {
+              setMessages((m) => [...m, { role: "assistant", content: "Não consegui te ouvir — segura o botão e tenta de novo?" }])
+              goIdle()
+            }
+          } catch {
+            if (!disposed) goIdle()
+          }
+        }
+        mediaRec = mr
+        mr.start()
+        setHolding(true)
+        setPhase("listening")
+        setInterim("Gravando… solte para enviar")
+      } catch {
+        setError("Não foi possível acessar o microfone. Verifique a permissão do navegador.")
+      }
+    }
+
     // Push-to-talk: captura só enquanto o botão é segurado
     function startHold() {
       if (disposed || phaseRef.current === "thinking") return
       unlockSpeech() // toque real → destrava o TTS (mobile)
       interruptSpeech()
+      if (USE_WHISPER) { startHoldWhisper(); return }
       try { holdRec?.abort() } catch {}
       const r = new Ctor!()
       r.lang = "pt-BR"
@@ -265,6 +315,11 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     }
     function endHold() {
       setHolding(false)
+      if (USE_WHISPER) {
+        setInterim("")
+        try { if (mediaRec && mediaRec.state !== "inactive") mediaRec.stop() } catch {}
+        return
+      }
       if (holdRec) { try { holdRec.stop() } catch {} }
     }
 
@@ -311,6 +366,8 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     return () => {
       disposed = true
       try { holdRec?.abort() } catch {}
+      try { if (mediaRec && mediaRec.state !== "inactive") mediaRec.stop() } catch {}
+      mediaStream?.getTracks().forEach((t) => t.stop())
       try { synth?.cancel() } catch {}
     }
   }, [open])
@@ -438,8 +495,8 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
                     Segure o botão para falar e solte para enviar. Use fones para melhor resultado.
                   </p>
                   {IS_SAFARI && (
-                    <p className="mt-1.5 text-center text-xs text-amber-500/80">
-                      No Safari a voz é instável — para a melhor experiência, use o Chrome.
+                    <p className="mt-1.5 text-center text-xs text-muted-foreground/50">
+                      No Safari, sua fala é transcrita quando você solta o botão.
                     </p>
                   )}
                 </>
