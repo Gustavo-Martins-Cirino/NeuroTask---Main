@@ -10,6 +10,7 @@ export const runtime = "nodejs"
 // sem esperar o áudio completo (reduz muito o delay).
 const VOICE = "pt-BR-AntonioNeural"
 const RATE = "+8%" // velocidade única, controlada por nós
+const VOLUME = "+40%" // as vozes do Edge são mais baixas que o TTS nativo
 
 export async function GET(req: Request) {
   const supabase = await createClient()
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
   try {
     const tts = new MsEdgeTTS()
     await tts.setMetadata(VOICE, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3)
-    const { audioStream } = tts.toStream(text, { rate: RATE })
+    const { audioStream } = tts.toStream(text, { rate: RATE, volume: VOLUME })
     const web = Readable.toWeb(audioStream as unknown as Readable) as ReadableStream
     return new Response(web, {
       headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-cache" },
