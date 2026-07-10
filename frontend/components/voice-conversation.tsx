@@ -97,9 +97,12 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       const pt = all.filter((v) => v.lang?.toLowerCase().startsWith("pt"))
       const list = pt.length ? pt : all
       setVoices(list)
-      // Voz masculina NATURAL (menos robótica): prioriza nomes masculinos,
-      // com preferência pelas vozes "Natural/Online/Google"
-      const isMale = (v: SpeechSynthesisVoice) => /daniel|ant[oô]nio|felipe|thiago|jo[aã]o|male|masculin/i.test(v.name)
+      // Voz masculina NATURAL (menos robótica). Cuidado: /male/ casaria com
+      // "female" — por isso a checagem explícita de nomes femininos.
+      const isFemale = (v: SpeechSynthesisVoice) =>
+        /female|feminin|luciana|francisca|maria|let[ií]cia|camila|vit[oó]ria|helo/i.test(v.name)
+      const isMale = (v: SpeechSynthesisVoice) =>
+        !isFemale(v) && /male|daniel|ant[oô]nio|felipe|thiago|jo[aã]o|masculin/i.test(v.name)
       const isNatural = (v: SpeechSynthesisVoice) => /natural|online|google/i.test(v.name)
       const preferred =
         list.find((v) => isMale(v) && isNatural(v)) ||
@@ -153,8 +156,10 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
         if (disposed || phaseRef.current !== "speaking") return
         if (idx >= chunks.length) { goIdle(); return }
         const u = new SpeechSynthesisUtterance(chunks[idx++])
-        if (v) u.voice = v
-        u.lang = v?.lang || "pt-BR"
+        // No celular, forçar uma voz específica costuma falhar em silêncio
+        // (vozes "network" do Android) — usa a voz padrão do sistema
+        if (v && !IS_MOBILE) u.voice = v
+        u.lang = "pt-BR"
         // O TTS do Android escala a velocidade diferente do desktop
         u.rate = IS_MOBILE ? 1.1 : 1.75
         u.pitch = 1
