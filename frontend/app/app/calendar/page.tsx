@@ -136,12 +136,24 @@ export default function CalendarPage() {
   }, [view, anchor, days])
 
   const fetchData = useCallback(async () => {
-    const { data: blockData } = await supabase
-      .from("time_blocks")
-      .select("*")
-      .gte("start_time", rangeStart.toISOString())
-      .lte("start_time", rangeEnd.toISOString())
-    if (blockData) setBlocks(blockData)
+    // Busca os blocos do intervalo visível E todos os mestres recorrentes
+    // anteriores a ele — sem isso, a recorrência some ao navegar para
+    // semanas/meses futuros (o mestre fica fora do intervalo).
+    const [inRange, recurring] = await Promise.all([
+      supabase
+        .from("time_blocks")
+        .select("*")
+        .gte("start_time", rangeStart.toISOString())
+        .lte("start_time", rangeEnd.toISOString()),
+      supabase
+        .from("time_blocks")
+        .select("*")
+        .eq("is_recurring", true)
+        .lte("start_time", rangeEnd.toISOString()),
+    ])
+    const map = new Map<string, TimeBlock>()
+    for (const b of [...(inRange.data ?? []), ...(recurring.data ?? [])]) map.set(b.id, b)
+    setBlocks([...map.values()])
 
     const { data: taskData } = await supabase.from("tasks").select("*")
     if (taskData) setTasks(taskData)
@@ -533,17 +545,26 @@ export default function CalendarPage() {
                             if (!d) return <span key={`e${i}`} />
                             const today = isSameDay(d, now)
                             const hol = holidayName(d)
+                            const busy = occurrencesForDay(d).length > 0
                             return (
                               <button
                                 key={i}
                                 onClick={() => goToDay(d)}
                                 title={hol}
                                 className={cn(
-                                  "flex h-6 items-center justify-center rounded-md text-[11px] transition-colors hover:bg-accent",
+                                  "relative flex h-6 items-center justify-center rounded-md text-[11px] transition-colors hover:bg-accent",
                                   today ? "bg-primary font-semibold text-primary-foreground" : hol ? "font-medium text-emerald-500" : "text-foreground"
                                 )}
                               >
                                 {d.getDate()}
+                                {busy && (
+                                  <span
+                                    className={cn(
+                                      "absolute bottom-0.5 h-1 w-1 rounded-full",
+                                      today ? "bg-primary-foreground" : "bg-primary"
+                                    )}
+                                  />
+                                )}
                               </button>
                             )
                           })}
