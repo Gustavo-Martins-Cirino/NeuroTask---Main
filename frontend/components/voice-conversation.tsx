@@ -44,10 +44,11 @@ export function unlockSpeech() {
   try {
     const a = getSharedAudio()
     if (!a.src) {
-      // 1 quadro de silêncio (WAV mínimo) só para "carimbar" a permissão.
-      // IMPORTANTE: tocar SEM muted — no Safari, reprodução muda não concede
-      // permissão para reproduções com som depois.
-      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="
+      // 50ms de silêncio REAL (WAV com amostras) para "carimbar" a permissão.
+      // O Safari rejeita áudio de 0 amostras e recusa play() sem gesto depois;
+      // e tocar SEM muted — reprodução muda não concede permissão no WebKit.
+      a.src =
+        "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA"
     }
     a.play().then(() => a.pause()).catch(() => {})
   } catch {
@@ -190,39 +191,72 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       return true
     }
 
-    // Voz ÚNICA (servidor): mesmo áudio em qualquer dispositivo/navegador.
-    // Baixa o áudio completo antes de tocar — é o único modo que funciona
-    // em TODOS os players (mobile rejeita stream sem tamanho definido).
+    async function fetchTTS(text: string): Promise<Blob> {
+      const res = await fetch("/api/ai/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      })
+      if (!res.ok) throw new Error("tts indisponível")
+      return res.blob()
+    }
+
+    function playBlob(blob: Blob): Promise<void> {
+      return new Promise((resolve, reject) => {
+        const audio = getSharedAudio()
+        try { audio.pause() } catch {}
+        const url = URL.createObjectURL(blob)
+        audio.src = url
+        audio.onended = () => { URL.revokeObjectURL(url); resolve() }
+        audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error("erro de áudio")) }
+        // Interrompido (pausa manual sem chegar ao fim) → encerra a promessa
+        audio.onpause = () => {
+          if (!audio.ended && phaseRef.current !== "speaking") {
+            URL.revokeObjectURL(url)
+            resolve()
+          }
+        }
+        audio.play().catch(reject)
+      })
+    }
+
+    // Voz ÚNICA (servidor), com pipelining de frases: a 1ª frase (curta) toca
+    // rápido enquanto o resto é gerado em paralelo — mesmo mecanismo blob
+    // aprovado, apenas fatiado. Reduz muito o delay sem mudar a voz.
     async function speak(text: string) {
       const clean = stripForSpeech(text)
       if (disposed || !clean) { goIdle(); return }
       setPhase("speaking")
+
+      // 1º pedaço = primeira frase (geração rápida); resto agrupado (~300 chars)
+      const sentences = clean.match(/[^.!?…]+[.!?…]*/g)?.map((s) => s.trim()).filter(Boolean) ?? [clean]
+      const chunks: string[] = []
+      let cur = ""
+      for (let i = 0; i < sentences.length; i++) {
+        if (i === 0) { chunks.push(sentences[0]); continue }
+        if (cur && (cur + " " + sentences[i]).length > 300) { chunks.push(cur); cur = sentences[i] }
+        else cur = cur ? cur + " " + sentences[i] : sentences[i]
+      }
+      if (cur) chunks.push(cur)
+
+      let spokeAny = false
       try {
-        const res = await fetch("/api/ai/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: clean }),
-        })
-        if (!res.ok) throw new Error("tts indisponível")
-        const blob = await res.blob()
-        if (disposed || phaseRef.current !== "speaking") return
-        const audio = getSharedAudio()
-        try { audio.pause() } catch {}
-        const objUrl = URL.createObjectURL(blob)
-        audio.src = objUrl
-        audio.onended = () => {
-          URL.revokeObjectURL(objUrl)
-          if (!disposed && phaseRef.current === "speaking") goIdle()
-        }
-        audio.onerror = () => {
-          URL.revokeObjectURL(objUrl)
+        let nextBlob: Promise<Blob> | null = fetchTTS(chunks[0])
+        for (let i = 0; i < chunks.length; i++) {
+          const blob = await nextBlob!
+          // pré-busca o próximo pedaço enquanto este toca
+          nextBlob = i + 1 < chunks.length ? fetchTTS(chunks[i + 1]) : null
           if (disposed || phaseRef.current !== "speaking") return
-          if (!audio.currentTime) speakFallback(clean)
-          else goIdle()
+          await playBlob(blob)
+          spokeAny = true
+          if (disposed || phaseRef.current !== "speaking") return
         }
-        await audio.play()
+        if (!disposed && phaseRef.current === "speaking") goIdle()
       } catch {
-        if (!disposed && phaseRef.current === "speaking") speakFallback(clean)
+        if (disposed || phaseRef.current !== "speaking") return
+        // Nada foi falado ainda → reserva do navegador; no meio → só encerra
+        if (!spokeAny) speakFallback(clean)
+        else goIdle()
       }
     }
 
