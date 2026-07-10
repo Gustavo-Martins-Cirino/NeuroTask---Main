@@ -24,6 +24,11 @@ interface RecognitionLike {
 
 const IS_MOBILE = typeof navigator !== "undefined" && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
 
+const IS_SAFARI =
+  typeof navigator !== "undefined" &&
+  /Safari/i.test(navigator.userAgent) &&
+  !/Chrome|CriOS|Edg|FxiOS|Android/i.test(navigator.userAgent)
+
 // Android/iOS bloqueiam mudo o speak() que não nasce de um toque do usuário.
 // Chamar isto DENTRO de um clique/toque destrava o TTS para a sessão.
 export function unlockSpeech() {
@@ -176,8 +181,8 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
         // (vozes "network" do Android) — usa a voz padrão do sistema
         if (v && !IS_MOBILE) u.voice = v
         u.lang = "pt-BR"
-        // O TTS do Android escala a velocidade diferente do desktop
-        u.rate = IS_MOBILE ? 1.1 : 1.75
+        // O TTS do celular escala a velocidade diferente do desktop
+        u.rate = IS_MOBILE ? 1.0 : 1.75
         u.pitch = 1
         u.onend = next
         u.onerror = next
@@ -432,6 +437,11 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
                   <p className="mt-3 text-center text-xs text-muted-foreground/60">
                     Segure o botão para falar e solte para enviar. Use fones para melhor resultado.
                   </p>
+                  {IS_SAFARI && (
+                    <p className="mt-1.5 text-center text-xs text-amber-500/80">
+                      No Safari a voz é instável — para a melhor experiência, use o Chrome.
+                    </p>
+                  )}
                 </>
               )}
             </div>
