@@ -24,6 +24,22 @@ interface RecognitionLike {
 
 const IS_MOBILE = typeof navigator !== "undefined" && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
 
+// Android/iOS bloqueiam mudo o speak() que não nasce de um toque do usuário.
+// Chamar isto DENTRO de um clique/toque destrava o TTS para a sessão.
+export function unlockSpeech() {
+  try {
+    const synth = window.speechSynthesis
+    if (!synth) return
+    synth.resume()
+    const u = new SpeechSynthesisUtterance(" ")
+    u.volume = 0
+    u.rate = 5
+    synth.speak(u)
+  } catch {
+    /* ignora */
+  }
+}
+
 function getRecognitionCtor(): (new () => RecognitionLike) | null {
   if (typeof window === "undefined") return null
   const w = window as any
@@ -165,7 +181,10 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
         u.pitch = 1
         u.onend = next
         u.onerror = next
-        try { synth.speak(u) } catch { next() }
+        try {
+          synth.resume() // Android fica "pausado" após cancel() e emudece
+          synth.speak(u)
+        } catch { next() }
       }
       next()
     }
@@ -204,6 +223,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     // Push-to-talk: captura só enquanto o botão é segurado
     function startHold() {
       if (disposed || phaseRef.current === "thinking") return
+      unlockSpeech() // toque real → destrava o TTS (mobile)
       interruptSpeech()
       try { holdRec?.abort() } catch {}
       const r = new Ctor!()

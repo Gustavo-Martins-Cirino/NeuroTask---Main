@@ -6,7 +6,7 @@ import { Bot, Send, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plu
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import { VoiceConversation } from "@/components/voice-conversation"
+import { VoiceConversation, unlockSpeech } from "@/components/voice-conversation"
 import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
 import {
   DropdownMenu,
@@ -352,7 +352,7 @@ export default function AiPage() {
     <div className="flex min-h-screen flex-col">
       <Header title="Neuro IA" icon={<Bot className="h-4 w-4" />}>
         <button
-          onClick={() => setVoiceOpen(true)}
+          onClick={() => { unlockSpeech(); setVoiceOpen(true) }}
           className="ml-2 flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
         >
           <AudioLines className="h-3.5 w-3.5" />
