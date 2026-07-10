@@ -44,11 +44,12 @@ export function unlockSpeech() {
   try {
     const a = getSharedAudio()
     if (!a.src) {
-      // 1 quadro de silêncio (WAV mínimo) só para "carimbar" a permissão
+      // 1 quadro de silêncio (WAV mínimo) só para "carimbar" a permissão.
+      // IMPORTANTE: tocar SEM muted — no Safari, reprodução muda não concede
+      // permissão para reproduções com som depois.
       a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="
     }
-    a.muted = true
-    a.play().then(() => { a.pause(); a.muted = false }).catch(() => { a.muted = false })
+    a.play().then(() => a.pause()).catch(() => {})
   } catch {
     /* ignora */
   }
