@@ -618,15 +618,15 @@ export default function CalendarPage() {
                           <span className="truncate text-[9px] font-medium text-emerald-500" title={hol}>{hol}</span>
                         )}
                         <div className="flex min-h-0 flex-col gap-0.5 overflow-hidden">
+                          {/* Chips informativos — o clique (em qualquer lugar do dia) abre a visão diária */}
                           {dayBlocks.slice(0, 3).map((occ) => (
-                            <button
+                            <div
                               key={occ.key}
-                              onClick={(e) => { e.stopPropagation(); openEdit(occ.block) }}
-                              className="truncate rounded px-1 py-0.5 text-left text-[10px] font-medium"
+                              className="pointer-events-none truncate rounded px-1 py-0.5 text-left text-[10px] font-medium"
                               style={{ backgroundColor: `${occ.block.color}22`, color: occ.block.color }}
                             >
                               {occ.start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} {occ.block.title}
-                            </button>
+                            </div>
                           ))}
                           {dayBlocks.length > 3 && (
                             <span className="px-1 text-[10px] text-muted-foreground">+{dayBlocks.length - 3} mais</span>
