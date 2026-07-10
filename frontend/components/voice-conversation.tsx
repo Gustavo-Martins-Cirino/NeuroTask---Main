@@ -191,38 +191,34 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     }
 
     // Voz ÚNICA (servidor): mesmo áudio em qualquer dispositivo/navegador.
-    // Chrome/desktop: streaming progressivo (fala com os primeiros bytes).
-    // Safari: baixa completo antes (o <audio> dele exige suporte a byte-range,
-    // que um streaming ao vivo não tem — tocava a voz reserva por engano).
+    // Baixa o áudio completo antes de tocar — é o único modo que funciona
+    // em TODOS os players (mobile rejeita stream sem tamanho definido).
     async function speak(text: string) {
       const clean = stripForSpeech(text)
       if (disposed || !clean) { goIdle(); return }
       setPhase("speaking")
-      const audio = getSharedAudio()
-      try { audio.pause() } catch {}
-      const url = `/api/ai/tts?text=${encodeURIComponent(clean)}`
-      let objUrl: string | null = null
-      audio.onended = () => {
-        if (objUrl) URL.revokeObjectURL(objUrl)
-        if (!disposed && phaseRef.current === "speaking") goIdle()
-      }
-      audio.onerror = () => {
-        if (objUrl) URL.revokeObjectURL(objUrl)
-        if (disposed || phaseRef.current !== "speaking") return
-        // Falhou antes de falar qualquer coisa → usa a reserva do navegador
-        if (!audio.currentTime) speakFallback(clean)
-        else goIdle()
-      }
       try {
-        if (IS_SAFARI) {
-          const res = await fetch(url)
-          if (!res.ok) throw new Error("tts indisponível")
-          const blob = await res.blob()
+        const res = await fetch("/api/ai/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: clean }),
+        })
+        if (!res.ok) throw new Error("tts indisponível")
+        const blob = await res.blob()
+        if (disposed || phaseRef.current !== "speaking") return
+        const audio = getSharedAudio()
+        try { audio.pause() } catch {}
+        const objUrl = URL.createObjectURL(blob)
+        audio.src = objUrl
+        audio.onended = () => {
+          URL.revokeObjectURL(objUrl)
+          if (!disposed && phaseRef.current === "speaking") goIdle()
+        }
+        audio.onerror = () => {
+          URL.revokeObjectURL(objUrl)
           if (disposed || phaseRef.current !== "speaking") return
-          objUrl = URL.createObjectURL(blob)
-          audio.src = objUrl
-        } else {
-          audio.src = url
+          if (!audio.currentTime) speakFallback(clean)
+          else goIdle()
         }
         await audio.play()
       } catch {
