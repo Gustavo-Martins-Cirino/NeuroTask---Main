@@ -190,35 +190,28 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       return true
     }
 
-    // Voz ÚNICA (servidor): mesmo áudio em qualquer dispositivo/navegador
+    // Voz ÚNICA (servidor): mesmo áudio em qualquer dispositivo/navegador.
+    // Streaming progressivo: começa a falar com os primeiros bytes gerados.
     async function speak(text: string) {
       const clean = stripForSpeech(text)
       if (disposed || !clean) { goIdle(); return }
       setPhase("speaking")
-      try {
-        const res = await fetch("/api/ai/tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: clean }),
-        })
-        if (!res.ok) throw new Error("tts indisponível")
-        const blob = await res.blob()
+      const audio = getSharedAudio()
+      try { audio.pause() } catch {}
+      audio.src = `/api/ai/tts?text=${encodeURIComponent(clean)}`
+      audio.onended = () => {
+        if (!disposed && phaseRef.current === "speaking") goIdle()
+      }
+      audio.onerror = () => {
         if (disposed || phaseRef.current !== "speaking") return
-        const audio = getSharedAudio()
-        try { audio.pause() } catch {}
-        const url = URL.createObjectURL(blob)
-        audio.src = url
-        audio.onended = () => {
-          URL.revokeObjectURL(url)
-          if (!disposed && phaseRef.current === "speaking") goIdle()
-        }
-        audio.onerror = () => {
-          URL.revokeObjectURL(url)
-          if (!disposed && phaseRef.current === "speaking") goIdle()
-        }
+        // Falhou antes de falar qualquer coisa → usa a reserva do navegador
+        if (!audio.currentTime) speakFallback(clean)
+        else goIdle()
+      }
+      try {
         await audio.play()
       } catch {
-        speakFallback(clean) // reserva: TTS do navegador
+        if (!disposed && phaseRef.current === "speaking") speakFallback(clean)
       }
     }
 
