@@ -17,7 +17,7 @@ import { DatePicker } from "@/components/date-picker"
 import { fetchActivities, categoryColor, type RoutineActivity } from "@/lib/routine"
 import type { TimeBlock, Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { Loader2, ChevronDown, Check, Clock } from "lucide-react"
+import { Loader2, ChevronDown, Check, Clock, Trash2 } from "lucide-react"
 
 interface TimeBlockDialogProps {
   open: boolean
@@ -272,6 +272,30 @@ export function TimeBlockDialog({
     if (open) fetchActivities().then(setActivities)
   }, [open])
 
+  const handleDeleteBlock = async () => {
+    if (!timeBlock) return
+    await supabase.from("time_blocks").delete().eq("id", timeBlock.id)
+    onOpenChange(false)
+    onSuccess()
+  }
+
+  // Backspace/Delete exclui o bloco em edição (fora de campos de texto)
+  useEffect(() => {
+    if (!open || !timeBlock) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Backspace" && e.key !== "Delete") return
+      const t = e.target as HTMLElement
+      const typing =
+        t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable
+      if (typing) return
+      e.preventDefault()
+      handleDeleteBlock()
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, timeBlock])
+
   // Aplica uma atividade de rotina: título + duração (fim) + cor da categoria
   const applyActivity = (a: RoutineActivity) => {
     setTitle(a.name)
@@ -525,6 +549,18 @@ export function TimeBlockDialog({
           </div>
 
           <DialogFooter>
+            {timeBlock && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDeleteBlock}
+                aria-label="Excluir bloco"
+                title="Excluir bloco (Backspace)"
+                className="mr-auto border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
