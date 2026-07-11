@@ -15,8 +15,43 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import { Plus, Loader2, ListTodo, Rows3, LayoutGrid, ChevronRight, Check, X, Trash2 } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import { SortableContext, rectSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 const GENERAL = "__general__"
+
+// Ordem de exibição: manual (sort_order) primeiro; sem ordem manual → mais recentes
+function sortTasks(list: Task[]): Task[] {
+  return [...list].sort(
+    (a, b) =>
+      (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER) ||
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+}
+
+// Envelope arrastável de um card (tolerância de 8px preserva os cliques)
+function SortableTask({ id, children }: { id: string; children: React.ReactNode }) {
+  const { setNodeRef, listeners, transform, transition, isDragging } = useSortable({ id })
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      style={{ transform: CSS.Transform.toString(transform), transition, touchAction: "manipulation" }}
+      className={cn(isDragging && "z-20 opacity-85")}
+    >
+      {children}
+    </div>
+  )
+}
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -34,10 +69,47 @@ export default function TasksPage() {
   const supabase = createClient()
 
   const fetchTasks = useCallback(async () => {
-    const { data } = await supabase.from("tasks").select("*").order("created_at", { ascending: false })
-    if (data) setTasks(data)
+    const { data } = await supabase.from("tasks").select("*")
+    if (data) setTasks(sortTasks(data))
     setLoading(false)
   }, [supabase])
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+  )
+
+  // Arrastar e soltar: reordena dentro do mesmo grupo/lista e persiste
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e
+    if (!over || active.id === over.id) return
+    const a = tasks.find((t) => t.id === active.id)
+    const b = tasks.find((t) => t.id === over.id)
+    if (!a || !b) return
+    if ((a.list_id ?? null) !== (b.list_id ?? null)) return // v1: só dentro do mesmo grupo
+
+    const group = tasks.filter(
+      (t) =>
+        (t.list_id ?? null) === (a.list_id ?? null) &&
+        t.status !== "completed" &&
+        t.status !== "cancelled"
+    )
+    const oldIndex = group.findIndex((t) => t.id === a.id)
+    const newIndex = group.findIndex((t) => t.id === b.id)
+    if (oldIndex < 0 || newIndex < 0) return
+    const reordered = arrayMove(group, oldIndex, newIndex)
+
+    // Otimista: aplica a nova ordem localmente
+    const orderOf = new Map(reordered.map((t, i) => [t.id, i]))
+    setTasks((prev) => sortTasks(prev.map((t) => (orderOf.has(t.id) ? { ...t, sort_order: orderOf.get(t.id)! } : t))))
+
+    // Persiste (só as que mudaram)
+    Promise.all(
+      reordered.map((t, i) =>
+        t.sort_order === i ? null : supabase.from("tasks").update({ sort_order: i }).eq("id", t.id)
+      )
+    )
+  }
 
   const fetchLists = useCallback(async () => {
     const { data } = await supabase.from("task_lists").select("*").order("created_at", { ascending: true })
@@ -172,22 +244,39 @@ export default function TasksPage() {
     return groups
   }
 
-  const renderTasks = (items: Task[]) => (
-    <div className={cn(view === "grid" ? "grid gap-3 sm:grid-cols-2" : "space-y-3")}>
-      <AnimatePresence>
-        {items.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onStatusChange={handleStatusChange}
-            onToggleFavorite={handleToggleFavorite}
-          />
-        ))}
-      </AnimatePresence>
-    </div>
-  )
+  const renderTasks = (items: Task[], sortable = true) => {
+    const cards = (
+      <div className={cn(view === "grid" ? "grid gap-3 sm:grid-cols-2" : "space-y-3")}>
+        <AnimatePresence>
+          {items.map((task) => {
+            const card = (
+              <TaskCard
+                task={task}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onStatusChange={handleStatusChange}
+                onToggleFavorite={handleToggleFavorite}
+              />
+            )
+            return sortable ? (
+              <SortableTask key={task.id} id={task.id}>
+                {card}
+              </SortableTask>
+            ) : (
+              <div key={task.id}>{card}</div>
+            )
+          })}
+        </AnimatePresence>
+      </div>
+    )
+    return sortable ? (
+      <SortableContext items={items.map((t) => t.id)} strategy={rectSortingStrategy}>
+        {cards}
+      </SortableContext>
+    ) : (
+      cards
+    )
+  }
 
   const tabBtn = (selected: boolean) =>
     cn(
@@ -205,6 +294,7 @@ export default function TasksPage() {
       </Header>
 
       <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 md:px-6">
+      <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         {/* Listas + visualização */}
         <div className="mb-5 flex items-center justify-between gap-3">
           <div className="scrollbar-thin flex items-center gap-1.5 overflow-x-auto">
@@ -314,7 +404,7 @@ export default function TasksPage() {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="pt-4">{renderTasks(completed)}</div>
+                      <div className="pt-4">{renderTasks(completed, false)}</div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -322,6 +412,7 @@ export default function TasksPage() {
             )}
           </>
         )}
+      </DndContext>
       </div>
 
       <TaskDialog

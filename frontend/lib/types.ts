@@ -15,6 +15,7 @@ export interface Task {
   list_id: string | null
   is_favorite: boolean
   recurrence_rule: string | null // daily | weekly | monthly | yearly | every:N (dias)
+  sort_order: number | null // ordem manual (arrastar e soltar)
   created_at: string
   updated_at: string
 }
