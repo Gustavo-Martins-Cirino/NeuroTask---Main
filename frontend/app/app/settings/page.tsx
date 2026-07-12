@@ -7,7 +7,9 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2 } from "lucide-react"
+import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell } from "lucide-react"
+import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
+import { toast } from "sonner"
 import {
   fetchRoutine, saveRoutine, DEFAULT_ROUTINE, type RoutineProfile,
   fetchActivities, addActivity, updateActivityDuration, deleteActivity,
@@ -111,6 +113,32 @@ export default function SettingsPage() {
     fetchRoutine().then(setRoutine)
     fetchActivities().then(setActivities)
   }, [])
+
+  const [pushOn, setPushOn] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+
+  useEffect(() => {
+    getPushStatus().then(setPushOn)
+  }, [])
+
+  const handleTogglePush = async () => {
+    setPushBusy(true)
+    if (pushOn) {
+      await disablePush()
+      setPushOn(false)
+      toast("Notificações desativadas neste dispositivo.")
+    } else {
+      const err = await enablePush()
+      if (err) toast.error("Não deu para ativar", { description: err })
+      else {
+        setPushOn(true)
+        toast.success("Notificações ativadas! 🔔", {
+          description: "Lembretes e check-ins chegam mesmo com o app fechado.",
+        })
+      }
+    }
+    setPushBusy(false)
+  }
 
   const handleAddActivity = async () => {
     const name = newName.trim()
@@ -381,6 +409,41 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
+          </Section>
+
+          <Section
+            icon={<Bell className="h-5 w-5" />}
+            title="Notificações"
+            description="Lembretes e check-ins mesmo com o app fechado"
+          >
+            <button
+              type="button"
+              onClick={handleTogglePush}
+              disabled={pushBusy}
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-border/50 p-3 text-left transition-colors hover:border-border disabled:opacity-60"
+            >
+              <span>
+                <span className="block text-sm font-medium">Notificações neste dispositivo</span>
+                <span className="block text-xs text-muted-foreground">
+                  {pushSupported()
+                    ? "Ative em cada aparelho que quiser receber (celular, computador)."
+                    : "Não suportado neste navegador. No iPhone: adicione o app à tela de início e ative por lá."}
+                </span>
+              </span>
+              <span
+                className={cn(
+                  "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                  pushOn ? "bg-primary" : "bg-muted"
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all",
+                    pushOn ? "left-[22px]" : "left-0.5"
+                  )}
+                />
+              </span>
+            </button>
           </Section>
 
           <Section icon={<Bot className="h-5 w-5" />} title="Neuro IA" description="Assistente de produtividade">

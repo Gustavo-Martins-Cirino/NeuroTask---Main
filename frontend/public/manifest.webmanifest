@@ -1,0 +1,13 @@
+{
+  "name": "NeuroTask",
+  "short_name": "NeuroTask",
+  "description": "Seu copiloto de rotina: tarefas, time blocking, foco e IA.",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#0b0d14",
+  "theme_color": "#6366f1",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

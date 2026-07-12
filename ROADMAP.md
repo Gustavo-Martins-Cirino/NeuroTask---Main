@@ -53,7 +53,10 @@ Google Calendar). É um **copiloto de rotina**:
       (award_xp — supabase/xp_anticheat.sql). Regras transparentes no tooltip da barra.
 - [ ] **Moedas** ganhas com produtividade + **loja cosmética** (avatar/escritório do usuário).
 - [ ] **Amigos e comparação** (social): ver o escritório/nível dos amigos.
-- [ ] **Notificações push reais** (Service Worker — funciona com aba fechada).
+- [x] **Notificações push reais**: Service Worker + VAPID + push_subscriptions; dispatcher
+      /api/push/dispatch (service role) acionado a cada minuto pelo pg_cron do Supabase;
+      lembretes com hora e check-ins de blocos chegam com o app FECHADO. Manifest PWA
+      + ícones (iPhone exige adicionar à tela de início). SQLs: push.sql + push_cron.sql.
 
 ### Fase 4 — Integrações externas
 - [ ] **Bot do Telegram** (validação barata do fluxo "mensagem → tarefa"); depois WhatsApp
