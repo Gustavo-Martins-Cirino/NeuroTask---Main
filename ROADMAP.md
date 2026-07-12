@@ -37,9 +37,11 @@ Google Calendar). É um **copiloto de rotina**:
       Viram blocos de 1 toque no dialog do calendário e alimentarão o planejador.
 - [x] **Avisos inline no calendário** (determinísticos, `lib/calendar-warnings.ts`): sono
       curto entre dias / bloco de sono curto / tela perto de dormir; dispensáveis; toggle.
-- [ ] **Check-in pós-horário**: bloco terminou sem conclusão → notificação "Conseguiu fazer X?"
-      (concluir / reagendar). Respostas alimentam o autoconhecimento.
-- [ ] **Autoconhecimento v1**: tempo real vs. estimado por tipo de tarefa; médias no dashboard.
+- [x] **Check-in pós-horário**: bloco terminou → toast "Conseguiu fazer?" com Concluí
+      (conclui a tarefa vinculada com XP, respeita recorrência, registra em activity_log)
+      / Reagendar (move o bloco para agora). Roda no notificador global a cada 30s.
+- [x] **Autoconhecimento v1**: activity_log (planejado vs. real por check-in) + card no
+      dashboard com médias por atividade e desvio (+Xmin / em dia). SQL: activity_log.sql.
 - [ ] **Rotina aprendida** (camada implícita, determinística — sem ML pesado): minerar padrões
       recorrentes nos blocos reais (título normalizado × horário × duração) e SUGERIR, via
       Neuro, novas atividades de rotina ("você cria 'Almoço' todo dia ~12h — salvar?") e

@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
+import { awardXp, xpForTask } from "@/lib/gamification"
+import { nextFutureOccurrence } from "@/lib/task-recurrence"
+import { logActivity } from "@/lib/activity-log"
 import { toast } from "sonner"
 
 function localDateKey() {
@@ -69,6 +72,106 @@ export function ReminderNotifier() {
   }, [schedule])
 
   useRealtime("reminders", schedule)
+
+  // ---- Check-in pós-horário (Fase 2 · copiloto) ----
+  // Quando um bloco termina, pergunta "Conseguiu fazer?" com Concluir/Reagendar.
+  // As respostas alimentam o autoconhecimento (activity_log).
+  const blocksRef = useRef<{ id: string; title: string; start_time: string; end_time: string; task_id: string | null }[]>([])
+
+  const fetchTodayBlocks = useCallback(async () => {
+    const dayStart = new Date()
+    dayStart.setHours(0, 0, 0, 0)
+    const dayEnd = new Date(dayStart)
+    dayEnd.setDate(dayEnd.getDate() + 1)
+    const { data } = await supabase
+      .from("time_blocks")
+      .select("id, title, start_time, end_time, task_id")
+      .gte("start_time", dayStart.toISOString())
+      .lt("start_time", dayEnd.toISOString())
+    if (data) blocksRef.current = data
+  }, [supabase])
+
+  const completeFromCheckin = useCallback(
+    async (block: { id: string; title: string; start_time: string; end_time: string; task_id: string | null }) => {
+      const start = new Date(block.start_time).getTime()
+      const end = new Date(block.end_time).getTime()
+      const planned = Math.max(1, Math.round((end - start) / 60_000))
+      const actual = Math.max(1, Math.round((Date.now() - start) / 60_000))
+      logActivity(block.title, planned, actual)
+
+      // Se o bloco está ligado a uma tarefa, conclui (respeitando recorrência)
+      if (block.task_id) {
+        const { data: task } = await supabase
+          .from("tasks")
+          .select("id, priority, status, due_date, recurrence_rule")
+          .eq("id", block.task_id)
+          .maybeSingle()
+        if (task && task.status !== "completed") {
+          if (task.recurrence_rule) {
+            const base = task.due_date ? new Date(task.due_date) : new Date()
+            const next = nextFutureOccurrence(base, task.recurrence_rule)
+            await supabase
+              .from("tasks")
+              .update(
+                next
+                  ? { status: "pending", completed_at: null, due_date: next.toISOString() }
+                  : { status: "completed", completed_at: new Date().toISOString() }
+              )
+              .eq("id", task.id)
+          } else {
+            await supabase
+              .from("tasks")
+              .update({ status: "completed", completed_at: new Date().toISOString() })
+              .eq("id", task.id)
+          }
+          awardXp(xpForTask(task.priority))
+          window.dispatchEvent(new Event("neurotask:tasks-changed"))
+        }
+      }
+      toast.success(`"${block.title}" registrado! 🎯`, { description: "Isso alimenta seu autoconhecimento." })
+    },
+    [supabase]
+  )
+
+  const rescheduleFromCheckin = useCallback(
+    async (block: { id: string; title: string; start_time: string; end_time: string }) => {
+      const start = new Date(block.start_time).getTime()
+      const end = new Date(block.end_time).getTime()
+      const duration = Math.max(15 * 60_000, end - start)
+      const newStart = new Date()
+      const newEnd = new Date(newStart.getTime() + duration)
+      await supabase
+        .from("time_blocks")
+        .update({ start_time: newStart.toISOString(), end_time: newEnd.toISOString() })
+        .eq("id", block.id)
+      toast.success(`"${block.title}" reagendado para agora.`)
+    },
+    [supabase]
+  )
+
+  useEffect(() => {
+    fetchTodayBlocks()
+    const tick = setInterval(() => {
+      const now = Date.now()
+      for (const b of blocksRef.current) {
+        const end = new Date(b.end_time).getTime()
+        // terminou nos últimos 2 minutos e ainda não perguntamos
+        if (end > now || now - end > 2 * 60_000) continue
+        const key = `nt-checkin-${b.id}-${b.end_time}`
+        if (localStorage.getItem(key)) continue
+        localStorage.setItem(key, "1")
+        toast(`⏱️ "${b.title}" terminou`, {
+          description: "Conseguiu fazer?",
+          duration: 60_000,
+          action: { label: "Concluí ✅", onClick: () => completeFromCheckin(b) },
+          cancel: { label: "Reagendar", onClick: () => rescheduleFromCheckin(b) },
+        })
+      }
+    }, 30_000)
+    return () => clearInterval(tick)
+  }, [fetchTodayBlocks, completeFromCheckin, rescheduleFromCheckin])
+
+  useRealtime("time_blocks", fetchTodayBlocks)
 
   return null
 }
