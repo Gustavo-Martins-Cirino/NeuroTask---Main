@@ -14,6 +14,26 @@ export function xpForTask(priority: TaskPriority): number {
   return XP_BY_PRIORITY[priority] ?? 10
 }
 
+// ---- Anti-farm (Fase 3) ----
+// 1. Tarefa criada e concluída em menos de 10 min não vale XP (farm óbvio).
+// 2. Tarefa sem prazo E sem duração estimada vale metade (baixo compromisso).
+// 3. Teto diário de 150 XP — aplicado no SERVIDOR (função award_xp).
+export const MIN_TASK_AGE_MIN = 10
+export const DAILY_XP_CAP = 150
+
+export function taskXpAmount(task: {
+  priority: TaskPriority
+  created_at: string
+  due_date?: string | null
+  estimated_minutes?: number | null
+}): number {
+  const ageMin = (Date.now() - new Date(task.created_at).getTime()) / 60_000
+  if (ageMin < MIN_TASK_AGE_MIN) return 0
+  let amount = xpForTask(task.priority)
+  if (!task.due_date && !task.estimated_minutes) amount = Math.ceil(amount / 2)
+  return amount
+}
+
 export interface Gamification {
   totalXp: number
   level: number

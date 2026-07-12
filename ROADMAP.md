@@ -48,8 +48,9 @@ Google Calendar). É um **copiloto de rotina**:
       ajustes de duração ("você leva 55min, não 45 — ajustar?"). Usuário sempre confirma.
 
 ### Fase 3 — Hábito e gamificação com propósito
-- [ ] **Anti-farm de XP** (antes das moedas): XP só para tarefa com vida > 10 min,
-      cap diário de XP, XP reduzido sem prazo/duração.
+- [x] **Anti-farm de XP** (antes das moedas): tarefa com vida < 10 min não vale XP;
+      sem prazo E sem duração vale metade; teto de 150 XP/dia aplicado no SERVIDOR
+      (award_xp — supabase/xp_anticheat.sql). Regras transparentes no tooltip da barra.
 - [ ] **Moedas** ganhas com produtividade + **loja cosmética** (avatar/escritório do usuário).
 - [ ] **Amigos e comparação** (social): ver o escritório/nível dos amigos.
 - [ ] **Notificações push reais** (Service Worker — funciona com aba fechada).

@@ -3,7 +3,7 @@
 import { createContext, useContext, useCallback, useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
-import { awardXp, xpForTask } from "@/lib/gamification"
+import { awardXp, taskXpAmount } from "@/lib/gamification"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { SoundMixer } from "@/components/sound-mixer"
 import type { Task } from "@/lib/types"
@@ -165,7 +165,8 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
       } else {
         await supabase.from("tasks").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", focusTask.id)
       }
-      awardXp(xpForTask(focusTask.priority))
+      const amt = taskXpAmount(focusTask)
+      if (amt > 0) awardXp(amt)
       window.dispatchEvent(new Event("neurotask:tasks-changed"))
     }
     setOpen(false)

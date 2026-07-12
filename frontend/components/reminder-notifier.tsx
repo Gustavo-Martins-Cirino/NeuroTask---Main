@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
-import { awardXp, xpForTask } from "@/lib/gamification"
+import { awardXp, taskXpAmount } from "@/lib/gamification"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { logActivity } from "@/lib/activity-log"
 import { toast } from "sonner"
@@ -103,7 +103,7 @@ export function ReminderNotifier() {
       if (block.task_id) {
         const { data: task } = await supabase
           .from("tasks")
-          .select("id, priority, status, due_date, recurrence_rule")
+          .select("id, priority, status, due_date, recurrence_rule, created_at, estimated_minutes")
           .eq("id", block.task_id)
           .maybeSingle()
         if (task && task.status !== "completed") {
@@ -124,7 +124,8 @@ export function ReminderNotifier() {
               .update({ status: "completed", completed_at: new Date().toISOString() })
               .eq("id", task.id)
           }
-          awardXp(xpForTask(task.priority))
+          const amt = taskXpAmount(task)
+          if (amt > 0) awardXp(amt)
           window.dispatchEvent(new Event("neurotask:tasks-changed"))
         }
       }

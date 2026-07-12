@@ -8,7 +8,7 @@ import { TaskCard } from "@/components/task-card"
 import { TaskDialog } from "@/components/task-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
-import { awardXp, xpForTask } from "@/lib/gamification"
+import { awardXp, taskXpAmount, MIN_TASK_AGE_MIN } from "@/lib/gamification"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import type { Task, TaskStatus, TaskList } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -192,7 +192,8 @@ export default function TasksPage() {
           .from("tasks")
           .update({ status: "pending", completed_at: null, due_date: next.toISOString() })
           .eq("id", taskId)
-        awardXp(xpForTask(previous.priority))
+        const recAmt = taskXpAmount(previous)
+        if (recAmt > 0) awardXp(recAmt)
         toast.success("Tarefa recorrente concluída! 🔁", {
           description: `Próxima ocorrência: ${next.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })}`,
         })
@@ -206,9 +207,16 @@ export default function TasksPage() {
     updateData.completed_at = status === "completed" ? new Date().toISOString() : null
     await supabase.from("tasks").update(updateData).eq("id", taskId)
     if (previous) {
-      const amount = xpForTask(previous.priority)
-      if (status === "completed" && !wasCompleted) awardXp(amount)
-      else if (status !== "completed" && wasCompleted) awardXp(-amount)
+      const amount = taskXpAmount(previous)
+      if (status === "completed" && !wasCompleted) {
+        if (amount > 0) awardXp(amount)
+        else
+          toast.info("Concluída — sem XP desta vez 😉", {
+            description: `Tarefas criadas há menos de ${MIN_TASK_AGE_MIN} min não geram XP.`,
+          })
+      } else if (status !== "completed" && wasCompleted && amount > 0) {
+        awardXp(-amount)
+      }
     }
     // Notifica o card de "Em andamento" para aparecer/sumir na hora
     window.dispatchEvent(new Event("neurotask:tasks-changed"))

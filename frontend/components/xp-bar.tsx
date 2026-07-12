@@ -21,7 +21,7 @@ export function XpBar({
   return (
     <div
       className={cn("flex items-center gap-3", className)}
-      title="Conclua tarefas para ganhar XP — Baixa +5 · Média +10 · Alta +20 · Urgente +30. A cada 100 XP você sobe de nível!"
+      title="Conclua tarefas para ganhar XP — Baixa +5 · Média +10 · Alta +20 · Urgente +30. A cada 100 XP você sobe de nível! Regras: tarefas criadas há menos de 10 min não geram XP; sem prazo e sem duração vale metade; máximo de 150 XP por dia."
     >
       <div className="flex items-center gap-2">
         <div className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary/15 px-1.5 text-xs font-bold text-primary">
