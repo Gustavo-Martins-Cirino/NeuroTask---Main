@@ -42,10 +42,11 @@ Google Calendar). É um **copiloto de rotina**:
       / Reagendar (move o bloco para agora). Roda no notificador global a cada 30s.
 - [x] **Autoconhecimento v1**: activity_log (planejado vs. real por check-in) + card no
       dashboard com médias por atividade e desvio (+Xmin / em dia). SQL: activity_log.sql.
-- [ ] **Rotina aprendida** (camada implícita, determinística — sem ML pesado): minerar padrões
-      recorrentes nos blocos reais (título normalizado × horário × duração) e SUGERIR, via
-      Neuro, novas atividades de rotina ("você cria 'Almoço' todo dia ~12h — salvar?") e
-      ajustes de duração ("você leva 55min, não 45 — ajustar?"). Usuário sempre confirma.
+- [x] **Rotina aprendida** (camada implícita, determinística — sem ML, `lib/routine-insights.ts`):
+      minera os blocos reais dos últimos 30 dias (título normalizado em ≥3 dias distintos →
+      "salvar como atividade?" com mediana de duração e categoria heurística) e os check-ins
+      do activity_log (≥3 amostras, desvio ≥10min → "ajustar duração?"). Sugestões aparecem
+      em Configurações → Rotina com aceitar/ignorar. Usuário sempre confirma.
 
 ### Fase 3 — Hábito e gamificação com propósito
 - [x] **Anti-farm de XP** (antes das moedas): tarefa com vida < 10 min não vale XP;

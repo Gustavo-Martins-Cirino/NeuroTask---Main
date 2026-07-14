@@ -7,8 +7,9 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell } from "lucide-react"
+import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell, Sparkles, X } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
+import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
 import { toast } from "sonner"
 import {
   fetchRoutine, saveRoutine, DEFAULT_ROUTINE, type RoutineProfile,
@@ -161,6 +162,34 @@ export default function SettingsPage() {
   const handleDeleteActivity = (id: string) => {
     setActivities((prev) => prev.filter((a) => a.id !== id))
     deleteActivity(id)
+  }
+
+  // Rotina aprendida — sugestões mineradas dos seus blocos e check-ins
+  const [suggestions, setSuggestions] = useState<RoutineSuggestion[]>([])
+
+  useEffect(() => {
+    let alive = true
+    fetchRoutineSuggestions(activities).then((s) => {
+      if (alive) setSuggestions(s)
+    })
+    return () => { alive = false }
+  }, [activities])
+
+  const acceptSuggestion = async (s: RoutineSuggestion) => {
+    if (s.kind === "new") {
+      const { activity } = await addActivity({ name: s.title, category: s.category, duration_minutes: s.minutes })
+      if (activity) setActivities((prev) => [...prev, activity])
+    } else {
+      handleActivityDuration(s.activityId, s.to)
+    }
+    ignoreSuggestion(s.key)
+    setSuggestions((prev) => prev.filter((x) => x.key !== s.key))
+    toast.success("Rotina atualizada! ✨")
+  }
+
+  const dismissSuggestion = (s: RoutineSuggestion) => {
+    ignoreSuggestion(s.key)
+    setSuggestions((prev) => prev.filter((x) => x.key !== s.key))
   }
 
   const handleSaveRoutine = async () => {
@@ -407,6 +436,52 @@ export default function SettingsPage() {
                     Adicionar atividade
                   </button>
                 </div>
+
+                {/* Rotina aprendida — sugestões dos padrões reais */}
+                {suggestions.length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <Sparkles className="h-3.5 w-3.5" /> Sugestões da sua rotina
+                    </p>
+                    {suggestions.map((s) => (
+                      <div
+                        key={s.key}
+                        className="flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2"
+                      >
+                        <span className="min-w-0 flex-1 text-xs leading-relaxed">
+                          {s.kind === "new" ? (
+                            <>
+                              Você fez <strong>{s.title}</strong> em {s.days} dias diferentes — salvar como
+                              atividade de {ACTIVITY_CATEGORIES.find((c) => c.value === s.category)?.label.toLowerCase() ?? s.category} de{" "}
+                              <strong>{s.minutes} min</strong>?
+                            </>
+                          ) : (
+                            <>
+                              Em <strong>{s.title}</strong> você leva ~<strong>{s.to} min</strong> na prática
+                              ({s.samples} check-ins), não {s.from} — ajustar?
+                            </>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => acceptSuggestion(s)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-85"
+                          title="Aceitar sugestão"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => dismissSuggestion(s)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border/50 text-muted-foreground transition-colors hover:bg-accent"
+                          title="Ignorar"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </Section>
