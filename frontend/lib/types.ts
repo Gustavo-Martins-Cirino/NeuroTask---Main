@@ -16,6 +16,8 @@ export interface Task {
   is_favorite: boolean
   recurrence_rule: string | null // daily | weekly | monthly | yearly | every:N (dias)
   sort_order: number | null // ordem manual (arrastar e soltar)
+  meeting_url: string | null // link da reunião (Meet, Zoom, Teams... — agnóstico)
+  location: string | null // local (reunião presencial)
   created_at: string
   updated_at: string
 }

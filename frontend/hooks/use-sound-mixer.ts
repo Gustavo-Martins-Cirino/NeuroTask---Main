@@ -55,6 +55,9 @@ export function useSoundMixer(configs: MixerTrackConfig[]) {
   const masterRef = useRef<GainNode | null>(null)
   const bufferCache = useRef<Map<string, AudioBuffer>>(new Map())
   const activeNodes = useRef<Map<string, Controller>>(new Map())
+  // Starts em andamento (fetch+decode é lento em rede real): marca ANTES do
+  // await para impedir start duplo e permitir cancelar via stopTrack
+  const pendingStarts = useRef<Set<string>>(new Set())
   const stateRef = useRef(tracks)
   stateRef.current = tracks
   const masterVolRef = useRef(masterVolume)
@@ -75,6 +78,14 @@ export function useSoundMixer(configs: MixerTrackConfig[]) {
           for (const c of configs) {
             const s = parsed.tracks![c.id]
             if (s) next[c.id] = { volume: s.volume, active: s.active, unavailable: false }
+          }
+          // Saneia mixes salvos antes da regra de exclusividade: no máximo
+          // UMA música ativa (senão o prime() toca duas ao mesmo tempo)
+          let musicSeen = false
+          for (const c of configs) {
+            if (c.category !== "music" || !next[c.id]?.active) continue
+            if (musicSeen) next[c.id] = { ...next[c.id], active: false }
+            musicSeen = true
           }
           return next
         })
@@ -127,17 +138,21 @@ export function useSoundMixer(configs: MixerTrackConfig[]) {
 
   const startTrack = useCallback(
     async (id: string) => {
-      if (activeNodes.current.has(id)) return
+      if (activeNodes.current.has(id) || pendingStarts.current.has(id)) return
       const cfg = configs.find((c) => c.id === id)
       if (!cfg) return
+      pendingStarts.current.add(id)
       const ctx = ensureCtx()
       let buf: AudioBuffer
       try {
         buf = await getBuffer(cfg)
       } catch {
+        pendingStarts.current.delete(id)
         setTracks((p) => ({ ...p, [id]: { ...p[id], active: false, unavailable: true } }))
         return
       }
+      // stopTrack cancelou este start enquanto o áudio carregava → aborta
+      if (!pendingStarts.current.delete(id)) return
       if (activeNodes.current.has(id)) return
       const vol = stateRef.current[id]?.volume ?? 0.5
 
@@ -195,6 +210,7 @@ export function useSoundMixer(configs: MixerTrackConfig[]) {
   )
 
   const stopTrack = useCallback((id: string) => {
+    pendingStarts.current.delete(id) // cancela start ainda carregando
     const node = activeNodes.current.get(id)
     const ctx = ctxRef.current
     if (!node || !ctx) return

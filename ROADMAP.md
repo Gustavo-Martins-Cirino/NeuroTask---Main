@@ -58,7 +58,12 @@ Google Calendar). É um **copiloto de rotina**:
       tabela shop_items; compra via RPC atômica buy_item (valida saldo/posse). Cena SVG em
       camadas (components/office-scene.tsx) + loja com 19 itens em 5 slots (decor livre;
       cadeira/setup/parede/piso exclusivos), equipar/guardar. SQL: coins_shop.sql.
-- [ ] **Amigos e comparação** (social): ver o escritório/nível dos amigos.
+- [ ] **Amigos e comparação** (social): buscar usuários + pedido/aceite de amizade;
+      ver o escritório/nível dos amigos. **Status ocupado/livre**: ver se o amigo está
+      ocupado AGORA (derivado dos blocos dele) SEM acesso à rotina/detalhes — só o
+      indicador binário. Privacidade configurável: o usuário escolhe se expõe o status,
+      o escritório e o nível (tudo opt-in). Caso de uso: colega de trabalho vê se você
+      está livre antes de te chamar.
 - [x] **Notificações push reais**: Service Worker + VAPID + push_subscriptions; dispatcher
       /api/push/dispatch (service role) acionado a cada minuto pelo pg_cron do Supabase;
       lembretes com hora e check-ins de blocos chegam com o app FECHADO. Manifest PWA

@@ -68,7 +68,7 @@ supabase/                     # SQLs por feature (rodar no SQL Editor do Supabas
   fix_schema.sql · notes.sql · favorites.sql · task_lists.sql · gamification.sql
   realtime.sql · reminders.sql · day_notes.sql · routine_profile.sql
   routine_activities.sql · task_recurrence.sql · task_order.sql · activity_log.sql
-  xp_anticheat.sql · push.sql · push_cron.sql · coins_shop.sql
+  xp_anticheat.sql · push.sql · push_cron.sql · coins_shop.sql · task_meeting.sql
 ```
 
 ## Rotas existentes

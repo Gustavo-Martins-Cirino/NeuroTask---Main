@@ -17,8 +17,10 @@ import { motion } from "framer-motion"
 import {
   MoreHorizontal, Pencil, Trash2, Clock, AlertCircle,
   ArrowUp, ArrowRight, ArrowDown, Check, Play, Star, Repeat,
+  Video, Copy, MapPin,
 } from "lucide-react"
 import { recurrenceLabel } from "@/lib/task-recurrence"
+import { toast } from "sonner"
 
 interface TaskCardProps {
   task: Task
@@ -187,6 +189,38 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleFavor
             <Badge variant="secondary" className="bg-primary/10 text-xs text-primary">
               <Repeat className="mr-1 h-3 w-3" />
               {recurrenceLabel(task.recurrence_rule)}
+            </Badge>
+          )}
+
+          {/* Reunião: entrar + copiar em 1 clique */}
+          {task.meeting_url && (
+            <span className="flex items-center overflow-hidden rounded-full bg-violet-500/10 text-xs font-medium text-violet-600 dark:text-violet-400">
+              <a
+                href={task.meeting_url.startsWith("http") ? task.meeting_url : `https://${task.meeting_url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 py-0.5 pl-2 pr-1.5 transition-colors hover:bg-violet-500/15"
+              >
+                <Video className="h-3 w-3" />
+                Entrar
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(task.meeting_url!)
+                  toast.success("Link da reunião copiado!")
+                }}
+                aria-label="Copiar link da reunião"
+                className="border-l border-violet-500/20 py-1 pl-1.5 pr-2 transition-colors hover:bg-violet-500/15"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+
+          {task.location && (
+            <Badge variant="secondary" className="max-w-40 bg-muted text-xs text-muted-foreground">
+              <MapPin className="mr-1 h-3 w-3 shrink-0" />
+              <span className="truncate">{task.location}</span>
             </Badge>
           )}
 

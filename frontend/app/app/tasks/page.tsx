@@ -39,14 +39,14 @@ function sortTasks(list: Task[]): Task[] {
 }
 
 // Envelope arrastável de um card (tolerância de 8px preserva os cliques)
-function SortableTask({ id, children }: { id: string; children: React.ReactNode }) {
+function SortableTask({ id, className, children }: { id: string; className?: string; children: React.ReactNode }) {
   const { setNodeRef, listeners, transform, transition, isDragging } = useSortable({ id })
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       style={{ transform: CSS.Transform.toString(transform), transition, touchAction: "manipulation" }}
-      className={cn(isDragging && "z-20 opacity-85")}
+      className={cn(className, isDragging && "z-20 opacity-85")}
     >
       {children}
     </div>
@@ -253,8 +253,11 @@ export default function TasksPage() {
   }
 
   const renderTasks = (items: Task[], sortable = true) => {
+    // Grid = masonry por colunas (columns + break-inside-avoid): cards de
+    // alturas diferentes empacotam sem deixar buracos entre as linhas.
+    const itemCls = view === "grid" ? "mb-3 break-inside-avoid" : undefined
     const cards = (
-      <div className={cn(view === "grid" ? "grid gap-3 sm:grid-cols-2" : "space-y-3")}>
+      <div className={cn(view === "grid" ? "columns-1 gap-3 sm:columns-2" : "space-y-3")}>
         <AnimatePresence>
           {items.map((task) => {
             const card = (
@@ -267,11 +270,13 @@ export default function TasksPage() {
               />
             )
             return sortable ? (
-              <SortableTask key={task.id} id={task.id}>
+              <SortableTask key={task.id} id={task.id} className={itemCls}>
                 {card}
               </SortableTask>
             ) : (
-              <div key={task.id}>{card}</div>
+              <div key={task.id} className={itemCls}>
+                {card}
+              </div>
             )
           })}
         </AnimatePresence>
