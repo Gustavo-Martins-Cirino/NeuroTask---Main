@@ -52,7 +52,12 @@ Google Calendar). É um **copiloto de rotina**:
 - [x] **Anti-farm de XP** (antes das moedas): tarefa com vida < 10 min não vale XP;
       sem prazo E sem duração vale metade; teto de 150 XP/dia aplicado no SERVIDOR
       (award_xp — supabase/xp_anticheat.sql). Regras transparentes no tooltip da barra.
-- [ ] **Moedas** ganhas com produtividade + **loja cosmética** (avatar/escritório do usuário).
+- [x] **Moedas + loja cosmética — o Escritório** (`/app/office`): moedas nascem no SERVIDOR
+      dentro do award_xp (1 moeda a cada 5 XP concedidos → máx. ~30/dia pelo teto; estorno
+      debita sem travar em 0 para não virar impressora de moedas). Preços autoritativos na
+      tabela shop_items; compra via RPC atômica buy_item (valida saldo/posse). Cena SVG em
+      camadas (components/office-scene.tsx) + loja com 19 itens em 5 slots (decor livre;
+      cadeira/setup/parede/piso exclusivos), equipar/guardar. SQL: coins_shop.sql.
 - [ ] **Amigos e comparação** (social): ver o escritório/nível dos amigos.
 - [x] **Notificações push reais**: Service Worker + VAPID + push_subscriptions; dispatcher
       /api/push/dispatch (service role) acionado a cada minuto pelo pg_cron do Supabase;

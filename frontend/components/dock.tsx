@@ -12,6 +12,7 @@ import {
   FileText,
   Brain,
   Zap,
+  Armchair,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -48,6 +49,11 @@ const navItems = [
     icon: Bot,
     label: "Neuro IA",
     href: "/app/ai",
+  },
+  {
+    icon: Armchair,
+    label: "Escritório",
+    href: "/app/office",
   },
 ]
 

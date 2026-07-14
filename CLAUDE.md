@@ -22,6 +22,7 @@ frontend/
 │   │   ├── notes/page.tsx    # Notas (rich text)
 │   │   ├── favorites/page.tsx
 │   │   ├── ai/page.tsx       # Chat de IA
+│   │   ├── office/page.tsx   # Escritório (loja cosmética com moedas)
 │   │   └── settings/page.tsx
 │   ├── api/
 │   │   └── ai/route.ts       # + ai/transcribe/route.ts (Vercel AI SDK)
@@ -43,6 +44,7 @@ frontend/
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
 │   ├── robot-mascot.tsx      # Robozinho SVG animado (mascote da Neuro IA no modo voz)
+│   ├── office-scene.tsx      # Cena SVG do Escritório (camadas por item equipado)
 │   ├── page-transition.tsx   # Transições de página (AnimatePresence)
 │   ├── rich-text-editor.tsx  # Editor das notas
 │   ├── date-picker.tsx
@@ -54,7 +56,9 @@ frontend/
 ├── hooks/                    # use-mobile · use-realtime · use-sound-mixer · use-toast
 ├── lib/
 │   ├── supabase/             # client.ts · server.ts · middleware.ts (helper de updateSession)
-│   ├── gamification.ts       # Lógica de XP/níveis
+│   ├── gamification.ts       # Lógica de XP/níveis (+ anti-farm)
+│   ├── shop.ts               # Catálogo/estado da loja do Escritório (preços no banco)
+│   ├── routine-insights.ts   # Rotina aprendida: sugestões determinísticas de rotina
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
 │   ├── types.ts
 │   └── utils.ts              # cn()
@@ -62,7 +66,9 @@ frontend/
 
 supabase/                     # SQLs por feature (rodar no SQL Editor do Supabase)
   fix_schema.sql · notes.sql · favorites.sql · task_lists.sql · gamification.sql
-  realtime.sql · reminders.sql · day_notes.sql
+  realtime.sql · reminders.sql · day_notes.sql · routine_profile.sql
+  routine_activities.sql · task_recurrence.sql · task_order.sql · activity_log.sql
+  xp_anticheat.sql · push.sql · push_cron.sql · coins_shop.sql
 ```
 
 ## Rotas existentes
@@ -75,7 +81,8 @@ supabase/                     # SQLs por feature (rodar no SQL Editor do Supabas
 | `/app/favorites` | Favoritos |
 | `/app/notes` | Notas (rich text editor) |
 | `/app/ai` | Chat de IA (Vercel AI SDK, rota `app/api/ai`) |
-| `/app/settings` | Configurações |
+| `/app/office` | Escritório — loja cosmética (moedas ganhas com XP) |
+| `/app/settings` | Configurações (rotina, notificações push, tema) |
 
 ## Decisões de design ativas
 
