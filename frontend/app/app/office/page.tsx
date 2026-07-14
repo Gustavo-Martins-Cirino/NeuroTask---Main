@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react"
 import { Header } from "@/components/header"
 import { OfficeScene } from "@/components/office-scene"
 import { cn } from "@/lib/utils"
-import { motion } from "framer-motion"
-import { Armchair, Coins, Check, Loader2, Sparkles } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Armchair, Coins, Check, Loader2, Sparkles, Eye } from "lucide-react"
 import { toast } from "sonner"
 import {
   CATALOG, CATEGORY_LABELS, EXCLUSIVE_CATEGORIES,
@@ -42,6 +42,23 @@ export default function OfficePage() {
     for (const [id, eq] of owned) if (eq) s.add(id)
     return s
   }, [owned])
+
+  // Prévia ao passar o mouse (ou segurar o dedo) num item da loja:
+  // renderiza a cena como se ele estivesse equipado
+  const [previewId, setPreviewId] = useState<string | null>(null)
+  const previewItem = previewId ? CATALOG.find((i) => i.id === previewId) : null
+
+  const sceneSet = useMemo(() => {
+    if (!previewItem || equippedSet.has(previewItem.id)) return equippedSet
+    const s = new Set(equippedSet)
+    if (EXCLUSIVE_CATEGORIES.includes(previewItem.category)) {
+      for (const other of CATALOG) {
+        if (other.category === previewItem.category) s.delete(other.id)
+      }
+    }
+    s.add(previewItem.id)
+    return s
+  }, [equippedSet, previewItem])
 
   const handleBuy = async (item: ShopItem) => {
     setBusyItem(item.id)
@@ -111,15 +128,28 @@ export default function OfficePage() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
+            className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
           >
             {loading ? (
               <div className="flex aspect-[400/260] items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <OfficeScene equipped={equippedSet} className="block w-full" />
+              <OfficeScene equipped={sceneSet} className="block w-full" />
             )}
+            <AnimatePresence>
+              {previewItem && !equippedSet.has(previewItem.id) && (
+                <motion.span
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Prévia · {previewItem.name}
+                </motion.span>
+              )}
+            </AnimatePresence>
             <div className="flex items-center justify-between border-t border-border/50 px-4 py-2.5">
               <p className="text-xs text-muted-foreground">
                 {ownedCount === 0
@@ -168,9 +198,11 @@ export default function OfficePage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                    onPointerEnter={() => setPreviewId(item.id)}
+                    onPointerLeave={() => setPreviewId((cur) => (cur === item.id ? null : cur))}
                     className={cn(
                       "flex flex-col gap-1.5 rounded-xl border p-3 transition-colors",
-                      isEquipped ? "border-primary/40 bg-primary/5" : "border-border/50 bg-card"
+                      isEquipped ? "border-primary/40 bg-primary/5" : "border-border/50 bg-card hover:border-primary/30"
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
