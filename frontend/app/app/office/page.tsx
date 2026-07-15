@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react"
 import { Header } from "@/components/header"
 import { OfficeScene } from "@/components/office-scene"
+import { AvatarEditor } from "@/components/avatar-editor"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Armchair, Coins, Check, Loader2, Sparkles, Eye } from "lucide-react"
+import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil } from "lucide-react"
 import { toast } from "sonner"
 import {
   CATALOG, CATEGORY_LABELS, EXCLUSIVE_CATEGORIES,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/shop"
 import { XP_UPDATED_EVENT } from "@/lib/gamification"
 import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
+import { fetchAvatar, saveAvatar, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar"
 
 const CATEGORY_ORDER: ShopCategory[] = ["decor", "setup", "cadeira", "parede", "piso"]
 
@@ -25,9 +27,12 @@ export default function OfficePage() {
   const [filter, setFilter] = useState<ShopCategory | "all">("all")
 
   const [stats, setStats] = useState<OfficeStats | undefined>(undefined)
+  const [avatarCfg, setAvatarCfg] = useState<AvatarConfig>(DEFAULT_AVATAR)
+  const [avatarOpen, setAvatarOpen] = useState(false)
 
   const load = () => {
     fetchOfficeStats().then(setStats)
+    fetchAvatar().then(setAvatarCfg)
     return fetchShopState().then((s) => {
       setCoins(s.coins)
       setOwned(new Map(s.owned.map((o) => [o.item_id, o.equipped])))
@@ -128,7 +133,7 @@ export default function OfficePage() {
       </Header>
 
       <div className="flex-1 px-4 py-6 md:px-10">
-        <div className="mx-auto w-full max-w-4xl space-y-6">
+        <div className="mx-auto w-full max-w-5xl space-y-6">
           {/* Cena */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -140,7 +145,7 @@ export default function OfficePage() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <OfficeScene equipped={sceneSet} stats={stats} className="block w-full" />
+              <OfficeScene equipped={sceneSet} stats={stats} avatar={avatarCfg} className="block w-full" />
             )}
             <AnimatePresence>
               {previewItem && !equippedSet.has(previewItem.id) && (
@@ -155,15 +160,23 @@ export default function OfficePage() {
                 </motion.span>
               )}
             </AnimatePresence>
-            <div className="flex items-center justify-between border-t border-border/50 px-4 py-2.5">
-              <p className="text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 border-t border-border/50 px-4 py-2.5">
+              <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                 {ownedCount === 0
                   ? "Seu cantinho começa simples — decore-o com a sua produtividade."
                   : `${ownedCount} ${ownedCount === 1 ? "item conquistado" : "itens conquistados"}`}
               </p>
-              <p className="hidden text-xs text-muted-foreground sm:block">
-                1 moeda a cada 5 XP · conclua tarefas 💪
+              <p className="hidden text-xs text-muted-foreground md:block">
+                1 moeda a cada 5 XP 💪
               </p>
+              <button
+                type="button"
+                onClick={() => setAvatarOpen(true)}
+                className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+              >
+                <Pencil className="h-3 w-3" />
+                Editar avatar
+              </button>
             </div>
           </motion.div>
 
@@ -268,6 +281,18 @@ export default function OfficePage() {
           </div>
         </div>
       </div>
+
+      <AvatarEditor
+        open={avatarOpen}
+        onOpenChange={setAvatarOpen}
+        value={avatarCfg}
+        onSave={(cfg) => {
+          setAvatarCfg(cfg)
+          setAvatarOpen(false)
+          saveAvatar(cfg)
+          toast.success("Avatar atualizado! ✨")
+        }}
+      />
     </div>
   )
 }

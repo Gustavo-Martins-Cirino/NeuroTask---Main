@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { AvatarFigure } from "@/components/avatar-figure"
+import { DEFAULT_AVATAR, normalizeAvatar, type AvatarConfig } from "@/lib/avatar"
 
 // Cena SVG do Escritório — visão ISOMÉTRICA 2.5D ("Escritório vivo"):
 // duas paredes + chão em losango, móveis com profundidade (projeção 2:1),
@@ -18,6 +20,7 @@ export interface OfficeSceneStats {
 interface OfficeSceneProps {
   equipped: Set<string>
   stats?: OfficeSceneStats // ausente = cena neutra (ex.: escritório de amigo)
+  avatar?: AvatarConfig | null
   className?: string
 }
 
@@ -35,6 +38,14 @@ const SKY: Record<DayPhase, { sky: string; horizon: string; building: string; su
   day: { sky: "#aee0f2", horizon: "#7fb5d6", building: "#5f7f9c", sun: "#fff3c4", lights: false },
   dusk: { sky: "#f2a06a", horizon: "#c96f5a", building: "#4c5170", sun: "#ff9d4d", lights: true },
   night: { sky: "#1c2b4a", horizon: "#14203a", building: "#2e3f57", moon: true, lights: true },
+}
+
+// Fundo da ilustração (atrás da sala) por fase — nada de void escuro
+const BG: Record<DayPhase, [string, string]> = {
+  dawn: ["#fbe3c9", "#f6efe2"],
+  day: ["#dfeefa", "#f2f8fd"],
+  dusk: ["#f2c1a0", "#e8d7d2"],
+  night: ["#232c4d", "#3a476e"],
 }
 
 // ---- Projeção isométrica 2:1 ----
@@ -98,8 +109,9 @@ const BOOKS = [
   { x: 126, y: 82, h: 22, f: "#ffb74d" },
 ]
 
-export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
+export function OfficeScene({ equipped, stats, avatar, className }: OfficeSceneProps) {
   const has = (id: string) => equipped.has(id)
+  const person = avatar ? normalizeAvatar(avatar) : DEFAULT_AVATAR
 
   const [hour, setHour] = useState(12)
   useEffect(() => {
@@ -160,6 +172,16 @@ export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
         .nt-steam-p { animation: nt-steam 2.4s ease-out infinite; }
         .nt-head-bob { animation: nt-bob 2.6s ease-in-out infinite; }
       `}</style>
+
+      {/* ---- Fundo (ambiente atrás da sala, segue a fase do dia) ---- */}
+      <defs>
+        <linearGradient id="nt-scene-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={BG[phase][0]} />
+          <stop offset="1" stopColor={BG[phase][1]} />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="480" height="340" fill="url(#nt-scene-bg)" />
+      <ellipse cx="240" cy="298" rx="215" ry="36" fill="#000" opacity="0.10" />
 
       {/* ---- Paredes ---- */}
       <polygon points={quad([0, 0, WALL_H], [0, FLOOR, WALL_H], [0, FLOOR, 0], [0, 0, 0])} fill={wallBase} />
@@ -407,34 +429,20 @@ export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
       <Box x={74} y={82} dx={4} dy={4} z={4} dz={14} c="#4a4a4a" />
       {/* assento */}
       <Box x={62} y={70} dx={28} dy={28} z={18} dz={7} c={chairColor} />
-      {/* você — sentado de lado, cabelo e fones visíveis */}
-      <g className={working ? undefined : "nt-head-bob nt-o"}>
-        <Box x={66} y={76} dx={16} dy={16} z={25} dz={26} c="#3f6f8f" />
-        <g transform={`translate(${sx(74, 84)},${sy(74, 84, 60)})`}>
-          <circle cx="0" cy="0" r="10" fill="#e0a97e" />
-          <path d="M-10 0 a10 10 0 0 1 20 0 v-1 q0 3 -4 3 l0 -3 q-1 3 -5 3 q-8 0 -11 -2 z" fill="#4a3a2c" />
-          <path d="M-10 -1 a10 10 0 0 1 20 -0.5" fill="none" stroke="#2f2f38" strokeWidth="3" strokeLinecap="round" />
-          <ellipse cx="8" cy="2" rx="3.4" ry="4.4" fill="#2f2f38" />
-        </g>
+      {/* você — avatar editável, sentado de lado (pernas incluídas!) */}
+      <g
+        className={working ? undefined : "nt-head-bob nt-o"}
+        transform={`translate(${sx(74, 84)},${sy(74, 84, 25)})`}
+      >
+        <AvatarFigure config={person} working={working} />
       </g>
-      {/* braços digitando (só com trabalho de verdade rolando) */}
-      {working && (
-        <g>
-          <g className="nt-arm-l nt-o">
-            <line x1={sx(68, 78)} y1={sy(68, 78, 46)} x2={sx(42, 74)} y2={sy(42, 74, 40)} stroke="#e0a97e" strokeWidth="4.5" strokeLinecap="round" />
-          </g>
-          <g className="nt-arm-r nt-o">
-            <line x1={sx(68, 92)} y1={sy(68, 92, 46)} x2={sx(42, 92)} y2={sy(42, 92, 40)} stroke="#e0a97e" strokeWidth="4.5" strokeLinecap="round" />
-          </g>
-        </g>
-      )}
       {/* encosto (na frente do tronco para dar profundidade) */}
       {chairBack > 0 && <Box x={88} y={70} dx={6} dy={28} z={22} dz={chairBack} c={chairColor} />}
 
-      {/* ---- Planta grande (frente-esquerda) ---- */}
+      {/* ---- Planta grande (frente-esquerda, dentro do losango do chão) ---- */}
       {has("planta-grande") && (
-        <g transform={`translate(${sx(36, 152)},${sy(36, 152, 0)})`}>
-          <Shadow x={36} y={152} rx={24} ry={9} />
+        <g transform={`translate(${sx(52, 142)},${sy(52, 142, 0)})`}>
+          <ellipse cx="0" cy="4" rx="24" ry="9" fill="#000" opacity="0.08" />
           <g className="nt-plant-slow nt-o">
             <path d="M0 -4 q-12 -30 5 -52" fill="none" stroke="#4e7d52" strokeWidth="4.5" strokeLinecap="round" />
             <path d="M0 -4 q3 -36 -16 -46" fill="none" stroke="#4e7d52" strokeWidth="4.5" strokeLinecap="round" />
@@ -451,7 +459,7 @@ export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
       {/* ---- Luminária (frente-direita) ---- */}
       {has("luminaria") && (
         <g transform={`translate(${sx(148, 64)},${sy(148, 64, 0)})`}>
-          <Shadow x={148} y={64} rx={16} ry={6} />
+          <ellipse cx="0" cy="0" rx="16" ry="6" fill="#000" opacity="0.08" />
           <circle cx="0" cy="-86" r={isNight ? 26 : 21} fill="#ffe9a8" className="nt-lamp-glow" style={{ ["--glow" as string]: isNight ? 0.6 : 0.4 }} />
           <path d="M-12 -94 h24 l-5 13 h-14 z" fill="#e0a437" />
           <line x1="0" y1="-81" x2="0" y2="-4" stroke="#7a7267" strokeWidth="3.5" />

@@ -46,6 +46,8 @@ frontend/
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
 │   ├── robot-mascot.tsx      # Robozinho SVG animado (mascote da Neuro IA no modo voz)
 │   ├── office-scene.tsx      # Cena SVG isométrica 2.5D do Escritório (viva/reativa)
+│   ├── avatar-figure.tsx     # Bonequinho paper-doll (usado na cena e no editor)
+│   ├── avatar-editor.tsx     # Editor de avatar (cabelo/pele/roupa/fones)
 │   ├── friends-section.tsx   # Seção de amigos (usada em /app/friends)
 │   ├── page-transition.tsx   # Transições de página (AnimatePresence)
 │   ├── rich-text-editor.tsx  # Editor das notas
@@ -71,7 +73,7 @@ supabase/                     # SQLs por feature (rodar no SQL Editor do Supabas
   realtime.sql · reminders.sql · day_notes.sql · routine_profile.sql
   routine_activities.sql · task_recurrence.sql · task_order.sql · activity_log.sql
   xp_anticheat.sql · push.sql · push_cron.sql · coins_shop.sql · task_meeting.sql
-  friends.sql
+  friends.sql · social_v2.sql
 ```
 
 ## Rotas existentes

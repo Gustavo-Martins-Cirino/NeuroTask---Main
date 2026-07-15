@@ -74,10 +74,15 @@ Google Calendar). É um **copiloto de rotina**:
       `planeX`/`planeY` para telas/estante), duas paredes + chão em losango, sombras,
       rodapé e acabamento superior. Pessoa visível de lado (cabelo + fones). Validada
       por render server-side → PNG (react-dom/server + sharp) antes do deploy.
-- [ ] **Escritório vivo v3** (adiado por decisão): guarda-roupa paper-doll do avatar
-      (roupas/acessórios compráveis); comemoração ao concluir (evento); sala expansível
-      por nível (comparação social legível num relance) + snapshot compartilhável.
-      3D real adiado.
+- [x] **Avatar editável (paper-doll)** — lib/avatar.ts + components/avatar-figure.tsx +
+      avatar-editor.tsx: pernas (!), 6 cabelos × 6 cores, 5 tons de pele, 4 roupas
+      (camiseta/moletom/jaqueta/terno) × 6 cores, fones on/off. Editor com preview ao
+      vivo no Escritório; salvo em user_stats.avatar (jsonb, social_v2.sql); amigos
+      veem o avatar na visita (friend_office, portão share_office). Cena ganhou fundo
+      gradiente por fase do dia (fim do void escuro) + sombra ambiente.
+- [ ] **Escritório vivo v3** (adiado por decisão): comemoração ao concluir (evento);
+      sala expansível por nível (comparação social legível num relance) + snapshot
+      compartilhável. Roupas/acessórios do avatar COMPRÁVEIS na loja. 3D real adiado.
 - [x] **Amigos e comparação** (social, v1 — friends.sql): perfil público com @username
       único (escolhido na seção Amigos do Escritório); busca por @/nome via RPC (nunca
       expõe e-mail); pedido/aceite/desfazer amizade (pedido mútuo vira amizade na hora);
@@ -87,10 +92,13 @@ Google Calendar). É um **copiloto de rotina**:
       aceitos (o aceite é o portão), cada flag desligável nos chips da seção. Toda
       leitura sensível via RPC security definer que valida amizade + flag.
       Aba própria no dock: `/app/friends` (o social vai além do escritório).
+      **Sugeridos** (social_v2.sql): perfis com "perfil aberto" (discoverable,
+      configurável nos chips) aparecem como sugestão de amizade para outros usuários.
 - [ ] **Amigos v2 — agenda e convites**: ver horários ocupados do amigo (permissão
       própria, além do booleano agora); convidar para compromisso (proposta →
       aceite → bloco criado no calendário dos dois); usa a aba Reunião das tarefas
-      (link/local) para reuniões marcadas entre amigos.
+      (link/local) para reuniões marcadas entre amigos. Sugestões por REGIÃO
+      (requer localização aproximada opt-in — decidir fonte antes).
 - [x] **Notificações push reais**: Service Worker + VAPID + push_subscriptions; dispatcher
       /api/push/dispatch (service role) acionado a cada minuto pelo pg_cron do Supabase;
       lembretes com hora e check-ins de blocos chegam com o app FECHADO. Manifest PWA

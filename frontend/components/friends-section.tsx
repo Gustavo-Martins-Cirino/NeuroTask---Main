@@ -13,9 +13,10 @@ import {
 import {
   fetchMyProfile, claimUsername, normalizeUsername, updatePrivacy,
   searchUsers, sendFriendRequest, fetchMyFriends, acceptFriendRequest,
-  removeFriendship, fetchFriendOffice,
+  removeFriendship, fetchFriendOffice, fetchSuggestedUsers,
   type MyProfile, type UserSearchResult, type FriendEntry, type FriendOffice,
 } from "@/lib/friends"
+import { normalizeAvatar } from "@/lib/avatar"
 
 function Initial({ name }: { name: string }) {
   return (
@@ -49,8 +50,12 @@ export function FriendsSection() {
   const [claiming, setClaiming] = useState(false)
   const [visit, setVisit] = useState<FriendOffice | null>(null)
   const [visitLoading, setVisitLoading] = useState<string | null>(null)
+  const [suggested, setSuggested] = useState<UserSearchResult[]>([])
 
-  const refreshFriends = () => fetchMyFriends().then(setFriends)
+  const refreshFriends = () => {
+    fetchMyFriends().then(setFriends)
+    fetchSuggestedUsers().then(setSuggested)
+  }
 
   useEffect(() => {
     fetchMyProfile().then((p) => {
@@ -100,6 +105,7 @@ export function FriendsSection() {
     toast.success(result === "accepted" ? `Vocês agora são amigos! 🎉` : `Pedido enviado para @${u.username}`)
     setQuery("")
     setResults([])
+    setSuggested((prev) => prev.filter((s) => s.user_id !== u.user_id))
     refreshFriends()
   }
 
@@ -125,7 +131,7 @@ export function FriendsSection() {
     setVisit(office!)
   }
 
-  const togglePrivacy = (field: "share_status" | "share_office" | "share_level") => {
+  const togglePrivacy = (field: "share_status" | "share_office" | "share_level" | "discoverable") => {
     if (!profile) return
     const next = !profile[field]
     setProfile({ ...profile, [field]: next })
@@ -150,6 +156,7 @@ export function FriendsSection() {
               ["share_status", "Ocupado/livre"],
               ["share_office", "Escritório"],
               ["share_level", "Nível"],
+              ["discoverable", "Perfil aberto"],
             ] as const).map(([field, label]) => (
               <button
                 key={field}
@@ -176,9 +183,14 @@ export function FriendsSection() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-2 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4"
+          className="space-y-2.5 rounded-2xl border border-border/50 bg-gradient-to-br from-primary/10 via-card to-card p-4 shadow-sm"
         >
-          <p className="text-sm font-medium">Escolha seu @usuário para ser encontrado</p>
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15">
+              <AtSign className="h-4 w-4 text-primary" />
+            </span>
+            Escolha seu @usuário
+          </p>
           <p className="text-xs text-muted-foreground">
             É como seus amigos vão te achar na busca. Letras minúsculas, números e _ (3–20).
           </p>
@@ -238,6 +250,32 @@ export function FriendsSection() {
               </div>
             )}
           </div>
+
+          {/* Sugeridos (perfis abertos fora das suas amizades) */}
+          {suggested.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Sugeridos para você</p>
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {suggested.map((u) => (
+                  <div key={u.user_id} className="flex items-center gap-2.5 rounded-xl border border-border/50 bg-card px-3 py-2">
+                    <Initial name={u.display_name || u.username} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">{u.display_name ?? `@${u.username}`}</span>
+                      <span className="block text-xs text-muted-foreground">@{u.username}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAdd(u)}
+                      className="flex h-7 items-center gap-1 rounded-lg bg-primary/10 px-2 text-[11px] font-medium text-primary transition-colors hover:bg-primary/15"
+                    >
+                      <UserPlus className="h-3 w-3" />
+                      Adicionar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Pedidos recebidos */}
           {pendingIn.length > 0 && (
@@ -328,7 +366,7 @@ export function FriendsSection() {
             </div>
           )}
 
-          {friends.length === 0 && (
+          {friends.length === 0 && suggested.length === 0 && (
             <p className="rounded-xl border border-dashed border-border/50 px-3 py-4 text-center text-xs text-muted-foreground">
               Busque um amigo pelo @ para começar — dá pra ver se ele está livre e visitar o escritório dele. 👀
             </p>
@@ -352,7 +390,11 @@ export function FriendsSection() {
                 </DialogTitle>
               </DialogHeader>
               <div className="overflow-hidden rounded-xl border border-border/50">
-                <OfficeScene equipped={new Set(visit.items)} className="block w-full" />
+                <OfficeScene
+                  equipped={new Set(visit.items)}
+                  avatar={visit.avatar ? normalizeAvatar(visit.avatar) : null}
+                  className="block w-full"
+                />
               </div>
               <p className="text-center text-xs text-muted-foreground">
                 {visit.items.length} {visit.items.length === 1 ? "item conquistado" : "itens conquistados"} — e o seu, como está? 😉

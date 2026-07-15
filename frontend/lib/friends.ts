@@ -10,6 +10,7 @@ export interface MyProfile {
   share_status: boolean
   share_office: boolean
   share_level: boolean
+  discoverable: boolean
 }
 
 export interface UserSearchResult {
@@ -33,6 +34,7 @@ export interface FriendOffice {
   display_name: string | null
   items: string[]
   level: number | null
+  avatar: unknown | null
 }
 
 export async function fetchMyProfile(): Promise<MyProfile | null> {
@@ -67,7 +69,7 @@ export async function claimUsername(username: string, displayName: string | null
   return { profile: data }
 }
 
-export async function updatePrivacy(field: "share_status" | "share_office" | "share_level", value: boolean): Promise<void> {
+export async function updatePrivacy(field: "share_status" | "share_office" | "share_level" | "discoverable", value: boolean): Promise<void> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
@@ -77,6 +79,13 @@ export async function updatePrivacy(field: "share_status" | "share_office" | "sh
 export async function searchUsers(query: string): Promise<UserSearchResult[]> {
   const supabase = createClient()
   const { data } = await supabase.rpc("search_users", { p_query: query.trim() })
+  return data ?? []
+}
+
+// Perfis abertos (discoverable) fora das suas amizades — social_v2.sql
+export async function fetchSuggestedUsers(): Promise<UserSearchResult[]> {
+  const supabase = createClient()
+  const { data } = await supabase.rpc("suggested_users")
   return data ?? []
 }
 
