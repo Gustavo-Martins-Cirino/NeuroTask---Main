@@ -13,6 +13,7 @@ import {
   Brain,
   Zap,
   Armchair,
+  Users,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -54,6 +55,11 @@ const navItems = [
     icon: Armchair,
     label: "Escritório",
     href: "/app/office",
+  },
+  {
+    icon: Users,
+    label: "Amigos",
+    href: "/app/friends",
   },
 ]
 

@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-// Cena SVG do Escritório — "Escritório vivo":
-// v1: micro-animações (gato, plantas, luminária, neon) + ciclo dia/noite real.
-// v2: objetos reativos a TRABALHO REAL (anti-farm): você digitando quando há
-//     tarefa em andamento, estante que enche com conclusões, quadro de streak,
-//     clique nos objetos mostra estatísticas, café de manhã (ambiental).
+// Cena SVG do Escritório — visão ISOMÉTRICA 2.5D ("Escritório vivo"):
+// duas paredes + chão em losango, móveis com profundidade (projeção 2:1),
+// micro-animações, ciclo dia/noite real e objetos reativos a TRABALHO REAL
+// (anti-farm): pessoa digitando com tarefa em andamento, estante que enche
+// com conclusões, quadro de streak, café de manhã.
 
 export interface OfficeSceneStats {
   working: boolean
@@ -37,23 +37,70 @@ const SKY: Record<DayPhase, { sky: string; horizon: string; building: string; su
   night: { sky: "#1c2b4a", horizon: "#14203a", building: "#2e3f57", moon: true, lights: true },
 }
 
-// Livros da estante: 1 a cada 5 tarefas concluídas (ordem de "chegada")
+// ---- Projeção isométrica 2:1 ----
+// x cresce ao longo da parede DIREITA; y ao longo da ESQUERDA; z para cima.
+const OX = 240
+const OY = 150
+const WALL_H = 108
+const FLOOR = 170
+
+type P3 = [number, number, number]
+const sx = (x: number, y: number) => OX + x - y
+const sy = (x: number, y: number, z: number) => OY + (x + y) / 2 - z
+const p = (v: P3) => `${sx(v[0], v[1])},${sy(v[0], v[1], v[2])}`
+const quad = (a: P3, b: P3, c: P3, d: P3) => [a, b, c, d].map(p).join(" ")
+
+function shade(hex: string, amt: number): string {
+  const n = parseInt(hex.slice(1), 16)
+  const r = Math.max(0, Math.min(255, (n >> 16) + amt))
+  const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amt))
+  const b = Math.max(0, Math.min(255, (n & 255) + amt))
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`
+}
+
+// Caixa isométrica: 3 faces visíveis (topo, esquerda-frente +y, direita-frente +x)
+function Box({ x, y, z = 0, dx, dy, dz, c }: { x: number; y: number; z?: number; dx: number; dy: number; dz: number; c: string }) {
+  return (
+    <g>
+      <polygon points={quad([x, y + dy, z], [x + dx, y + dy, z], [x + dx, y + dy, z + dz], [x, y + dy, z + dz])} fill={shade(c, -8)} />
+      <polygon points={quad([x + dx, y, z], [x + dx, y + dy, z], [x + dx, y + dy, z + dz], [x + dx, y, z + dz])} fill={shade(c, -26)} />
+      <polygon points={quad([x, y, z + dz], [x + dx, y, z + dz], [x + dx, y + dy, z + dz], [x, y + dy, z + dz])} fill={shade(c, 10)} />
+    </g>
+  )
+}
+
+// Planos das paredes: coordenadas locais com y descendo A PARTIR DO TOPO da
+// parede (ydown = WALL_H - z), o que mantém rects/desenho 2D intuitivos.
+// Parede esquerda espelha horizontalmente (a=-1) — texto lá precisa de scale(-1,1).
+const LEFT_WALL_T = `matrix(-1,0.5,0,1,${OX},${OY - WALL_H})`
+const RIGHT_WALL_T = `matrix(1,0.5,0,1,${OX},${OY - WALL_H})`
+// plano vertical paralelo à parede esquerda, em x=c (telas de monitor)
+const planeX = (c: number) => `matrix(-1,0.5,0,1,${OX + c},${OY + c / 2 - WALL_H})`
+// plano vertical paralelo à parede direita, em y=c (frente da estante)
+const planeY = (c: number) => `matrix(1,0.5,0,1,${OX - c},${OY + c / 2 - WALL_H})`
+
+// Sombra elíptica no chão
+function Shadow({ x, y, rx, ry }: { x: number; y: number; rx: number; ry: number }) {
+  return <ellipse cx={sx(x, y)} cy={sy(x, y, 0)} rx={rx} ry={ry} fill="#000" opacity="0.08" />
+}
+
+// Livros da estante: 1 a cada 5 tarefas concluídas (coordenadas locais do
+// plano da frente da estante; y desce do topo da parede)
 const BOOKS = [
-  { x: 340, y: 76, h: 24, f: "#e57373" },
-  { x: 348, y: 80, h: 20, f: "#64b5f6" },
-  { x: 356, y: 74, h: 26, f: "#ffd54f" },
-  { x: 364, y: 82, h: 18, f: "#81c784" },
-  { x: 340, y: 114, h: 22, f: "#9575cd" },
-  { x: 348, y: 110, h: 26, f: "#4db6ac" },
-  { x: 340, y: 148, h: 24, f: "#f06292" },
-  { x: 348, y: 152, h: 20, f: "#7986cb" },
-  { x: 356, y: 146, h: 26, f: "#ffb74d" },
+  { x: 110, y: 22, h: 20, f: "#e57373" },
+  { x: 118, y: 26, h: 16, f: "#64b5f6" },
+  { x: 126, y: 20, h: 22, f: "#ffd54f" },
+  { x: 134, y: 26, h: 16, f: "#81c784" },
+  { x: 110, y: 52, h: 18, f: "#9575cd" },
+  { x: 118, y: 50, h: 20, f: "#4db6ac" },
+  { x: 110, y: 84, h: 20, f: "#f06292" },
+  { x: 118, y: 88, h: 16, f: "#7986cb" },
+  { x: 126, y: 82, h: 22, f: "#ffb74d" },
 ]
 
 export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
   const has = (id: string) => equipped.has(id)
 
-  // Hora real só no cliente (evita mismatch de hidratação); atualiza a cada minuto
   const [hour, setHour] = useState(12)
   useEffect(() => {
     const tick = () => setHour(new Date().getHours())
@@ -66,7 +113,6 @@ export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
   const isNight = phase === "night"
   const isMorning = hour >= 5 && hour < 12
 
-  // Gato ronrona ao clique (interação, não recompensa)
   const [purr, setPurr] = useState(0)
   const doPurr = () => {
     setPurr((n) => n + 1)
@@ -75,10 +121,16 @@ export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
 
   const working = stats?.working ?? false
   const bookCount = stats ? Math.min(BOOKS.length, Math.floor(stats.completed / 5) + (stats.completed > 0 ? 1 : 0)) : BOOKS.length
-  const screenOn = stats ? (working ? 0.9 : 0.55) : 0.85
+  const screenOn = stats ? (working ? 0.92 : 0.5) : 0.85
+
+  const wallBase = has("parede-azul") ? "#a9c6dc" : has("parede-verde") ? "#afccb6" : has("parede-rosa") ? "#e2bccb" : "#d8d2c6"
+  const floorBase = has("piso-carpete") ? "#9fb3cf" : has("piso-madeira") ? "#c08a55" : "#cfc7b8"
+
+  const chairColor = has("cadeira-gamer") ? "#c62839" : has("cadeira-ergonomica") ? "#4a5568" : "#9a8f7f"
+  const chairBack = has("cadeira-gamer") ? 46 : has("cadeira-ergonomica") ? 36 : 0
 
   return (
-    <svg viewBox="0 0 400 260" className={className} role="img" aria-label="Seu escritório">
+    <svg viewBox="0 0 480 340" className={className} role="img" aria-label="Seu escritório">
       <style>{`
         .nt-o { transform-box: fill-box; }
         @keyframes nt-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.015, 1.05); } }
@@ -109,116 +161,121 @@ export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
         .nt-head-bob { animation: nt-bob 2.6s ease-in-out infinite; }
       `}</style>
 
-      {/* Parede */}
-      <rect x="0" y="0" width="400" height="192" fill={
-        has("parede-azul") ? "#b9d2e4" : has("parede-verde") ? "#bfd8c4" : has("parede-rosa") ? "#ecccd8" : "#e3ded4"
-      } />
-      <rect x="0" y="180" width="400" height="12" fill={
-        has("parede-azul") ? "#a5c2d8" : has("parede-verde") ? "#adc9b3" : has("parede-rosa") ? "#e0bac9" : "#d6d0c4"
-      } />
+      {/* ---- Paredes ---- */}
+      <polygon points={quad([0, 0, WALL_H], [0, FLOOR, WALL_H], [0, FLOOR, 0], [0, 0, 0])} fill={wallBase} />
+      <polygon points={quad([0, 0, WALL_H], [FLOOR, 0, WALL_H], [FLOOR, 0, 0], [0, 0, 0])} fill={shade(wallBase, -18)} />
+      {/* rodapé */}
+      <polygon points={quad([0, 0, 9], [0, FLOOR, 9], [0, FLOOR, 0], [0, 0, 0])} fill={shade(wallBase, -12)} />
+      <polygon points={quad([0, 0, 9], [FLOOR, 0, 9], [FLOOR, 0, 0], [0, 0, 0])} fill={shade(wallBase, -30)} />
+      {/* borda superior das paredes (acabamento) */}
+      <polyline
+        points={`${p([0, FLOOR, WALL_H])} ${p([0, 0, WALL_H])} ${p([FLOOR, 0, WALL_H])}`}
+        fill="none"
+        stroke="#f2eee6"
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
 
-      {/* Piso */}
-      {has("piso-carpete") ? (
-        <g>
-          <rect x="0" y="192" width="400" height="68" fill="#9fb3cf" />
-          {Array.from({ length: 24 }).map((_, i) => (
-            <circle key={i} cx={12 + (i % 8) * 52 + (Math.floor(i / 8) % 2) * 26} cy={206 + Math.floor(i / 8) * 20} r="2" fill="#8ba1c2" />
+      {/* ---- Chão ---- */}
+      <polygon points={quad([0, 0, 0], [FLOOR, 0, 0], [FLOOR, FLOOR, 0], [0, FLOOR, 0])} fill={floorBase} />
+      {has("piso-madeira") && (
+        <g stroke={shade(floorBase, -22)} strokeWidth="2">
+          {[34, 68, 102, 136].map((k) => (
+            <line key={k} x1={sx(k, 0)} y1={sy(k, 0, 0)} x2={sx(k, FLOOR)} y2={sy(k, FLOOR, 0)} />
           ))}
         </g>
-      ) : has("piso-madeira") ? (
-        <g>
-          <rect x="0" y="192" width="400" height="68" fill="#c08a55" />
-          {[208, 226, 244].map((y) => (
-            <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="#a97544" strokeWidth="2" />
-          ))}
-          {[70, 180, 300, 120, 250, 350].map((x, i) => (
-            <line key={i} x1={x} y1={192 + (i % 3) * 18} x2={x} y2={192 + (i % 3) * 18 + 16} stroke="#a97544" strokeWidth="2" />
+      )}
+      {has("piso-carpete") && (
+        <g fill={shade(floorBase, -20)}>
+          {[[40, 40], [90, 30], [140, 45], [50, 95], [100, 80], [150, 100], [40, 140], [95, 130], [145, 150]].map(([x, y], i) => (
+            <ellipse key={i} cx={sx(x, y)} cy={sy(x, y, 0)} rx="2.4" ry="1.2" />
           ))}
         </g>
-      ) : (
-        <rect x="0" y="192" width="400" height="68" fill="#cfc7b8" />
       )}
 
-      {/* Janela com vista da cidade — céu segue a hora real */}
-      {has("janela-cidade") && (
-        <g>
-          <rect x="28" y="26" width="92" height="92" rx="6" fill="#8a8378" />
-          <rect x="34" y="32" width="80" height="80" rx="3" fill={sky.sky} />
-          <rect x="34" y="86" width="80" height="26" fill={sky.horizon} />
-          {sky.moon ? (
-            <g>
-              <circle cx="100" cy="46" r="7" fill="#f4f1de" />
-              <circle cx="97" cy="44" r="6" fill={sky.sky} />
-              {[[44, 40], [58, 50], [72, 38], [88, 56], [50, 60]].map(([x, y], i) => (
-                <circle key={i} cx={x} cy={y} r="1.1" fill="#f4f1de" className="nt-star" style={{ animationDelay: `${i * 0.7}s` }} />
-              ))}
+      {/* ---- Parede esquerda: janela + quadro de streak ---- */}
+      <g transform={LEFT_WALL_T}>
+        {has("janela-cidade") && (
+          <g>
+            <rect x="30" y="12" width="70" height="62" rx="4" fill="#8a8378" />
+            <rect x="34" y="16" width="62" height="54" rx="2" fill={sky.sky} />
+            <rect x="34" y="54" width="62" height="16" fill={sky.horizon} />
+            <g fill={sky.building}>
+              <rect x="38" y="44" width="10" height="26" />
+              <rect x="51" y="36" width="12" height="34" />
+              <rect x="66" y="48" width="9" height="22" />
+              <rect x="78" y="40" width="13" height="30" />
             </g>
-          ) : (
-            <circle cx="102" cy={phase === "day" ? 44 : 62} r="7" fill={sky.sun} />
-          )}
-          <g fill={sky.building}>
-            <rect x="40" y="70" width="12" height="42" />
-            <rect x="56" y="58" width="14" height="54" />
-            <rect x="74" y="76" width="10" height="36" />
-            <rect x="88" y="64" width="16" height="48" />
-          </g>
-          <g fill="#ffd97a" opacity={sky.lights ? 1 : 0.35}>
-            <rect x="59" y="64" width="3" height="3" />
-            <rect x="65" y="72" width="3" height="3" />
-            <rect x="91" y="70" width="3" height="3" />
-            <rect x="97" y="82" width="3" height="3" />
-            {sky.lights && (
-              <>
-                <rect x="43" y="76" width="3" height="3" />
-                <rect x="43" y="88" width="3" height="3" />
-                <rect x="59" y="84" width="3" height="3" />
-                <rect x="77" y="82" width="3" height="3" />
-                <rect x="91" y="94" width="3" height="3" />
-              </>
+            <g fill="#ffd97a" opacity={sky.lights ? 1 : 0.35}>
+              <rect x="53" y="40" width="3" height="3" />
+              <rect x="58" y="48" width="3" height="3" />
+              <rect x="81" y="45" width="3" height="3" />
+              <rect x="86" y="54" width="3" height="3" />
+              {sky.lights && (
+                <>
+                  <rect x="40" y="50" width="3" height="3" />
+                  <rect x="40" y="60" width="3" height="3" />
+                  <rect x="68" y="54" width="3" height="3" />
+                  <rect x="81" y="62" width="3" height="3" />
+                </>
+              )}
+            </g>
+            {sky.moon ? (
+              <g>
+                <circle cx="86" cy="24" r="5.5" fill="#f4f1de" />
+                <circle cx="83.5" cy="22.5" r="4.6" fill={sky.sky} />
+                {[[42, 22], [54, 26], [66, 20], [74, 28]].map(([x, y], i) => (
+                  <rect key={i} x={x} y={y} width="1.8" height="1.8" fill="#f4f1de" className="nt-star" style={{ animationDelay: `${i * 0.7}s` }} />
+                ))}
+              </g>
+            ) : (
+              <circle cx="86" cy={phase === "day" ? 24 : 36} r="5.5" fill={sky.sun} />
             )}
+            <line x1="65" y1="16" x2="65" y2="70" stroke="#8a8378" strokeWidth="3.5" />
+            <line x1="34" y1="44" x2="96" y2="44" stroke="#8a8378" strokeWidth="3.5" />
           </g>
-          <line x1="74" y1="32" x2="74" y2="112" stroke="#8a8378" strokeWidth="4" />
-          <line x1="34" y1="72" x2="114" y2="72" stroke="#8a8378" strokeWidth="4" />
-        </g>
-      )}
+        )}
+        {/* quadro de streak (texto desespelhado: parede esquerda tem a=-1) */}
+        {stats && stats.streak >= 2 && (
+          <g
+            onClick={() => toast.success(`🔥 ${stats.streak} dias seguidos concluindo tarefas — o quadro registra seu ritmo real.`)}
+            style={{ cursor: "pointer" }}
+          >
+            <rect x="108" y="40" width="36" height="22" rx="3" fill="#faf7f0" stroke="#c9c2b4" strokeWidth="2" />
+            <g transform="translate(126,51) scale(-1,1)">
+              <text textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="700" fill="#d97706" fontFamily="sans-serif">
+                🔥{stats.streak}
+              </text>
+            </g>
+          </g>
+        )}
+      </g>
 
-      {/* Quadro de montanhas */}
-      {has("quadro-montanhas") && (
-        <g>
-          <rect x="150" y="34" width="64" height="48" rx="3" fill="#8a6f4e" />
-          <rect x="155" y="39" width="54" height="38" fill="#cfe8f5" />
-          <polygon points="155,77 172,52 186,77" fill="#7d9b82" />
-          <polygon points="176,77 194,46 209,77" fill="#5f7f6a" />
-          <polygon points="190,54 194,46 199,54" fill="#f4f7f4" />
-          <circle cx="164" cy="47" r="4" fill="#ffe9a8" />
-        </g>
-      )}
+      {/* ---- Parede direita: quadro + neon ---- */}
+      <g transform={RIGHT_WALL_T}>
+        {has("quadro-montanhas") && (
+          <g>
+            <rect x="10" y="16" width="46" height="36" rx="3" fill="#8a6f4e" />
+            <rect x="14" y="20" width="38" height="28" fill="#cfe8f5" />
+            <polygon points="14,48 25,32 34,48" fill="#7d9b82" />
+            <polygon points="26,48 38,27 50,48" fill="#5f7f6a" />
+            <polygon points="35,32 38,27 41,32" fill="#f4f7f4" />
+            <circle cx="21" cy="26" r="3" fill="#ffe9a8" />
+          </g>
+        )}
+        {has("quadro-neon") && (
+          <g className="nt-neon nt-o">
+            <rect x="12" y="60" width="46" height="22" rx="11" fill="none" stroke="#f472b6" strokeWidth="2.4" />
+            <rect x="12" y="60" width="46" height="22" rx="11" fill="#f472b6" opacity="0.13" />
+            <text x="35" y="74.5" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#f472b6" fontFamily="monospace" letterSpacing="1">
+              focus
+            </text>
+          </g>
+        )}
+      </g>
 
-      {/* Neon "focus" com flicker ocasional */}
-      {has("quadro-neon") && (
-        <g className="nt-neon nt-o">
-          <rect x="238" y="40" width="92" height="34" rx="17" fill="none" stroke="#f472b6" strokeWidth="3" />
-          <rect x="238" y="40" width="92" height="34" rx="17" fill="#f472b6" opacity="0.13" />
-          <text x="284" y="63" textAnchor="middle" fontSize="17" fontWeight="700" fill="#f472b6" fontFamily="monospace" letterSpacing="2">
-            focus
-          </text>
-        </g>
-      )}
-
-      {/* Quadro de streak (só com trabalho real acumulado) */}
-      {stats && stats.streak >= 2 && (
-        <g
-          onClick={() => toast.success(`🔥 ${stats.streak} dias seguidos concluindo tarefas — o quadro registra seu ritmo real.`)}
-          style={{ cursor: "pointer" }}
-        >
-          <rect x="124" y="84" width="34" height="24" rx="3" fill="#faf7f0" stroke="#c9c2b4" strokeWidth="2" />
-          <text x="141" y="101" textAnchor="middle" fontSize="11" fontWeight="700" fill="#d97706" fontFamily="sans-serif">
-            🔥{stats.streak}
-          </text>
-        </g>
-      )}
-
-      {/* Estante de livros — enche com suas conclusões (1 livro a cada 5) */}
+      {/* ---- Estante (parede direita) ---- */}
       {has("estante") && (
         <g
           onClick={() => {
@@ -226,219 +283,209 @@ export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
           }}
           style={stats ? { cursor: "pointer" } : undefined}
         >
-          <rect x="332" y="58" width="56" height="134" rx="3" fill="#8a6f4e" />
-          {[70, 106, 142].map((y) => (
-            <rect key={y} x="337" y={y} width="46" height="30" fill="#6f5940" />
-          ))}
-          <g>
+          <Shadow x={132} y={30} rx={44} ry={13} />
+          <Box x={104} y={6} dx={54} dy={24} dz={92} c="#8a6f4e" />
+          {/* frente aberta com prateleiras e livros */}
+          <g transform={planeY(30)}>
+            <rect x={107} y={20} width={48} height={84} fill="#6f5940" />
+            <rect x={107} y={42} width={48} height={4} fill="#8a6f4e" />
+            <rect x={107} y={70} width={48} height={4} fill="#8a6f4e" />
             {BOOKS.slice(0, bookCount).map((b, i) => (
-              <rect key={i} x={b.x} y={b.y} width="7" height={b.h} fill={b.f} />
+              <rect key={i} x={b.x} y={b.y} width="6" height={b.h} fill={b.f} />
             ))}
-            {bookCount >= 6 && <rect x="357" y="118" width="16" height="18" fill="#a1887f" />}
+            {bookCount >= 6 && <rect x={130} y={58} width={14} height={12} fill="#a1887f" />}
           </g>
         </g>
       )}
 
-      {/* Tapete */}
+      {/* ---- Tapete ---- */}
       {has("tapete") && (
         <g>
-          <ellipse cx="200" cy="228" rx="120" ry="24" fill="#b76e79" opacity="0.85" />
-          <ellipse cx="200" cy="228" rx="96" ry="18" fill="none" stroke="#a35c67" strokeWidth="3" />
+          <ellipse cx={sx(100, 112)} cy={sy(100, 112, 0)} rx="86" ry="34" fill="#b76e79" opacity="0.85" />
+          <ellipse cx={sx(100, 112)} cy={sy(100, 112, 0)} rx="66" ry="25" fill="none" stroke="#a35c67" strokeWidth="3" />
         </g>
       )}
 
-      {/* Planta grande (balança de leve) */}
-      {has("planta-grande") && (
-        <g>
-          <g className="nt-plant-slow nt-o">
-            <path d="M62 196 q-14 -34 6 -58" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
-            <path d="M62 196 q4 -40 -18 -52" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
-            <path d="M62 196 q16 -28 34 -34" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
-            <ellipse cx="66" cy="134" rx="12" ry="20" fill="#5f9a64" transform="rotate(12 66 134)" />
-            <ellipse cx="42" cy="142" rx="11" ry="18" fill="#6dab72" transform="rotate(-24 42 142)" />
-            <ellipse cx="98" cy="158" rx="11" ry="17" fill="#6dab72" transform="rotate(40 98 158)" />
-          </g>
-          <path d="M48 196 h30 l-4 26 h-22 z" fill="#c96f4a" />
-          <rect x="46" y="192" width="34" height="8" rx="3" fill="#b55f3d" />
-        </g>
-      )}
+      {/* ---- Mesa (encostada na parede esquerda) + setup ---- */}
+      <Shadow x={28} y={80} rx={62} ry={20} />
+      <Box x={6} y={26} dx={40} dy={104} z={30} dz={7} c="#8a6f4e" />
+      <Box x={10} y={32} dx={32} dy={24} dz={30} c="#75593c" />
+      <Box x={10} y={102} dx={32} dy={24} dz={30} c="#75593c" />
+      {/* teclado */}
+      <Box x={30} y={66} dx={9} dy={26} z={37} dz={2} c="#3a3f4a" />
 
-      {/* Luminária de chão (brilho pulsante; mais forte à noite) */}
-      {has("luminaria") && (
-        <g>
-          <circle
-            cx="318"
-            cy="118"
-            r={isNight ? 32 : 26}
-            fill="#ffe9a8"
-            className="nt-lamp-glow"
-            style={{ ["--glow" as string]: isNight ? 0.6 : 0.4 }}
-          />
-          <path d="M304 106 h28 l-6 16 h-16 z" fill="#e0a437" />
-          <line x1="318" y1="122" x2="318" y2="208" stroke="#7a7267" strokeWidth="4" />
-          <rect x="304" y="206" width="28" height="7" rx="3.5" fill="#7a7267" />
-        </g>
-      )}
-
-      {/* Você — sentado na cadeira; digita quando há tarefa em andamento */}
-      <g className={working ? undefined : "nt-head-bob nt-o"}>
-        <rect x="188" y="106" width="24" height="30" rx="9" fill="#3f6f8f" />
-        <circle cx="200" cy="97" r="9.5" fill="#e0a97e" />
-        <path d="M190.5 97 a9.5 9.5 0 0 1 19 0 l0 -2 q-2 -8 -9.5 -8 t-9.5 8 z" fill="#4a3a2c" />
-      </g>
-
-      {/* Cadeira (atrás da mesa) */}
-      {has("cadeira-gamer") ? (
-        <g>
-          <path d="M182 96 q18 -12 36 0 l-3 46 h-30 z" fill="#c62839" opacity="0.92" />
-          <rect x="186" y="104" width="28" height="30" rx="8" fill="#8e1c2a" opacity="0.9" />
-          <rect x="184" y="140" width="32" height="12" rx="5" fill="#c62839" />
-          <line x1="200" y1="152" x2="200" y2="170" stroke="#3a3a3a" strokeWidth="5" />
-          <path d="M182 172 h36" stroke="#3a3a3a" strokeWidth="5" strokeLinecap="round" />
-        </g>
-      ) : has("cadeira-ergonomica") ? (
-        <g>
-          <rect x="184" y="100" width="32" height="40" rx="10" fill="#4a5568" opacity="0.92" />
-          <rect x="188" y="108" width="24" height="24" rx="6" fill="#5d6b80" opacity="0.9" />
-          <rect x="183" y="142" width="34" height="10" rx="5" fill="#4a5568" />
-          <line x1="200" y1="152" x2="200" y2="170" stroke="#3a3a3a" strokeWidth="4" />
-          <path d="M184 172 h32" stroke="#3a3a3a" strokeWidth="4" strokeLinecap="round" />
-        </g>
-      ) : (
-        <g>
-          <rect x="186" y="116" width="28" height="26" rx="6" fill="#9a8f7f" opacity="0.85" />
-          <line x1="192" y1="142" x2="190" y2="168" stroke="#7a7267" strokeWidth="4" />
-          <line x1="208" y1="142" x2="210" y2="168" stroke="#7a7267" strokeWidth="4" />
-        </g>
-      )}
-
-      {/* Braços digitando (só com trabalho de verdade rolando) */}
-      {working && (
-        <g>
-          <g className="nt-arm-l nt-o">
-            <line x1="190" y1="122" x2="177" y2="142" stroke="#e0a97e" strokeWidth="5" strokeLinecap="round" />
-          </g>
-          <g className="nt-arm-r nt-o">
-            <line x1="210" y1="122" x2="223" y2="142" stroke="#e0a97e" strokeWidth="5" strokeLinecap="round" />
-          </g>
-        </g>
-      )}
-
-      {/* Mesa */}
-      <g>
-        <rect x="112" y="146" width="176" height="10" rx="4" fill="#8a6f4e" />
-        <rect x="120" y="156" width="8" height="50" fill="#75593c" />
-        <rect x="272" y="156" width="8" height="50" fill="#75593c" />
-      </g>
-
-      {/* Setup em cima da mesa — tela acesa e código passando quando trabalhando */}
+      {/* monitores (tela virada para a câmera) */}
       {has("setup-ultrawide") ? (
         <g>
-          <path d="M142 112 q58 -10 116 0 l-2 26 q-56 8 -112 0 z" fill="#1f2530" />
-          <path d="M148 117 q52 -8 104 0 l-1.5 17 q-50 6 -101 0 z" fill="#3b82f6" opacity={screenOn} />
-          {working && (
-            <g>
-              <rect x="168" y="120" width="24" height="2" rx="1" fill="#e2e8f0" opacity="0.85" />
-              <rect x="168" y="125" width="36" height="2" rx="1" fill="#bfdbfe" opacity="0.8" />
-              <rect x="168" y="130" width="16" height="2" rx="1" fill="#e2e8f0" opacity="0.7" />
-              <rect x="186" y="129.5" width="4" height="3" fill="#fff" className="nt-cursor-blink" />
-            </g>
-          )}
-          <rect x="194" y="138" width="12" height="8" fill="#3a3f4a" />
-          <rect x="182" y="145" width="36" height="4" rx="2" fill="#3a3f4a" />
+          <Box x={14} y={64} dx={4} dy={10} z={37} dz={6} c="#3a3f4a" />
+          <Box x={12} y={44} dx={6} dy={72} z={43} dz={26} c="#1f2530" />
+          <g transform={planeX(18)}>
+            <rect x={48} y={41} width={64} height={22} fill="#3b82f6" opacity={screenOn} />
+            {working && (
+              <g>
+                <rect x={52} y={45} width={20} height={2} rx={1} fill="#e2e8f0" opacity="0.85" />
+                <rect x={52} y={50} width={30} height={2} rx={1} fill="#bfdbfe" opacity="0.8" />
+                <rect x={52} y={55} width={12} height={2} rx={1} fill="#e2e8f0" opacity="0.7" />
+                <rect x={66} y={54.5} width={3.5} height={3} fill="#fff" className="nt-cursor-blink" />
+              </g>
+            )}
+          </g>
         </g>
       ) : has("setup-duplo") ? (
         <g>
-          <rect x="138" y="110" width="58" height="34" rx="3" fill="#1f2530" />
-          <rect x="142" y="114" width="50" height="26" fill="#3b82f6" opacity={screenOn} />
-          <rect x="204" y="110" width="58" height="34" rx="3" fill="#1f2530" />
-          <rect x="208" y="114" width="50" height="26" fill="#60a5fa" opacity={screenOn} />
-          {working && (
-            <g>
-              <rect x="146" y="119" width="22" height="2" rx="1" fill="#e2e8f0" opacity="0.85" />
-              <rect x="146" y="124" width="32" height="2" rx="1" fill="#bfdbfe" opacity="0.8" />
-              <rect x="146" y="129" width="14" height="2" rx="1" fill="#e2e8f0" opacity="0.7" />
-              <rect x="162" y="128.5" width="4" height="3" fill="#fff" className="nt-cursor-blink" />
-            </g>
-          )}
-          <rect x="162" y="144" width="10" height="4" fill="#3a3f4a" />
-          <rect x="228" y="144" width="10" height="4" fill="#3a3f4a" />
+          <Box x={14} y={52} dx={4} dy={8} z={37} dz={5} c="#3a3f4a" />
+          <Box x={14} y={94} dx={4} dy={8} z={37} dz={5} c="#3a3f4a" />
+          <Box x={12} y={44} dx={6} dy={32} z={42} dz={23} c="#1f2530" />
+          <Box x={12} y={82} dx={6} dy={32} z={42} dz={23} c="#1f2530" />
+          <g transform={planeX(18)}>
+            <rect x={46} y={45} width={28} height={19} fill="#3b82f6" opacity={screenOn} />
+            <rect x={84} y={45} width={28} height={19} fill="#60a5fa" opacity={screenOn} />
+            {working && (
+              <g>
+                <rect x={48} y={48} width={16} height={2} rx={1} fill="#e2e8f0" opacity="0.85" />
+                <rect x={48} y={53} width={22} height={2} rx={1} fill="#bfdbfe" opacity="0.8" />
+                <rect x={48} y={58} width={10} height={2} rx={1} fill="#e2e8f0" opacity="0.7" />
+                <rect x={60} y={57.5} width={3.5} height={3} fill="#fff" className="nt-cursor-blink" />
+              </g>
+            )}
+          </g>
         </g>
       ) : (
         <g>
-          <rect x="172" y="112" width="56" height="30" rx="3" fill="#1f2530" />
-          <rect x="176" y="116" width="48" height="22" fill="#3b82f6" opacity={screenOn} />
-          {working && (
-            <g>
-              <rect x="180" y="120" width="20" height="2" rx="1" fill="#e2e8f0" opacity="0.85" />
-              <rect x="180" y="125" width="30" height="2" rx="1" fill="#bfdbfe" opacity="0.8" />
-              <rect x="180" y="130" width="14" height="2" rx="1" fill="#e2e8f0" opacity="0.7" />
-              <rect x="196" y="129.5" width="4" height="3" fill="#fff" className="nt-cursor-blink" />
-            </g>
-          )}
-          <rect x="196" y="142" width="8" height="4" fill="#3a3f4a" />
-        </g>
-      )}
-
-      {/* Café da manhã (5h–12h) com vapor — detalhe ambiental */}
-      {isMorning && (
-        <g>
-          <path d="M118 138 h12 v8 a6 6 0 0 1 -12 0 z" fill="#fdfaf4" />
-          <path d="M131 139 q5 1.5 0 5" fill="none" stroke="#fdfaf4" strokeWidth="2" />
-          <path d="M121 134 q-1.5 -3 0 -5" fill="none" stroke="#cfc7b8" strokeWidth="1.6" strokeLinecap="round" className="nt-steam-p nt-o" />
-          <path d="M126 134 q1.5 -3 0 -5" fill="none" stroke="#cfc7b8" strokeWidth="1.6" strokeLinecap="round" className="nt-steam-p nt-o" style={{ animationDelay: "1.2s" }} />
-        </g>
-      )}
-
-      {/* Itens de mesa */}
-      {has("planta-pequena") && (
-        <g>
-          <g className="nt-plant nt-o">
-            <path d="M136 132 q-6 -10 2 -16 M136 132 q6 -9 -1 -17 M136 132 q8 -5 12 -12" fill="none" stroke="#5f9a64" strokeWidth="3" strokeLinecap="round" />
+          <Box x={14} y={72} dx={4} dy={8} z={37} dz={5} c="#3a3f4a" />
+          <Box x={12} y={58} dx={6} dy={38} z={42} dz={24} c="#1f2530" />
+          <g transform={planeX(18)}>
+            <rect x={60} y={44} width={34} height={20} fill="#3b82f6" opacity={screenOn} />
+            {working && (
+              <g>
+                <rect x={63} y={47} width={18} height={2} rx={1} fill="#e2e8f0" opacity="0.85" />
+                <rect x={63} y={52} width={26} height={2} rx={1} fill="#bfdbfe" opacity="0.8" />
+                <rect x={63} y={57} width={11} height={2} rx={1} fill="#e2e8f0" opacity="0.7" />
+                <rect x={76} y={56.5} width={3.5} height={3} fill="#fff" className="nt-cursor-blink" />
+              </g>
+            )}
           </g>
-          <path d="M129 132 h14 l-2 12 h-10 z" fill="#c96f4a" />
+        </g>
+      )}
+
+      {/* itens da mesa */}
+      {has("planta-pequena") && (
+        <g transform={`translate(${sx(24, 118)},${sy(24, 118, 37)})`}>
+          <g className="nt-plant nt-o">
+            <path d="M0 0 q-5 -8 1 -13 M0 0 q5 -7 -1 -14 M0 0 q7 -4 10 -10" fill="none" stroke="#5f9a64" strokeWidth="2.6" strokeLinecap="round" />
+          </g>
+          <path d="M-6 0 h12 l-2 10 h-8 z" fill="#c96f4a" />
         </g>
       )}
       {has("trofeu") && (
         <g
+          transform={`translate(${sx(24, 40)},${sy(24, 40, 37)})`}
           onClick={() => {
             if (stats) toast.success(`🏆 ${stats.completed} tarefas concluídas até aqui. O troféu é disso — trabalho real acumulado.`)
           }}
           style={stats ? { cursor: "pointer" } : undefined}
         >
-          <path d="M252 118 h20 v8 a10 10 0 0 1 -20 0 z" fill="#f2c744" />
-          <path d="M250 120 q-7 2 -2 9 M274 120 q7 2 2 9" fill="none" stroke="#f2c744" strokeWidth="3" />
-          <rect x="259" y="134" width="6" height="6" fill="#d9a92e" />
-          <rect x="254" y="140" width="16" height="5" rx="2" fill="#b8901f" />
+          <path d="M-8 -18 h16 v6 a8 8 0 0 1 -16 0 z" fill="#f2c744" />
+          <path d="M-10 -16 q-5 1.5 -1.5 7 M10 -16 q5 1.5 1.5 7" fill="none" stroke="#f2c744" strokeWidth="2.4" />
+          <rect x={-2.5} y={-5} width="5" height="5" fill="#d9a92e" />
+          <rect x={-6.5} y={0} width="13" height="4" rx="2" fill="#b8901f" />
+        </g>
+      )}
+      {isMorning && (
+        <g transform={`translate(${sx(38, 52)},${sy(38, 52, 37)})`}>
+          <path d="M-5 -8 h10 v6 a5 5 0 0 1 -10 0 z" fill="#fdfaf4" />
+          <path d="M6 -7 q4 1.5 0 4.5" fill="none" stroke="#fdfaf4" strokeWidth="1.8" />
+          <path d="M-2.5 -11 q-1.2 -2.6 0 -4.4" fill="none" stroke="#e8e2d4" strokeWidth="1.4" strokeLinecap="round" className="nt-steam-p nt-o" />
+          <path d="M1.5 -11 q1.2 -2.6 0 -4.4" fill="none" stroke="#e8e2d4" strokeWidth="1.4" strokeLinecap="round" className="nt-steam-p nt-o" style={{ animationDelay: "1.2s" }} />
         </g>
       )}
 
-      {/* Gato — respira, pisca, abana o rabo; clique = ronrona */}
+      {/* ---- Cadeira + você ---- */}
+      <Shadow x={76} y={84} rx={26} ry={11} />
+      {/* base */}
+      <ellipse cx={sx(76, 84)} cy={sy(76, 84, 0)} rx="15" ry="7" fill="#3a3a3a" />
+      <Box x={74} y={82} dx={4} dy={4} z={4} dz={14} c="#4a4a4a" />
+      {/* assento */}
+      <Box x={62} y={70} dx={28} dy={28} z={18} dz={7} c={chairColor} />
+      {/* você — sentado de lado, cabelo e fones visíveis */}
+      <g className={working ? undefined : "nt-head-bob nt-o"}>
+        <Box x={66} y={76} dx={16} dy={16} z={25} dz={26} c="#3f6f8f" />
+        <g transform={`translate(${sx(74, 84)},${sy(74, 84, 60)})`}>
+          <circle cx="0" cy="0" r="10" fill="#e0a97e" />
+          <path d="M-10 0 a10 10 0 0 1 20 0 v-1 q0 3 -4 3 l0 -3 q-1 3 -5 3 q-8 0 -11 -2 z" fill="#4a3a2c" />
+          <path d="M-10 -1 a10 10 0 0 1 20 -0.5" fill="none" stroke="#2f2f38" strokeWidth="3" strokeLinecap="round" />
+          <ellipse cx="8" cy="2" rx="3.4" ry="4.4" fill="#2f2f38" />
+        </g>
+      </g>
+      {/* braços digitando (só com trabalho de verdade rolando) */}
+      {working && (
+        <g>
+          <g className="nt-arm-l nt-o">
+            <line x1={sx(68, 78)} y1={sy(68, 78, 46)} x2={sx(42, 74)} y2={sy(42, 74, 40)} stroke="#e0a97e" strokeWidth="4.5" strokeLinecap="round" />
+          </g>
+          <g className="nt-arm-r nt-o">
+            <line x1={sx(68, 92)} y1={sy(68, 92, 46)} x2={sx(42, 92)} y2={sy(42, 92, 40)} stroke="#e0a97e" strokeWidth="4.5" strokeLinecap="round" />
+          </g>
+        </g>
+      )}
+      {/* encosto (na frente do tronco para dar profundidade) */}
+      {chairBack > 0 && <Box x={88} y={70} dx={6} dy={28} z={22} dz={chairBack} c={chairColor} />}
+
+      {/* ---- Planta grande (frente-esquerda) ---- */}
+      {has("planta-grande") && (
+        <g transform={`translate(${sx(36, 152)},${sy(36, 152, 0)})`}>
+          <Shadow x={36} y={152} rx={24} ry={9} />
+          <g className="nt-plant-slow nt-o">
+            <path d="M0 -4 q-12 -30 5 -52" fill="none" stroke="#4e7d52" strokeWidth="4.5" strokeLinecap="round" />
+            <path d="M0 -4 q3 -36 -16 -46" fill="none" stroke="#4e7d52" strokeWidth="4.5" strokeLinecap="round" />
+            <path d="M0 -4 q14 -25 30 -30" fill="none" stroke="#4e7d52" strokeWidth="4.5" strokeLinecap="round" />
+            <ellipse cx="4" cy="-56" rx="11" ry="18" fill="#5f9a64" transform="rotate(12 4 -56)" />
+            <ellipse cx="-17" cy="-48" rx="10" ry="16" fill="#6dab72" transform="rotate(-24 -17 -48)" />
+            <ellipse cx="32" cy="-32" rx="10" ry="15" fill="#6dab72" transform="rotate(40 32 -32)" />
+          </g>
+          <path d="M-13 -4 h26 l-3.5 23 h-19 z" fill="#c96f4a" />
+          <ellipse cx="0" cy="-4" rx="14" ry="5.5" fill="#b55f3d" />
+        </g>
+      )}
+
+      {/* ---- Luminária (frente-direita) ---- */}
+      {has("luminaria") && (
+        <g transform={`translate(${sx(148, 64)},${sy(148, 64, 0)})`}>
+          <Shadow x={148} y={64} rx={16} ry={6} />
+          <circle cx="0" cy="-86" r={isNight ? 26 : 21} fill="#ffe9a8" className="nt-lamp-glow" style={{ ["--glow" as string]: isNight ? 0.6 : 0.4 }} />
+          <path d="M-12 -94 h24 l-5 13 h-14 z" fill="#e0a437" />
+          <line x1="0" y1="-81" x2="0" y2="-4" stroke="#7a7267" strokeWidth="3.5" />
+          <ellipse cx="0" cy="-3" rx="12" ry="4.5" fill="#7a7267" />
+        </g>
+      )}
+
+      {/* ---- Gato ---- */}
       {has("pet-gato") && (
-        <g onClick={doPurr} style={{ cursor: "pointer" }}>
-          <path d="M293 234 q-12 -4 -8 -16" fill="none" stroke="#4a4a55" strokeWidth="5" strokeLinecap="round" className="nt-cat-tail nt-o" />
+        <g onClick={doPurr} style={{ cursor: "pointer" }} transform={`translate(${sx(120, 132)},${sy(120, 132, 0)})`}>
+          <ellipse cx="0" cy="2" rx="22" ry="8" fill="#000" opacity="0.08" />
+          <path d="M-19 -2 q-11 -4 -7 -15" fill="none" stroke="#4a4a55" strokeWidth="4.5" strokeLinecap="round" className="nt-cat-tail nt-o" />
           <g className="nt-cat-body nt-o">
-            <ellipse cx="312" cy="234" rx="20" ry="11" fill="#4a4a55" />
-            <circle cx="330" cy="226" r="9" fill="#4a4a55" />
-            <polygon points="324,220 327,212 330,219" fill="#4a4a55" />
-            <polygon points="331,219 335,211 338,219" fill="#4a4a55" />
+            <ellipse cx="0" cy="-4" rx="18" ry="10" fill="#4a4a55" />
+            <circle cx="16" cy="-11" r="8" fill="#4a4a55" />
+            <polygon points="11,-16 13.5,-24 16,-17" fill="#4a4a55" />
+            <polygon points="17,-17 20.5,-24.5 23,-17" fill="#4a4a55" />
             <g className="nt-cat-eyes nt-o">
-              <circle cx="328" cy="225" r="1.4" fill="#ffe9a8" />
-              <circle cx="334" cy="225" r="1.4" fill="#ffe9a8" />
+              <circle cx="14" cy="-11.5" r="1.3" fill="#ffe9a8" />
+              <circle cx="19.5" cy="-11.5" r="1.3" fill="#ffe9a8" />
             </g>
           </g>
           {purr > 0 && (
             <g key={purr}>
-              <path d="M330 208 c-2 -3 -6 -1 -4 2 l4 3 4 -3 c2 -3 -2 -5 -4 -2 z" fill="#f06292" className="nt-heart-up nt-o" />
-              <path d="M340 212 c-1.5 -2.5 -5 -1 -3.5 1.5 l3.5 2.5 3.5 -2.5 c1.5 -2.5 -2 -4 -3.5 -1.5 z" fill="#f48fb1" className="nt-heart-up nt-o" style={{ animationDelay: "0.25s" }} />
+              <path d="M16 -30 c-2 -3 -6 -1 -4 2 l4 3 4 -3 c2 -3 -2 -5 -4 -2 z" fill="#f06292" className="nt-heart-up nt-o" />
+              <path d="M26 -26 c-1.5 -2.5 -5 -1 -3.5 1.5 l3.5 2.5 3.5 -2.5 c1.5 -2.5 -2 -4 -3.5 -1.5 z" fill="#f48fb1" className="nt-heart-up nt-o" style={{ animationDelay: "0.25s" }} />
             </g>
           )}
         </g>
       )}
 
-      {/* Ambiente escurece suavemente à noite / entardecer */}
+      {/* ---- Ambiente escurece à noite / entardecer ---- */}
       {(isNight || phase === "dusk") && (
-        <rect x="0" y="0" width="400" height="260" fill="#16213e" opacity={isNight ? 0.15 : 0.07} pointerEvents="none" />
+        <rect x="0" y="0" width="480" height="340" fill="#16213e" opacity={isNight ? 0.15 : 0.07} pointerEvents="none" />
       )}
     </svg>
   )

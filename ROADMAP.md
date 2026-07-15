@@ -69,10 +69,15 @@ Google Calendar). É um **copiloto de rotina**:
       seguidos concluindo, aparece com ≥2); clique em estante/troféu/quadro mostra as
       estatísticas por trás; xícara de café com vapor de manhã (5h–12h, ambiental).
       Tudo derivado de trabalho real — nunca de login/clique (anti-farm).
+- [x] **Cena isométrica 2.5D** (pedido do usuário, ref. visual de home offices iso):
+      projeção 2:1 com helpers (`Box`, planos de parede com y-descendo-do-topo,
+      `planeX`/`planeY` para telas/estante), duas paredes + chão em losango, sombras,
+      rodapé e acabamento superior. Pessoa visível de lado (cabelo + fones). Validada
+      por render server-side → PNG (react-dom/server + sharp) antes do deploy.
 - [ ] **Escritório vivo v3** (adiado por decisão): guarda-roupa paper-doll do avatar
       (roupas/acessórios compráveis); comemoração ao concluir (evento); sala expansível
       por nível (comparação social legível num relance) + snapshot compartilhável.
-      Isométrico 2.5D só se o engajamento justificar; 3D real adiado.
+      3D real adiado.
 - [x] **Amigos e comparação** (social, v1 — friends.sql): perfil público com @username
       único (escolhido na seção Amigos do Escritório); busca por @/nome via RPC (nunca
       expõe e-mail); pedido/aceite/desfazer amizade (pedido mútuo vira amizade na hora);
@@ -81,6 +86,11 @@ Google Calendar). É um **copiloto de rotina**:
       Privacidade por flag (ocupado/escritório/nível), padrão visível SÓ para amigos
       aceitos (o aceite é o portão), cada flag desligável nos chips da seção. Toda
       leitura sensível via RPC security definer que valida amizade + flag.
+      Aba própria no dock: `/app/friends` (o social vai além do escritório).
+- [ ] **Amigos v2 — agenda e convites**: ver horários ocupados do amigo (permissão
+      própria, além do booleano agora); convidar para compromisso (proposta →
+      aceite → bloco criado no calendário dos dois); usa a aba Reunião das tarefas
+      (link/local) para reuniões marcadas entre amigos.
 - [x] **Notificações push reais**: Service Worker + VAPID + push_subscriptions; dispatcher
       /api/push/dispatch (service role) acionado a cada minuto pelo pg_cron do Supabase;
       lembretes com hora e check-ins de blocos chegam com o app FECHADO. Manifest PWA

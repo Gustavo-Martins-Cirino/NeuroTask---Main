@@ -23,6 +23,7 @@ frontend/
 │   │   ├── favorites/page.tsx
 │   │   ├── ai/page.tsx       # Chat de IA
 │   │   ├── office/page.tsx   # Escritório (loja cosmética com moedas)
+│   │   ├── friends/page.tsx  # Amigos (busca, ocupado/livre, visitar escritório)
 │   │   └── settings/page.tsx
 │   ├── api/
 │   │   └── ai/route.ts       # + ai/transcribe/route.ts (Vercel AI SDK)
@@ -44,7 +45,8 @@ frontend/
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
 │   ├── robot-mascot.tsx      # Robozinho SVG animado (mascote da Neuro IA no modo voz)
-│   ├── office-scene.tsx      # Cena SVG do Escritório (camadas por item equipado)
+│   ├── office-scene.tsx      # Cena SVG isométrica 2.5D do Escritório (viva/reativa)
+│   ├── friends-section.tsx   # Seção de amigos (usada em /app/friends)
 │   ├── page-transition.tsx   # Transições de página (AnimatePresence)
 │   ├── rich-text-editor.tsx  # Editor das notas
 │   ├── date-picker.tsx
@@ -82,7 +84,8 @@ supabase/                     # SQLs por feature (rodar no SQL Editor do Supabas
 | `/app/favorites` | Favoritos |
 | `/app/notes` | Notas (rich text editor) |
 | `/app/ai` | Chat de IA (Vercel AI SDK, rota `app/api/ai`) |
-| `/app/office` | Escritório — loja cosmética (moedas via XP) + amigos (busca, ocupado/livre, visitas) |
+| `/app/office` | Escritório — cena isométrica viva + loja cosmética (moedas via XP) |
+| `/app/friends` | Amigos — busca por @, ocupado/livre, visitar escritório (privacidade opt-out) |
 | `/app/settings` | Configurações (rotina, notificações push, tema) |
 
 ## Decisões de design ativas

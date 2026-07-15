@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { Header } from "@/components/header"
 import { OfficeScene } from "@/components/office-scene"
-import { FriendsSection } from "@/components/friends-section"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Armchair, Coins, Check, Loader2, Sparkles, Eye } from "lucide-react"
@@ -267,9 +266,6 @@ export default function OfficePage() {
               })}
             </div>
           </div>
-
-          {/* Amigos: busca, pedidos, ocupado/livre e visitas */}
-          <FriendsSection />
         </div>
       </div>
     </div>
