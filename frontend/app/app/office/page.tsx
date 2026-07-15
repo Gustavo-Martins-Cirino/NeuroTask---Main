@@ -14,6 +14,7 @@ import {
   type ShopCategory, type ShopItem,
 } from "@/lib/shop"
 import { XP_UPDATED_EVENT } from "@/lib/gamification"
+import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
 
 const CATEGORY_ORDER: ShopCategory[] = ["decor", "setup", "cadeira", "parede", "piso"]
 
@@ -24,12 +25,16 @@ export default function OfficePage() {
   const [busyItem, setBusyItem] = useState<string | null>(null)
   const [filter, setFilter] = useState<ShopCategory | "all">("all")
 
-  const load = () =>
-    fetchShopState().then((s) => {
+  const [stats, setStats] = useState<OfficeStats | undefined>(undefined)
+
+  const load = () => {
+    fetchOfficeStats().then(setStats)
+    return fetchShopState().then((s) => {
       setCoins(s.coins)
       setOwned(new Map(s.owned.map((o) => [o.item_id, o.equipped])))
       setLoading(false)
     })
+  }
 
   useEffect(() => {
     load()
@@ -136,7 +141,7 @@ export default function OfficePage() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <OfficeScene equipped={sceneSet} className="block w-full" />
+              <OfficeScene equipped={sceneSet} stats={stats} className="block w-full" />
             )}
             <AnimatePresence>
               {previewItem && !equippedSet.has(previewItem.id) && (

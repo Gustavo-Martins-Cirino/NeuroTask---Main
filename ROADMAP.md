@@ -62,14 +62,17 @@ Google Calendar). É um **copiloto de rotina**:
       rabo e ronrona ao clique; plantas balançam; luminária pulsa (mais forte à noite);
       neon com flicker; céu da janela e ambiente seguem a HORA REAL (amanhecer/dia/
       pôr do sol/noite com prédios acesos). Respeita prefers-reduced-motion.
-- [ ] **Escritório vivo v2** (de review externa — decisões de arquitetura): objetos
-      reativos ao desempenho real (estante enche com tarefas concluídas, quadro de
-      streak); clique nos objetos abre estatísticas; avatar 2D paper-doll reativo ao
-      trabalho (digita com tarefa em andamento, comemora ao concluir, apagado na
-      inatividade); sala expansível por nível (comparação social legível num relance)
-      + snapshot compartilhável do escritório. Isométrico 2.5D só se o engajamento
-      justificar; 3D real adiado. Princípio inegociável: dinamismo ancorado em
-      TRABALHO REAL (anti-farm) — nunca comemorar login/clique vazio.
+- [x] **Escritório vivo v2 — núcleo reativo** (lib/office-stats.ts): personagem sentado
+      na cadeira que DIGITA quando há tarefa "em andamento" real (tela acesa com código
+      e cursor piscando; tela esmaecida quando parado); estante enche com conclusões
+      (1 livro a cada 5 tarefas concluídas); quadro de streak 🔥 na parede (dias
+      seguidos concluindo, aparece com ≥2); clique em estante/troféu/quadro mostra as
+      estatísticas por trás; xícara de café com vapor de manhã (5h–12h, ambiental).
+      Tudo derivado de trabalho real — nunca de login/clique (anti-farm).
+- [ ] **Escritório vivo v3** (adiado por decisão): guarda-roupa paper-doll do avatar
+      (roupas/acessórios compráveis); comemoração ao concluir (evento); sala expansível
+      por nível (comparação social legível num relance) + snapshot compartilhável.
+      Isométrico 2.5D só se o engajamento justificar; 3D real adiado.
 - [x] **Amigos e comparação** (social, v1 — friends.sql): perfil público com @username
       único (escolhido na seção Amigos do Escritório); busca por @/nome via RPC (nunca
       expõe e-mail); pedido/aceite/desfazer amizade (pedido mútuo vira amizade na hora);
