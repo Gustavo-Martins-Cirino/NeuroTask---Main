@@ -70,12 +70,14 @@ Google Calendar). É um **copiloto de rotina**:
       + snapshot compartilhável do escritório. Isométrico 2.5D só se o engajamento
       justificar; 3D real adiado. Princípio inegociável: dinamismo ancorado em
       TRABALHO REAL (anti-farm) — nunca comemorar login/clique vazio.
-- [ ] **Amigos e comparação** (social): buscar usuários + pedido/aceite de amizade;
-      ver o escritório/nível dos amigos. **Status ocupado/livre**: ver se o amigo está
-      ocupado AGORA (derivado dos blocos dele) SEM acesso à rotina/detalhes — só o
-      indicador binário. Privacidade configurável: o usuário escolhe se expõe o status,
-      o escritório e o nível (tudo opt-in). Caso de uso: colega de trabalho vê se você
-      está livre antes de te chamar.
+- [x] **Amigos e comparação** (social, v1 — friends.sql): perfil público com @username
+      único (escolhido na seção Amigos do Escritório); busca por @/nome via RPC (nunca
+      expõe e-mail); pedido/aceite/desfazer amizade (pedido mútuo vira amizade na hora);
+      **status ocupado/livre** derivado dos blocos AGORA (inclui recorrentes simples) —
+      só o booleano, nunca a rotina; **visitar o escritório** do amigo (cena + nível).
+      Privacidade por flag (ocupado/escritório/nível), padrão visível SÓ para amigos
+      aceitos (o aceite é o portão), cada flag desligável nos chips da seção. Toda
+      leitura sensível via RPC security definer que valida amizade + flag.
 - [x] **Notificações push reais**: Service Worker + VAPID + push_subscriptions; dispatcher
       /api/push/dispatch (service role) acionado a cada minuto pelo pg_cron do Supabase;
       lembretes com hora e check-ins de blocos chegam com o app FECHADO. Manifest PWA
