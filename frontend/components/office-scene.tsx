@@ -107,10 +107,6 @@ export function OfficeScene({ equipped, stats, className }: OfficeSceneProps) {
         .nt-cursor-blink { animation: nt-cursor 0.9s steps(1) infinite; }
         .nt-steam-p { animation: nt-steam 2.4s ease-out infinite; }
         .nt-head-bob { animation: nt-bob 2.6s ease-in-out infinite; }
-        @media (prefers-reduced-motion: reduce) {
-          .nt-cat-body, .nt-cat-tail, .nt-cat-eyes, .nt-plant, .nt-plant-slow, .nt-lamp-glow,
-          .nt-neon, .nt-star, .nt-arm-l, .nt-arm-r, .nt-cursor-blink, .nt-steam-p, .nt-head-bob { animation: none; }
-        }
       `}</style>
 
       {/* Parede */}
