@@ -1,14 +1,53 @@
-// Cena SVG do Escritório (loja cosmética). Ilustração flat com camadas
-// condicionais por item equipado — paleta fixa (independe do tema, como
-// uma ilustração dentro do card).
+"use client"
+
+import { useEffect, useState } from "react"
+
+// Cena SVG do Escritório (loja cosmética) — "Escritório vivo" v1:
+// micro-animações em loop (gato, plantas, luminária, neon) + ciclo
+// dia/noite pela hora REAL do usuário. Ilustração flat, paleta fixa.
 
 interface OfficeSceneProps {
   equipped: Set<string>
   className?: string
 }
 
+type DayPhase = "dawn" | "day" | "dusk" | "night"
+
+function phaseOf(hour: number): DayPhase {
+  if (hour >= 5 && hour < 8) return "dawn"
+  if (hour >= 8 && hour < 17) return "day"
+  if (hour >= 17 && hour < 19) return "dusk"
+  return "night"
+}
+
+const SKY: Record<DayPhase, { sky: string; horizon: string; building: string; sun?: string; moon?: boolean; lights: boolean }> = {
+  dawn: { sky: "#f6c99f", horizon: "#e89a6f", building: "#6b6f8a", sun: "#ffd97a", lights: false },
+  day: { sky: "#aee0f2", horizon: "#7fb5d6", building: "#5f7f9c", sun: "#fff3c4", lights: false },
+  dusk: { sky: "#f2a06a", horizon: "#c96f5a", building: "#4c5170", sun: "#ff9d4d", lights: true },
+  night: { sky: "#1c2b4a", horizon: "#14203a", building: "#2e3f57", moon: true, lights: true },
+}
+
 export function OfficeScene({ equipped, className }: OfficeSceneProps) {
   const has = (id: string) => equipped.has(id)
+
+  // Hora real só no cliente (evita mismatch de hidratação); atualiza a cada minuto
+  const [phase, setPhase] = useState<DayPhase>("day")
+  useEffect(() => {
+    const tick = () => setPhase(phaseOf(new Date().getHours()))
+    tick()
+    const t = setInterval(tick, 60_000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Gato ronrona ao clique (interação, não recompensa)
+  const [purr, setPurr] = useState(0)
+  const doPurr = () => {
+    setPurr((n) => n + 1)
+    setTimeout(() => setPurr((n) => Math.max(0, n - 1)), 1600)
+  }
+
+  const sky = SKY[phase]
+  const isNight = phase === "night"
 
   const wall = has("parede-azul")
     ? "#b9d2e4"
@@ -27,6 +66,30 @@ export function OfficeScene({ equipped, className }: OfficeSceneProps) {
 
   return (
     <svg viewBox="0 0 400 260" className={className} role="img" aria-label="Seu escritório">
+      <style>{`
+        .nt-o { transform-box: fill-box; }
+        @keyframes nt-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.015, 1.05); } }
+        @keyframes nt-tail { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(10deg); } }
+        @keyframes nt-blink { 0%, 94%, 100% { transform: scaleY(1); } 96%, 98% { transform: scaleY(0.08); } }
+        @keyframes nt-sway { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.6deg); } }
+        @keyframes nt-glow { 0%, 100% { opacity: var(--glow, 0.45); } 50% { opacity: calc(var(--glow, 0.45) + 0.14); } }
+        @keyframes nt-flicker { 0%, 88%, 100% { opacity: 0.9; } 89% { opacity: 0.35; } 90% { opacity: 0.9; } 93% { opacity: 0.55; } 94% { opacity: 0.9; } }
+        @keyframes nt-twinkle { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.25; } }
+        @keyframes nt-heart { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.95; } 100% { transform: translateY(-22px); opacity: 0; } }
+        .nt-cat-body { animation: nt-breathe 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
+        .nt-cat-tail { animation: nt-tail 3.8s ease-in-out infinite; transform-origin: 100% 100%; }
+        .nt-cat-eyes { animation: nt-blink 5.5s linear infinite; transform-origin: 50% 50%; }
+        .nt-plant { animation: nt-sway 5s ease-in-out infinite; transform-origin: 50% 100%; }
+        .nt-plant-slow { animation: nt-sway 6.5s ease-in-out infinite; transform-origin: 50% 100%; }
+        .nt-lamp-glow { animation: nt-glow 4s ease-in-out infinite; }
+        .nt-neon { animation: nt-flicker 7s linear infinite; }
+        .nt-star { animation: nt-twinkle 3s ease-in-out infinite; }
+        .nt-heart-up { animation: nt-heart 1.5s ease-out forwards; }
+        @media (prefers-reduced-motion: reduce) {
+          .nt-cat-body, .nt-cat-tail, .nt-cat-eyes, .nt-plant, .nt-plant-slow, .nt-lamp-glow, .nt-neon, .nt-star { animation: none; }
+        }
+      `}</style>
+
       {/* Parede */}
       <rect x="0" y="0" width="400" height="192" fill={wall} />
       <rect x="0" y="180" width="400" height="12" fill={wallShade} />
@@ -53,25 +116,44 @@ export function OfficeScene({ equipped, className }: OfficeSceneProps) {
         <rect x="0" y="192" width="400" height="68" fill="#cfc7b8" />
       )}
 
-      {/* Janela com vista da cidade */}
+      {/* Janela com vista da cidade — céu segue a hora real */}
       {has("janela-cidade") && (
         <g>
           <rect x="28" y="26" width="92" height="92" rx="6" fill="#8a8378" />
-          <rect x="34" y="32" width="80" height="80" rx="3" fill="#aee0f2" />
-          <rect x="34" y="86" width="80" height="26" fill="#7fb5d6" />
-          <g fill="#5f7f9c">
+          <rect x="34" y="32" width="80" height="80" rx="3" fill={sky.sky} />
+          <rect x="34" y="86" width="80" height="26" fill={sky.horizon} />
+          {sky.moon ? (
+            <g>
+              <circle cx="100" cy="46" r="7" fill="#f4f1de" />
+              <circle cx="97" cy="44" r="6" fill={sky.sky} />
+              {[[44, 40], [58, 50], [72, 38], [88, 56], [50, 60]].map(([x, y], i) => (
+                <circle key={i} cx={x} cy={y} r="1.1" fill="#f4f1de" className="nt-star" style={{ animationDelay: `${i * 0.7}s` }} />
+              ))}
+            </g>
+          ) : (
+            <circle cx="102" cy={phase === "day" ? 44 : 62} r="7" fill={sky.sun} />
+          )}
+          <g fill={sky.building}>
             <rect x="40" y="70" width="12" height="42" />
             <rect x="56" y="58" width="14" height="54" />
             <rect x="74" y="76" width="10" height="36" />
             <rect x="88" y="64" width="16" height="48" />
           </g>
-          <g fill="#ffe9a8">
+          <g fill="#ffd97a" opacity={sky.lights ? 1 : 0.35}>
             <rect x="59" y="64" width="3" height="3" />
             <rect x="65" y="72" width="3" height="3" />
             <rect x="91" y="70" width="3" height="3" />
             <rect x="97" y="82" width="3" height="3" />
+            {sky.lights && (
+              <>
+                <rect x="43" y="76" width="3" height="3" />
+                <rect x="43" y="88" width="3" height="3" />
+                <rect x="59" y="84" width="3" height="3" />
+                <rect x="77" y="82" width="3" height="3" />
+                <rect x="91" y="94" width="3" height="3" />
+              </>
+            )}
           </g>
-          <circle cx="102" cy="44" r="7" fill="#fff3c4" />
           <line x1="74" y1="32" x2="74" y2="112" stroke="#8a8378" strokeWidth="4" />
           <line x1="34" y1="72" x2="114" y2="72" stroke="#8a8378" strokeWidth="4" />
         </g>
@@ -89,11 +171,11 @@ export function OfficeScene({ equipped, className }: OfficeSceneProps) {
         </g>
       )}
 
-      {/* Neon "focus" */}
+      {/* Neon "focus" com flicker ocasional */}
       {has("quadro-neon") && (
-        <g>
-          <rect x="238" y="40" width="92" height="34" rx="17" fill="none" stroke="#f472b6" strokeWidth="3" opacity="0.9" />
-          <rect x="238" y="40" width="92" height="34" rx="17" fill="#f472b6" opacity="0.12" />
+        <g className="nt-neon nt-o">
+          <rect x="238" y="40" width="92" height="34" rx="17" fill="none" stroke="#f472b6" strokeWidth="3" />
+          <rect x="238" y="40" width="92" height="34" rx="17" fill="#f472b6" opacity="0.13" />
           <text x="284" y="63" textAnchor="middle" fontSize="17" fontWeight="700" fill="#f472b6" fontFamily="monospace" letterSpacing="2">
             focus
           </text>
@@ -130,24 +212,33 @@ export function OfficeScene({ equipped, className }: OfficeSceneProps) {
         </g>
       )}
 
-      {/* Planta grande */}
+      {/* Planta grande (balança de leve) */}
       {has("planta-grande") && (
         <g>
-          <path d="M62 196 q-14 -34 6 -58" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
-          <path d="M62 196 q4 -40 -18 -52" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
-          <path d="M62 196 q16 -28 34 -34" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
-          <ellipse cx="66" cy="134" rx="12" ry="20" fill="#5f9a64" transform="rotate(12 66 134)" />
-          <ellipse cx="42" cy="142" rx="11" ry="18" fill="#6dab72" transform="rotate(-24 42 142)" />
-          <ellipse cx="98" cy="158" rx="11" ry="17" fill="#6dab72" transform="rotate(40 98 158)" />
+          <g className="nt-plant-slow nt-o">
+            <path d="M62 196 q-14 -34 6 -58" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
+            <path d="M62 196 q4 -40 -18 -52" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
+            <path d="M62 196 q16 -28 34 -34" fill="none" stroke="#4e7d52" strokeWidth="5" strokeLinecap="round" />
+            <ellipse cx="66" cy="134" rx="12" ry="20" fill="#5f9a64" transform="rotate(12 66 134)" />
+            <ellipse cx="42" cy="142" rx="11" ry="18" fill="#6dab72" transform="rotate(-24 42 142)" />
+            <ellipse cx="98" cy="158" rx="11" ry="17" fill="#6dab72" transform="rotate(40 98 158)" />
+          </g>
           <path d="M48 196 h30 l-4 26 h-22 z" fill="#c96f4a" />
           <rect x="46" y="192" width="34" height="8" rx="3" fill="#b55f3d" />
         </g>
       )}
 
-      {/* Luminária de chão */}
+      {/* Luminária de chão (brilho pulsante; mais forte à noite) */}
       {has("luminaria") && (
         <g>
-          <circle cx="318" cy="118" r="26" fill="#ffe9a8" opacity="0.45" />
+          <circle
+            cx="318"
+            cy="118"
+            r={isNight ? 32 : 26}
+            fill="#ffe9a8"
+            className="nt-lamp-glow"
+            style={{ ["--glow" as string]: isNight ? 0.6 : 0.4 }}
+          />
           <path d="M304 106 h28 l-6 16 h-16 z" fill="#e0a437" />
           <line x1="318" y1="122" x2="318" y2="208" stroke="#7a7267" strokeWidth="4" />
           <rect x="304" y="206" width="28" height="7" rx="3.5" fill="#7a7267" />
@@ -214,7 +305,9 @@ export function OfficeScene({ equipped, className }: OfficeSceneProps) {
       {/* Itens de mesa */}
       {has("planta-pequena") && (
         <g>
-          <path d="M136 132 q-6 -10 2 -16 M136 132 q6 -9 -1 -17 M136 132 q8 -5 12 -12" fill="none" stroke="#5f9a64" strokeWidth="3" strokeLinecap="round" />
+          <g className="nt-plant nt-o">
+            <path d="M136 132 q-6 -10 2 -16 M136 132 q6 -9 -1 -17 M136 132 q8 -5 12 -12" fill="none" stroke="#5f9a64" strokeWidth="3" strokeLinecap="round" />
+          </g>
           <path d="M129 132 h14 l-2 12 h-10 z" fill="#c96f4a" />
         </g>
       )}
@@ -227,17 +320,32 @@ export function OfficeScene({ equipped, className }: OfficeSceneProps) {
         </g>
       )}
 
-      {/* Gato */}
+      {/* Gato — respira, pisca, abana o rabo; clique = ronrona */}
       {has("pet-gato") && (
-        <g>
-          <ellipse cx="312" cy="234" rx="20" ry="11" fill="#4a4a55" />
-          <circle cx="330" cy="226" r="9" fill="#4a4a55" />
-          <polygon points="324,220 327,212 330,219" fill="#4a4a55" />
-          <polygon points="331,219 335,211 338,219" fill="#4a4a55" />
-          <path d="M293 234 q-12 -4 -8 -16" fill="none" stroke="#4a4a55" strokeWidth="5" strokeLinecap="round" />
-          <circle cx="328" cy="225" r="1.4" fill="#ffe9a8" />
-          <circle cx="334" cy="225" r="1.4" fill="#ffe9a8" />
+        <g onClick={doPurr} style={{ cursor: "pointer" }}>
+          <path d="M293 234 q-12 -4 -8 -16" fill="none" stroke="#4a4a55" strokeWidth="5" strokeLinecap="round" className="nt-cat-tail nt-o" />
+          <g className="nt-cat-body nt-o">
+            <ellipse cx="312" cy="234" rx="20" ry="11" fill="#4a4a55" />
+            <circle cx="330" cy="226" r="9" fill="#4a4a55" />
+            <polygon points="324,220 327,212 330,219" fill="#4a4a55" />
+            <polygon points="331,219 335,211 338,219" fill="#4a4a55" />
+            <g className="nt-cat-eyes nt-o">
+              <circle cx="328" cy="225" r="1.4" fill="#ffe9a8" />
+              <circle cx="334" cy="225" r="1.4" fill="#ffe9a8" />
+            </g>
+          </g>
+          {purr > 0 && (
+            <g key={purr}>
+              <path d="M330 208 c-2 -3 -6 -1 -4 2 l4 3 4 -3 c2 -3 -2 -5 -4 -2 z" fill="#f06292" className="nt-heart-up nt-o" />
+              <path d="M340 212 c-1.5 -2.5 -5 -1 -3.5 1.5 l3.5 2.5 3.5 -2.5 c1.5 -2.5 -2 -4 -3.5 -1.5 z" fill="#f48fb1" className="nt-heart-up nt-o" style={{ animationDelay: "0.25s" }} />
+            </g>
+          )}
         </g>
+      )}
+
+      {/* Ambiente escurece suavemente à noite / entardecer */}
+      {(isNight || phase === "dusk") && (
+        <rect x="0" y="0" width="400" height="260" fill="#16213e" opacity={isNight ? 0.15 : 0.07} pointerEvents="none" />
       )}
     </svg>
   )

@@ -58,6 +58,18 @@ Google Calendar). É um **copiloto de rotina**:
       tabela shop_items; compra via RPC atômica buy_item (valida saldo/posse). Cena SVG em
       camadas (components/office-scene.tsx) + loja com 19 itens em 5 slots (decor livre;
       cadeira/setup/parede/piso exclusivos), equipar/guardar. SQL: coins_shop.sql.
+- [x] **Escritório vivo v1** (micro-animações + dia/noite): gato respira/pisca/abana o
+      rabo e ronrona ao clique; plantas balançam; luminária pulsa (mais forte à noite);
+      neon com flicker; céu da janela e ambiente seguem a HORA REAL (amanhecer/dia/
+      pôr do sol/noite com prédios acesos). Respeita prefers-reduced-motion.
+- [ ] **Escritório vivo v2** (de review externa — decisões de arquitetura): objetos
+      reativos ao desempenho real (estante enche com tarefas concluídas, quadro de
+      streak); clique nos objetos abre estatísticas; avatar 2D paper-doll reativo ao
+      trabalho (digita com tarefa em andamento, comemora ao concluir, apagado na
+      inatividade); sala expansível por nível (comparação social legível num relance)
+      + snapshot compartilhável do escritório. Isométrico 2.5D só se o engajamento
+      justificar; 3D real adiado. Princípio inegociável: dinamismo ancorado em
+      TRABALHO REAL (anti-farm) — nunca comemorar login/clique vazio.
 - [ ] **Amigos e comparação** (social): buscar usuários + pedido/aceite de amizade;
       ver o escritório/nível dos amigos. **Status ocupado/livre**: ver se o amigo está
       ocupado AGORA (derivado dos blocos dele) SEM acesso à rotina/detalhes — só o
