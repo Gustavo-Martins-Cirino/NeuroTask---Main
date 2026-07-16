@@ -109,7 +109,8 @@ export default function SignupPage() {
                 Clique no link para ativar sua conta.
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                Não chegou? Olhe a caixa de <strong>spam</strong> —{" "}
+                Não chegou? Olhe o <strong>spam</strong> e as abas{" "}
+                <strong>Promoções/Atualizações</strong> (Gmail) ou <strong>Outros</strong> (Outlook) —{" "}
                 {resendIn > 0 ? (
                   <span>reenviado ✓ (aguarde {resendIn}s para reenviar de novo)</span>
                 ) : (

@@ -95,7 +95,8 @@ export default function ResetPasswordPage() {
               <h1 className="text-2xl font-bold text-foreground">Verifique seu email</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 Se existir uma conta para <strong>{email}</strong>, enviamos um link para
-                redefinir a senha. Olhe também a caixa de <strong>spam</strong>.
+                redefinir a senha. Olhe também o <strong>spam</strong> e as abas{" "}
+                <strong>Promoções/Atualizações</strong> (Gmail) ou <strong>Outros</strong> (Outlook).
               </p>
             </div>
           </div>

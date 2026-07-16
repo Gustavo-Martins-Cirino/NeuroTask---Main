@@ -119,7 +119,8 @@ export default function LoginPage() {
           )}
           {unconfirmed && (
             <p className="text-sm text-muted-foreground">
-              Olhe também a caixa de <strong>spam</strong>.{" "}
+              Olhe também o <strong>spam</strong> e as abas <strong>Promoções/Atualizações</strong> (Gmail)
+              ou <strong>Outros</strong> (Outlook).{" "}
               {resent ? (
                 <span className="font-medium text-emerald-600 dark:text-emerald-400">Link reenviado! ✓</span>
               ) : (
