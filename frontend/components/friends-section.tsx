@@ -9,14 +9,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { OfficeScene } from "@/components/office-scene"
 import {
   Users, Search, UserPlus, Check, X, Loader2, Eye, Clock3, AtSign,
+  CalendarPlus, CalendarClock, Video, MapPin,
 } from "lucide-react"
 import {
   fetchMyProfile, claimUsername, normalizeUsername, updatePrivacy,
   searchUsers, sendFriendRequest, fetchMyFriends, acceptFriendRequest,
-  removeFriendship, fetchFriendOffice, fetchSuggestedUsers,
-  type MyProfile, type UserSearchResult, type FriendEntry, type FriendOffice,
+  removeFriendship, fetchFriendOffice, fetchSuggestedUsers, fetchFriendBusyToday,
+  type MyProfile, type UserSearchResult, type FriendEntry, type FriendOffice, type BusyRange,
 } from "@/lib/friends"
+import {
+  fetchMyInvites, respondMeetingInvite, cancelMeetingInvite, type MeetingInvite,
+} from "@/lib/invites"
+import { InviteDialog } from "@/components/invite-dialog"
 import { normalizeAvatar } from "@/lib/avatar"
+
+const fmtTime = (d: Date | string) =>
+  new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+
+const fmtDay = (d: string) =>
+  new Date(d).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })
 
 function Initial({ name }: { name: string }) {
   return (
@@ -51,10 +62,15 @@ export function FriendsSection() {
   const [visit, setVisit] = useState<FriendOffice | null>(null)
   const [visitLoading, setVisitLoading] = useState<string | null>(null)
   const [suggested, setSuggested] = useState<UserSearchResult[]>([])
+  const [invites, setInvites] = useState<MeetingInvite[]>([])
+  const [inviteFriend, setInviteFriend] = useState<FriendEntry | null>(null)
+  const [busyView, setBusyView] = useState<{ friend: FriendEntry; ranges: BusyRange[] } | null>(null)
+  const [busyLoading, setBusyLoading] = useState<string | null>(null)
 
   const refreshFriends = () => {
     fetchMyFriends().then(setFriends)
     fetchSuggestedUsers().then(setSuggested)
+    fetchMyInvites().then(setInvites)
   }
 
   useEffect(() => {
@@ -131,7 +147,35 @@ export function FriendsSection() {
     setVisit(office!)
   }
 
-  const togglePrivacy = (field: "share_status" | "share_office" | "share_level" | "discoverable") => {
+  const handleAgenda = async (f: FriendEntry) => {
+    setBusyLoading(f.friend_id)
+    const { ranges, error } = await fetchFriendBusyToday(f.friend_id)
+    setBusyLoading(null)
+    if (error) {
+      toast.error(error)
+      return
+    }
+    setBusyView({ friend: f, ranges: ranges! })
+  }
+
+  const handleRespondInvite = async (inv: MeetingInvite, accept: boolean) => {
+    const { status, error } = await respondMeetingInvite(inv.id, accept)
+    if (error) {
+      toast.error(error)
+      return
+    }
+    if (status === "accepted") {
+      toast.success("Compromisso confirmado — já está no calendário de vocês dois! 📅")
+    }
+    refreshFriends()
+  }
+
+  const handleCancelInvite = async (inv: MeetingInvite) => {
+    await cancelMeetingInvite(inv.id)
+    setInvites((prev) => prev.filter((i) => i.id !== inv.id))
+  }
+
+  const togglePrivacy = (field: "share_status" | "share_office" | "share_level" | "discoverable" | "share_schedule") => {
     if (!profile) return
     const next = !profile[field]
     setProfile({ ...profile, [field]: next })
@@ -156,6 +200,7 @@ export function FriendsSection() {
               ["share_status", "Ocupado/livre"],
               ["share_office", "Escritório"],
               ["share_level", "Nível"],
+              ["share_schedule", "Agenda"],
               ["discoverable", "Perfil aberto"],
             ] as const).map(([field, label]) => (
               <button
@@ -309,6 +354,74 @@ export function FriendsSection() {
             </div>
           )}
 
+          {/* Convites de compromisso pendentes */}
+          {invites.filter((i) => i.status === "pending").length > 0 && (
+            <div className="space-y-1.5">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                <CalendarClock className="h-3.5 w-3.5" /> Convites de compromisso
+              </p>
+              {invites
+                .filter((i) => i.status === "pending")
+                .map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2"
+                  >
+                    <span className="min-w-0 flex-1 text-xs leading-relaxed">
+                      <span className="font-semibold">{inv.title}</span>
+                      <span className="text-muted-foreground">
+                        {" · "}
+                        {fmtDay(inv.starts_at)} {fmtTime(inv.starts_at)}–{fmtTime(inv.ends_at)}
+                        {" · "}
+                        {inv.direction === "received" ? "de" : "para"} @{inv.other_username}
+                      </span>
+                      {(inv.meeting_url || inv.location) && (
+                        <span className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                          {inv.meeting_url && (
+                            <span className="flex items-center gap-1"><Video className="h-3 w-3" /> online</span>
+                          )}
+                          {inv.location && (
+                            <span className="flex min-w-0 items-center gap-1"><MapPin className="h-3 w-3 shrink-0" /><span className="truncate">{inv.location}</span></span>
+                          )}
+                        </span>
+                      )}
+                    </span>
+                    {inv.direction === "received" ? (
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleRespondInvite(inv, true)}
+                          className="flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[11px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                        >
+                          <Check className="h-3 w-3" /> Aceitar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRespondInvite(inv, false)}
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-border/50 text-muted-foreground transition-colors hover:bg-accent"
+                          title="Recusar"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <Clock3 className="h-3 w-3" /> aguardando
+                        <button
+                          type="button"
+                          onClick={() => handleCancelInvite(inv)}
+                          className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-accent"
+                          title="Cancelar convite"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+
           {/* Amigos */}
           {accepted.length > 0 && (
             <div className="grid gap-1.5 sm:grid-cols-2">
@@ -319,15 +432,34 @@ export function FriendsSection() {
                     <span className="block truncate text-sm font-medium">{f.display_name ?? `@${f.username}`}</span>
                     <StatusDot busy={f.busy} />
                   </span>
+                  {f.can_schedule && (
+                    <button
+                      type="button"
+                      onClick={() => handleAgenda(f)}
+                      disabled={busyLoading === f.friend_id}
+                      title="Ver horários ocupados de hoje"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/15"
+                    >
+                      {busyLoading === f.friend_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CalendarClock className="h-3.5 w-3.5" />}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setInviteFriend(f)}
+                    title="Convidar para um compromisso"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/15"
+                  >
+                    <CalendarPlus className="h-3.5 w-3.5" />
+                  </button>
                   {f.can_visit && (
                     <button
                       type="button"
                       onClick={() => handleVisit(f)}
                       disabled={visitLoading === f.friend_id}
-                      className="flex h-7 items-center gap-1 rounded-lg bg-primary/10 px-2 text-[11px] font-medium text-primary transition-colors hover:bg-primary/15"
+                      title="Visitar escritório"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/15"
                     >
-                      {visitLoading === f.friend_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3 w-3" />}
-                      Visitar
+                      {visitLoading === f.friend_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   )}
                   <button
@@ -373,6 +505,57 @@ export function FriendsSection() {
           )}
         </>
       )}
+
+      {/* Agenda de hoje do amigo (só horários, nunca títulos) */}
+      <Dialog open={!!busyView} onOpenChange={(o) => { if (!o) setBusyView(null) }}>
+        <DialogContent className="sm:max-w-[380px]">
+          {busyView && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-primary" />
+                  Hoje, {busyView.friend.display_name ?? `@${busyView.friend.username}`} está…
+                </DialogTitle>
+              </DialogHeader>
+              {busyView.ranges.length === 0 ? (
+                <p className="rounded-xl bg-emerald-500/10 px-3 py-3 text-center text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  Livre o dia todo! 🎉
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {busyView.ranges.map((r, i) => (
+                    <li key={i} className="flex items-center gap-2.5 rounded-lg bg-red-500/10 px-3 py-2 text-sm">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
+                      <span className="font-medium tabular-nums">
+                        {fmtTime(r.start)} – {fmtTime(r.end)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">ocupado</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-[11px] text-muted-foreground/70">
+                Só os horários são compartilhados — nunca o que a pessoa está fazendo.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const f = busyView.friend
+                  setBusyView(null)
+                  setInviteFriend(f)
+                }}
+                className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                <CalendarPlus className="h-3.5 w-3.5" />
+                Convidar para um horário livre
+              </button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Convite de compromisso */}
+      <InviteDialog friend={inviteFriend} onClose={() => setInviteFriend(null)} onSent={refreshFriends} />
 
       {/* Visita ao escritório do amigo */}
       <Dialog open={!!visit} onOpenChange={(o) => { if (!o) setVisit(null) }}>

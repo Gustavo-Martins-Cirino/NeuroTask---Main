@@ -13,13 +13,15 @@ export default function FriendsPage() {
         <div className="mx-auto w-full max-w-3xl space-y-6">
           <FriendsSection />
 
-          {/* Próximo passo do social (registrado no roadmap) */}
-          <div className="flex items-start gap-3 rounded-2xl border border-dashed border-border/50 p-4">
-            <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          {/* Como funciona */}
+          <div className="flex items-start gap-3 rounded-2xl border border-border/50 bg-card p-4">
+            <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              <span className="font-medium text-foreground">Em breve:</span> ver os horários ocupados
-              do amigo (se ele permitir) e convidar para um compromisso direto por aqui — a reunião
-              entra no calendário dos dois.
+              <span className="font-medium text-foreground">Dica:</span> nos amigos, use{" "}
+              <span className="font-medium text-foreground">📅 Agenda</span> para ver os horários
+              ocupados de hoje (se a pessoa ativou o chip &quot;Agenda&quot;) e{" "}
+              <span className="font-medium text-foreground">➕ Convidar</span> para propor um
+              compromisso — quando aceito, ele entra no calendário de vocês dois automaticamente.
             </p>
           </div>
         </div>

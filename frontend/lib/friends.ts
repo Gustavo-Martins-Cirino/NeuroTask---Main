@@ -11,6 +11,7 @@ export interface MyProfile {
   share_office: boolean
   share_level: boolean
   discoverable: boolean
+  share_schedule: boolean
 }
 
 export interface UserSearchResult {
@@ -27,6 +28,7 @@ export interface FriendEntry {
   state: "accepted" | "pending_in" | "pending_out"
   busy: boolean | null // null = não compartilha (ou pendente)
   can_visit: boolean
+  can_schedule: boolean
 }
 
 export interface FriendOffice {
@@ -69,7 +71,10 @@ export async function claimUsername(username: string, displayName: string | null
   return { profile: data }
 }
 
-export async function updatePrivacy(field: "share_status" | "share_office" | "share_level" | "discoverable", value: boolean): Promise<void> {
+export async function updatePrivacy(
+  field: "share_status" | "share_office" | "share_level" | "discoverable" | "share_schedule",
+  value: boolean
+): Promise<void> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
@@ -119,6 +124,81 @@ export async function acceptFriendRequest(friendshipId: string): Promise<void> {
 export async function removeFriendship(friendshipId: string): Promise<void> {
   const supabase = createClient()
   await supabase.from("friendships").delete().eq("id", friendshipId)
+}
+
+// ---- Agenda do amigo: só HORÁRIOS (nunca títulos) ----
+export interface BusyRange {
+  start: Date
+  end: Date
+}
+
+interface ScheduleRow {
+  start_time: string
+  end_time: string
+  is_recurring: boolean
+  recurrence_rule: string | null
+}
+
+// Expande os blocos do amigo para as faixas ocupadas de HOJE (fuso local)
+function expandBusyToday(rows: ScheduleRow[]): BusyRange[] {
+  const dayStart = new Date()
+  dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(dayStart.getTime() + 24 * 3_600_000)
+  const now = new Date()
+  const ranges: BusyRange[] = []
+
+  for (const r of rows) {
+    const s = new Date(r.start_time)
+    const e = new Date(r.end_time)
+    if (!r.is_recurring) {
+      if (e > dayStart && s < dayEnd) {
+        ranges.push({ start: s < dayStart ? dayStart : s, end: e > dayEnd ? dayEnd : e })
+      }
+      continue
+    }
+    // Recorrentes simples (sem cruzar meia-noite): ocorrência de hoje
+    if (s > now) continue
+    const dow = dayStart.getDay() // 0=dom
+    const okToday =
+      r.recurrence_rule === "daily" ||
+      (r.recurrence_rule === "weekdays" && dow >= 1 && dow <= 5) ||
+      (r.recurrence_rule === "weekly" && dow === s.getDay())
+    if (!okToday) continue
+    const occStart = new Date(dayStart)
+    occStart.setHours(s.getHours(), s.getMinutes(), 0, 0)
+    const durMs = e.getTime() - s.getTime()
+    if (durMs <= 0 || durMs > 24 * 3_600_000) continue
+    const occEnd = new Date(Math.min(occStart.getTime() + durMs, dayEnd.getTime()))
+    ranges.push({ start: occStart, end: occEnd })
+  }
+
+  // Ordena e funde sobreposições
+  ranges.sort((a, b) => a.start.getTime() - b.start.getTime())
+  const merged: BusyRange[] = []
+  for (const r of ranges) {
+    const last = merged[merged.length - 1]
+    if (last && r.start <= last.end) {
+      if (r.end > last.end) last.end = r.end
+    } else {
+      merged.push({ ...r })
+    }
+  }
+  return merged
+}
+
+const SCHEDULE_ERRORS: Record<string, string> = {
+  NAO_SAO_AMIGOS: "Vocês ainda não são amigos.",
+  AGENDA_PRIVADA: "Esse amigo não compartilha a agenda.",
+}
+
+export async function fetchFriendBusyToday(friendId: string): Promise<{ ranges?: BusyRange[]; error?: string }> {
+  const supabase = createClient()
+  const { data, error } = await supabase.rpc("friend_schedule", { p_friend: friendId })
+  if (error) {
+    const known = Object.keys(SCHEDULE_ERRORS).find((k) => error.message.includes(k))
+    return { error: known ? SCHEDULE_ERRORS[known] : error.message }
+  }
+  return { ranges: expandBusyToday((data ?? []) as ScheduleRow[]) }
 }
 
 const OFFICE_ERRORS: Record<string, string> = {

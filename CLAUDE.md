@@ -73,7 +73,7 @@ supabase/                     # SQLs por feature (rodar no SQL Editor do Supabas
   realtime.sql · reminders.sql · day_notes.sql · routine_profile.sql
   routine_activities.sql · task_recurrence.sql · task_order.sql · activity_log.sql
   xp_anticheat.sql · push.sql · push_cron.sql · coins_shop.sql · task_meeting.sql
-  friends.sql · social_v2.sql
+  friends.sql · social_v2.sql · friends_agenda.sql
 ```
 
 ## Rotas existentes
@@ -87,7 +87,7 @@ supabase/                     # SQLs por feature (rodar no SQL Editor do Supabas
 | `/app/notes` | Notas (rich text editor) |
 | `/app/ai` | Chat de IA (Vercel AI SDK, rota `app/api/ai`) |
 | `/app/office` | Escritório — cena isométrica viva + loja cosmética (moedas via XP) |
-| `/app/friends` | Amigos — busca por @, ocupado/livre, visitar escritório (privacidade opt-out) |
+| `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório |
 | `/app/settings` | Configurações (rotina, notificações push, tema) |
 
 ## Decisões de design ativas

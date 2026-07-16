@@ -94,11 +94,16 @@ Google Calendar). É um **copiloto de rotina**:
       Aba própria no dock: `/app/friends` (o social vai além do escritório).
       **Sugeridos** (social_v2.sql): perfis com "perfil aberto" (discoverable,
       configurável nos chips) aparecem como sugestão de amizade para outros usuários.
-- [ ] **Amigos v2 — agenda e convites**: ver horários ocupados do amigo (permissão
-      própria, além do booleano agora); convidar para compromisso (proposta →
-      aceite → bloco criado no calendário dos dois); usa a aba Reunião das tarefas
-      (link/local) para reuniões marcadas entre amigos. Sugestões por REGIÃO
-      (requer localização aproximada opt-in — decidir fonte antes).
+- [x] **Amigos v2 — agenda e convites** (friends_agenda.sql): botão 📅 Agenda mostra
+      os horários OCUPADOS de hoje do amigo (novo chip "Agenda", padrão DESLIGADO;
+      RPC friend_schedule devolve só horários — nunca títulos; ocorrências expandidas
+      no cliente, faixas fundidas). Botão ➕ Convidar → dialog (título, data, das/às,
+      link e local opcionais) → meeting_invites; aceitar via RPC cria o bloco roxo no
+      calendário DOS DOIS (link/local vão na descrição); recusar/cancelar tratados.
+      Convites pendentes listados na aba com aceitar/recusar/cancelar.
+- [ ] **Amigos v3**: sugestões por REGIÃO (requer localização aproximada opt-in —
+      decidir fonte antes); notificação push de convite recebido; proposta de
+      horário com base nos horários livres dos dois (determinístico).
 - [x] **Notificações push reais**: Service Worker + VAPID + push_subscriptions; dispatcher
       /api/push/dispatch (service role) acionado a cada minuto pelo pg_cron do Supabase;
       lembretes com hora e check-ins de blocos chegam com o app FECHADO. Manifest PWA
