@@ -333,8 +333,8 @@ export function OfficeScene({ equipped, stats, avatar, className }: OfficeSceneP
       <Box x={6} y={26} dx={40} dy={104} z={30} dz={7} c="#8a6f4e" />
       <Box x={10} y={32} dx={32} dy={24} dz={30} c="#75593c" />
       <Box x={10} y={102} dx={32} dy={24} dz={30} c="#75593c" />
-      {/* teclado */}
-      <Box x={30} y={66} dx={9} dy={26} z={37} dz={2} c="#3a3f4a" />
+      {/* teclado (com espessura, encostado nos monitores) */}
+      <Box x={26} y={64} dx={10} dy={30} z={37} dz={3} c="#3a3f4a" />
 
       {/* monitores (tela virada para a câmera) */}
       {has("setup-ultrawide") ? (
@@ -429,12 +429,14 @@ export function OfficeScene({ equipped, stats, avatar, className }: OfficeSceneP
       <Box x={74} y={82} dx={4} dy={4} z={4} dz={14} c="#4a4a4a" />
       {/* assento */}
       <Box x={62} y={70} dx={28} dy={28} z={18} dz={7} c={chairColor} />
-      {/* você — avatar editável, sentado de lado (pernas incluídas!) */}
-      <g
-        className={working ? undefined : "nt-head-bob nt-o"}
-        transform={`translate(${sx(74, 84)},${sy(74, 84, 25)})`}
-      >
-        <AvatarFigure config={person} working={working} />
+      {/* você — avatar editável, sentado de lado (pernas incluídas!)
+          O grupo externo POSICIONA (attr transform) e o interno ANIMA (CSS
+          transform) — juntos, o CSS sobrescreveria a posição e o avatar
+          sumiria para a origem do SVG. */}
+      <g transform={`translate(${sx(74, 84)},${sy(74, 84, 25)})`}>
+        <g className={working ? undefined : "nt-head-bob nt-o"}>
+          <AvatarFigure config={person} working={working} />
+        </g>
       </g>
       {/* encosto (na frente do tronco para dar profundidade) */}
       {chairBack > 0 && <Box x={88} y={70} dx={6} dy={28} z={22} dz={chairBack} c={chairColor} />}
