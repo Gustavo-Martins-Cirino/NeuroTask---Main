@@ -37,8 +37,27 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [resendIn, setResendIn] = useState(0)
   const router = useRouter()
   const supabase = createClient()
+
+  const handleResend = async () => {
+    setResendIn(60)
+    const timer = setInterval(() => {
+      setResendIn((v) => {
+        if (v <= 1) clearInterval(timer)
+        return Math.max(0, v - 1)
+      })
+    }, 1000)
+    await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
+          `${window.location.origin}/auth/callback`,
+      },
+    })
+  }
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,8 +105,18 @@ export default function SignupPage() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Verifique seu email</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Enviamos um link de confirmação para <strong>{email}</strong>. 
+                Enviamos um link de confirmação para <strong>{email}</strong>.
                 Clique no link para ativar sua conta.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Não chegou? Olhe a caixa de <strong>spam</strong> —{" "}
+                {resendIn > 0 ? (
+                  <span>reenviado ✓ (aguarde {resendIn}s para reenviar de novo)</span>
+                ) : (
+                  <button type="button" onClick={handleResend} className="font-medium text-primary hover:underline">
+                    reenviar link
+                  </button>
+                )}
               </p>
             </div>
           </div>

@@ -30,12 +30,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [unconfirmed, setUnconfirmed] = useState(false)
+  const [resent, setResent] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  const handleResend = async () => {
+    setResent(true)
+    await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    })
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setUnconfirmed(false)
     setLoading(true)
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -45,6 +57,8 @@ export default function LoginPage() {
 
     if (error) {
       setError(translateLoginError(error))
+      setUnconfirmed(error.code === "email_not_confirmed")
+      setResent(false)
       setLoading(false)
       return
     }
@@ -97,6 +111,18 @@ export default function LoginPage() {
 
           {error && (
             <p className="text-sm text-destructive">{error}</p>
+          )}
+          {unconfirmed && (
+            <p className="text-sm text-muted-foreground">
+              Olhe também a caixa de <strong>spam</strong>.{" "}
+              {resent ? (
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">Link reenviado! ✓</span>
+              ) : (
+                <button type="button" onClick={handleResend} className="font-medium text-primary hover:underline">
+                  Reenviar link de confirmação
+                </button>
+              )}
+            </p>
           )}
 
           <Button type="submit" className="w-full h-11" disabled={loading}>
