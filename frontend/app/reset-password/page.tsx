@@ -9,12 +9,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { KeyRound, Loader2, CheckCircle } from "lucide-react"
 
-// Dois modos:
-// 1. Sem sessão → pede o e-mail e envia o link de redefinição.
-// 2. Com sessão (chegou pelo link de recovery via /auth/callback) → define a nova senha.
+// Três caminhos:
+// 1. Sem sessão e sem token → pede o e-mail e envia o link de redefinição.
+// 2. Com token na URL (veio do link do e-mail) → formulário de nova senha;
+//    o token de uso único só é consumido (verifyOtp) no ENVIO — imune a
+//    scanners de e-mail corporativo que abrem links antes do usuário.
+// 3. Com sessão → formulário de nova senha direto.
 export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true)
   const [hasSession, setHasSession] = useState(false)
+  const [tokenHash, setTokenHash] = useState<string | null>(null)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirm, setConfirm] = useState("")
@@ -25,6 +29,12 @@ export default function ResetPasswordPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const t = params.get("token_hash")
+    if (t) {
+      setTokenHash(t)
+      window.history.replaceState({}, "", "/reset-password") // tira o token da URL
+    }
     supabase.auth.getSession().then(({ data }) => {
       setHasSession(!!data.session)
       setChecking(false)
@@ -59,6 +69,17 @@ export default function ResetPasswordPage() {
       return
     }
     setLoading(true)
+    // Consome o token de uso único agora (não no clique do link do e-mail)
+    if (!hasSession && tokenHash) {
+      const { error: otpError } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash })
+      if (otpError) {
+        setLoading(false)
+        setTokenHash(null)
+        setError("Este link já foi usado ou expirou. Peça um novo abaixo.")
+        return
+      }
+      setHasSession(true)
+    }
     const { error } = await supabase.auth.updateUser({ password })
     setLoading(false)
     if (error) {
@@ -117,17 +138,17 @@ export default function ResetPasswordPage() {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">
-              {hasSession ? "Nova senha" : "Redefinir senha"}
+              {hasSession || tokenHash ? "Nova senha" : "Redefinir senha"}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {hasSession
+              {hasSession || tokenHash
                 ? "Escolha a nova senha da sua conta"
                 : "Enviaremos um link de redefinição para o seu e-mail"}
             </p>
           </div>
         </div>
 
-        {hasSession ? (
+        {hasSession || tokenHash ? (
           <form onSubmit={handleUpdate} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">Nova senha</Label>
