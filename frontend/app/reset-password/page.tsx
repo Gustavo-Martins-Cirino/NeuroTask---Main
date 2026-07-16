@@ -46,15 +46,22 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    // API direta (sem PKCE): o token do e-mail vale em QUALQUER navegador/
+    // dispositivo — pedir no PC e abrir no celular funciona.
+    const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/recover`, {
+      method: "POST",
+      headers: {
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: email.trim() }),
     })
     setLoading(false)
-    if (error) {
+    if (!res.ok) {
       setError(
-        error.code === "over_email_send_rate_limit"
-          ? "Muitas tentativas. Aguarde um momento e tente de novo."
-          : error.message
+        res.status === 429
+          ? "Muitas tentativas. Aguarde um minuto e tente de novo."
+          : "Não foi possível enviar o link. Tente novamente."
       )
       return
     }
@@ -118,6 +125,10 @@ export default function ResetPasswordPage() {
                 Se existir uma conta para <strong>{email}</strong>, enviamos um link para
                 redefinir a senha. Olhe também o <strong>spam</strong> e as abas{" "}
                 <strong>Promoções/Atualizações</strong> (Gmail) ou <strong>Outros</strong> (Outlook).
+                <br />
+                <span className="mt-1 inline-block">
+                  ⚠️ Se pediu mais de uma vez, <strong>só o e-mail mais recente</strong> funciona.
+                </span>
               </p>
             </div>
           </div>
