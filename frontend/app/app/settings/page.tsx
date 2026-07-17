@@ -7,8 +7,9 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell, Sparkles, X } from "lucide-react"
+import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Puzzle } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
+import { generatePairingCode, fetchPairedDevices, revokeDevice, type PairedDevice } from "@/lib/extension-pairing"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
 import { toast } from "sonner"
 import {
@@ -139,6 +140,43 @@ export default function SettingsPage() {
       }
     }
     setPushBusy(false)
+  }
+
+  const [devices, setDevices] = useState<PairedDevice[]>([])
+  const [pairing, setPairing] = useState<{ code: string; expiresAt: string } | null>(null)
+  const [pairingBusy, setPairingBusy] = useState(false)
+  const [secondsLeft, setSecondsLeft] = useState(0)
+
+  useEffect(() => {
+    fetchPairedDevices().then(setDevices)
+  }, [])
+
+  useEffect(() => {
+    if (!pairing) return
+    const tick = () => {
+      const left = Math.max(0, Math.round((new Date(pairing.expiresAt).getTime() - Date.now()) / 1000))
+      setSecondsLeft(left)
+      if (left === 0) setPairing(null)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [pairing])
+
+  const handleGeneratePairingCode = async () => {
+    setPairingBusy(true)
+    const result = await generatePairingCode()
+    setPairingBusy(false)
+    if (!result) {
+      toast.error("Não deu para gerar o código", { description: "Tente novamente." })
+      return
+    }
+    setPairing(result)
+  }
+
+  const handleRevokeDevice = async (id: string) => {
+    setDevices((prev) => prev.filter((d) => d.id !== id))
+    await revokeDevice(id)
   }
 
   const handleAddActivity = async () => {
@@ -519,6 +557,59 @@ export default function SettingsPage() {
                 />
               </span>
             </button>
+          </Section>
+
+          <Section
+            icon={<Puzzle className="h-5 w-5" />}
+            title="Extensão do navegador"
+            description="Tempo de tela em redes sociais → insights no dashboard"
+          >
+            <div className="space-y-3">
+              {pairing ? (
+                <div className="rounded-xl border border-border/50 p-4 text-center">
+                  <p className="text-2xl font-bold tracking-[0.3em] tabular-nums">{pairing.code}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Cole esse código na extensão. Expira em {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}.
+                  </p>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleGeneratePairingCode}
+                  disabled={pairingBusy}
+                  className="flex h-9 items-center gap-2 rounded-lg border border-border/50 px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
+                >
+                  {pairingBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Puzzle className="h-4 w-4" />}
+                  Gerar código de pareamento
+                </button>
+              )}
+
+              {devices.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Dispositivos pareados</p>
+                  {devices.map((d) => (
+                    <div
+                      key={d.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-border/50 p-3"
+                    >
+                      <span>
+                        <span className="block text-sm font-medium">{d.label}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {d.last_seen_at ? `Visto por último em ${new Date(d.last_seen_at).toLocaleDateString("pt-BR")}` : "Ainda sem dados"}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeDevice(d.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Section>
 
           <Section icon={<Bot className="h-5 w-5" />} title="Neuro IA" description="Assistente de produtividade">

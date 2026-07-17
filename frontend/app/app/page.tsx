@@ -1,8 +1,9 @@
 "use client"
 
 import { Header } from "@/components/header"
-import { Calendar, CheckSquare, Bot, ArrowRight, Clock, Target, ListTodo, LayoutDashboard, Bell, Brain } from "lucide-react"
+import { Calendar, CheckSquare, Bot, ArrowRight, Clock, Target, ListTodo, LayoutDashboard, Bell, Brain, Timer } from "lucide-react"
 import { fetchActivityInsights, type ActivityInsight } from "@/lib/activity-log"
+import { fetchScreenTimeInsights, type ScreenTimeInsight } from "@/lib/screen-time"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
@@ -63,10 +64,12 @@ export default function DashboardPage() {
   const [todayBlocks, setTodayBlocks] = useState<{ id: string; title: string; start_time: string; end_time: string }[]>([])
   const [todayTasks, setTodayTasks] = useState<{ id: string; title: string; priority: string }[]>([])
   const [insights, setInsights] = useState<ActivityInsight[]>([])
+  const [screenTime, setScreenTime] = useState<ScreenTimeInsight[]>([])
   const supabase = createClient()
 
   useEffect(() => {
     fetchActivityInsights().then(setInsights)
+    fetchScreenTimeInsights().then(setScreenTime)
   }, [])
 
   useEffect(() => {
@@ -327,6 +330,33 @@ export default function DashboardPage() {
               </ul>
               <p className="mt-3 text-[11px] text-muted-foreground/60">
                 Calculado dos seus check-ins — responda "Concluí" quando um bloco terminar.
+              </p>
+            </motion.div>
+          )}
+
+          {/* Tempo de tela — dos dados da extensão de navegador (redes sociais) */}
+          {screenTime.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="rounded-2xl border border-border/40 bg-card/50 p-5 backdrop-blur-sm"
+            >
+              <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                <Timer className="h-4 w-4" /> Tempo de tela
+              </h3>
+              <ul className="mt-3 space-y-2">
+                {screenTime.map((s) => (
+                  <li key={s.domain} className="flex items-center gap-2 text-sm">
+                    <span className="min-w-0 flex-1 truncate text-foreground">{s.domain}</span>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      hoje {s.minutesToday}min · semana {s.minutesWeek}min
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-[11px] text-muted-foreground/60">
+                Rastreado pela extensão do navegador — ative em Configurações.
               </p>
             </motion.div>
           )}

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>NeuroTask</title>
+    <style>
+      body {
+        width: 260px;
+        margin: 0;
+        padding: 16px;
+        font-family: system-ui, sans-serif;
+        background: #0f0f12;
+        color: #f2f2f5;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 12px;
+      }
+      p {
+        font-size: 12px;
+        color: #a0a0aa;
+        margin: 8px 0;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        font-size: 16px;
+        letter-spacing: 4px;
+        text-align: center;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background: #1a1a1f;
+        color: #f2f2f5;
+        margin-bottom: 8px;
+      }
+      button {
+        width: 100%;
+        padding: 8px;
+        border-radius: 8px;
+        border: none;
+        background: #6d5efc;
+        color: white;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      button.secondary {
+        background: transparent;
+        border: 1px solid #333;
+        color: #f2f2f5;
+        margin-top: 8px;
+      }
+      #status {
+        font-size: 12px;
+        color: #f77;
+        min-height: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>NeuroTask — Tempo de tela</h1>
+
+    <div id="unpaired">
+      <p>Cole o código de 6 dígitos gerado em Configurações no NeuroTask.</p>
+      <input id="code" maxlength="6" inputmode="numeric" placeholder="000000" />
+      <button id="pair">Parear</button>
+      <p id="status"></p>
+    </div>
+
+    <div id="paired" style="display: none">
+      <p>✅ Conectado. Rastreando tempo de tela nas redes sociais.</p>
+      <button id="unpair" class="secondary">Desconectar deste navegador</button>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
