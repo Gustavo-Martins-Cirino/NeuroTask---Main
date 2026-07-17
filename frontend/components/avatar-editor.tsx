@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { AvatarFigure } from "@/components/avatar-figure"
 import { Check, Headphones } from "lucide-react"
 import {
-  HAIR_STYLES, OUTFITS, SKIN_TONES, HAIR_COLORS, OUTFIT_COLORS,
+  HAIR_STYLES, OUTFITS, SKIN_TONES, HAIR_COLORS, OUTFIT_COLORS, BODY_TYPES,
   type AvatarConfig,
 } from "@/lib/avatar"
 
@@ -69,6 +69,17 @@ export function AvatarEditor({ open, onOpenChange, value, onSave }: AvatarEditor
 
           {/* Opções */}
           <div className="min-w-0 flex-1 space-y-3">
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Corpo</p>
+              <div className="flex flex-wrap gap-1.5">
+                {BODY_TYPES.map((b) => (
+                  <button key={b.value} type="button" onClick={() => setCfg({ ...cfg, body: b.value })} className={chip(cfg.body === b.value)}>
+                    {b.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cabelo</p>
               <div className="flex flex-wrap gap-1.5">

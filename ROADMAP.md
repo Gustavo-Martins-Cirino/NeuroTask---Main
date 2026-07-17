@@ -75,11 +75,12 @@ Google Calendar). É um **copiloto de rotina**:
       rodapé e acabamento superior. Pessoa visível de lado (cabelo + fones). Validada
       por render server-side → PNG (react-dom/server + sharp) antes do deploy.
 - [x] **Avatar editável (paper-doll)** — lib/avatar.ts + components/avatar-figure.tsx +
-      avatar-editor.tsx: pernas (!), 6 cabelos × 6 cores, 5 tons de pele, 4 roupas
-      (camiseta/moletom/jaqueta/terno) × 6 cores, fones on/off. Editor com preview ao
-      vivo no Escritório; salvo em user_stats.avatar (jsonb, social_v2.sql); amigos
-      veem o avatar na visita (friend_office, portão share_office). Cena ganhou fundo
-      gradiente por fase do dia (fim do void escuro) + sombra ambiente.
+      avatar-editor.tsx: visto DE COSTAS (sem rosto, pernas para FRENTE na direção da
+      mesa), corpo masculino/feminino grátis, 6 cabelos × 6 cores, 5 tons de pele,
+      4 roupas (camiseta/moletom/jaqueta/terno) × 6 cores, fones on/off. Editor com
+      preview ao vivo (botão no rodapé E clique no próprio bonequinho); salvo em
+      user_stats.avatar (jsonb, social_v2.sql); amigos veem o avatar na visita
+      (friend_office, portão share_office). Cena com fundo gradiente por fase do dia.
 - [ ] **Escritório vivo v3** (adiado por decisão): comemoração ao concluir (evento);
       sala expansível por nível (comparação social legível num relance) + snapshot
       compartilhável. Roupas/acessórios do avatar COMPRÁVEIS na loja. 3D real adiado.

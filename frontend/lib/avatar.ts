@@ -6,8 +6,10 @@ import { createClient } from "@/lib/supabase/client"
 
 export type HairStyle = "curto" | "franja" | "cacheado" | "longo" | "coque" | "raspado"
 export type Outfit = "camiseta" | "moletom" | "terno" | "jaqueta"
+export type BodyType = "m" | "f"
 
 export interface AvatarConfig {
+  body: BodyType
   skin: string
   hairStyle: HairStyle
   hairColor: string
@@ -36,7 +38,13 @@ export const OUTFITS: { value: Outfit; label: string }[] = [
   { value: "terno", label: "Terno" },
 ]
 
+export const BODY_TYPES: { value: BodyType; label: string }[] = [
+  { value: "m", label: "Masculino" },
+  { value: "f", label: "Feminino" },
+]
+
 export const DEFAULT_AVATAR: AvatarConfig = {
+  body: "m",
   skin: "#e0a97e",
   hairStyle: "curto",
   hairColor: "#4a3a2c",
@@ -48,6 +56,7 @@ export const DEFAULT_AVATAR: AvatarConfig = {
 export function normalizeAvatar(raw: unknown): AvatarConfig {
   const a = (raw ?? {}) as Partial<AvatarConfig>
   return {
+    body: a.body === "f" ? "f" : "m",
     skin: typeof a.skin === "string" ? a.skin : DEFAULT_AVATAR.skin,
     hairStyle: HAIR_STYLES.some((h) => h.value === a.hairStyle) ? (a.hairStyle as HairStyle) : DEFAULT_AVATAR.hairStyle,
     hairColor: typeof a.hairColor === "string" ? a.hairColor : DEFAULT_AVATAR.hairColor,

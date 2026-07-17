@@ -145,7 +145,13 @@ export default function OfficePage() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <OfficeScene equipped={sceneSet} stats={stats} avatar={avatarCfg} className="block w-full" />
+              <OfficeScene
+                equipped={sceneSet}
+                stats={stats}
+                avatar={avatarCfg}
+                onAvatarClick={() => setAvatarOpen(true)}
+                className="block w-full"
+              />
             )}
             <AnimatePresence>
               {previewItem && !equippedSet.has(previewItem.id) && (
