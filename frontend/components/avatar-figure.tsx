@@ -67,10 +67,10 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
         </g>
       ) : (
         <g>
-          <line x1={torsoX} y1={shoulderY} x2={torsoX - 3} y2="-9" stroke={sleeve} strokeWidth="5" strokeLinecap="round" />
-          <line x1={torsoX + torsoW} y1={shoulderY} x2={torsoX + torsoW + 3} y2="-9" stroke={darken(sleeve, 12)} strokeWidth="5" strokeLinecap="round" />
-          <circle cx={torsoX - 3.5} cy="-7.5" r="2.4" fill={skin} />
-          <circle cx={torsoX + torsoW + 3.5} cy="-7.5" r="2.4" fill={darken(skin, 10)} />
+          <line x1={torsoX} y1={shoulderY} x2={torsoX - 2.5} y2="-9" stroke={sleeve} strokeWidth="5" strokeLinecap="round" />
+          <line x1={torsoX + torsoW} y1={shoulderY} x2={torsoX + torsoW + 2.5} y2="-9" stroke={darken(sleeve, 12)} strokeWidth="5" strokeLinecap="round" />
+          <circle cx={torsoX - 3} cy="-7" r="2" fill={darken(skin, 12)} />
+          <circle cx={torsoX + torsoW + 3} cy="-7" r="2" fill={darken(skin, 18)} />
         </g>
       )}
 
@@ -100,41 +100,46 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
         </g>
       )}
 
-      {/* pescoço + cabeça de costas (sem rosto) */}
-      <rect x={hx - 3} y={hy + 7} width="6" height="5" fill={darken(skin, 8)} />
+      {/* pescoço + cabeça de costas — a NUCA: o cabelo cobre quase tudo,
+          pele só no pescoço (nada de "rosto" aparecendo) */}
+      <rect x={hx - 3.5} y={hy + 6} width="7" height="7" fill={darken(skin, 8)} />
       <circle cx={hx} cy={hy} r="10" fill={darken(skin, 4)} />
 
-      {/* cabelo (silhuetas de costas) */}
-      {hairStyle === "raspado" && <circle cx={hx} cy={hy - 0.5} r="9" fill={hairColor} opacity="0.92" />}
+      {/* cabelo (silhuetas de costas — cobertura total) */}
+      {hairStyle === "raspado" && (
+        <path d={`M ${hx - 9.3} ${hy + 3} a 9.5 9.5 0 1 1 18.6 0 l -1.6 3.6 q -7.7 3 -15.4 0 z`} fill={hairColor} opacity="0.9" />
+      )}
       {hairStyle === "curto" && (
-        <path d={`M ${hx - 10} ${hy + 3} a 10 10 0 1 1 20 0 q -2 3.5 -10 3.5 t -10 -3.5 z`} fill={hairColor} />
+        <path d={`M ${hx - 10} ${hy + 2} a 10 10 0 1 1 20 0 l -1.5 5.5 q -8.5 3.6 -17 0 z`} fill={hairColor} />
       )}
       {hairStyle === "franja" && (
         <g fill={hairColor}>
-          <path d={`M ${hx - 10} ${hy + 3} a 10 10 0 1 1 20 0 q -2 3.5 -10 3.5 t -10 -3.5 z`} />
-          <path d={`M ${hx - 10.5} ${hy + 1} q -1.5 4 0.5 7 q 1.5 -3.5 0.5 -7 z`} />
-          <path d={`M ${hx + 10.5} ${hy + 1} q 1.5 4 -0.5 7 q -1.5 -3.5 -0.5 -7 z`} />
+          <path d={`M ${hx - 10} ${hy + 2} a 10 10 0 1 1 20 0 l -1.5 5.5 q -8.5 3.6 -17 0 z`} />
+          <path d={`M ${hx - 11} ${hy} q -1.5 6 1 9.5 q 2 -5 -1 -9.5 z`} />
+          <path d={`M ${hx + 11} ${hy} q 1.5 6 -1 9.5 q -2 -5 1 -9.5 z`} />
         </g>
       )}
       {hairStyle === "cacheado" && (
         <g fill={hairColor}>
-          <circle cx={hx - 6} cy={hy - 5} r="5.5" />
-          <circle cx={hx + 1} cy={hy - 8} r="6" />
-          <circle cx={hx + 7} cy={hy - 4} r="5.5" />
-          <circle cx={hx - 8} cy={hy + 2} r="4.5" />
-          <circle cx={hx + 9} cy={hy + 2} r="4.5" />
-          <circle cx={hx} cy={hy} r="8" />
+          <circle cx={hx} cy={hy - 1} r="9.6" />
+          <circle cx={hx - 7} cy={hy - 5} r="5.5" />
+          <circle cx={hx + 1} cy={hy - 9} r="6" />
+          <circle cx={hx + 8} cy={hy - 4} r="5.5" />
+          <circle cx={hx - 9} cy={hy + 3} r="4.5" />
+          <circle cx={hx + 10} cy={hy + 3} r="4.5" />
+          <circle cx={hx - 3} cy={hy + 7} r="4" />
+          <circle cx={hx + 4} cy={hy + 7} r="4" />
         </g>
       )}
       {hairStyle === "longo" && (
         <g fill={hairColor}>
-          <path d={`M ${hx - 10} ${hy + 3} a 10 10 0 1 1 20 0 q -2 3.5 -10 3.5 t -10 -3.5 z`} />
-          <path d={`M ${hx - 7} ${hy + 4} q -2 14 1 22 q 6 3 12 0 q 3 -8 1 -22 q -7 4 -14 0 z`} />
+          <path d={`M ${hx - 10} ${hy + 2} a 10 10 0 1 1 20 0 l -1.5 5.5 q -8.5 3.6 -17 0 z`} />
+          <path d={`M ${hx - 8} ${hy + 3} q -2.5 15 0.5 23 q 7 3.5 15 0 q 3 -8 0.5 -23 q -8 4 -16 0 z`} />
         </g>
       )}
       {hairStyle === "coque" && (
         <g fill={hairColor}>
-          <path d={`M ${hx - 10} ${hy + 3} a 10 10 0 1 1 20 0 q -2 3.5 -10 3.5 t -10 -3.5 z`} />
+          <path d={`M ${hx - 10} ${hy + 2} a 10 10 0 1 1 20 0 l -1.5 5.5 q -8.5 3.6 -17 0 z`} />
           <circle cx={hx} cy={hy - 11} r="4.5" />
         </g>
       )}
