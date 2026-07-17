@@ -7,6 +7,12 @@ const supabaseKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 export async function updateSession(request: NextRequest) {
+  // Rotas de API cuidam da própria auth (ex.: /api/push/dispatch é chamada
+  // pelo pg_cron SEM cookies — redirecionar para /login quebraria o push).
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
