@@ -28,6 +28,9 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
     <g>
       {/* pernas — para FRENTE (direção da mesa: cima-esquerda no iso) */}
       <g>
+        {/* sombras de contato dos pés */}
+        <ellipse cx="-22.5" cy="12" rx="7" ry="2.6" fill="#000" opacity="0.12" />
+        <ellipse cx="-17.5" cy="17" rx="7.5" ry="2.8" fill="#000" opacity="0.12" />
         {/* perna distante */}
         <polyline
           points="-2,-4 -19,-4 -21,9"
