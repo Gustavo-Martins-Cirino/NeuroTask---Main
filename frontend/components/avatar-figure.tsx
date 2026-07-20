@@ -100,49 +100,43 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
         </g>
       )}
 
-      {/* pescoço + cabeça de costas — a NUCA: o cabelo cobre quase tudo,
-          pele só no pescoço (nada de "rosto" aparecendo) */}
+      {/* pescoço + cabeça de costas — a NUCA. Não existe círculo de pele:
+          a cabeça É o cabelo (pele só no pescoço). Sem rosto possível. */}
       <rect x={hx - 3.5} y={hy + 6} width="7" height="7" fill={darken(skin, 8)} />
-      <circle cx={hx} cy={hy} r="10" fill={darken(skin, 4)} />
-
-      {/* cabelo (silhuetas de costas — cobertura total) */}
-      {hairStyle === "raspado" && (
-        <path d={`M ${hx - 9.3} ${hy + 3} a 9.5 9.5 0 1 1 18.6 0 l -1.6 3.6 q -7.7 3 -15.4 0 z`} fill={hairColor} opacity="0.9" />
+      {hairStyle === "raspado" ? (
+        <g>
+          <circle cx={hx} cy={hy} r="10" fill={darken(skin, 10)} />
+          <circle cx={hx} cy={hy} r="10" fill={hairColor} opacity="0.45" />
+        </g>
+      ) : (
+        <circle cx={hx} cy={hy} r="10" fill={hairColor} />
       )}
-      {hairStyle === "curto" && (
-        <path d={`M ${hx - 10} ${hy + 2} a 10 10 0 1 1 20 0 l -1.5 5.5 q -8.5 3.6 -17 0 z`} fill={hairColor} />
+      {/* brilho sutil do cabelo (profundidade) */}
+      {hairStyle !== "raspado" && (
+        <path d={`M ${hx - 7} ${hy - 5} a 9 9 0 0 1 9 -4`} fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" opacity="0.14" />
       )}
+      {/* silhuetas por estilo */}
       {hairStyle === "franja" && (
         <g fill={hairColor}>
-          <path d={`M ${hx - 10} ${hy + 2} a 10 10 0 1 1 20 0 l -1.5 5.5 q -8.5 3.6 -17 0 z`} />
           <path d={`M ${hx - 11} ${hy} q -1.5 6 1 9.5 q 2 -5 -1 -9.5 z`} />
           <path d={`M ${hx + 11} ${hy} q 1.5 6 -1 9.5 q -2 -5 1 -9.5 z`} />
         </g>
       )}
       {hairStyle === "cacheado" && (
         <g fill={hairColor}>
-          <circle cx={hx} cy={hy - 1} r="9.6" />
           <circle cx={hx - 7} cy={hy - 5} r="5.5" />
           <circle cx={hx + 1} cy={hy - 9} r="6" />
           <circle cx={hx + 8} cy={hy - 4} r="5.5" />
           <circle cx={hx - 9} cy={hy + 3} r="4.5" />
           <circle cx={hx + 10} cy={hy + 3} r="4.5" />
-          <circle cx={hx - 3} cy={hy + 7} r="4" />
-          <circle cx={hx + 4} cy={hy + 7} r="4" />
+          <circle cx={hx - 3} cy={hy + 8} r="4" />
+          <circle cx={hx + 4} cy={hy + 8} r="4" />
         </g>
       )}
       {hairStyle === "longo" && (
-        <g fill={hairColor}>
-          <path d={`M ${hx - 10} ${hy + 2} a 10 10 0 1 1 20 0 l -1.5 5.5 q -8.5 3.6 -17 0 z`} />
-          <path d={`M ${hx - 8} ${hy + 3} q -2.5 15 0.5 23 q 7 3.5 15 0 q 3 -8 0.5 -23 q -8 4 -16 0 z`} />
-        </g>
+        <path d={`M ${hx - 8} ${hy + 3} q -2.5 15 0.5 23 q 7 3.5 15 0 q 3 -8 0.5 -23 q -8 4 -16 0 z`} fill={hairColor} />
       )}
-      {hairStyle === "coque" && (
-        <g fill={hairColor}>
-          <path d={`M ${hx - 10} ${hy + 2} a 10 10 0 1 1 20 0 l -1.5 5.5 q -8.5 3.6 -17 0 z`} />
-          <circle cx={hx} cy={hy - 11} r="4.5" />
-        </g>
-      )}
+      {hairStyle === "coque" && <circle cx={hx} cy={hy - 11} r="4.5" fill={hairColor} />}
 
       {/* fones (de costas: arco + as duas conchas) */}
       {headphones && (
