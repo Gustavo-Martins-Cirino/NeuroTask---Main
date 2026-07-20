@@ -26,32 +26,25 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
 
   return (
     <g>
-      {/* pernas — ESTENDIDAS para frente (direção da mesa no iso), como
-          alguém sentado com os pés apoiados à frente da cadeira */}
+      {/* pernas — POLÍGONOS preenchidos com volume: coxa desce do quadril
+          ao joelho (abaixo dele), canela desce ao pé apoiado à frente.
+          Duas pernas distintas (offset + tons) e sapatos maiores. */}
       <g>
         {/* sombras de contato dos pés (preto semitransparente suave) */}
-        <ellipse cx="-28" cy="9" rx="5.5" ry="2" fill="rgba(0,0,0,0.15)" />
-        <ellipse cx="-23.5" cy="14" rx="6" ry="2.2" fill="rgba(0,0,0,0.15)" />
-        {/* perna distante */}
-        <polyline
-          points="-2,-4 -22,-7 -26,7"
-          fill="none"
-          stroke={darken(pants, 16)}
-          strokeWidth="5.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <ellipse cx="-20.5" cy="14.5" rx="7.5" ry="2.6" fill="rgba(0,0,0,0.15)" />
+        <ellipse cx="-15.5" cy="18.5" rx="8" ry="2.8" fill="rgba(0,0,0,0.15)" />
+        {/* perna distante (coxa + canela em peça única) */}
+        <path
+          d="M -1 -6 L -14 -3 Q -19 -2 -20 2 L -23 10 L -17 12 L -14 5 Q -13 3 -10 2.5 L 1 0 Z"
+          fill={darken(pants, 16)}
         />
-        <ellipse cx="-28" cy="7.5" rx="5" ry="3" fill="#33333d" />
+        <ellipse cx="-20.5" cy="12.5" rx="6" ry="3.4" fill="#33333d" />
         {/* perna próxima */}
-        <polyline
-          points="3,-1 -18,-2 -22,12"
-          fill="none"
-          stroke={pants}
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <path
+          d="M 3 -3 L -10 1 Q -14 2 -15 5 L -18 14 L -11.5 16 L -9 8 Q -8 6 -5 5.5 L 5 2 Z"
+          fill={pants}
         />
-        <ellipse cx="-23.5" cy="13" rx="5.5" ry="3.2" fill="#3a3a44" />
+        <ellipse cx="-15.5" cy="16.5" rx="6.5" ry="3.6" fill="#3a3a44" />
       </g>
 
       {/* braços (de costas: cotovelos abertos indo para a mesa) */}
