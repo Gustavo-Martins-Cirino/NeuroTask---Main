@@ -334,16 +334,10 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       <Box x={6} y={26} dx={40} dy={104} z={30} dz={7} c="#8a6f4e" />
       <Box x={10} y={32} dx={32} dy={24} dz={30} c="#75593c" />
       <Box x={10} y={102} dx={32} dy={24} dz={30} c="#75593c" />
-      {/* teclado: posição s≈0.55 (a melhor medida), sombra de contato em ELIPSE */}
-      <ellipse
-        cx={sx(33, 84.5)}
-        cy={sy(33, 84.5, 37) + 2}
-        rx="22"
-        ry="9"
-        fill="#000"
-        opacity="0.15"
-      />
-      <Box x={28} y={69} dx={10} dy={31} z={37} dz={2.5} c="#3a3f4a" />
+      {/* bandeja de madeira sob o teclado (conecta à mesa em L; nada de
+          sombra elíptica solta) + teclado apoiado nela */}
+      <Box x={24} y={63} dx={17} dy={42} z={37} dz={1.5} c="#947958" />
+      <Box x={28} y={69} dx={10} dy={31} z={38.5} dz={2.5} c="#3a3f4a" />
 
       {/* monitores (tela virada para a câmera) */}
       {has("setup-ultrawide") ? (
@@ -432,9 +426,9 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       )}
 
       {/* ---- Cadeira + você ---- */}
-      <Shadow x={76} y={84} rx={26} ry={11} />
+      <Shadow x={76} y={84} rx={22} ry={9} />
       {/* base */}
-      <ellipse cx={sx(76, 84)} cy={sy(76, 84, 0)} rx="15" ry="7" fill="#3a3a3a" />
+      <ellipse cx={sx(76, 84)} cy={sy(76, 84, 0)} rx="13" ry="6" fill="#3a3a3a" />
       <Box x={74} y={82} dx={4} dy={4} z={4} dz={14} c="#4a4a4a" />
       {/* assento */}
       <Box x={62} y={70} dx={28} dy={28} z={18} dz={7} c={chairColor} />

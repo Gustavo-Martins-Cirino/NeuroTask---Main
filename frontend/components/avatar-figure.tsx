@@ -26,31 +26,32 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
 
   return (
     <g>
-      {/* pernas — para FRENTE (direção da mesa: cima-esquerda no iso) */}
+      {/* pernas — ESTENDIDAS para frente (direção da mesa no iso), como
+          alguém sentado com os pés apoiados à frente da cadeira */}
       <g>
-        {/* sombras de contato dos pés */}
-        <ellipse cx="-22.5" cy="12" rx="7" ry="2.6" fill="#000" opacity="0.12" />
-        <ellipse cx="-17.5" cy="17" rx="7.5" ry="2.8" fill="#000" opacity="0.12" />
+        {/* sombras de contato dos pés (suaves) */}
+        <ellipse cx="-28" cy="9" rx="6" ry="2.2" fill="#000" opacity="0.14" />
+        <ellipse cx="-23.5" cy="14" rx="6.5" ry="2.4" fill="#000" opacity="0.14" />
         {/* perna distante */}
         <polyline
-          points="-2,-4 -19,-4 -21,9"
+          points="-2,-4 -22,-7 -26,7"
           fill="none"
           stroke={darken(pants, 16)}
           strokeWidth="5.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <ellipse cx="-22.5" cy="10" rx="5" ry="3" fill="#26262e" />
+        <ellipse cx="-28" cy="7.5" rx="5" ry="3" fill="#26262e" />
         {/* perna próxima */}
         <polyline
-          points="3,-1 -14,1 -16,14"
+          points="3,-1 -18,-2 -22,12"
           fill="none"
           stroke={pants}
           strokeWidth="6"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <ellipse cx="-17.5" cy="15" rx="5.5" ry="3.2" fill="#2c2c33" />
+        <ellipse cx="-23.5" cy="13" rx="5.5" ry="3.2" fill="#2c2c33" />
       </g>
 
       {/* braços (de costas: cotovelos abertos indo para a mesa) */}
