@@ -29,9 +29,9 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
       {/* pernas — ESTENDIDAS para frente (direção da mesa no iso), como
           alguém sentado com os pés apoiados à frente da cadeira */}
       <g>
-        {/* sombras de contato dos pés (suaves) */}
-        <ellipse cx="-28" cy="9" rx="6" ry="2.2" fill="#000" opacity="0.14" />
-        <ellipse cx="-23.5" cy="14" rx="6.5" ry="2.4" fill="#000" opacity="0.14" />
+        {/* sombras de contato dos pés (preto semitransparente suave) */}
+        <ellipse cx="-28" cy="9" rx="5.5" ry="2" fill="rgba(0,0,0,0.15)" />
+        <ellipse cx="-23.5" cy="14" rx="6" ry="2.2" fill="rgba(0,0,0,0.15)" />
         {/* perna distante */}
         <polyline
           points="-2,-4 -22,-7 -26,7"
@@ -41,7 +41,7 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <ellipse cx="-28" cy="7.5" rx="5" ry="3" fill="#26262e" />
+        <ellipse cx="-28" cy="7.5" rx="5" ry="3" fill="#33333d" />
         {/* perna próxima */}
         <polyline
           points="3,-1 -18,-2 -22,12"
@@ -51,7 +51,7 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <ellipse cx="-23.5" cy="13" rx="5.5" ry="3.2" fill="#2c2c33" />
+        <ellipse cx="-23.5" cy="13" rx="5.5" ry="3.2" fill="#3a3a44" />
       </g>
 
       {/* braços (de costas: cotovelos abertos indo para a mesa) */}

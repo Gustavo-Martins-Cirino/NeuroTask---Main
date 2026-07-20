@@ -91,9 +91,9 @@ const planeX = (c: number) => `matrix(-1,0.5,0,1,${OX + c},${OY + c / 2 - WALL_H
 // plano vertical paralelo à parede direita, em y=c (frente da estante)
 const planeY = (c: number) => `matrix(1,0.5,0,1,${OX - c},${OY + c / 2 - WALL_H})`
 
-// Sombra elíptica no chão
+// Sombra elíptica no chão (preto semitransparente suave)
 function Shadow({ x, y, rx, ry }: { x: number; y: number; rx: number; ry: number }) {
-  return <ellipse cx={sx(x, y)} cy={sy(x, y, 0)} rx={rx} ry={ry} fill="#000" opacity="0.08" />
+  return <ellipse cx={sx(x, y)} cy={sy(x, y, 0)} rx={rx} ry={ry} fill="rgba(0,0,0,0.13)" />
 }
 
 // Livros da estante: 1 a cada 5 tarefas concluídas (coordenadas locais do
@@ -426,9 +426,9 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       )}
 
       {/* ---- Cadeira + você ---- */}
-      <Shadow x={76} y={84} rx={22} ry={9} />
-      {/* base */}
-      <ellipse cx={sx(76, 84)} cy={sy(76, 84, 0)} rx="13" ry="6" fill="#3a3a3a" />
+      <Shadow x={76} y={84} rx={20} ry={8} />
+      {/* base (peça da cadeira — mais clara para não ler como sombra dura) */}
+      <ellipse cx={sx(76, 84)} cy={sy(76, 84, 0)} rx="12" ry="5.5" fill="#4a4a52" />
       <Box x={74} y={82} dx={4} dy={4} z={4} dz={14} c="#4a4a4a" />
       {/* assento */}
       <Box x={62} y={70} dx={28} dy={28} z={18} dz={7} c={chairColor} />
@@ -451,7 +451,7 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       {/* ---- Planta grande (frente-esquerda, dentro do losango do chão) ---- */}
       {has("planta-grande") && (
         <g transform={`translate(${sx(52, 142)},${sy(52, 142, 0)})`}>
-          <ellipse cx="0" cy="4" rx="24" ry="9" fill="#000" opacity="0.08" />
+          <ellipse cx="0" cy="4" rx="22" ry="8" fill="rgba(0,0,0,0.13)" />
           <g className="nt-plant-slow nt-o">
             <path d="M0 -4 q-12 -30 5 -52" fill="none" stroke="#4e7d52" strokeWidth="4.5" strokeLinecap="round" />
             <path d="M0 -4 q3 -36 -16 -46" fill="none" stroke="#4e7d52" strokeWidth="4.5" strokeLinecap="round" />
@@ -468,7 +468,7 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       {/* ---- Luminária (frente-direita) ---- */}
       {has("luminaria") && (
         <g transform={`translate(${sx(148, 64)},${sy(148, 64, 0)})`}>
-          <ellipse cx="0" cy="0" rx="16" ry="6" fill="#000" opacity="0.08" />
+          <ellipse cx="0" cy="0" rx="15" ry="5.5" fill="rgba(0,0,0,0.13)" />
           <circle cx="0" cy="-86" r={isNight ? 26 : 21} fill="#ffe9a8" className="nt-lamp-glow" style={{ ["--glow" as string]: isNight ? 0.6 : 0.4 }} />
           <path d="M-12 -94 h24 l-5 13 h-14 z" fill="#e0a437" />
           <line x1="0" y1="-81" x2="0" y2="-4" stroke="#7a7267" strokeWidth="3.5" />
@@ -479,7 +479,7 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       {/* ---- Gato ---- */}
       {has("pet-gato") && (
         <g onClick={doPurr} style={{ cursor: "pointer" }} transform={`translate(${sx(120, 132)},${sy(120, 132, 0)})`}>
-          <ellipse cx="0" cy="2" rx="22" ry="8" fill="#000" opacity="0.08" />
+          <ellipse cx="0" cy="2" rx="20" ry="7.5" fill="rgba(0,0,0,0.13)" />
           <path d="M-19 -2 q-11 -4 -7 -15" fill="none" stroke="#4a4a55" strokeWidth="4.5" strokeLinecap="round" className="nt-cat-tail nt-o" />
           <g className="nt-cat-body nt-o">
             <ellipse cx="0" cy="-4" rx="18" ry="10" fill="#4a4a55" />
