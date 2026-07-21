@@ -143,7 +143,7 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
   const chairColor = has("cadeira-gamer") ? "#c62839" : has("cadeira-ergonomica") ? "#4a5568" : "#6b6f78"
   // altura do encosto: alto o bastante para a peça LER como cadeira (é o que
   // faz a leitura nas referências iso), sem tapar cabelo/fones do avatar
-  const chairBack = has("cadeira-gamer") ? 34 : has("cadeira-ergonomica") ? 29 : 24
+  const chairBack = has("cadeira-gamer") ? 23 : has("cadeira-ergonomica") ? 19 : 15
 
   return (
     <svg viewBox="0 0 480 340" className={className} role="img" aria-label="Seu escritório">
@@ -435,16 +435,19 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       <Shadow x={60} y={86} rx={20} ry={8} />
       {/* base giratória + coluna a gás */}
       <ellipse cx={sx(60, 86)} cy={sy(60, 86, 0)} rx="13" ry="6" fill="#3f3f47" />
-      <Box x={58} y={84} dx={4} dy={4} z={4} dz={15} c="#4a4a52" />
+      <Box x={58} y={84} dx={4} dy={4} z={4} dz={13} c="#4a4a52" />
       {/* assento — pequeno, do tamanho de uma cadeira (não uma laje): a
-          pessoa sentada cobre quase todo ele, como nas referências iso */}
-      <Box x={49} y={75} dx={18} dy={18} z={20} dz={4} c={chairColor} />
+          pessoa sentada cobre quase todo ele, como nas referências iso.
+          Topo em z=22 = altura de assento real proporcional à mesa (z=37). */}
+      <Box x={49} y={75} dx={18} dy={18} z={17} dz={5} c={chairColor} />
       {/* braços — blocos curtos nas laterais (perpendicular ao eixo do corpo) */}
-      <Box x={51} y={89} dx={7} dy={4} z={24} dz={4} c={shade(chairColor, -16)} />
-      <Box x={62} y={78} dx={7} dy={4} z={24} dz={4} c={shade(chairColor, -16)} />
-      {/* você — avatar sentado (pernas escondidas; senta no assento acima) */}
+      <Box x={51} y={89} dx={7} dy={4} z={22} dz={4} c={shade(chairColor, -16)} />
+      <Box x={62} y={78} dx={7} dy={4} z={22} dz={4} c={shade(chairColor, -16)} />
+      {/* você — avatar sentado. A ESCALA importa: um adulto sentado tem a
+          cabeça ~27un acima do tampo (mesa 75cm ↔ z=37 aqui). Em tamanho
+          cheio ele passava de 38un e lia como alguém EM PÉ atrás da mesa. */}
       <g
-        transform={`translate(${sx(58, 84)},${sy(58, 84, 25)})`}
+        transform={`translate(${sx(58, 84)},${sy(58, 84, 22)}) scale(0.84)`}
         onClick={onAvatarClick}
         style={onAvatarClick ? { cursor: "pointer" } : undefined}
       >
@@ -455,7 +458,7 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       {/* encosto — entre a câmera e as costas, cobrindo a lombar (é o que
           transforma "almofada" em CADEIRA); baixo o bastante para ainda
           mostrar as costas, o cabelo e os fones do avatar */}
-      {chairBack > 0 && <Box x={63} y={85} dx={5} dy={13} z={24} dz={chairBack} c={shade(chairColor, -8)} />}
+      {chairBack > 0 && <Box x={63} y={85} dx={5} dy={13} z={22} dz={chairBack} c={shade(chairColor, -8)} />}
 
       {/* ---- Planta grande (frente-esquerda, dentro do losango do chão) ---- */}
       {has("planta-grande") && (
