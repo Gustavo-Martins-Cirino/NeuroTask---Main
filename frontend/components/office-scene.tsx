@@ -140,7 +140,9 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
   const floorBase = has("piso-carpete") ? "#9fb3cf" : has("piso-madeira") ? "#c08a55" : "#cfc7b8"
 
   const chairColor = has("cadeira-gamer") ? "#c62839" : has("cadeira-ergonomica") ? "#4a5568" : "#9a8f7f"
-  const chairBack = has("cadeira-gamer") ? 46 : has("cadeira-ergonomica") ? 36 : 22
+  // altura do encosto: cobre a lombar, mas deixa as costas/roupa do avatar
+  // visíveis (a personalização é o ponto do bonequinho)
+  const chairBack = has("cadeira-gamer") ? 25 : has("cadeira-ergonomica") ? 20 : 15
 
   return (
     <svg viewBox="0 0 480 340" className={className} role="img" aria-label="Seu escritório">
@@ -425,32 +427,30 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
         </g>
       )}
 
-      {/* ---- Cadeira + você ---- */}
-      <Shadow x={76} y={84} rx={20} ry={8} />
-      {/* base (peça da cadeira — mais clara para não ler como sombra dura) */}
-      <ellipse cx={sx(76, 84)} cy={sy(76, 84, 0)} rx="12" ry="5.5" fill="#4a4a52" />
-      <Box x={74} y={82} dx={4} dy={4} z={4} dz={14} c="#4a4a4a" />
-      {/* assento — almofada na altura do QUADRIL (espia ao lado do tronco),
-          não até os pés: se ela chegar na altura dos pés vira uma bandeja
-          onde ele "fica em pé em cima" em vez de estar sentado dentro dela */}
-      <Box x={62} y={70} dx={20} dy={20} z={22} dz={3} c={chairColor} />
-      {/* coluna curta ligando a almofada à base giratória, sem "degrau" */}
-      <Box x={72} y={80} dx={8} dy={8} z={18} dz={4} c={shade(chairColor, -10)} />
-      {/* você — avatar editável, sentado de lado (pernas incluídas!)
-          O grupo externo POSICIONA (attr transform) e o interno ANIMA (CSS
-          transform) — juntos, o CSS sobrescreveria a posição e o avatar
-          sumiria para a origem do SVG. */}
+      {/* ---- Cadeira + você ----
+          Ordem de empilhamento (trás → frente): base+coluna, encosto (atrás
+          das costas), assento (almofada larga que projeta pra frente), você.
+          O "sentado" vem do assento VISÍVEL sob o corpo — não de pernas. */}
+      <Shadow x={78} y={86} rx={20} ry={8} />
+      {/* base giratória + coluna a gás */}
+      <ellipse cx={sx(78, 86)} cy={sy(78, 86, 0)} rx="13" ry="6" fill="#3f3f47" />
+      <Box x={76} y={84} dx={4} dy={4} z={4} dz={15} c="#4a4a52" />
+      {/* assento — almofada na altura do quadril, alinhada ao eixo do corpo */}
+      <Box x={64} y={71} dx={26} dy={28} z={20} dz={4} c={chairColor} />
+      {/* você — avatar sentado (pernas escondidas; senta no assento acima) */}
       <g
-        transform={`translate(${sx(74, 84)},${sy(74, 84, 25)})`}
+        transform={`translate(${sx(76, 84)},${sy(76, 84, 25)})`}
         onClick={onAvatarClick}
         style={onAvatarClick ? { cursor: "pointer" } : undefined}
       >
         <g className={working ? undefined : "nt-head-bob nt-o"}>
-          <AvatarFigure config={person} working={working} />
+          <AvatarFigure config={person} working={working} seated />
         </g>
       </g>
-      {/* encosto (na frente do tronco para dar profundidade) */}
-      {chairBack > 0 && <Box x={88} y={70} dx={6} dy={28} z={22} dz={chairBack} c={chairColor} />}
+      {/* encosto — entre a câmera e as costas, cobrindo a lombar (é o que
+          transforma "almofada" em CADEIRA); baixo o bastante para ainda
+          mostrar as costas, o cabelo e os fones do avatar */}
+      {chairBack > 0 && <Box x={82} y={83} dx={5} dy={20} z={24} dz={chairBack} c={shade(chairColor, -8)} />}
 
       {/* ---- Planta grande (frente-esquerda, dentro do losango do chão) ---- */}
       {has("planta-grande") && (

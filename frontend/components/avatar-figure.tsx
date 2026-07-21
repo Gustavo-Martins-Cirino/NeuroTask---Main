@@ -13,7 +13,7 @@ function darken(hex: string, amt: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`
 }
 
-export function AvatarFigure({ config, working = false }: { config: AvatarConfig; working?: boolean }) {
+export function AvatarFigure({ config, working = false, seated = false }: { config: AvatarConfig; working?: boolean; seated?: boolean }) {
   const { body, skin, hairStyle, hairColor, outfit, outfitColor, headphones } = config
   const fem = body === "f"
   const pants = outfit === "terno" ? darken(outfitColor, 18) : "#3b5378"
@@ -26,18 +26,31 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
 
   return (
     <g>
-      {/* pernas — recolhidas, sentado, com leve joelho e mais próximas entre si */}
-      <g>
-        {/* sombras de contato dos pés (preto semitransparente suave) */}
-        <ellipse cx="-4.8" cy="13.8" rx="3.4" ry="1.5" fill="rgba(0,0,0,0.15)" />
-        <ellipse cx="4.8" cy="13.8" rx="3.4" ry="1.5" fill="rgba(0,0,0,0.15)" />
-        {/* perna distante */}
-        <path d="M -4.6 -4 L -1.2 -4 Q -0.4 2 -1 6 Q -1.6 9 -1.3 12 L -4.8 13.6 L -5.6 11 Q -6.2 7 -5.8 4 Q -5.4 0 -4.6 -4 Z" fill={darken(pants, 16)} />
-        <ellipse cx="-4.8" cy="13.8" rx="3.4" ry="1.5" fill="#33333d" />
-        {/* perna próxima */}
-        <path d="M 4.6 -4 L 1.2 -4 Q 0.4 2 1 6 Q 1.6 9 1.3 12 L 4.8 13.6 L 5.6 11 Q 6.2 7 5.8 4 Q 5.4 0 4.6 -4 Z" fill={pants} />
-        <ellipse cx="4.8" cy="13.8" rx="3.4" ry="1.5" fill="#3a3a44" />
-      </g>
+      {/* pernas — dois modos:
+          · seated (cena): de costas, as coxas iriam para FRENTE (sob a mesa),
+            então mal se vê perna. Mostramos só os joelhos apontando para
+            baixo-frente e a ponta dos pés, curtos, saindo de baixo do tronco —
+            o "sentado" vem do assento visível da cadeira, não de pernas retas.
+          · em pé (editor): corpo inteiro para personalizar. */}
+      {seated ? (
+        // Só o topo das coxas indo para FRENTE (afastando-se da câmera):
+        // de costas não se enxerga canela nem pé — quem vê pé apoiado
+        // embaixo lê "em pé". O "sentado" vem do assento da cadeira.
+        <g>
+          <path d="M -8 -6 Q -9 1 -6 4 L 6 4 Q 9 1 8 -6 Z" fill={pants} />
+          <path d="M -8 -6 Q -9 1 -6 4 L -1 4 L -1 -6 Z" fill={darken(pants, 12)} />
+          <ellipse cx="0" cy="4" rx="7.4" ry="1.8" fill={darken(pants, 22)} />
+        </g>
+      ) : (
+        <g>
+          <ellipse cx="-4.8" cy="13.8" rx="3.4" ry="1.5" fill="rgba(0,0,0,0.15)" />
+          <ellipse cx="4.8" cy="13.8" rx="3.4" ry="1.5" fill="rgba(0,0,0,0.15)" />
+          <path d="M -4.6 -4 L -1.2 -4 Q -0.4 2 -1 6 Q -1.6 9 -1.3 12 L -4.8 13.6 L -5.6 11 Q -6.2 7 -5.8 4 Q -5.4 0 -4.6 -4 Z" fill={darken(pants, 16)} />
+          <ellipse cx="-4.8" cy="13.8" rx="3.4" ry="1.5" fill="#33333d" />
+          <path d="M 4.6 -4 L 1.2 -4 Q 0.4 2 1 6 Q 1.6 9 1.3 12 L 4.8 13.6 L 5.6 11 Q 6.2 7 5.8 4 Q 5.4 0 4.6 -4 Z" fill={pants} />
+          <ellipse cx="4.8" cy="13.8" rx="3.4" ry="1.5" fill="#3a3a44" />
+        </g>
+      )}
 
       {/* braços (de costas: cotovelos abertos indo para a mesa) */}
       {working ? (
