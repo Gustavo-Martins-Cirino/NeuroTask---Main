@@ -139,10 +139,11 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
   const wallBase = has("parede-azul") ? "#a9c6dc" : has("parede-verde") ? "#afccb6" : has("parede-rosa") ? "#e2bccb" : "#d8d2c6"
   const floorBase = has("piso-carpete") ? "#9fb3cf" : has("piso-madeira") ? "#c08a55" : "#cfc7b8"
 
-  const chairColor = has("cadeira-gamer") ? "#c62839" : has("cadeira-ergonomica") ? "#4a5568" : "#9a8f7f"
-  // altura do encosto: cobre a lombar, mas deixa as costas/roupa do avatar
-  // visíveis (a personalização é o ponto do bonequinho)
-  const chairBack = has("cadeira-gamer") ? 25 : has("cadeira-ergonomica") ? 20 : 15
+  // a cadeira padrão também é escura: em bege ela sumia na madeira da mesa
+  const chairColor = has("cadeira-gamer") ? "#c62839" : has("cadeira-ergonomica") ? "#4a5568" : "#6b6f78"
+  // altura do encosto: alto o bastante para a peça LER como cadeira (é o que
+  // faz a leitura nas referências iso), sem tapar cabelo/fones do avatar
+  const chairBack = has("cadeira-gamer") ? 34 : has("cadeira-ergonomica") ? 29 : 24
 
   return (
     <svg viewBox="0 0 480 340" className={className} role="img" aria-label="Seu escritório">
@@ -435,9 +436,12 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       {/* base giratória + coluna a gás */}
       <ellipse cx={sx(60, 86)} cy={sy(60, 86, 0)} rx="13" ry="6" fill="#3f3f47" />
       <Box x={58} y={84} dx={4} dy={4} z={4} dz={15} c="#4a4a52" />
-      {/* assento — almofada na altura do quadril, alinhada ao eixo do corpo;
-          cadeira PUXADA para a mesa (joelhos sob o tampo, mãos no teclado) */}
-      <Box x={46} y={71} dx={26} dy={28} z={20} dz={4} c={chairColor} />
+      {/* assento — pequeno, do tamanho de uma cadeira (não uma laje): a
+          pessoa sentada cobre quase todo ele, como nas referências iso */}
+      <Box x={49} y={75} dx={18} dy={18} z={20} dz={4} c={chairColor} />
+      {/* braços — blocos curtos nas laterais (perpendicular ao eixo do corpo) */}
+      <Box x={51} y={89} dx={7} dy={4} z={24} dz={4} c={shade(chairColor, -16)} />
+      <Box x={62} y={78} dx={7} dy={4} z={24} dz={4} c={shade(chairColor, -16)} />
       {/* você — avatar sentado (pernas escondidas; senta no assento acima) */}
       <g
         transform={`translate(${sx(58, 84)},${sy(58, 84, 25)})`}
@@ -451,7 +455,7 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       {/* encosto — entre a câmera e as costas, cobrindo a lombar (é o que
           transforma "almofada" em CADEIRA); baixo o bastante para ainda
           mostrar as costas, o cabelo e os fones do avatar */}
-      {chairBack > 0 && <Box x={64} y={83} dx={5} dy={20} z={24} dz={chairBack} c={shade(chairColor, -8)} />}
+      {chairBack > 0 && <Box x={63} y={85} dx={5} dy={13} z={24} dz={chairBack} c={shade(chairColor, -8)} />}
 
       {/* ---- Planta grande (frente-esquerda, dentro do losango do chão) ---- */}
       {has("planta-grande") && (
