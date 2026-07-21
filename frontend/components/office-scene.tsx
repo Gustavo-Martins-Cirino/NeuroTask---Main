@@ -140,7 +140,7 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
   const floorBase = has("piso-carpete") ? "#9fb3cf" : has("piso-madeira") ? "#c08a55" : "#cfc7b8"
 
   const chairColor = has("cadeira-gamer") ? "#c62839" : has("cadeira-ergonomica") ? "#4a5568" : "#9a8f7f"
-  const chairBack = has("cadeira-gamer") ? 46 : has("cadeira-ergonomica") ? 36 : 0
+  const chairBack = has("cadeira-gamer") ? 46 : has("cadeira-ergonomica") ? 36 : 22
 
   return (
     <svg viewBox="0 0 480 340" className={className} role="img" aria-label="Seu escritório">
@@ -430,8 +430,12 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
       {/* base (peça da cadeira — mais clara para não ler como sombra dura) */}
       <ellipse cx={sx(76, 84)} cy={sy(76, 84, 0)} rx="12" ry="5.5" fill="#4a4a52" />
       <Box x={74} y={82} dx={4} dy={4} z={4} dz={14} c="#4a4a4a" />
-      {/* assento */}
-      <Box x={62} y={70} dx={28} dy={28} z={18} dz={7} c={chairColor} />
+      {/* assento — almofada na altura do QUADRIL (espia ao lado do tronco),
+          não até os pés: se ela chegar na altura dos pés vira uma bandeja
+          onde ele "fica em pé em cima" em vez de estar sentado dentro dela */}
+      <Box x={62} y={70} dx={20} dy={20} z={22} dz={3} c={chairColor} />
+      {/* coluna curta ligando a almofada à base giratória, sem "degrau" */}
+      <Box x={72} y={80} dx={8} dy={8} z={18} dz={4} c={shade(chairColor, -10)} />
       {/* você — avatar editável, sentado de lado (pernas incluídas!)
           O grupo externo POSICIONA (attr transform) e o interno ANIMA (CSS
           transform) — juntos, o CSS sobrescreveria a posição e o avatar
