@@ -26,24 +26,17 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
 
   return (
     <g>
-      {/* pernas — forma única alongada, quase reta para baixo/centro,
-          pés chegando perto da base da cadeira (em direção ao observador) */}
+      {/* pernas — recolhidas, curtas: personagem sentado (não pendurado) */}
       <g>
         {/* sombras de contato dos pés (preto semitransparente suave) */}
-        <ellipse cx="-4" cy="24" rx="6.5" ry="2.3" fill="rgba(0,0,0,0.15)" />
-        <ellipse cx="1" cy="28.5" rx="7.5" ry="2.6" fill="rgba(0,0,0,0.15)" />
+        <ellipse cx="-4" cy="15" rx="4" ry="1.6" fill="rgba(0,0,0,0.15)" />
+        <ellipse cx="5" cy="15" rx="4" ry="1.6" fill="rgba(0,0,0,0.15)" />
         {/* perna distante */}
-        <path
-          d="M -1 -6 Q -6 3 -6 12 L -7 21 L -1 22 L -1 12 Q 0 4 1 0 Z"
-          fill={darken(pants, 16)}
-        />
-        <ellipse cx="-3" cy="22" rx="5.5" ry="3.1" fill="#33333d" />
+        <path d="M -7 -4 L -2 -4 L -1 6 L -2 14 L -7 15 L -8 13 L -8 5 Z" fill={darken(pants, 16)} />
+        <ellipse cx="-4" cy="15" rx="4" ry="1.6" fill="#33333d" />
         {/* perna próxima */}
-        <path
-          d="M 3 -3 Q -2 6 -2 16 L -3 26 L 4 27 L 4 16 Q 4 6 5 2 Z"
-          fill={pants}
-        />
-        <ellipse cx="2" cy="27" rx="6.5" ry="3.4" fill="#3a3a44" />
+        <path d="M 2 -4 L 7 -4 L 8 5 L 7 13 L 2 14 L 1 6 Z" fill={pants} />
+        <ellipse cx="5" cy="15" rx="4" ry="1.6" fill="#3a3a44" />
       </g>
 
       {/* braços (de costas: cotovelos abertos indo para a mesa) */}
