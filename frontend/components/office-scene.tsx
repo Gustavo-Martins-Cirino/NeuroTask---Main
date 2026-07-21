@@ -143,7 +143,8 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
   const chairColor = has("cadeira-gamer") ? "#c62839" : has("cadeira-ergonomica") ? "#4a5568" : "#6b6f78"
   // altura do encosto: alto o bastante para a peça LER como cadeira (é o que
   // faz a leitura nas referências iso), sem tapar cabelo/fones do avatar
-  const chairBack = has("cadeira-gamer") ? 23 : has("cadeira-ergonomica") ? 19 : 15
+  // encosto ALTO: o topo fica atrás da cabeça (a figura é pintada depois)
+  const chairBack = has("cadeira-gamer") ? 48 : has("cadeira-ergonomica") ? 42 : 38
 
   return (
     <svg viewBox="0 0 480 340" className={className} role="img" aria-label="Seu escritório">
@@ -432,22 +433,60 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
           Ordem de empilhamento (trás → frente): base+coluna, encosto (atrás
           das costas), assento (almofada larga que projeta pra frente), você.
           O "sentado" vem do assento VISÍVEL sob o corpo — não de pernas. */}
-      <Shadow x={60} y={86} rx={20} ry={8} />
-      {/* base giratória + coluna a gás */}
-      <ellipse cx={sx(60, 86)} cy={sy(60, 86, 0)} rx="13" ry="6" fill="#3f3f47" />
-      <Box x={58} y={84} dx={4} dy={4} z={4} dz={13} c="#4a4a52" />
-      {/* assento — pequeno, do tamanho de uma cadeira (não uma laje): a
-          pessoa sentada cobre quase todo ele, como nas referências iso.
-          Topo em z=22 = altura de assento real proporcional à mesa (z=37). */}
-      <Box x={49} y={75} dx={18} dy={18} z={17} dz={5} c={chairColor} />
-      {/* braços — blocos curtos nas laterais (perpendicular ao eixo do corpo) */}
-      <Box x={51} y={89} dx={7} dy={4} z={22} dz={4} c={shade(chairColor, -16)} />
-      <Box x={62} y={78} dx={7} dy={4} z={22} dz={4} c={shade(chairColor, -16)} />
-      {/* você — avatar sentado. A ESCALA importa: um adulto sentado tem a
-          cabeça ~27un acima do tampo (mesa 75cm ↔ z=37 aqui). Em tamanho
-          cheio ele passava de 38un e lia como alguém EM PÉ atrás da mesa. */}
+      {/* Cadeira de escritório (tudo pintado ANTES da pessoa, para o tronco
+          ficar na frente do assento e do encosto):
+          (d) base estrela de 5 pontas com rodízios · (c) coluna a gás ·
+          (b) assento com face superior clara + laterais escuras ·
+          (a) encosto alto acolchoado. Mesma paleta/iluminação da mesa. */}
+      <g data-name="office-chair">
+        <Shadow x={58} y={84} rx={22} ry={9} />
+
+        {/* (d) base estrela: 5 braços no plano do piso, cada um com rodízio */}
+        {[18, 90, 162, 234, 306].map((deg) => {
+          const a = (deg * Math.PI) / 180
+          const R = 15
+          const ax = R * Math.cos(a)
+          const ay = R * Math.sin(a)
+          const ox = ax - ay // projeção iso do braço (mesmo sx/sy da cena)
+          const oy = (ax + ay) / 2
+          const len = Math.hypot(ox, oy) || 1
+          const nx = (-oy / len) * 3 // meia-largura na base
+          const ny = (ox / len) * 3
+          const cx0 = sx(58, 84)
+          const cy0 = sy(58, 84, 0)
+          return (
+            <g key={deg}>
+              <polygon
+                points={`${cx0 + nx},${cy0 + ny} ${cx0 - nx},${cy0 - ny} ${cx0 + ox - nx * 0.5},${cy0 + oy - ny * 0.5} ${cx0 + ox + nx * 0.5},${cy0 + oy + ny * 0.5}`}
+                fill="#54545e"
+              />
+              <ellipse cx={cx0 + ox} cy={cy0 + oy + 1.6} rx="2.8" ry="1.7" fill="#2f2f36" />
+            </g>
+          )
+        })}
+
+        {/* (c) coluna a gás */}
+        <Box x={56} y={82} dx={4} dy={4} z={2} dz={15} c="#5a5a64" />
+
+        {/* (b) assento — Box pinta topo em shade(+10) e laterais em -8/-26,
+            exatamente como a mesa e a estante. Topo em z=22. */}
+        <Box x={49} y={75} dx={18} dy={18} z={17} dz={5} c={chairColor} />
+
+        {/* (a) encosto alto acolchoado (sobe do assento até a altura da
+            cabeça) + painel de estofado levemente saliente */}
+        <Box x={66} y={82} dx={4} dy={17} z={22} dz={chairBack} c={shade(chairColor, 12)} />
+        <Box x={70} y={84} dx={1} dy={13} z={26} dz={chairBack - 9} c={shade(chairColor, 2)} />
+      </g>
+
+      {/* Pessoa SENTADA no assento. Duas medidas mandam aqui:
+          · escala 0.667 → cabeça ~27un acima do tampo (proporção real:
+            mesa 75cm ↔ z=37; altura sentado 85cm; assento 45cm);
+          · âncora z=30.7 → o bumbum (y=+13 local) cai exatamente em z=22,
+            o topo do assento. Com a âncora em 22 o corpo AFUNDAVA 11un
+            através da almofada, que era o "em pé na frente da cadeira". */}
       <g
-        transform={`translate(${sx(58, 84)},${sy(58, 84, 22)}) scale(0.84)`}
+        data-name="office-figure"
+        transform={`translate(${sx(58, 84)},${sy(58, 84, 30.7)}) scale(0.667)`}
         onClick={onAvatarClick}
         style={onAvatarClick ? { cursor: "pointer" } : undefined}
       >
@@ -455,10 +494,6 @@ export function OfficeScene({ equipped, stats, avatar, onAvatarClick, className 
           <AvatarFigure config={person} working={working} seated />
         </g>
       </g>
-      {/* encosto — entre a câmera e as costas, cobrindo a lombar (é o que
-          transforma "almofada" em CADEIRA); baixo o bastante para ainda
-          mostrar as costas, o cabelo e os fones do avatar */}
-      {chairBack > 0 && <Box x={63} y={85} dx={5} dy={13} z={22} dz={chairBack} c={shade(chairColor, -8)} />}
 
       {/* ---- Planta grande (frente-esquerda, dentro do losango do chão) ---- */}
       {has("planta-grande") && (

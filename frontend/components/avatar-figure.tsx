@@ -33,13 +33,34 @@ export function AvatarFigure({ config, working = false, seated = false }: { conf
             o "sentado" vem do assento visível da cadeira, não de pernas retas.
           · em pé (editor): corpo inteiro para personalizar. */}
       {seated ? (
-        // Só o topo das coxas indo para FRENTE (afastando-se da câmera):
-        // de costas não se enxerga canela nem pé — quem vê pé apoiado
-        // embaixo lê "em pé". O "sentado" vem do assento da cadeira.
+        // Pernas dobradas para FRENTE (na cena, -x = cima-esquerda no iso):
+        // coxa horizontal saindo do quadril até o joelho sob a mesa, canela
+        // descendo até o pé apoiado no piso. Coordenadas conferidas contra
+        // o plano do piso da cena (ver comentário em office-scene).
         <g>
-          <path d="M -8 -6 Q -9 1 -6 4 L 6 4 Q 9 1 8 -6 Z" fill={pants} />
-          <path d="M -8 -6 Q -9 1 -6 4 L -1 4 L -1 -6 Z" fill={darken(pants, 12)} />
-          <ellipse cx="0" cy="4" rx="7.4" ry="1.8" fill={darken(pants, 22)} />
+          {/* sombras de contato dos pés no piso */}
+          <ellipse cx="-26" cy="32" rx="6.5" ry="2.4" fill="rgba(0,0,0,0.15)" />
+          <ellipse cx="-20" cy="36" rx="6.5" ry="2.4" fill="rgba(0,0,0,0.15)" />
+          {/* perna distante: coxa → joelho → canela → pé */}
+          <polyline
+            points="-2,9 -25,2 -26,30"
+            fill="none"
+            stroke={darken(pants, 16)}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <ellipse cx="-26.5" cy="31" rx="5.6" ry="2.8" fill="#33333d" />
+          {/* perna próxima */}
+          <polyline
+            points="4,12 -19,6 -20,34"
+            fill="none"
+            stroke={pants}
+            strokeWidth="8.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <ellipse cx="-20.5" cy="35" rx="6" ry="3" fill="#3a3a44" />
         </g>
       ) : (
         <g>
