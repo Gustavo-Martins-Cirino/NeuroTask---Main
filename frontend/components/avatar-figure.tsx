@@ -26,25 +26,25 @@ export function AvatarFigure({ config, working = false }: { config: AvatarConfig
 
   return (
     <g>
-      {/* pernas — POLÍGONOS preenchidos com volume: coxa desce do quadril
-          ao joelho (abaixo dele), canela desce ao pé apoiado à frente.
-          Duas pernas distintas (offset + tons) e sapatos maiores. */}
+      {/* pernas — POLÍGONOS preenchidos com volume, projetadas para
+          FRENTE/BAIXO (em direção ao observador), como alguém sentado de
+          frente para a mesa — não mais para o lado. */}
       <g>
         {/* sombras de contato dos pés (preto semitransparente suave) */}
-        <ellipse cx="-20.5" cy="14.5" rx="7.5" ry="2.6" fill="rgba(0,0,0,0.15)" />
-        <ellipse cx="-15.5" cy="18.5" rx="8" ry="2.8" fill="rgba(0,0,0,0.15)" />
+        <ellipse cx="-10" cy="16.5" rx="7.5" ry="2.6" fill="rgba(0,0,0,0.15)" />
+        <ellipse cx="-6" cy="19" rx="8" ry="2.8" fill="rgba(0,0,0,0.15)" />
         {/* perna distante (coxa + canela em peça única) */}
         <path
-          d="M -1 -6 L -14 -3 Q -19 -2 -20 2 L -23 10 L -17 12 L -14 5 Q -13 3 -10 2.5 L 1 0 Z"
+          d="M -1 -6 L -7 -4 Q -11 -2 -12 3 L -14 13 L -8 15 L -6 7 Q -6 3 -3 2 L 1 0 Z"
           fill={darken(pants, 16)}
         />
-        <ellipse cx="-20.5" cy="12.5" rx="6" ry="3.4" fill="#33333d" />
+        <ellipse cx="-10" cy="14.5" rx="6" ry="3.4" fill="#33333d" />
         {/* perna próxima */}
         <path
-          d="M 3 -3 L -10 1 Q -14 2 -15 5 L -18 14 L -11.5 16 L -9 8 Q -8 6 -5 5.5 L 5 2 Z"
+          d="M 3 -3 L -3 0 Q -8 2 -9 6 L -11 16 L -4 18 L -2 9 Q -2 5 1 3 L 5 2 Z"
           fill={pants}
         />
-        <ellipse cx="-15.5" cy="16.5" rx="6.5" ry="3.6" fill="#3a3a44" />
+        <ellipse cx="-6" cy="17" rx="6.5" ry="3.6" fill="#3a3a44" />
       </g>
 
       {/* braços (de costas: cotovelos abertos indo para a mesa) */}
