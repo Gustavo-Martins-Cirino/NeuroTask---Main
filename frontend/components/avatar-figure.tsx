@@ -33,34 +33,42 @@ export function AvatarFigure({ config, working = false, seated = false }: { conf
             o "sentado" vem do assento visível da cadeira, não de pernas retas.
           · em pé (editor): corpo inteiro para personalizar. */}
       {seated ? (
-        // Pernas dobradas para FRENTE (na cena, -x = cima-esquerda no iso):
-        // coxa horizontal saindo do quadril até o joelho sob a mesa, canela
-        // descendo até o pé apoiado no piso. Coordenadas conferidas contra
-        // o plano do piso da cena (ver comentário em office-scene).
+        // Membro inferior sentado, em coords LOCAIS calibradas contra a cena
+        // (origem = topo do assento pelo lado de trás; escala 0.667):
+        //   y≈1  = bumbum (base do tronco) · y≈14.5 = superfície do assento
+        //   y≈26 = frente do assento        · y≈45   = piso
+        // Sequência: quadril preenche a folga bumbum→assento; coxas seguem
+        // para a frente com joelho dobrado; canelas descem ao pé no piso.
         <g>
           {/* sombras de contato dos pés no piso */}
-          <ellipse cx="-26" cy="32" rx="6.5" ry="2.4" fill="rgba(0,0,0,0.15)" />
-          <ellipse cx="-20" cy="36" rx="6.5" ry="2.4" fill="rgba(0,0,0,0.15)" />
-          {/* perna distante: coxa → joelho → canela → pé */}
+          <ellipse cx="-9" cy="45.5" rx="6" ry="2.2" fill="rgba(0,0,0,0.15)" />
+          <ellipse cx="3" cy="46.5" rx="6" ry="2.2" fill="rgba(0,0,0,0.15)" />
+
+          {/* perna distante (mais escura): coxa → joelho → canela → pé */}
           <polyline
-            points="-2,9 -25,2 -26,30"
+            points="-2,10 -11,25 -9,44"
             fill="none"
             stroke={darken(pants, 16)}
             strokeWidth="8"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <ellipse cx="-26.5" cy="31" rx="5.6" ry="2.8" fill="#33333d" />
-          {/* perna próxima */}
+          <ellipse cx="-9" cy="45.5" rx="5.4" ry="2.6" fill="#33333d" />
+
+          {/* quadril — preenche a folga entre o bumbum (y≈1) e a
+              almofada (y≈14.5): é o que acaba com o "flutuando" */}
+          <path d="M -9 1 Q -10 8 -8 15 L 8 15 Q 10 8 9 1 Z" fill={darken(pants, 6)} />
+
+          {/* perna próxima (mais clara): coxa → joelho → canela → pé */}
           <polyline
-            points="4,12 -19,6 -20,34"
+            points="3,12 11,24 3,45"
             fill="none"
             stroke={pants}
             strokeWidth="8.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <ellipse cx="-20.5" cy="35" rx="6" ry="3" fill="#3a3a44" />
+          <ellipse cx="3" cy="46.5" rx="5.8" ry="2.8" fill="#3a3a44" />
         </g>
       ) : (
         <g>
