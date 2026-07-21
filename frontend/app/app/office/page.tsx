@@ -1,12 +1,19 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { OfficeScene } from "@/components/office-scene"
 import { AvatarEditor } from "@/components/avatar-editor"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil } from "lucide-react"
+import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil, Box } from "lucide-react"
+
+// R3F usa WebGL: só no cliente (ssr:false), carregado sob demanda no 3D.
+const OfficeScene3D = dynamic(
+  () => import("@/components/office-scene-3d").then((m) => m.OfficeScene3D),
+  { ssr: false, loading: () => <div className="flex aspect-[480/340] items-center justify-center text-sm text-muted-foreground">Carregando 3D…</div> }
+)
 import { toast } from "sonner"
 import {
   CATALOG, CATEGORY_LABELS, EXCLUSIVE_CATEGORIES,
@@ -28,6 +35,7 @@ export default function OfficePage() {
 
   const [stats, setStats] = useState<OfficeStats | undefined>(undefined)
   const [avatarCfg, setAvatarCfg] = useState<AvatarConfig>(DEFAULT_AVATAR)
+  const [render3D, setRender3D] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
 
   const load = () => {
@@ -140,10 +148,35 @@ export default function OfficePage() {
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
           >
+            {/* Toggle 2D / 3D (beta) */}
+            <div className="absolute right-3 top-3 z-10 flex overflow-hidden rounded-full border border-white/20 bg-black/45 text-xs font-medium text-white backdrop-blur-sm">
+              <button
+                type="button"
+                onClick={() => setRender3D(false)}
+                className={cn("px-3 py-1 transition-colors", !render3D && "bg-white/25")}
+              >
+                2D
+              </button>
+              <button
+                type="button"
+                onClick={() => setRender3D(true)}
+                className={cn("flex items-center gap-1 px-3 py-1 transition-colors", render3D && "bg-white/25")}
+              >
+                <Box className="h-3 w-3" /> 3D
+              </button>
+            </div>
+
             {loading ? (
               <div className="flex aspect-[400/260] items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
+            ) : render3D ? (
+              <OfficeScene3D
+                avatar={avatarCfg}
+                working={stats?.working}
+                onAvatarClick={() => setAvatarOpen(true)}
+                className="block w-full"
+              />
             ) : (
               <OfficeScene
                 equipped={sceneSet}
