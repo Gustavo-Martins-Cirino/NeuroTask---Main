@@ -31,14 +31,16 @@ const CLIP_NATIVE_HEIGHT = 180
 const BASE_POSITION: [number, number, number] = [0, 0, 0.25]
 const BASE_ROTATION: [number, number, number] = [0, 0, 0]
 
-/** Offset no assento por modelo de cadeira comprado na loja. Chaves = ids. */
+/** Offset no assento por modelo de cadeira. Com a cadeira GLB (office-chair)
+ *  o assento fica em ~3.7 un, então o corpo sobe ~1.0 pra pousar nele. Todas as
+ *  cadeiras da loja são a MESMA malha (só muda a cor), logo o offset é único. */
 export const offsetPorCadeira: Record<
   string,
   { position?: [number, number, number]; rotation?: [number, number, number] }
 > = {
-  padrao: { position: [0, 0, 0.25] },
-  "cadeira-ergonomica": { position: [0, 0, 0.25] },
-  "cadeira-gamer": { position: [0, 0.2, 0.3] },
+  padrao: { position: [0, 1.0, 0.1] },
+  "cadeira-ergonomica": { position: [0, 1.0, 0.1] },
+  "cadeira-gamer": { position: [0, 1.0, 0.1] },
 }
 
 interface SeatedCharacterProps {

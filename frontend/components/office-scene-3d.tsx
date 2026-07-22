@@ -1,9 +1,9 @@
 "use client"
 
-import { Component, Suspense, useEffect, useState, type ReactNode } from "react"
+import { Component, Suspense, useEffect, useMemo, useState, type ReactNode } from "react"
 import { Canvas } from "@react-three/fiber"
-import { ContactShadows, OrthographicCamera } from "@react-three/drei"
-import { ACESFilmicToneMapping } from "three"
+import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
+import { ACESFilmicToneMapping, Box3, Color, Mesh, Vector3, type Material, type MeshStandardMaterial } from "three"
 import { OfficeFigure3D } from "@/components/office-figure-3d"
 import { SeatedCharacter } from "@/components/seated-character"
 import type { AvatarConfig } from "@/lib/avatar"
@@ -29,6 +29,8 @@ interface OfficeScene3DProps {
   avatar?: AvatarConfig | null
   working?: boolean
   onAvatarClick?: () => void
+  /** Ids de itens equipados/prévia — a cena reflete cor de parede/piso/cadeira. */
+  equipped?: Set<string>
   className?: string
 }
 
@@ -50,9 +52,50 @@ const LIGHT: Record<Phase, { key: string; keyI: number; hemiI: number; lampI: nu
 }
 
 const WALL = "#a9c6dc"
+const WALL_SIDE = "#98b7cf"
 const FLOOR = "#c08a55"
 const WOOD = "#8a6f4e"
 const WOOD_D = "#705534"
+
+// Itens da loja que a cena 3D já reflete (cor). Decorativos (planta, gato,
+// estante…) viram malhas numa fase seguinte. `pick` acha o 1º id equipado.
+const WALL_COLORS: Record<string, string> = { "parede-azul": "#8fb3d9", "parede-verde": "#9ec6a6", "parede-rosa": "#e5b5c8" }
+const FLOOR_COLORS: Record<string, string> = { "piso-madeira": "#b5824f", "piso-carpete": "#8aa0b8" }
+const CHAIR_COLORS: Record<string, string> = { "cadeira-ergonomica": "#3a4250", "cadeira-gamer": "#b23b3b" }
+function pick(map: Record<string, string>, equipped: Set<string> | undefined, fallback: string): string {
+  if (equipped) for (const id in map) if (equipped.has(id)) return map[id]
+  return fallback
+}
+
+// Cadeira de escritório (GLB do usuário). Auto-escala pela bbox real (o modelo
+// traz um transform de nó, então o accessor mente) até ~8 un de altura, gira π
+// para o encosto ficar atrás de quem senta e, se houver cor de cadeira
+// equipada, recolore a malha (clonando o material p/ não vazar no cache).
+function OfficeChairGlb({ color }: { color?: string }) {
+  const { scene } = useGLTF("/models/office-chair.glb")
+  const chair = useMemo(() => {
+    const c = scene.clone(true)
+    const h0 = new Box3().setFromObject(c).getSize(new Vector3()).y || 1
+    c.scale.setScalar(8 / h0)
+    c.traverse((o) => {
+      const m = o as Mesh
+      if (!m.isMesh) return
+      m.castShadow = true
+      m.receiveShadow = true
+      if (color) {
+        const tint = (mat: Material): Material => {
+          const cl = (mat as MeshStandardMaterial).clone()
+          cl.color = new Color(color)
+          return cl
+        }
+        m.material = Array.isArray(m.material) ? m.material.map(tint) : tint(m.material)
+      }
+    })
+    return c
+  }, [scene, color])
+  return <primitive object={chair} rotation={[0, Math.PI, 0]} />
+}
+useGLTF.preload("/models/office-chair.glb")
 
 function Desk() {
   return (
@@ -145,8 +188,12 @@ function Chair({ color = "#4a5568" }: { color?: string }) {
   )
 }
 
-function Scene({ avatar, working, onAvatarClick, phase }: Required<Pick<OfficeScene3DProps, "onAvatarClick">> & { avatar?: AvatarConfig | null; working?: boolean; phase: Phase }) {
+function Scene({ avatar, working, onAvatarClick, phase, equipped }: Required<Pick<OfficeScene3DProps, "onAvatarClick">> & { avatar?: AvatarConfig | null; working?: boolean; phase: Phase; equipped?: Set<string> }) {
   const L = LIGHT[phase]
+  const wallColor = pick(WALL_COLORS, equipped, WALL)
+  const wallSide = pick(WALL_COLORS, equipped, WALL_SIDE)
+  const floorColor = pick(FLOOR_COLORS, equipped, FLOOR)
+  const chairColor = pick(CHAIR_COLORS, equipped, "")
   return (
     <>
       {/* fill macio (céu/chão) + key quente com sombra + fill frio + luminária */}
@@ -169,7 +216,7 @@ function Scene({ avatar, working, onAvatarClick, phase }: Required<Pick<OfficeSc
       {/* piso */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[26, 26]} />
-        <meshStandardMaterial color={FLOOR} />
+        <meshStandardMaterial color={floorColor} />
       </mesh>
       {/* tapete */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 2]} receiveShadow>
@@ -179,11 +226,11 @@ function Scene({ avatar, working, onAvatarClick, phase }: Required<Pick<OfficeSc
       {/* duas paredes */}
       <mesh position={[0, 8, -8]} receiveShadow>
         <planeGeometry args={[26, 16]} />
-        <meshStandardMaterial color={WALL} />
+        <meshStandardMaterial color={wallColor} />
       </mesh>
       <mesh position={[-13, 8, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[26, 16]} />
-        <meshStandardMaterial color="#98b7cf" />
+        <meshStandardMaterial color={wallSide} />
       </mesh>
 
       <Desk />
@@ -191,7 +238,12 @@ function Scene({ avatar, working, onAvatarClick, phase }: Required<Pick<OfficeSc
           (-z), encostado nela; câmera 3/4 mostra as costas + parte da roupa.
           O personagem é FILHO deste mesmo grupo → herda a orientação. */}
       <group rotation={[0, Math.PI, 0]} position={[0, 0, 0.4]}>
-        <Chair />
+        {/* cadeira GLB (com fallback procedural se o arquivo falhar) */}
+        <GlbBoundary fallback={<Chair color={chairColor || undefined} />}>
+          <Suspense fallback={<Chair color={chairColor || undefined} />}>
+            <OfficeChairGlb color={chairColor || undefined} />
+          </Suspense>
+        </GlbBoundary>
         {/* .glb rigado (SeatedCharacter) quando existir; senão, o procedural */}
         <GlbBoundary fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
           <Suspense fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
@@ -206,7 +258,7 @@ function Scene({ avatar, working, onAvatarClick, phase }: Required<Pick<OfficeSc
   )
 }
 
-export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {}, className }: OfficeScene3DProps) {
+export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {}, equipped, className }: OfficeScene3DProps) {
   const [phase, setPhase] = useState<Phase>("day")
   useEffect(() => {
     const tick = () => setPhase(phaseOf(new Date().getHours()))
@@ -224,7 +276,7 @@ export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {
         style={{ width: "100%", aspectRatio: "480 / 340" }}
       >
         <OrthographicCamera makeDefault position={[16, 14, 16]} zoom={20} near={-100} far={200} onUpdate={(c) => c.lookAt(0, 4, 0)} />
-        <Scene avatar={avatar} working={working} onAvatarClick={onAvatarClick} phase={phase} />
+        <Scene avatar={avatar} working={working} onAvatarClick={onAvatarClick} phase={phase} equipped={equipped} />
       </Canvas>
     </div>
   )
