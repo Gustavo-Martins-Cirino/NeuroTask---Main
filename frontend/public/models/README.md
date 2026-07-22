@@ -1,8 +1,10 @@
 # Modelos 3D do Escritório
 
-Coloque aqui o personagem sentado:
+Personagem sentado (já incluso: `seated-character.fbx`, Mixamo "Seated Idle").
+Para trocar, substitua por outro arquivo com o mesmo nome — aceita **.fbx**
+(Mixamo) ou **.glb** (Ready Player Me / Sketchfab):
 
-    seated-character.glb
+    seated-character.fbx   (ou .glb)
 
 Requisitos do arquivo:
 - `.glb` (binário) com **esqueleto rigado**;
