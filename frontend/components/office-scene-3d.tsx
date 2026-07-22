@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Canvas } from "@react-three/fiber"
 import { ContactShadows, OrthographicCamera } from "@react-three/drei"
+import { ACESFilmicToneMapping } from "three"
 import { OfficeFigure3D } from "@/components/office-figure-3d"
 import type { AvatarConfig } from "@/lib/avatar"
 
@@ -24,11 +25,14 @@ function phaseOf(h: number): Phase {
   if (h >= 17 && h < 19) return "dusk"
   return "night"
 }
-const LIGHT: Record<Phase, { key: string; amb: string; dir: number; bg: string }> = {
-  dawn: { key: "#ffd7a8", amb: "#8a7f9a", dir: 0.7, bg: "#e9d3c0" },
-  day: { key: "#fff6e6", amb: "#9fb0c4", dir: 1.0, bg: "#dfeaf4" },
-  dusk: { key: "#ff9d5c", amb: "#6a6080", dir: 0.6, bg: "#e0c0b4" },
-  night: { key: "#9fb4ff", amb: "#3a4468", dir: 0.35, bg: "#232c4d" },
+// Sala SEMPRE aconchegante (luzes internas acesas). A fase só muda o tom da
+// luz-chave, o brilho da luminária e o fundo — nunca escurece a cena a ponto
+// de "sumir" a pessoa (o erro que deixou tudo sombrio à noite).
+const LIGHT: Record<Phase, { key: string; keyI: number; hemiI: number; lampI: number; bg: string }> = {
+  dawn: { key: "#ffe3c2", keyI: 1.55, hemiI: 1.2, lampI: 30, bg: "#f0dcc8" },
+  day: { key: "#fff0d8", keyI: 1.7, hemiI: 1.3, lampI: 18, bg: "#dfeaf4" },
+  dusk: { key: "#ffc59a", keyI: 1.45, hemiI: 1.1, lampI: 42, bg: "#e6c6be" },
+  night: { key: "#cdd8ff", keyI: 1.35, hemiI: 1.05, lampI: 55, bg: "#2b2f4a" },
 }
 
 const WALL = "#a9c6dc"
@@ -131,18 +135,22 @@ function Scene({ avatar, working, onAvatarClick, phase }: Required<Pick<OfficeSc
   const L = LIGHT[phase]
   return (
     <>
-      <ambientLight color={L.amb} intensity={1.15} />
+      {/* fill macio (céu/chão) + key quente com sombra + fill frio + luminária */}
+      <hemisphereLight args={["#fff1e0", "#9a7b5a", L.hemiI]} />
       <directionalLight
         color={L.key}
-        intensity={L.dir * 2.2}
-        position={[8, 16, 10]}
+        intensity={L.keyI}
+        position={[9, 16, 11]}
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0004}
         shadow-camera-left={-14}
         shadow-camera-right={14}
         shadow-camera-top={14}
         shadow-camera-bottom={-14}
       />
+      <directionalLight color="#bcd0ff" intensity={0.5} position={[-10, 8, -6]} />
+      <pointLight color="#ffcf8a" intensity={L.lampI} distance={22} decay={2} position={[4.5, 7, -1.2]} />
 
       {/* piso */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
@@ -188,7 +196,12 @@ export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {
 
   return (
     <div className={className} style={{ background: `linear-gradient(160deg, ${LIGHT[phase].bg}, ${LIGHT[phase].bg}cc)` }}>
-      <Canvas shadows dpr={[1, 2]} style={{ width: "100%", aspectRatio: "480 / 340" }}>
+      <Canvas
+        shadows="soft"
+        dpr={[1, 2]}
+        gl={{ toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.15 }}
+        style={{ width: "100%", aspectRatio: "480 / 340" }}
+      >
         <OrthographicCamera makeDefault position={[16, 14, 16]} zoom={20} near={-100} far={200} onUpdate={(c) => c.lookAt(0, 4, 0)} />
         <Scene avatar={avatar} working={working} onAvatarClick={onAvatarClick} phase={phase} />
       </Canvas>
