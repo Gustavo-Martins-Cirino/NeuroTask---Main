@@ -1,11 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Component, Suspense, useEffect, useState, type ReactNode } from "react"
 import { Canvas } from "@react-three/fiber"
 import { ContactShadows, OrthographicCamera } from "@react-three/drei"
 import { ACESFilmicToneMapping } from "three"
 import { OfficeFigure3D } from "@/components/office-figure-3d"
+import { SeatedCharacter } from "@/components/seated-character"
 import type { AvatarConfig } from "@/lib/avatar"
+
+// Fallback resiliente: se o .glb do personagem não existir (404) ou falhar,
+// cai no personagem procedural — a cena NUNCA quebra. Some sozinho quando o
+// arquivo /models/seated-character.glb passar a existir (num reload).
+class GlbBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children
+  }
+}
 
 // Cena 3D (React-Three-Fiber) — PROTÓTIPO. Câmera ortográfica isométrica,
 // luz que segue a hora real, e o personagem sentado por construção. Coexiste
@@ -174,10 +188,16 @@ function Scene({ avatar, working, onAvatarClick, phase }: Required<Pick<OfficeSc
 
       <Desk />
       {/* conjunto cadeira+pessoa girado para ficar de frente para a mesa
-          (-z), encostado nela; câmera 3/4 mostra as costas + parte da roupa */}
+          (-z), encostado nela; câmera 3/4 mostra as costas + parte da roupa.
+          O personagem é FILHO deste mesmo grupo → herda a orientação. */}
       <group rotation={[0, Math.PI, 0]} position={[0, 0, 0.4]}>
         <Chair />
-        <OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />
+        {/* .glb rigado (SeatedCharacter) quando existir; senão, o procedural */}
+        <GlbBoundary fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
+          <Suspense fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
+            <SeatedCharacter chairId="padrao" onClick={onAvatarClick} />
+          </Suspense>
+        </GlbBoundary>
       </group>
 
       <ContactShadows position={[0, 0.03, 0]} opacity={0.35} scale={20} blur={2.2} far={8} />
