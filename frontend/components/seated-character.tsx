@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from "react"
 import { useGLTF, useFBX, useAnimations } from "@react-three/drei"
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
-import type { AnimationClip, Group, Object3D } from "three"
+import { Color, Mesh, MeshStandardMaterial, type AnimationClip, type Group, type Material, type Object3D } from "three"
 
 // ─────────────────────────────────────────────────────────────────────────
 // AJUSTE FINO — mexa só aqui para posicionar o personagem no assento.
@@ -43,7 +43,33 @@ interface SeatedCharacterProps {
   modelUrl?: string
   /** id da cadeira equipada (loja) → escolhe o offset do assento. */
   chairId?: string
+  /** Recolore o CORPO do manequim (materiais SEM textura). Modelos texturizados
+   *  (Ready Player Me etc.) são preservados — o tint só afeta cor sólida. */
+  tint?: string
   onClick?: () => void
+}
+
+// Recolore materiais sem textura (o manequim Mixamo é cor sólida). Clona o
+// material por instância para não vazar cor entre pessoas (amigos/skins) nem
+// no cache do drei. Materiais texturizados ficam intactos.
+function applyTint(root: Object3D, tint?: string) {
+  if (!tint) return
+  const base = new Color(tint)
+  root.traverse((o) => {
+    const mesh = o as Mesh
+    if (!mesh.isMesh) return
+    const recolor = (mat: Material): Material => {
+      const m = mat as MeshStandardMaterial
+      if (m.map) return mat // tem textura → não mexe
+      const c = m.clone() as MeshStandardMaterial
+      // preserva o claro/escuro original (juntas ficam mais escuras) tingindo
+      const orig = m.color
+      const lum = orig ? 0.3 * orig.r + 0.59 * orig.g + 0.11 * orig.b : 0.6
+      c.color = base.clone().multiplyScalar(0.55 + lum * 0.9)
+      return c
+    }
+    mesh.material = Array.isArray(mesh.material) ? mesh.material.map(recolor) : recolor(mesh.material)
+  })
 }
 
 // Escolhe e toca o clip de sentar em loop (por nome, ou o de maior duração).
@@ -62,13 +88,17 @@ function usePlaySeated(root: Object3D, clips: AnimationClip[], ref: React.RefObj
   }, [actions, names, clips])
 }
 
-type BodyProps = { url: string; position: [number, number, number]; rotation: [number, number, number]; scale: number; onClick?: () => void }
+type BodyProps = { url: string; position: [number, number, number]; rotation: [number, number, number]; scale: number; tint?: string; onClick?: () => void }
 
-function FbxBody({ url, position, rotation, scale, onClick }: BodyProps) {
+function FbxBody({ url, position, rotation, scale, tint, onClick }: BodyProps) {
   const ref = useRef<Group>(null)
   const fbx = useFBX(url)
   // clona (com esqueleto) → várias instâncias (amigos) com animação própria
-  const model = useMemo(() => cloneSkeleton(fbx), [fbx])
+  const model = useMemo(() => {
+    const m = cloneSkeleton(fbx)
+    applyTint(m, tint)
+    return m
+  }, [fbx, tint])
   usePlaySeated(model, fbx.animations, ref)
   return (
     <group ref={ref} position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -77,10 +107,14 @@ function FbxBody({ url, position, rotation, scale, onClick }: BodyProps) {
   )
 }
 
-function GlbBody({ url, position, rotation, scale, onClick }: BodyProps) {
+function GlbBody({ url, position, rotation, scale, tint, onClick }: BodyProps) {
   const ref = useRef<Group>(null)
   const { scene, animations } = useGLTF(url)
-  const model = useMemo(() => cloneSkeleton(scene), [scene])
+  const model = useMemo(() => {
+    const m = cloneSkeleton(scene)
+    applyTint(m, tint)
+    return m
+  }, [scene, tint])
   usePlaySeated(model, animations, ref)
   return (
     <group ref={ref} position={position} rotation={rotation} scale={scale} onClick={onClick}>
@@ -89,13 +123,14 @@ function GlbBody({ url, position, rotation, scale, onClick }: BodyProps) {
   )
 }
 
-export function SeatedCharacter({ modelUrl = DEFAULT_MODEL_URL, chairId = "padrao", onClick }: SeatedCharacterProps) {
+export function SeatedCharacter({ modelUrl = DEFAULT_MODEL_URL, chairId = "padrao", tint, onClick }: SeatedCharacterProps) {
   const off = offsetPorCadeira[chairId] ?? offsetPorCadeira.padrao
   const shared = {
     url: modelUrl,
     position: off.position ?? BASE_POSITION,
     rotation: off.rotation ?? BASE_ROTATION,
     scale: off.scale ?? BASE_SCALE,
+    tint,
     onClick,
   }
   return modelUrl.toLowerCase().endsWith(".fbx") ? <FbxBody {...shared} /> : <GlbBody {...shared} />

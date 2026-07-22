@@ -195,7 +195,8 @@ function Scene({ avatar, working, onAvatarClick, phase }: Required<Pick<OfficeSc
         {/* .glb rigado (SeatedCharacter) quando existir; senão, o procedural */}
         <GlbBoundary fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
           <Suspense fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
-            <SeatedCharacter chairId="padrao" onClick={onAvatarClick} />
+            {/* tint recolore o manequim com a cor de roupa do editor de avatar */}
+            <SeatedCharacter chairId="padrao" tint={avatar?.outfitColor} onClick={onAvatarClick} />
           </Suspense>
         </GlbBoundary>
       </group>
