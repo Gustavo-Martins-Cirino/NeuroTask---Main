@@ -22,20 +22,51 @@ export const DEFAULT_MODEL_URL = "/models/seated-character.fbx"
  *  cai automaticamente no clip de MAIOR duração. */
 const CLIP_NAME = "Sitting"
 
+/** Fonte da animação de sentar (Mixamo). Avatares Ready Player Me vêm SEM
+ *  animação → reaproveitamos este clip retargetando os nomes de osso. */
+export const ANIM_SOURCE_URL = "/models/seated-character.fbx"
+
+/** Mixamo exporta em cm (ossos ~100x) e o RPM em metros → as faixas de
+ *  POSIÇÃO (translação do quadril) precisam ser reescaladas. Ajuste fino. */
+const ANIM_POS_SCALE = 0.01
+
+/** Converte um nome de faixa Mixamo → RPM: "mixamorigHips.quaternion" vira
+ *  "Hips.quaternion". Exportado para teste unitário. */
+export function retargetTrackName(name: string): string {
+  const dot = name.indexOf(".")
+  const node = (dot < 0 ? name : name.slice(0, dot)).replace(/^mixamorig:?/, "")
+  return dot < 0 ? node : node + name.slice(dot)
+}
+
+// Clona o clip Mixamo com os nomes de osso do RPM e a posição reescalada.
+function retargetMixamo(clip: AnimationClip, posScale = ANIM_POS_SCALE): AnimationClip {
+  const c = clip.clone()
+  for (const track of c.tracks) {
+    track.name = retargetTrackName(track.name)
+    if (track.name.endsWith(".position")) {
+      for (let i = 0; i < track.values.length; i++) track.values[i] *= posScale
+    }
+  }
+  return c
+}
+
 // Offset BASE sobre o assento (a rotação é fina; a orientação vem do pai).
 const BASE_POSITION: [number, number, number] = [0, 0, 0.25]
 const BASE_ROTATION: [number, number, number] = [0, 0, 0]
-const BASE_SCALE = 0.06 // Mixamo FBX vem em cm; para .glb (metros) use ~7
 
-/** O topo do assento varia por modelo de cadeira comprado na loja; este mapa
- *  reposiciona o personagem no assento de cada uma. Chaves = ids da loja. */
+/** Escala por UNIDADE do modelo: FBX Mixamo vem em cm (~180 alto → 0.06);
+ *  GLB (Ready Player Me) vem em metros (~1.7 → ~6.5). Ajuste fino ao trocar. */
+const MODEL_SCALE: Record<"fbx" | "glb", number> = { fbx: 0.06, glb: 6.5 }
+
+/** O offset no assento varia por modelo de cadeira comprado na loja; este
+ *  mapa reposiciona o personagem no assento de cada uma. Chaves = ids da loja. */
 export const offsetPorCadeira: Record<
   string,
-  { position?: [number, number, number]; rotation?: [number, number, number]; scale?: number }
+  { position?: [number, number, number]; rotation?: [number, number, number] }
 > = {
-  padrao: { position: [0, 0, 0.25], scale: 0.06 },
-  "cadeira-ergonomica": { position: [0, 0, 0.25], scale: 0.06 },
-  "cadeira-gamer": { position: [0, 0.2, 0.3], scale: 0.062 },
+  padrao: { position: [0, 0, 0.25] },
+  "cadeira-ergonomica": { position: [0, 0, 0.25] },
+  "cadeira-gamer": { position: [0, 0.2, 0.3] },
 }
 
 interface SeatedCharacterProps {
@@ -110,12 +141,19 @@ function FbxBody({ url, position, rotation, scale, tint, onClick }: BodyProps) {
 function GlbBody({ url, position, rotation, scale, tint, onClick }: BodyProps) {
   const ref = useRef<Group>(null)
   const { scene, animations } = useGLTF(url)
+  // avatares RPM não têm animação → carregamos a fonte Mixamo para retargetar
+  const animSrc = useFBX(ANIM_SOURCE_URL)
   const model = useMemo(() => {
     const m = cloneSkeleton(scene)
     applyTint(m, tint)
     return m
   }, [scene, tint])
-  usePlaySeated(model, animations, ref)
+  const clips = useMemo(() => {
+    if (animations && animations.length) return animations // glb já animado
+    const src = animSrc.animations.slice().sort((a, b) => b.duration - a.duration)[0]
+    return src ? [retargetMixamo(src)] : []
+  }, [animations, animSrc])
+  usePlaySeated(model, clips, ref)
   return (
     <group ref={ref} position={position} rotation={rotation} scale={scale} onClick={onClick}>
       <primitive object={model} />
@@ -125,15 +163,16 @@ function GlbBody({ url, position, rotation, scale, tint, onClick }: BodyProps) {
 
 export function SeatedCharacter({ modelUrl = DEFAULT_MODEL_URL, chairId = "padrao", tint, onClick }: SeatedCharacterProps) {
   const off = offsetPorCadeira[chairId] ?? offsetPorCadeira.padrao
+  const isFbx = modelUrl.toLowerCase().endsWith(".fbx")
   const shared = {
     url: modelUrl,
     position: off.position ?? BASE_POSITION,
     rotation: off.rotation ?? BASE_ROTATION,
-    scale: off.scale ?? BASE_SCALE,
+    scale: isFbx ? MODEL_SCALE.fbx : MODEL_SCALE.glb,
     tint,
     onClick,
   }
-  return modelUrl.toLowerCase().endsWith(".fbx") ? <FbxBody {...shared} /> : <GlbBody {...shared} />
+  return isFbx ? <FbxBody {...shared} /> : <GlbBody {...shared} />
 }
 
 // Pré-carrega o modelo padrão (cache por URL no drei → reuso barato entre
