@@ -6,6 +6,7 @@ import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
 import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial } from "three"
 import { OfficeFigure3D } from "@/components/office-figure-3d"
 import { SeatedCharacter } from "@/components/seated-character"
+import { TOON_GRADIENT, toonifyObject } from "@/lib/toon"
 import type { AvatarConfig } from "@/lib/avatar"
 
 // Fallback resiliente: se o .glb do personagem não existir (404) ou falhar,
@@ -54,11 +55,11 @@ const LIGHT: Record<Phase, { key: string; keyI: number; hemiI: number; lampI: nu
   night: { key: "#cdd8ff", keyI: 1.35, hemiI: 1.05, lampI: 55, bg: "#2b2f4a" },
 }
 
-const WALL = "#a9c6dc"
-const WALL_SIDE = "#98b7cf"
-const FLOOR = "#c08a55"
-const WOOD = "#8a6f4e"
-const WOOD_D = "#705534"
+const WALL = "#8fc0ec"
+const WALL_SIDE = "#79b0e2"
+const FLOOR = "#e0964a"
+const WOOD = "#b07d40"
+const WOOD_D = "#8c5f2c"
 
 // Itens da loja que a cena 3D já reflete (cor). Decorativos (planta, gato,
 // estante…) viram malhas numa fase seguinte. `pick` acha o 1º id equipado.
@@ -95,6 +96,7 @@ function OfficeChairGlb({ color }: { color?: string }) {
         m.material = Array.isArray(m.material) ? m.material.map(tint) : tint(m.material)
       }
     })
+    toonifyObject(c) // cell-shading
     return c
   }, [scene, color])
   return <primitive object={chair} />
@@ -123,6 +125,7 @@ function PetBeagle() {
       }
       m.material = Array.isArray(m.material) ? m.material.map(tint) : tint(m.material)
     })
+    toonifyObject(c) // cell-shading
     return c
   }, [scene])
   useFrame((state) => {
@@ -145,17 +148,17 @@ function Desk({ working }: { working?: boolean }) {
       {/* tampo em L */}
       <mesh position={[0, 5.4, 0]} castShadow receiveShadow>
         <boxGeometry args={[10, 0.6, 3.4]} />
-        <meshStandardMaterial color={WOOD} />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color={WOOD} />
       </mesh>
       <mesh position={[4.7, 5.4, 2.2]} castShadow receiveShadow>
         <boxGeometry args={[3.4, 0.6, 4]} />
-        <meshStandardMaterial color={WOOD} />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color={WOOD} />
       </mesh>
       {/* pés */}
       {[-4.4, 4.4].map((x) => (
         <mesh key={x} position={[x, 2.6, 0.2]} castShadow>
           <boxGeometry args={[0.5, 5.4, 3]} />
-          <meshStandardMaterial color={WOOD_D} />
+          <meshToonMaterial gradientMap={TOON_GRADIENT} color={WOOD_D} />
         </mesh>
       ))}
       {/* dois monitores — telas brilham mais quando está trabalhando */}
@@ -163,22 +166,22 @@ function Desk({ working }: { working?: boolean }) {
         <group key={i} position={[x, 6.6, -0.4]}>
           <mesh castShadow>
             <boxGeometry args={[3, 1.9, 0.25]} />
-            <meshStandardMaterial color="#1f2530" />
+            <meshToonMaterial gradientMap={TOON_GRADIENT} color="#1f2530" />
           </mesh>
           <mesh position={[0, 0, 0.14]}>
             <planeGeometry args={[2.7, 1.6]} />
-            <meshStandardMaterial color="#3b82f6" emissive="#3b82f6" emissiveIntensity={working ? 1.2 : 0.35} />
+            <meshToonMaterial gradientMap={TOON_GRADIENT} color="#3b82f6" emissive="#3b82f6" emissiveIntensity={working ? 1.2 : 0.35} />
           </mesh>
           <mesh position={[0, -1.2, 0.2]}>
             <boxGeometry args={[0.4, 0.6, 0.4]} />
-            <meshStandardMaterial color="#3a3f4a" />
+            <meshToonMaterial gradientMap={TOON_GRADIENT} color="#3a3f4a" />
           </mesh>
         </group>
       ))}
       {/* teclado */}
       <mesh position={[-0.6, 5.75, 1.2]} castShadow>
         <boxGeometry args={[3, 0.25, 1]} />
-        <meshStandardMaterial color="#2b2f38" />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color="#2b2f38" />
       </mesh>
     </group>
   )
@@ -195,11 +198,11 @@ function Chair({ color = "#4a5568" }: { color?: string }) {
           <group key={deg} rotation={[0, a, 0]}>
             <mesh position={[0, 0.2, 1.5]} castShadow>
               <boxGeometry args={[0.4, 0.3, 3]} />
-              <meshStandardMaterial color="#54545e" />
+              <meshToonMaterial gradientMap={TOON_GRADIENT} color="#54545e" />
             </mesh>
             <mesh position={[0, 0.15, 2.9]} castShadow>
               <cylinderGeometry args={[0.35, 0.35, 0.5, 12]} />
-              <meshStandardMaterial color={dark} />
+              <meshToonMaterial gradientMap={TOON_GRADIENT} color={dark} />
             </mesh>
           </group>
         )
@@ -207,23 +210,23 @@ function Chair({ color = "#4a5568" }: { color?: string }) {
       {/* coluna a gás */}
       <mesh position={[0, 1.4, 0]} castShadow>
         <cylinderGeometry args={[0.35, 0.35, 2.4, 14]} />
-        <meshStandardMaterial color="#5a5a64" />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color="#5a5a64" />
       </mesh>
       {/* assento */}
       <mesh position={[0, 2.5, 0.3]} castShadow receiveShadow>
         <boxGeometry args={[3.6, 0.5, 3.4]} />
-        <meshStandardMaterial color={color} />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color={color} />
       </mesh>
       {/* encosto (atrás) */}
       <mesh position={[0, 5.2, -1.4]} rotation={[-0.12, 0, 0]} castShadow>
         <boxGeometry args={[3.4, 4.8, 0.5]} />
-        <meshStandardMaterial color={color} />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color={color} />
       </mesh>
       {/* braços */}
       {[-1.9, 1.9].map((x) => (
         <mesh key={x} position={[x, 3.4, 0.3]} castShadow>
           <boxGeometry args={[0.4, 0.4, 2.4]} />
-          <meshStandardMaterial color="#3f4552" />
+          <meshToonMaterial gradientMap={TOON_GRADIENT} color="#3f4552" />
         </mesh>
       ))}
     </group>
@@ -258,21 +261,21 @@ function Scene({ avatar, working, onAvatarClick, phase, equipped, skinUrl, skinT
       {/* piso */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[26, 26]} />
-        <meshStandardMaterial color={floorColor} />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color={floorColor} />
       </mesh>
       {/* tapete */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 2]} receiveShadow>
         <circleGeometry args={[5.5, 40]} />
-        <meshStandardMaterial color="#b76e79" />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color="#e37a92" />
       </mesh>
       {/* duas paredes */}
       <mesh position={[0, 8, -8]} receiveShadow>
         <planeGeometry args={[26, 16]} />
-        <meshStandardMaterial color={wallColor} />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color={wallColor} />
       </mesh>
       <mesh position={[-13, 8, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[26, 16]} />
-        <meshStandardMaterial color={wallSide} />
+        <meshToonMaterial gradientMap={TOON_GRADIENT} color={wallSide} />
       </mesh>
 
       <Desk working={working} />

@@ -5,6 +5,7 @@ import { useGLTF, useFBX } from "@react-three/drei"
 import { useFrame } from "@react-three/fiber"
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
 import { AnimationMixer, Box3, Color, Mesh, MeshStandardMaterial, Vector3, type AnimationClip, type Material, type Object3D } from "three"
+import { toonifyObject } from "@/lib/toon"
 
 // ─────────────────────────────────────────────────────────────────────────
 // Personagem sentado 3D. Modelo dirigido por prop (modelUrl) → skins/amigos
@@ -102,6 +103,7 @@ function usePreparedModel(source: Object3D, tint?: string) {
   return useMemo(() => {
     const model = cloneSkeleton(source)
     applyTint(model, tint)
+    toonifyObject(model) // vibe desenho animado (cell-shading)
     model.traverse((o) => {
       const mesh = o as Mesh
       if (mesh.isMesh) mesh.castShadow = true
