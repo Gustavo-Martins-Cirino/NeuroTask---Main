@@ -100,7 +100,34 @@ function OfficeChairGlb({ color }: { color?: string }) {
 }
 useGLTF.preload("/models/office-chair.glb")
 
-function Desk() {
+// Pet (Beagle GLB) — ocupa o slot "pet-gato" da loja. Auto-escala pela bbox
+// real (~3 un de altura), tinge de marrom (o modelo é sem textura) e senta no
+// tapete virado para o dono.
+function PetBeagle() {
+  const { scene } = useGLTF("/models/pet-beagle.glb")
+  const dog = useMemo(() => {
+    const c = scene.clone(true)
+    const h0 = new Box3().setFromObject(c).getSize(new Vector3()).y || 1
+    c.scale.setScalar(3 / h0)
+    const brown = new Color("#a4703c")
+    c.traverse((o) => {
+      const m = o as Mesh
+      if (!m.isMesh) return
+      m.castShadow = true
+      const tint = (mat: Material): Material => {
+        const cl = (mat as MeshStandardMaterial).clone()
+        if (!cl.map) cl.color = brown
+        return cl
+      }
+      m.material = Array.isArray(m.material) ? m.material.map(tint) : tint(m.material)
+    })
+    return c
+  }, [scene])
+  return <primitive object={dog} position={[-4, 0, 4]} rotation={[0, Math.PI * 0.25, 0]} />
+}
+useGLTF.preload("/models/pet-beagle.glb")
+
+function Desk({ working }: { working?: boolean }) {
   return (
     <group position={[0, 0, -3.6]}>
       {/* tampo em L */}
@@ -119,7 +146,7 @@ function Desk() {
           <meshStandardMaterial color={WOOD_D} />
         </mesh>
       ))}
-      {/* dois monitores */}
+      {/* dois monitores — telas brilham mais quando está trabalhando */}
       {[-2.3, 1.1].map((x, i) => (
         <group key={i} position={[x, 6.6, -0.4]}>
           <mesh castShadow>
@@ -128,7 +155,7 @@ function Desk() {
           </mesh>
           <mesh position={[0, 0, 0.14]}>
             <planeGeometry args={[2.7, 1.6]} />
-            <meshStandardMaterial color="#3b82f6" emissive="#1e3a8a" emissiveIntensity={0.5} />
+            <meshStandardMaterial color="#3b82f6" emissive="#3b82f6" emissiveIntensity={working ? 1.2 : 0.35} />
           </mesh>
           <mesh position={[0, -1.2, 0.2]}>
             <boxGeometry args={[0.4, 0.6, 0.4]} />
@@ -236,7 +263,13 @@ function Scene({ avatar, working, onAvatarClick, phase, equipped, skinUrl, skinT
         <meshStandardMaterial color={wallSide} />
       </mesh>
 
-      <Desk />
+      <Desk working={working} />
+      {/* pet (Beagle) — no slot "pet-gato" da loja */}
+      {equipped?.has("pet-gato") && (
+        <Suspense fallback={null}>
+          <PetBeagle />
+        </Suspense>
+      )}
       {/* conjunto cadeira+pessoa girado para ficar de frente para a mesa
           (-z), encostado nela; câmera 3/4 mostra as costas + parte da roupa.
           O personagem é FILHO deste mesmo grupo → herda a orientação. */}

@@ -40,7 +40,7 @@ export const CATALOG: ShopItem[] = [
   { id: "estante", name: "Estante de livros", price: 80, category: "decor", emoji: "📚", desc: "Sua biblioteca pessoal" },
   { id: "quadro-neon", name: "Neon \"focus\"", price: 90, category: "decor", emoji: "🔆", desc: "Letreiro neon na parede" },
   { id: "janela-cidade", name: "Janela · Cidade", price: 100, category: "decor", emoji: "🌆", desc: "Vista para a cidade" },
-  { id: "pet-gato", name: "Gato de estimação", price: 120, category: "decor", emoji: "🐈", desc: "Companhia de produtividade" },
+  { id: "pet-gato", name: "Cachorro (Beagle)", price: 120, category: "decor", emoji: "🐕", desc: "Companhia 3D no escritório" },
   { id: "trofeu", name: "Troféu dourado", price: 150, category: "decor", emoji: "🏆", desc: "Prova de que você chegou longe" },
   { id: "cadeira-ergonomica", name: "Cadeira ergonômica", price: 60, category: "cadeira", emoji: "🪑", desc: "Adeus, dor nas costas" },
   { id: "cadeira-gamer", name: "Cadeira gamer", price: 130, category: "cadeira", emoji: "🎮", desc: "Vermelha e imponente" },
