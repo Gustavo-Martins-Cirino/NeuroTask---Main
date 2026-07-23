@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
-import { useGLTF, useFBX, useAnimations } from "@react-three/drei"
+import { useEffect, useMemo } from "react"
+import { useGLTF, useFBX } from "@react-three/drei"
+import { useFrame } from "@react-three/fiber"
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
-import { Box3, Color, Mesh, MeshStandardMaterial, Vector3, type AnimationClip, type Group, type Material, type Object3D } from "three"
+import { AnimationMixer, Box3, Color, Mesh, MeshStandardMaterial, Vector3, type AnimationClip, type Material, type Object3D } from "three"
 
 // ─────────────────────────────────────────────────────────────────────────
 // Personagem sentado 3D. Modelo dirigido por prop (modelUrl) → skins/amigos
@@ -112,50 +113,55 @@ function usePreparedModel(source: Object3D, tint?: string) {
   }, [source, tint])
 }
 
-// Toca o clip de sentar em loop (por nome, ou o de maior duração).
-function usePlaySeated(clips: AnimationClip[], ref: React.RefObject<Group | null>) {
-  const { actions, names } = useAnimations(clips, ref)
+// Escolhe o clip de sentar: o de nome CLIP_NAME, senão o de MAIOR duração.
+function pickSeatedClip(clips: AnimationClip[]): AnimationClip | undefined {
+  return clips.find((c) => c.name === CLIP_NAME) ?? clips.slice().sort((a, b) => b.duration - a.duration)[0]
+}
+
+// Toca o clip com um AnimationMixer PRÓPRIO, avançado a cada frame por useFrame.
+// Mais robusto que o useAnimations do drei: ao trocar de skin (remount), o mixer
+// é recriado e a animação SEMPRE começa — some o T-pose que exigia refresh.
+function useSeatedMixer(model: Object3D, clip: AnimationClip | undefined) {
+  const mixer = useMemo(() => new AnimationMixer(model), [model])
   useEffect(() => {
-    let action = CLIP_NAME ? actions[CLIP_NAME] : undefined
-    if (!action) {
-      const longest = clips.slice().sort((a, b) => b.duration - a.duration)[0]
-      action = longest ? actions[longest.name] : names.length ? actions[names[0]] : undefined
-    }
-    action?.reset().fadeIn(0.3).play()
+    if (!clip) return
+    const action = mixer.clipAction(clip)
+    action.reset().play()
     return () => {
-      action?.fadeOut(0.2)
+      action.stop()
+      mixer.uncacheClip(clip)
     }
-  }, [actions, names, clips])
+  }, [mixer, clip])
+  useFrame((_, delta) => mixer.update(delta))
 }
 
 type BodyProps = { url: string; position: [number, number, number]; rotation: [number, number, number]; tint?: string; onClick?: () => void }
 
 function FbxBody({ url, position, rotation, tint, onClick }: BodyProps) {
-  const ref = useRef<Group>(null)
   const fbx = useFBX(url)
   const { model, scale } = usePreparedModel(fbx, tint)
-  usePlaySeated(fbx.animations, ref) // FBX Mixamo já traz a animação
+  const clip = useMemo(() => pickSeatedClip(fbx.animations), [fbx]) // FBX Mixamo já traz a animação
+  useSeatedMixer(model, clip)
   return (
-    <group ref={ref} position={position} rotation={rotation} scale={scale} onClick={onClick}>
+    <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
       <primitive object={model} />
     </group>
   )
 }
 
 function GlbBody({ url, position, rotation, tint, onClick }: BodyProps) {
-  const ref = useRef<Group>(null)
   // "/draco/" = decoder auto-hospedado (o human.glb é comprimido com Draco).
   const { scene, animations } = useGLTF(url, "/draco/")
   const animSrc = useFBX(ANIM_SOURCE_URL) // fonte da animação de sentar
   const { model, scale, posScale } = usePreparedModel(scene, tint)
-  const clips = useMemo(() => {
-    if (animations && animations.length) return animations // glb já animado
-    const src = animSrc.animations.slice().sort((a, b) => b.duration - a.duration)[0]
-    return src ? [retargetClip(src, model, posScale)] : []
+  const clip = useMemo(() => {
+    if (animations && animations.length) return pickSeatedClip(animations) // glb já animado
+    const src = pickSeatedClip(animSrc.animations)
+    return src ? retargetClip(src, model, posScale) : undefined
   }, [animations, animSrc, model, posScale])
-  usePlaySeated(clips, ref)
+  useSeatedMixer(model, clip)
   return (
-    <group ref={ref} position={position} rotation={rotation} scale={scale} onClick={onClick}>
+    <group position={position} rotation={rotation} scale={scale} onClick={onClick}>
       <primitive object={model} />
     </group>
   )

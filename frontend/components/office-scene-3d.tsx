@@ -1,9 +1,9 @@
 "use client"
 
-import { Component, Suspense, useEffect, useMemo, useState, type ReactNode } from "react"
-import { Canvas } from "@react-three/fiber"
+import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { Canvas, useFrame } from "@react-three/fiber"
 import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
-import { ACESFilmicToneMapping, Box3, Color, Mesh, Vector3, type Material, type MeshStandardMaterial } from "three"
+import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial } from "three"
 import { OfficeFigure3D } from "@/components/office-figure-3d"
 import { SeatedCharacter } from "@/components/seated-character"
 import type { AvatarConfig } from "@/lib/avatar"
@@ -80,6 +80,7 @@ function OfficeChairGlb({ color }: { color?: string }) {
     const c = scene.clone(true)
     const h0 = new Box3().setFromObject(c).getSize(new Vector3()).y || 1
     c.scale.setScalar(8 / h0)
+    c.rotation.y = Math.PI // encosto ATRÁS de quem senta (no objeto, não no <primitive>)
     c.traverse((o) => {
       const m = o as Mesh
       if (!m.isMesh) return
@@ -96,15 +97,16 @@ function OfficeChairGlb({ color }: { color?: string }) {
     })
     return c
   }, [scene, color])
-  return <primitive object={chair} rotation={[0, Math.PI, 0]} />
+  return <primitive object={chair} />
 }
 useGLTF.preload("/models/office-chair.glb")
 
-// Pet (Beagle GLB) — ocupa o slot "pet-gato" da loja. Auto-escala pela bbox
-// real (~3 un de altura), tinge de marrom (o modelo é sem textura) e senta no
-// tapete virado para o dono.
+// Pet (Beagle GLB, item "pet-cachorro"). Auto-escala pela bbox real (~3 un),
+// tinge de marrom (modelo sem textura) e ganha vida com useFrame: pulinho
+// suave + olhar de um lado pro outro no tapete, virado para o dono.
 function PetBeagle() {
   const { scene } = useGLTF("/models/pet-beagle.glb")
+  const ref = useRef<Group>(null)
   const dog = useMemo(() => {
     const c = scene.clone(true)
     const h0 = new Box3().setFromObject(c).getSize(new Vector3()).y || 1
@@ -123,7 +125,17 @@ function PetBeagle() {
     })
     return c
   }, [scene])
-  return <primitive object={dog} position={[-4, 0, 4]} rotation={[0, Math.PI * 0.25, 0]} />
+  useFrame((state) => {
+    if (!ref.current) return
+    const t = state.clock.elapsedTime
+    ref.current.position.y = Math.abs(Math.sin(t * 2.2)) * 0.18 // pulinho
+    ref.current.rotation.y = Math.PI * 0.25 + Math.sin(t * 0.7) * 0.3 // olha em volta
+  })
+  return (
+    <group ref={ref} position={[-4, 0, 4]}>
+      <primitive object={dog} />
+    </group>
+  )
 }
 useGLTF.preload("/models/pet-beagle.glb")
 
@@ -264,8 +276,8 @@ function Scene({ avatar, working, onAvatarClick, phase, equipped, skinUrl, skinT
       </mesh>
 
       <Desk working={working} />
-      {/* pet (Beagle) — no slot "pet-gato" da loja */}
-      {equipped?.has("pet-gato") && (
+      {/* pet (Beagle) — item comprável "pet-cachorro" */}
+      {equipped?.has("pet-cachorro") && (
         <Suspense fallback={null}>
           <PetBeagle />
         </Suspense>
