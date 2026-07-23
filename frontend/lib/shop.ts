@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/client"
+import { SKINS } from "@/lib/skins"
 
 // Loja cosmética do Escritório (Fase 3). Os PREÇOS autoritativos moram no
 // banco (shop_items) e a compra é a RPC buy_item — aqui fica só o catálogo
 // visual (nome/emoji/slot) e os helpers de estado.
 
-export type ShopCategory = "decor" | "cadeira" | "setup" | "parede" | "piso"
+export type ShopCategory = "decor" | "cadeira" | "setup" | "parede" | "piso" | "skin"
 
 export interface ShopItem {
   id: string
@@ -16,6 +17,7 @@ export interface ShopItem {
 }
 
 export const CATEGORY_LABELS: Record<ShopCategory, string> = {
+  skin: "Skins",
   decor: "Decoração",
   cadeira: "Cadeira",
   setup: "Setup",
@@ -24,10 +26,12 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
 }
 
 // Slots exclusivos: equipar um desequipa os irmãos (decor é livre).
-export const EXCLUSIVE_CATEGORIES: ShopCategory[] = ["cadeira", "setup", "parede", "piso"]
+export const EXCLUSIVE_CATEGORIES: ShopCategory[] = ["skin", "cadeira", "setup", "parede", "piso"]
 
 // Metadados visuais por id — preço aqui é só exibição; o cobrado é o do banco.
+// Skins vêm primeiro (feature-título do Escritório 3D).
 export const CATALOG: ShopItem[] = [
+  ...SKINS,
   { id: "planta-pequena", name: "Plantinha", price: 20, category: "decor", emoji: "🪴", desc: "Um toque de vida na mesa" },
   { id: "luminaria", name: "Luminária", price: 30, category: "decor", emoji: "💡", desc: "Luz quentinha de canto" },
   { id: "quadro-montanhas", name: "Quadro · Montanhas", price: 40, category: "decor", emoji: "🖼️", desc: "Paisagem pra respirar" },

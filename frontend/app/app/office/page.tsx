@@ -22,8 +22,9 @@ import {
 import { XP_UPDATED_EVENT } from "@/lib/gamification"
 import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
 import { fetchAvatar, saveAvatar, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar"
+import { resolveSkin } from "@/lib/skins"
 
-const CATEGORY_ORDER: ShopCategory[] = ["decor", "setup", "cadeira", "parede", "piso"]
+const CATEGORY_ORDER: ShopCategory[] = ["skin", "decor", "setup", "cadeira", "parede", "piso"]
 
 export default function OfficePage() {
   const [loading, setLoading] = useState(true)
@@ -75,6 +76,9 @@ export default function OfficePage() {
     s.add(previewItem.id)
     return s
   }, [equippedSet, previewItem])
+
+  // Skin do personagem (modelo 3D + cor) a partir do que está equipado/prévia.
+  const skin = useMemo(() => resolveSkin(sceneSet), [sceneSet])
 
   const handleBuy = async (item: ShopItem) => {
     setBusyItem(item.id)
@@ -155,6 +159,8 @@ export default function OfficePage() {
                 avatar={avatarCfg}
                 working={stats?.working}
                 equipped={sceneSet}
+                skinUrl={skin.modelUrl}
+                skinTint={skin.tint}
                 onAvatarClick={() => setAvatarOpen(true)}
                 className="block w-full"
               />

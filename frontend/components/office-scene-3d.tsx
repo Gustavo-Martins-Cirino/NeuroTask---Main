@@ -31,6 +31,9 @@ interface OfficeScene3DProps {
   onAvatarClick?: () => void
   /** Ids de itens equipados/prévia — a cena reflete cor de parede/piso/cadeira. */
   equipped?: Set<string>
+  /** Skin do personagem: modelo 3D + cor (manequim). Vem de resolveSkin. */
+  skinUrl?: string
+  skinTint?: string
   className?: string
 }
 
@@ -188,7 +191,7 @@ function Chair({ color = "#4a5568" }: { color?: string }) {
   )
 }
 
-function Scene({ avatar, working, onAvatarClick, phase, equipped }: Required<Pick<OfficeScene3DProps, "onAvatarClick">> & { avatar?: AvatarConfig | null; working?: boolean; phase: Phase; equipped?: Set<string> }) {
+function Scene({ avatar, working, onAvatarClick, phase, equipped, skinUrl, skinTint }: Required<Pick<OfficeScene3DProps, "onAvatarClick">> & { avatar?: AvatarConfig | null; working?: boolean; phase: Phase; equipped?: Set<string>; skinUrl?: string; skinTint?: string }) {
   const L = LIGHT[phase]
   const wallColor = pick(WALL_COLORS, equipped, WALL)
   const wallSide = pick(WALL_COLORS, equipped, WALL_SIDE)
@@ -244,11 +247,10 @@ function Scene({ avatar, working, onAvatarClick, phase, equipped }: Required<Pic
             <OfficeChairGlb color={chairColor || undefined} />
           </Suspense>
         </GlbBoundary>
-        {/* .glb rigado (SeatedCharacter) quando existir; senão, o procedural */}
+        {/* personagem por skin (modelo + cor); fallback procedural se falhar */}
         <GlbBoundary fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
           <Suspense fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
-            {/* tint recolore o manequim com a cor de roupa do editor de avatar */}
-            <SeatedCharacter chairId="padrao" tint={avatar?.outfitColor} onClick={onAvatarClick} />
+            <SeatedCharacter key={skinUrl} chairId="padrao" modelUrl={skinUrl} tint={skinTint} onClick={onAvatarClick} />
           </Suspense>
         </GlbBoundary>
       </group>
@@ -258,7 +260,7 @@ function Scene({ avatar, working, onAvatarClick, phase, equipped }: Required<Pic
   )
 }
 
-export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {}, equipped, className }: OfficeScene3DProps) {
+export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {}, equipped, skinUrl, skinTint, className }: OfficeScene3DProps) {
   const [phase, setPhase] = useState<Phase>("day")
   useEffect(() => {
     const tick = () => setPhase(phaseOf(new Date().getHours()))
@@ -276,7 +278,7 @@ export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {
         style={{ width: "100%", aspectRatio: "480 / 340" }}
       >
         <OrthographicCamera makeDefault position={[16, 14, 16]} zoom={20} near={-100} far={200} onUpdate={(c) => c.lookAt(0, 4, 0)} />
-        <Scene avatar={avatar} working={working} onAvatarClick={onAvatarClick} phase={phase} equipped={equipped} />
+        <Scene avatar={avatar} working={working} onAvatarClick={onAvatarClick} phase={phase} equipped={equipped} skinUrl={skinUrl} skinTint={skinTint} />
       </Canvas>
     </div>
   )
