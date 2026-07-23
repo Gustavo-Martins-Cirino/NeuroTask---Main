@@ -43,6 +43,8 @@ export const offsetPorCadeira: Record<
   padrao: { position: [0, 1.0, 0.1] },
   "cadeira-ergonomica": { position: [0, 1.0, 0.1] },
   "cadeira-gamer": { position: [0, 1.0, 0.1] },
+  // Cadeira que já vem na sala GLB (casa): assento no y natural, sem elevação.
+  casa: { position: [0, 0, 0] },
 }
 
 interface SeatedCharacterProps {

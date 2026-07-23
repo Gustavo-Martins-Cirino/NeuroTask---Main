@@ -379,12 +379,37 @@ function Decor({ equipped }: { equipped?: Set<string> }) {
   )
 }
 
-function Scene({ avatar, working, onAvatarClick, phase, equipped, skinUrl, skinTint }: Required<Pick<OfficeScene3DProps, "onAvatarClick">> & { avatar?: AvatarConfig | null; working?: boolean; phase: Phase; equipped?: Set<string>; skinUrl?: string; skinTint?: string }) {
+// Sala base — GLB do usuário ("casa"). Centraliza pela bbox (piso em y=0) e
+// projeta/recebe sombra. Já traz mesa, monitor, gaveteiro, impressora e a
+// cadeira onde o personagem senta.
+function Casa() {
+  const { scene } = useGLTF("/models/casa.glb")
+  const room = useMemo(() => {
+    const c = scene.clone(true)
+    const bb = new Box3().setFromObject(c)
+    const ctr = bb.getCenter(new Vector3())
+    c.position.set(-ctr.x, -bb.min.y, -ctr.z)
+    c.traverse((o) => {
+      const m = o as Mesh
+      if (!m.isMesh) return
+      m.castShadow = true
+      m.receiveShadow = true
+    })
+    return c
+  }, [scene])
+  return <primitive object={room} />
+}
+useGLTF.preload("/models/casa.glb")
+
+// Cadeira da sala (coords nativas do GLB) + escala do personagem (~6 de altura
+// na sala; SeatedCharacter mira 10.8, daí o fator). Enquadramento da câmera.
+const CASA_CHAIR: [number, number, number] = [3.8, 0, -1.0]
+const CHAR_SCALE = 6 / 10.8
+const CAM_D = 13.3
+const CAM_ASP = 480 / 340
+
+function Scene({ avatar, working, onAvatarClick, phase, skinUrl, skinTint }: Required<Pick<OfficeScene3DProps, "onAvatarClick">> & { avatar?: AvatarConfig | null; working?: boolean; phase: Phase; skinUrl?: string; skinTint?: string }) {
   const L = LIGHT[phase]
-  const wallColor = pick(WALL_COLORS, equipped, WALL)
-  const wallSide = pick(WALL_COLORS, equipped, WALL_SIDE)
-  const floorColor = pick(FLOOR_COLORS, equipped, FLOOR)
-  const chairColor = pick(CHAIR_COLORS, equipped, "")
   return (
     <>
       {/* fill macio (céu/chão) + key quente com sombra + fill frio + luminária */}
@@ -395,68 +420,37 @@ function Scene({ avatar, working, onAvatarClick, phase, equipped, skinUrl, skinT
         position={[9, 16, 11]}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0004}
-        shadow-camera-left={-14}
-        shadow-camera-right={14}
-        shadow-camera-top={14}
-        shadow-camera-bottom={-14}
+        shadow-bias={-0.0005}
+        shadow-camera-left={-9}
+        shadow-camera-right={9}
+        shadow-camera-top={9}
+        shadow-camera-bottom={-9}
+        shadow-camera-near={1}
+        shadow-camera-far={60}
       />
       <directionalLight color="#bcd0ff" intensity={0.5} position={[-10, 8, -6]} />
-      <pointLight color="#ffcf8a" intensity={L.lampI} distance={22} decay={2} position={[4.5, 7, -1.2]} />
+      <pointLight color="#ffcf8a" intensity={4 + L.lampI * 0.08} distance={14} decay={2} position={[3.8, 5.5, -3]} />
 
-      {/* piso */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[26, 26]} />
-        <meshToonMaterial gradientMap={TOON_GRADIENT} color={floorColor} />
-      </mesh>
-      {/* tapete */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 2]} receiveShadow>
-        <circleGeometry args={[5.5, 40]} />
-        <meshToonMaterial gradientMap={TOON_GRADIENT} color="#e37a92" />
-      </mesh>
-      {/* duas paredes */}
-      <mesh position={[0, 8, -8]} receiveShadow>
-        <planeGeometry args={[26, 16]} />
-        <meshToonMaterial gradientMap={TOON_GRADIENT} color={wallColor} />
-      </mesh>
-      <mesh position={[-13, 8, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-        <planeGeometry args={[26, 16]} />
-        <meshToonMaterial gradientMap={TOON_GRADIENT} color={wallSide} />
-      </mesh>
+      {/* sala base (GLB) */}
+      <Suspense fallback={null}>
+        <Casa />
+      </Suspense>
 
-      <Desk working={working} />
-      {/* pet (Beagle) — item comprável "pet-cachorro" */}
-      {equipped?.has("pet-cachorro") && (
-        <Suspense fallback={null}>
-          <PetBeagle />
-        </Suspense>
-      )}
-      {/* conjunto cadeira+pessoa girado para ficar de frente para a mesa
-          (-z), encostado nela; câmera 3/4 mostra as costas + parte da roupa.
-          O personagem é FILHO deste mesmo grupo → herda a orientação. */}
-      <group rotation={[0, Math.PI, 0]} position={[0, 0, 0.4]}>
-        {/* cadeira GLB (com fallback procedural se o arquivo falhar) */}
-        <GlbBoundary fallback={<Chair color={chairColor || undefined} />}>
-          <Suspense fallback={<Chair color={chairColor || undefined} />}>
-            <OfficeChairGlb color={chairColor || undefined} />
-          </Suspense>
-        </GlbBoundary>
-        {/* personagem por skin (modelo + cor); fallback procedural se falhar */}
+      {/* personagem sentado na cadeira da sala (a skin dirige modelo + cor) */}
+      <group position={CASA_CHAIR} rotation={[0, Math.PI, 0]} scale={CHAR_SCALE}>
         <GlbBoundary fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
           <Suspense fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
-            <SeatedCharacter key={skinUrl} chairId="padrao" modelUrl={skinUrl} tint={skinTint} onClick={onAvatarClick} />
+            <SeatedCharacter key={skinUrl} chairId="casa" modelUrl={skinUrl} tint={skinTint} onClick={onAvatarClick} />
           </Suspense>
         </GlbBoundary>
       </group>
 
-      <Decor equipped={equipped} />
-
-      <ContactShadows position={[0, 0.03, 0]} opacity={0.35} scale={20} blur={2.2} far={8} />
+      <ContactShadows position={[3, 0.02, -0.5]} opacity={0.32} scale={16} blur={2.4} far={7} />
     </>
   )
 }
 
-export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {}, equipped, skinUrl, skinTint, className }: OfficeScene3DProps) {
+export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {}, skinUrl, skinTint, className }: OfficeScene3DProps) {
   const [phase, setPhase] = useState<Phase>("day")
   useEffect(() => {
     const tick = () => setPhase(phaseOf(new Date().getHours()))
@@ -473,8 +467,19 @@ export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {
         gl={{ toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.15 }}
         style={{ width: "100%", aspectRatio: "480 / 340" }}
       >
-        <OrthographicCamera makeDefault position={[16, 14, 16]} zoom={20} near={-100} far={200} onUpdate={(c) => c.lookAt(0, 4, 0)} />
-        <Scene avatar={avatar} working={working} onAvatarClick={onAvatarClick} phase={phase} equipped={equipped} skinUrl={skinUrl} skinTint={skinTint} />
+        <OrthographicCamera
+          makeDefault
+          manual
+          position={[16, 14, 16]}
+          left={(-CAM_D * CAM_ASP) / 2}
+          right={(CAM_D * CAM_ASP) / 2}
+          top={CAM_D / 2}
+          bottom={-CAM_D / 2}
+          near={-100}
+          far={200}
+          onUpdate={(c) => c.lookAt(3.8, 2.6, -1.0)}
+        />
+        <Scene avatar={avatar} working={working} onAvatarClick={onAvatarClick} phase={phase} skinUrl={skinUrl} skinTint={skinTint} />
       </Canvas>
     </div>
   )
