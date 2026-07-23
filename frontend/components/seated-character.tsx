@@ -144,7 +144,8 @@ function FbxBody({ url, position, rotation, tint, onClick }: BodyProps) {
 
 function GlbBody({ url, position, rotation, tint, onClick }: BodyProps) {
   const ref = useRef<Group>(null)
-  const { scene, animations } = useGLTF(url)
+  // "/draco/" = decoder auto-hospedado (o human.glb é comprimido com Draco).
+  const { scene, animations } = useGLTF(url, "/draco/")
   const animSrc = useFBX(ANIM_SOURCE_URL) // fonte da animação de sentar
   const { model, scale, posScale } = usePreparedModel(scene, tint)
   const clips = useMemo(() => {
@@ -166,5 +167,5 @@ export function SeatedCharacter({ modelUrl = DEFAULT_MODEL_URL, chairId = "padra
   return modelUrl.toLowerCase().endsWith(".fbx") ? <FbxBody {...shared} /> : <GlbBody {...shared} />
 }
 
-useGLTF.preload(DEFAULT_MODEL_URL)
+useGLTF.preload(DEFAULT_MODEL_URL, "/draco/")
 useFBX.preload(ANIM_SOURCE_URL)
