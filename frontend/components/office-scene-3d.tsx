@@ -3,10 +3,11 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
-import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial } from "three"
+import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial, type MeshToonMaterial } from "three"
 import { OfficeFigure3D } from "@/components/office-figure-3d"
 import { SeatedCharacter } from "@/components/seated-character"
 import { TOON_GRADIENT, toonifyObject } from "@/lib/toon"
+import { buildEscritorio, buildPersonagem } from "@/lib/office-model"
 import type { AvatarConfig } from "@/lib/avatar"
 
 // Fallback resiliente: se o .glb do personagem não existir (404) ou falhar,
@@ -379,36 +380,34 @@ function Decor({ equipped }: { equipped?: Set<string> }) {
   )
 }
 
-// Sala base — GLB do usuário ("casa"). Centraliza pela bbox (piso em y=0) e
-// projeta/recebe sombra. Já traz mesa, monitor, gaveteiro, impressora e a
-// cadeira onde o personagem senta.
-function Casa() {
-  const { scene } = useGLTF("/models/casa.glb")
-  const room = useMemo(() => {
-    const c = scene.clone(true)
-    const bb = new Box3().setFromObject(c)
-    const ctr = bb.getCenter(new Vector3())
-    c.position.set(-ctr.x, -bb.min.y, -ctr.z)
-    c.traverse((o) => {
-      const m = o as Mesh
-      if (!m.isMesh) return
-      m.castShadow = true
-      m.receiveShadow = true
-    })
-    return c
-  }, [scene])
-  return <primitive object={room} />
+// Cena cartoon NATIVA (sala + personagem em código, a partir dos scripts
+// Blender build_escritorio_base / build_personagem_base). Toon-shaded. O
+// monitor brilha mais quando "trabalhando" e o boneco respira (useFrame). A
+// skin recolore a camisa do personagem. Coords Z-up → Y-up via group.
+function CartoonOffice({ working, skinTint, onAvatarClick }: { working?: boolean; skinTint?: string; onAvatarClick?: () => void }) {
+  const room = useMemo(() => buildEscritorio(), [])
+  const person = useMemo(() => buildPersonagem(skinTint ? { camisa: skinTint } : {}), [skinTint])
+  const personRef = useRef<Group>(null)
+  const tela = useMemo(() => room.getObjectByName("Monitor_Tela") as Mesh | undefined, [room])
+  useFrame((state) => {
+    const t = state.clock.elapsedTime
+    if (tela) (tela.material as MeshToonMaterial).emissiveIntensity = working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
+    if (personRef.current) personRef.current.position.z = Math.sin(t * 1.7) * 0.012 // respiração
+  })
+  return (
+    <group rotation={[-Math.PI / 2, 0, 0]} scale={4}>
+      <primitive object={room} />
+      <group ref={personRef} onClick={onAvatarClick}>
+        <primitive object={person} />
+      </group>
+    </group>
+  )
 }
-useGLTF.preload("/models/casa.glb")
 
-// Cadeira da sala (coords nativas do GLB) + escala do personagem (~6 de altura
-// na sala; SeatedCharacter mira 10.8, daí o fator). Enquadramento da câmera.
-const CASA_CHAIR: [number, number, number] = [3.8, 0, -1.0]
-const CHAR_SCALE = 6 / 10.8
-const CAM_D = 13.3
+const CAM_D = 18
 const CAM_ASP = 480 / 340
 
-function Scene({ avatar, working, onAvatarClick, phase, skinUrl, skinTint }: Required<Pick<OfficeScene3DProps, "onAvatarClick">> & { avatar?: AvatarConfig | null; working?: boolean; phase: Phase; skinUrl?: string; skinTint?: string }) {
+function Scene({ working, onAvatarClick, phase, skinTint }: Required<Pick<OfficeScene3DProps, "onAvatarClick">> & { working?: boolean; phase: Phase; skinTint?: string }) {
   const L = LIGHT[phase]
   return (
     <>
@@ -421,36 +420,24 @@ function Scene({ avatar, working, onAvatarClick, phase, skinUrl, skinTint }: Req
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0005}
-        shadow-camera-left={-9}
-        shadow-camera-right={9}
-        shadow-camera-top={9}
-        shadow-camera-bottom={-9}
+        shadow-camera-left={-14}
+        shadow-camera-right={14}
+        shadow-camera-top={14}
+        shadow-camera-bottom={-14}
         shadow-camera-near={1}
-        shadow-camera-far={60}
+        shadow-camera-far={80}
       />
       <directionalLight color="#bcd0ff" intensity={0.5} position={[-10, 8, -6]} />
-      <pointLight color="#ffcf8a" intensity={4 + L.lampI * 0.08} distance={14} decay={2} position={[3.8, 5.5, -3]} />
+      <pointLight color="#ffcf8a" intensity={6 + L.lampI * 0.15} distance={40} decay={2} position={[4, 7, -4]} />
 
-      {/* sala base (GLB) */}
-      <Suspense fallback={null}>
-        <Casa />
-      </Suspense>
+      <CartoonOffice working={working} skinTint={skinTint} onAvatarClick={onAvatarClick} />
 
-      {/* personagem sentado na cadeira da sala (a skin dirige modelo + cor) */}
-      <group position={CASA_CHAIR} rotation={[0, Math.PI, 0]} scale={CHAR_SCALE}>
-        <GlbBoundary fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
-          <Suspense fallback={<OfficeFigure3D avatar={avatar} working={working} onClick={onAvatarClick} />}>
-            <SeatedCharacter key={skinUrl} chairId="casa" modelUrl={skinUrl} tint={skinTint} onClick={onAvatarClick} />
-          </Suspense>
-        </GlbBoundary>
-      </group>
-
-      <ContactShadows position={[3, 0.02, -0.5]} opacity={0.32} scale={16} blur={2.4} far={7} />
+      <ContactShadows position={[0, 0.02, -3.6]} opacity={0.3} scale={20} blur={2.6} far={9} />
     </>
   )
 }
 
-export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {}, skinUrl, skinTint, className }: OfficeScene3DProps) {
+export function OfficeScene3D({ working = false, onAvatarClick = () => {}, skinTint, className }: OfficeScene3DProps) {
   const [phase, setPhase] = useState<Phase>("day")
   useEffect(() => {
     const tick = () => setPhase(phaseOf(new Date().getHours()))
@@ -476,10 +463,10 @@ export function OfficeScene3D({ avatar, working = false, onAvatarClick = () => {
           top={CAM_D / 2}
           bottom={-CAM_D / 2}
           near={-100}
-          far={200}
-          onUpdate={(c) => c.lookAt(3.8, 2.6, -1.0)}
+          far={300}
+          onUpdate={(c) => c.lookAt(0, 3.4, -3.6)}
         />
-        <Scene avatar={avatar} working={working} onAvatarClick={onAvatarClick} phase={phase} skinUrl={skinUrl} skinTint={skinTint} />
+        <Scene working={working} onAvatarClick={onAvatarClick} phase={phase} skinTint={skinTint} />
       </Canvas>
     </div>
   )
