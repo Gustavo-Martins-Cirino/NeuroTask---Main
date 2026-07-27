@@ -6,10 +6,11 @@ import { useRealtime } from "@/hooks/use-realtime"
 import { awardXp, taskXpAmount } from "@/lib/gamification"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { SoundMixer } from "@/components/sound-mixer"
+import { YouTubePlayer } from "@/components/youtube-player"
 import type { Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Play, Pause, X, Check, RotateCcw, Activity, Minus, Plus, Palette, Music, Minimize2, Maximize2 } from "lucide-react"
+import { Play, Pause, X, Check, RotateCcw, Activity, Minus, Plus, Palette, Music, Youtube, Minimize2, Maximize2 } from "lucide-react"
 
 interface FocusContextValue {
   openFocus: (task?: Task | null, minutes?: number) => void
@@ -84,7 +85,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   const [remaining, setRemaining] = useState(25 * 60)
   const [running, setRunning] = useState(false)
   const [ambient, setAmbient] = useState(1)
-  const [panel, setPanel] = useState<"none" | "ambient" | "sounds">("none")
+  const [panel, setPanel] = useState<"none" | "ambient" | "sounds" | "youtube">("none")
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [minimized, setMinimized] = useState(false)
 
@@ -325,15 +326,23 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                 )}
               </AnimatePresence>
 
-              {/* Painel Sons — mantido montado enquanto o foco está aberto (áudio persiste) */}
+              {/* Painéis Sons e YouTube — mantidos montados enquanto o foco está
+                  aberto (áudio persiste, inclusive com o Foco minimizado) */}
               <div className={cn("w-[min(92vw,640px)] rounded-2xl border p-4 shadow-xl", panelCls, panel === "sounds" ? "block" : "hidden")}>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">Mixer de sons</p>
                 <SoundMixer />
+              </div>
+              <div className={cn("w-[min(92vw,640px)] rounded-2xl border p-4 shadow-xl", panelCls, panel === "youtube" ? "block" : "hidden")}>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">Música do YouTube</p>
+                <YouTubePlayer />
               </div>
 
               <div className="flex items-center gap-2 self-end">
                 <button onClick={() => setPanel((p) => (p === "sounds" ? "none" : "sounds"))} className={cn("rounded-full border p-3 transition-colors", panel === "sounds" ? solid : cn("border-transparent", ctrl))} title="Sons">
                   <Music className="h-5 w-5" />
+                </button>
+                <button onClick={() => setPanel((p) => (p === "youtube" ? "none" : "youtube"))} className={cn("rounded-full border p-3 transition-colors", panel === "youtube" ? solid : cn("border-transparent", ctrl))} title="Música do YouTube">
+                  <Youtube className="h-5 w-5" />
                 </button>
                 <button onClick={() => setPanel((p) => (p === "ambient" ? "none" : "ambient"))} className={cn("rounded-full border p-3 transition-colors", panel === "ambient" ? solid : cn("border-transparent", ctrl))} title="Ambiente">
                   <Palette className="h-5 w-5" />
