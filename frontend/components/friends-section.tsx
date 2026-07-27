@@ -12,10 +12,11 @@ import {
   CalendarPlus, CalendarClock, Video, MapPin,
 } from "lucide-react"
 import {
-  fetchMyProfile, claimUsername, normalizeUsername, updatePrivacy,
+  fetchMyProfile, claimUsername, normalizeUsername, updatePrivacy, updateCity,
   searchUsers, sendFriendRequest, fetchMyFriends, acceptFriendRequest,
   removeFriendship, fetchFriendOffice, fetchSuggestedUsers, fetchFriendBusyToday,
-  type MyProfile, type UserSearchResult, type FriendEntry, type FriendOffice, type BusyRange,
+  type MyProfile, type UserSearchResult, type SuggestedUser, type FriendEntry,
+  type FriendOffice, type BusyRange,
 } from "@/lib/friends"
 import {
   fetchMyInvites, respondMeetingInvite, cancelMeetingInvite, type MeetingInvite,
@@ -61,7 +62,9 @@ export function FriendsSection() {
   const [claiming, setClaiming] = useState(false)
   const [visit, setVisit] = useState<FriendOffice | null>(null)
   const [visitLoading, setVisitLoading] = useState<string | null>(null)
-  const [suggested, setSuggested] = useState<UserSearchResult[]>([])
+  const [suggested, setSuggested] = useState<SuggestedUser[]>([])
+  const [cityDraft, setCityDraft] = useState("")
+  const [citySaving, setCitySaving] = useState(false)
   const [invites, setInvites] = useState<MeetingInvite[]>([])
   const [inviteFriend, setInviteFriend] = useState<FriendEntry | null>(null)
   const [busyView, setBusyView] = useState<{ friend: FriendEntry; ranges: BusyRange[] } | null>(null)
@@ -76,6 +79,7 @@ export function FriendsSection() {
   useEffect(() => {
     fetchMyProfile().then((p) => {
       setProfile(p)
+      setCityDraft(p?.city ?? "")
       if (p) refreshFriends()
     })
     // Sugestão de @: prefixo do e-mail
@@ -173,6 +177,16 @@ export function FriendsSection() {
   const handleCancelInvite = async (inv: MeetingInvite) => {
     await cancelMeetingInvite(inv.id)
     setInvites((prev) => prev.filter((i) => i.id !== inv.id))
+  }
+
+  const handleSaveCity = async () => {
+    if (!profile || cityDraft.trim() === (profile.city ?? "")) return
+    setCitySaving(true)
+    await updateCity(cityDraft)
+    setCitySaving(false)
+    setProfile({ ...profile, city: cityDraft.trim() || null })
+    fetchSuggestedUsers().then(setSuggested)
+    toast.success(cityDraft.trim() ? "Região salva — vamos priorizar quem está perto." : "Região removida.")
   }
 
   const togglePrivacy = (field: "share_status" | "share_office" | "share_level" | "discoverable" | "share_schedule") => {
@@ -296,6 +310,20 @@ export function FriendsSection() {
             )}
           </div>
 
+          {/* Região (opcional) — só você vê o texto; os outros veem no máximo "mesma região" */}
+          <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card px-3 py-2">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <input
+              value={cityDraft}
+              onChange={(e) => setCityDraft(e.target.value)}
+              onBlur={handleSaveCity}
+              onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
+              placeholder="Sua região — ex.: Campinas, SP (opcional)"
+              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+            {citySaving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />}
+          </div>
+
           {/* Sugeridos (perfis abertos fora das suas amizades) */}
           {suggested.length > 0 && (
             <div className="space-y-1.5">
@@ -306,7 +334,14 @@ export function FriendsSection() {
                     <Initial name={u.display_name || u.username} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{u.display_name ?? `@${u.username}`}</span>
-                      <span className="block text-xs text-muted-foreground">@{u.username}</span>
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="truncate">@{u.username}</span>
+                        {u.same_region && (
+                          <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <MapPin className="h-2.5 w-2.5" /> mesma região
+                          </span>
+                        )}
+                      </span>
                     </span>
                     <button
                       type="button"

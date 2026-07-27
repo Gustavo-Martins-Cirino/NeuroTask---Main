@@ -97,6 +97,33 @@ async function handle(req: Request) {
     await db.from("time_blocks").update({ checkin_pushed: true }).eq("id", b.id)
   }
 
+  // 3) Convites de compromisso recebidos nos últimos 10 minutos (Amigos v3)
+  const { data: newInvites } = await db
+    .from("meeting_invites")
+    .select("id, from_user, to_user, title, starts_at")
+    .eq("status", "pending")
+    .eq("pushed", false)
+    .gte("created_at", new Date(now.getTime() - 10 * 60_000).toISOString())
+  if (newInvites && newInvites.length > 0) {
+    const { data: senders } = await db
+      .from("profiles")
+      .select("user_id, username")
+      .in("user_id", [...new Set(newInvites.map((i) => i.from_user))])
+    const usernameOf = new Map((senders ?? []).map((s) => [s.user_id, s.username]))
+
+    for (const inv of newInvites) {
+      const when = new Date(new Date(inv.starts_at).getTime() - TZ_MIN * 60_000)
+      const hhmm = `${String(when.getUTCHours()).padStart(2, "0")}:${String(when.getUTCMinutes()).padStart(2, "0")}`
+      const from = usernameOf.get(inv.from_user)
+      await sendToUser(inv.to_user, {
+        title: "📅 Novo convite",
+        body: `${from ? `@${from}` : "Um amigo"} te chamou para "${inv.title}" às ${hhmm}.`,
+        url: "/app/friends",
+      })
+      await db.from("meeting_invites").update({ pushed: true }).eq("id", inv.id)
+    }
+  }
+
   return new Response(JSON.stringify({ ok: true, sent: sent.length }), {
     headers: { "Content-Type": "application/json" },
   })

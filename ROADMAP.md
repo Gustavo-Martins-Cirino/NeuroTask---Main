@@ -102,9 +102,18 @@ Google Calendar). É um **copiloto de rotina**:
       link e local opcionais) → meeting_invites; aceitar via RPC cria o bloco roxo no
       calendário DOS DOIS (link/local vão na descrição); recusar/cancelar tratados.
       Convites pendentes listados na aba com aceitar/recusar/cancelar.
-- [ ] **Amigos v3**: sugestões por REGIÃO (requer localização aproximada opt-in —
-      decidir fonte antes); notificação push de convite recebido; proposta de
-      horário com base nos horários livres dos dois (determinístico).
+- [x] **Amigos v3** (friends_v3.sql): **sugestões por REGIÃO** — fonte decidida: cidade
+      DIGITADA no perfil (nada de GPS: sem prompt do navegador, sem serviço externo,
+      sem coordenada guardada). O texto da cidade é só do dono; para os outros vira o
+      booleano `same_region` no `suggested_users()` (mesmo espírito do ocupado/livre) e
+      ordena os sugeridos — o portão do `discoverable` continua valendo.
+      **Push de convite recebido**: novo bloco no dispatcher + `meeting_invites.pushed`
+      (padrão do reminders.pushed; convites antigos marcados como enviados na migração
+      para não disparar tudo de uma vez). **Proposta de horário** (determinística, sem
+      LLM): cruza a agenda do amigo (RPC friend_schedule — só horários) com os MEUS
+      blocos, funde as faixas ocupadas e sugere as primeiras janelas livres para os dois
+      na duração escolhida (janela 7h–23h, arredondado em 30min, ignora o passado).
+      Botão no dialog de convite, só quando o amigo compartilha a agenda.
 - [x] **Notificações push reais**: Service Worker + VAPID + push_subscriptions; dispatcher
       /api/push/dispatch (service role) acionado a cada minuto pelo pg_cron do Supabase;
       lembretes com hora e check-ins de blocos chegam com o app FECHADO. Manifest PWA
@@ -113,7 +122,16 @@ Google Calendar). É um **copiloto de rotina**:
 ### Fase 4 — Integrações externas
 - [ ] **Bot do Telegram** (validação barata do fluxo "mensagem → tarefa"); depois WhatsApp
       (API oficial, paga) quando fizer sentido.
-- [ ] **Extensão Chrome/Edge**: tempo de tela em redes sociais → insights no dashboard.
+- [x] **Extensão Chrome/Edge** (`extension/`, Manifest V3 sem build step): tempo de tela em
+      redes sociais → card "Tempo de tela" no dashboard. **Pareamento por código** (6 dígitos
+      gerados em Configurações, expiram em 10min) trocado por um token de dispositivo em
+      `/api/extension/exchange` — sem OAuth/login dentro da extensão (decisão: evita as
+      restrições de CSP do MV3). Token guardado só como hash SHA-256 (`extension_tokens`);
+      o valor puro existe uma única vez na resposta e vive no `chrome.storage.local`.
+      Contagem só com aba ativa + janela em foco + usuário não idle; buffer local com flush
+      a cada 60s (tolerante a rede intermitente) e cap de 120s por entrada no SERVIDOR
+      (anti-inflação). Dispositivos listáveis/revogáveis em Configurações.
+      SQL: extension_screen_time.sql. Sem env var nova (reusa SUPABASE_SERVICE_ROLE_KEY).
 - [ ] Exportação ICS → integrações de calendário (Google/Outlook) → compartilhamento.
 
 ## Princípios de implementação

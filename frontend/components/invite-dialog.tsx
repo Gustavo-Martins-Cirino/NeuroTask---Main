@@ -6,14 +6,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/date-picker"
 import { sendMeetingInvite } from "@/lib/invites"
+import { suggestCommonFreeSlots, type FreeSlot } from "@/lib/friends"
 import { toast } from "sonner"
-import { CalendarPlus, Loader2, Video, MapPin } from "lucide-react"
+import { CalendarPlus, Loader2, Video, MapPin, Sparkles } from "lucide-react"
 
 interface InviteDialogProps {
-  friend: { friend_id: string; username: string; display_name: string | null } | null
+  friend: {
+    friend_id: string
+    username: string
+    display_name: string | null
+    can_schedule?: boolean
+  } | null
   onClose: () => void
   onSent: () => void
 }
+
+const hm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
 
 function todayISO(): string {
   const d = new Date()
@@ -38,6 +46,8 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
   const [url, setUrl] = useState("")
   const [location, setLocation] = useState("")
   const [loading, setLoading] = useState(false)
+  const [slots, setSlots] = useState<FreeSlot[] | null>(null)
+  const [suggesting, setSuggesting] = useState(false)
 
   useEffect(() => {
     if (friend) {
@@ -48,8 +58,29 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
       setEnd(plusHour(s))
       setUrl("")
       setLocation("")
+      setSlots(null)
     }
   }, [friend])
+
+  // Duração escolhida nos campos "das/às" — é ela que o sugeridor tenta encaixar
+  const durationMinutes = (() => {
+    const [sh, sm] = start.split(":").map(Number)
+    const [eh, em] = end.split(":").map(Number)
+    const diff = eh * 60 + em - (sh * 60 + sm)
+    return diff > 0 ? diff : diff + 24 * 60
+  })()
+
+  const handleSuggest = async () => {
+    if (!friend) return
+    setSuggesting(true)
+    const { slots: found, error } = await suggestCommonFreeSlots(friend.friend_id, date, durationMinutes)
+    setSuggesting(false)
+    if (error) {
+      toast.error(error)
+      return
+    }
+    setSlots(found ?? [])
+  }
 
   const handleSend = async () => {
     if (!friend) return
@@ -112,6 +143,44 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
               className="h-9 rounded-lg border border-border/50 bg-transparent px-2 text-sm outline-none transition-colors focus:border-primary/40"
             />
           </div>
+
+          {friend?.can_schedule && (
+            <div className="space-y-1.5 rounded-xl border border-border/50 p-2.5">
+              <button
+                type="button"
+                onClick={handleSuggest}
+                disabled={suggesting}
+                className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-primary/10 text-xs font-medium text-primary transition-colors hover:bg-primary/15 disabled:opacity-60"
+              >
+                {suggesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                Sugerir horário livre dos dois
+              </button>
+              {slots !== null && (
+                slots.length === 0 ? (
+                  <p className="text-center text-[11px] text-muted-foreground">
+                    Nenhuma janela de {durationMinutes}min livre para os dois nesse dia.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {slots.map((s) => (
+                      <button
+                        key={s.start.toISOString()}
+                        type="button"
+                        onClick={() => {
+                          setStart(hm(s.start))
+                          setEnd(hm(s.end))
+                          setSlots(null)
+                        }}
+                        className="rounded-lg border border-primary/30 bg-primary/5 px-2 py-1 text-[11px] font-medium tabular-nums text-primary transition-colors hover:bg-primary/15"
+                      >
+                        {hm(s.start)}–{hm(s.end)}
+                      </button>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <Video className="h-4 w-4 shrink-0 text-muted-foreground" />
