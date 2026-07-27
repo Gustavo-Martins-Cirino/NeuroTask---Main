@@ -13,6 +13,7 @@ O mixer tem 3 seções. **Sons** e **Músicas** precisam de arquivo; **Ruídos**
 | Arquivo | Ambiente |
 |---------|----------|
 | `rain.mp3`     | Chuva |
+| `vinyl.mp3`    | Vinil (chiado de disco antigo) |
 | `cafe.mp3`     | Cafeteria |
 | `forest.mp3`   | Floresta |
 | `waves.mp3`    | Ondas do mar |
@@ -36,6 +37,7 @@ O mixer tem 3 seções. **Sons** e **Músicas** precisam de arquivo; **Ruídos**
 | `lofi.mp3`                 | Lo-fi |
 | `lofi2.mp3`                | Lo-fi 2 |
 | `chillhop.mp3`             | Chillhop |
+| `oldies.mp3`               | Oldies · Rádio antigo (jazz/vintage anos 50) |
 | `study.mp3`                | Concentração |
 | `study2.mp3`               | Fluxo |
 | `study-music.mp3`          | Imersão |
@@ -62,6 +64,11 @@ campo `src`). É só baixar, renomear e colocar nesta pasta — o card ativa soz
 3. Renomeie para o nome da tabela acima e salve aqui em `public/sounds/`.
 
 > Para avião/voo, busque por **"airplane cabin"**, **"jet engine loop"** ou **"flight cabin ambience"**.
+>
+> Para o clima **oldies/vinil ("tocando no outro cômodo")**:
+> - `oldies.mp3` → busque **"vintage jazz"**, **"1950s swing"**, **"old radio music"**, **"gramophone"** (Pixabay Music).
+> - `vinyl.mp3` → busque **"vinyl crackle loop"**, **"record crackle"**, **"vinyl noise"** (Pixabay/Freesound CC0).
+> Dica: ative **`Oldies` + `Vinil` + `Chuva`** juntos no mixer para o efeito "disco tocando no cômodo ao lado com chuva lá fora".
 
 ## Dicas
 - Prefira faixas pensadas para **loop contínuo** (sem início/fim abruptos) para evitar emendas audíveis.
