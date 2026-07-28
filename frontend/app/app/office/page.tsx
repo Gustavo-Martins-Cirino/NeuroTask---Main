@@ -19,12 +19,12 @@ import {
   fetchShopState, buyItem, setEquipped, equipExclusive,
   type ShopCategory, type ShopItem,
 } from "@/lib/shop"
-import { XP_UPDATED_EVENT } from "@/lib/gamification"
+import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
 import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
 import { fetchAvatar, saveAvatar, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar"
 import { resolveSkin } from "@/lib/skins"
 
-const CATEGORY_ORDER: ShopCategory[] = ["skin", "decor", "setup", "cadeira", "parede", "piso"]
+const CATEGORY_ORDER: ShopCategory[] = ["skin", "chapeu", "oculos", "decor", "setup", "cadeira", "parede", "piso"]
 
 export default function OfficePage() {
   const [loading, setLoading] = useState(true)
@@ -36,10 +36,12 @@ export default function OfficePage() {
   const [stats, setStats] = useState<OfficeStats | undefined>(undefined)
   const [avatarCfg, setAvatarCfg] = useState<AvatarConfig>(DEFAULT_AVATAR)
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [nivel, setNivel] = useState(1)
 
   const load = () => {
     fetchOfficeStats().then(setStats)
     fetchAvatar().then(setAvatarCfg)
+    fetchGamification().then((g) => setNivel(g.level))
     return fetchShopState().then((s) => {
       setCoins(s.coins)
       setOwned(new Map(s.owned.map((o) => [o.item_id, o.equipped])))
@@ -161,6 +163,7 @@ export default function OfficePage() {
                 equipped={sceneSet}
                 skinUrl={skin.modelUrl}
                 skinTint={skin.tint}
+                nivel={nivel}
                 onAvatarClick={() => setAvatarOpen(true)}
                 className="block w-full"
               />

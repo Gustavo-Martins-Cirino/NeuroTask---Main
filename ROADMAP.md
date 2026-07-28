@@ -81,9 +81,34 @@ Google Calendar). É um **copiloto de rotina**:
       preview ao vivo (botão no rodapé E clique no próprio bonequinho); salvo em
       user_stats.avatar (jsonb, social_v2.sql); amigos veem o avatar na visita
       (friend_office, portão share_office). Cena com fundo gradiente por fase do dia.
-- [ ] **Escritório vivo v3** (adiado por decisão): comemoração ao concluir (evento);
-      sala expansível por nível (comparação social legível num relance) + snapshot
-      compartilhável. Roupas/acessórios do avatar COMPRÁVEIS na loja. 3D real adiado.
+- [x] **Escritório 3D** (React-Three-Fiber — o "3D real" que estava adiado aconteceu):
+      sala + personagem construídos em código a partir dos scripts Blender
+      (`lib/office-model.ts`, Z-up em metros → Y-up no `<group>` da cena), cell-shading
+      toon, luz por fase do dia, skins do personagem e pet beagle (GLB).
+- [x] **Itens da loja no 3D**: a sala nasce CRUA de propósito ("seu cantinho começa
+      simples") e cada item comprado vira malha de verdade — plantas, luminária,
+      estante, quadro, neon, janela, tapete, troféu, gato e o beagle; parede/piso/
+      cadeira viram cor. Antes disso a fiação estava solta: `equipped` chegava na cena
+      e era ignorado, então comprar decoração não mudava nada na tela.
+- [x] **Acessórios do avatar compráveis** (avatar_acessorios.sql): slots separados de
+      chapéu (boné · social · coroa) e óculos (grau · escuros) — dá para usar os dois
+      juntos, um por slot. Validação: script headless mede as bounding boxes e reprova
+      peça que atravesse parede, flutue, afunde no piso ou cubra os olhos.
+- [x] **Visita de amigo em 3D**: a mesma cena do próprio escritório (import dinâmico,
+      ssr:false — o bundle 3D não pesa em quem nunca abre uma visita), então as
+      decorações e os acessórios do amigo aparecem de verdade. Continua tudo pela RPC
+      friend_office (valida amizade + share_office); clicar no avatar não faz nada,
+      o editor é só do dono. A cena 2D (components/office-scene.tsx) ficou órfã —
+      decidir se vira fallback de WebGL indisponível ou se sai de vez.
+- [x] **Sala expansível por nível**: cresce em DEGRAUS (4m → 4,6m no nível 3 → 5,2m no
+      5 → 5,8m no 8), não continuamente — subir de nível vira um evento perceptível.
+      A zona de trabalho fica ancorada na parede do fundo (distância constante de
+      1,10m), então o espaço novo aparece como chão livre à frente: 2,90m no nível 1,
+      4,70m no 8. Itens de parede (quadro, neon, estante, janela) acompanham a parede
+      que se afasta; a câmera ortográfica abre na mesma proporção e mira na pessoa.
+      Vale também na visita — o nível do amigo já vinha da RPC friend_office.
+- [ ] **Escritório vivo v3** (o que sobrou): comemoração ao concluir (evento);
+      snapshot compartilhável.
 - [x] **Amigos e comparação** (social, v1 — friends.sql): perfil público com @username
       único (escolhido na seção Amigos do Escritório); busca por @/nome via RPC (nunca
       expõe e-mail); pedido/aceite/desfazer amizade (pedido mútuo vira amizade na hora);

@@ -5,7 +5,7 @@ import { SKINS } from "@/lib/skins"
 // banco (shop_items) e a compra é a RPC buy_item — aqui fica só o catálogo
 // visual (nome/emoji/slot) e os helpers de estado.
 
-export type ShopCategory = "decor" | "cadeira" | "setup" | "parede" | "piso" | "skin"
+export type ShopCategory = "decor" | "cadeira" | "setup" | "parede" | "piso" | "skin" | "chapeu" | "oculos"
 
 export interface ShopItem {
   id: string
@@ -18,6 +18,8 @@ export interface ShopItem {
 
 export const CATEGORY_LABELS: Record<ShopCategory, string> = {
   skin: "Skins",
+  chapeu: "Chapéus",
+  oculos: "Óculos",
   decor: "Decoração",
   cadeira: "Cadeira",
   setup: "Setup",
@@ -26,12 +28,19 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
 }
 
 // Slots exclusivos: equipar um desequipa os irmãos (decor é livre).
-export const EXCLUSIVE_CATEGORIES: ShopCategory[] = ["skin", "cadeira", "setup", "parede", "piso"]
+// Chapéu e óculos são slots SEPARADOS de propósito — dá para usar os dois
+// juntos, e dentro de cada um só cabe uma peça (nada de dois chapéus).
+export const EXCLUSIVE_CATEGORIES: ShopCategory[] = ["skin", "cadeira", "setup", "parede", "piso", "chapeu", "oculos"]
 
 // Metadados visuais por id — preço aqui é só exibição; o cobrado é o do banco.
 // Skins vêm primeiro (feature-título do Escritório 3D).
 export const CATALOG: ShopItem[] = [
   ...SKINS,
+  { id: "oculos-grau", name: "Óculos de grau", price: 35, category: "oculos", emoji: "👓", desc: "Ar de quem lê muito" },
+  { id: "oculos-escuros", name: "Óculos escuros", price: 70, category: "oculos", emoji: "🕶️", desc: "Foco em modo estiloso" },
+  { id: "chapeu-bone", name: "Boné", price: 45, category: "chapeu", emoji: "🧢", desc: "Clássico de todo dia" },
+  { id: "chapeu-social", name: "Chapéu social", price: 90, category: "chapeu", emoji: "🎩", desc: "Elegância no home office" },
+  { id: "chapeu-coroa", name: "Coroa dourada", price: 220, category: "chapeu", emoji: "👑", desc: "Para quem reina na rotina" },
   { id: "planta-pequena", name: "Plantinha", price: 20, category: "decor", emoji: "🪴", desc: "Um toque de vida na mesa" },
   { id: "luminaria", name: "Luminária", price: 30, category: "decor", emoji: "💡", desc: "Luz quentinha de canto" },
   { id: "quadro-montanhas", name: "Quadro · Montanhas", price: 40, category: "decor", emoji: "🖼️", desc: "Paisagem pra respirar" },

@@ -1,12 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import dynamic from "next/dynamic"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { OfficeScene } from "@/components/office-scene"
+import { resolveSkin } from "@/lib/skins"
+
+// Mesma cena 3D do próprio escritório: o amigo vê as decorações e os
+// acessórios de verdade. R3F usa WebGL → só no cliente e sob demanda (o
+// bundle 3D não pesa em quem nunca abre uma visita).
+const OfficeScene3D = dynamic(
+  () => import("@/components/office-scene-3d").then((m) => m.OfficeScene3D),
+  { ssr: false, loading: () => <div className="flex aspect-[480/340] items-center justify-center text-sm text-muted-foreground">Carregando 3D…</div> }
+)
 import {
   Users, Search, UserPlus, Check, X, Loader2, Eye, Clock3, AtSign,
   CalendarPlus, CalendarClock, Video, MapPin,
@@ -195,6 +204,9 @@ export function FriendsSection() {
     setProfile({ ...profile, [field]: next })
     updatePrivacy(field, next)
   }
+
+  // Itens equipados do amigo (friend_office já valida amizade + share_office)
+  const visitSet = useMemo(() => new Set(visit?.items ?? []), [visit])
 
   const pendingIn = friends.filter((f) => f.state === "pending_in")
   const pendingOut = friends.filter((f) => f.state === "pending_out")
@@ -608,9 +620,11 @@ export function FriendsSection() {
                 </DialogTitle>
               </DialogHeader>
               <div className="overflow-hidden rounded-xl border border-border/50">
-                <OfficeScene
-                  equipped={new Set(visit.items)}
+                <OfficeScene3D
+                  equipped={visitSet}
                   avatar={visit.avatar ? normalizeAvatar(visit.avatar) : null}
+                  skinTint={resolveSkin(visitSet).tint}
+                  nivel={visit.level ?? 1}
                   className="block w-full"
                 />
               </div>
