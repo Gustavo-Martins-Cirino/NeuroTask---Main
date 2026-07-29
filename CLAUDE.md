@@ -68,6 +68,9 @@ frontend/
 │   └── utils.ts              # cn()
 └── styles/global.css
 
+extension/                    # Extensão Chrome/Edge (Manifest V3, sem build step)
+  manifest.json · background.js (tempo de tela) · popup.html/js (pareamento)
+
 supabase/                     # SQLs por feature (rodar no SQL Editor do Supabase)
   fix_schema.sql · notes.sql · favorites.sql · task_lists.sql · gamification.sql
   realtime.sql · reminders.sql · day_notes.sql · routine_profile.sql
@@ -86,9 +89,22 @@ supabase/                     # SQLs por feature (rodar no SQL Editor do Supabas
 | `/app/favorites` | Favoritos |
 | `/app/notes` | Notas (rich text editor) |
 | `/app/ai` | Chat de IA (Vercel AI SDK, rota `app/api/ai`) |
-| `/app/office` | Escritório — cena isométrica viva + loja cosmética (moedas via XP) |
-| `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório |
-| `/app/settings` | Configurações (rotina, notificações push, tema) |
+| `/app/office` | Escritório — cena 3D (R3F) viva + loja cosmética (moedas via XP) |
+| `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório (em 3D) |
+| `/app/settings` | Configurações (rotina, push, tema, extensão de navegador, Telegram) |
+
+## Integrações externas (Fase 4)
+
+- **Extensão de navegador** (`extension/`): tempo de tela em redes sociais → card no
+  dashboard. Pareamento por código (Configurações → token de dispositivo em
+  `/api/extension/exchange`); ingestão em `/api/extension/screen-time`.
+- **Bot do Telegram**: mensagem → tarefa. Mesmo pareamento por código
+  (`/start CODIGO`). Webhook em `app/api/telegram/webhook` protegido pelo header
+  `x-telegram-bot-api-secret-token`; `app/api/telegram/setup` registra o webhook.
+  Parser puro e determinístico em `lib/telegram-commands.ts` (sem LLM).
+
+**Variáveis de ambiente novas**: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`.
+Ambas as integrações reaproveitam `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
 
 ## Decisões de design ativas
 

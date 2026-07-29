@@ -145,8 +145,18 @@ Google Calendar). É um **copiloto de rotina**:
       + ícones (iPhone exige adicionar à tela de início). SQLs: push.sql + push_cron.sql.
 
 ### Fase 4 — Integrações externas
-- [ ] **Bot do Telegram** (validação barata do fluxo "mensagem → tarefa"); depois WhatsApp
-      (API oficial, paga) quando fizer sentido.
+- [x] **Bot do Telegram** (telegram.sql): fluxo "mensagem → tarefa" com o MESMO
+      pareamento por código da extensão (6 dígitos em Configurações → `/start CODIGO`
+      no bot) — nada de login dentro do Telegram. Qualquer mensagem vira tarefa
+      (1ª linha = título, resto = descrição); entende `/hoje` (agenda + tarefas do dia),
+      `/ajuda` e `/sair`. Interpretação 100% determinística (`lib/telegram-commands.ts`,
+      módulo puro e testável — sem LLM, seguindo o princípio do projeto).
+      Webhook autenticado pelo header `x-telegram-bot-api-secret-token`: sem esse
+      segredo qualquer um poderia forjar um update com chat_id alheio e escrever na
+      conta de outra pessoa. Responde 200 mesmo em erro (senão o Telegram reenvia em
+      loop). `/api/telegram/setup` registra o webhook (protegida pelo CRON_SECRET).
+      Env novas: TELEGRAM_BOT_TOKEN e TELEGRAM_WEBHOOK_SECRET.
+      Depois WhatsApp (API oficial, paga) quando fizer sentido.
 - [x] **Extensão Chrome/Edge** (`extension/`, Manifest V3 sem build step): tempo de tela em
       redes sociais → card "Tempo de tela" no dashboard. **Pareamento por código** (6 dígitos
       gerados em Configurações, expiram em 10min) trocado por um token de dispositivo em
