@@ -204,13 +204,13 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[460px]">
+      <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-[440px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{task ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-5 py-4">
+          <div className="space-y-4 py-3">
             <Input
               autoFocus
               value={title}

@@ -29,6 +29,18 @@ import { CSS } from "@dnd-kit/utilities"
 
 const GENERAL = "__general__"
 
+type Scope = "today" | "upcoming" | "all"
+
+// "Próximos" = vence amanhã em diante. "Hoje" = vence hoje, está atrasada ou não
+// tem data (fica no radar do dia). Assim, tarefa de amanhã não se mistura com a
+// de hoje — e uma recorrente concluída hoje (prazo avança p/ amanhã) sai de "Hoje".
+function isUpcoming(t: Task): boolean {
+  if (!t.due_date) return false
+  const endToday = new Date()
+  endToday.setHours(23, 59, 59, 999)
+  return new Date(t.due_date).getTime() > endToday.getTime()
+}
+
 // Ordem de exibição: manual (sort_order) primeiro; sem ordem manual → mais recentes
 function sortTasks(list: Task[]): Task[] {
   return [...list].sort(
@@ -65,6 +77,16 @@ export default function TasksPage() {
   const [listError, setListError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [scope, setScope] = useState<Scope>("today")
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  const toggleCollapsed = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
 
   const supabase = createClient()
 
@@ -238,6 +260,16 @@ export default function TasksPage() {
   const active = tasks.filter((t) => inScope(t) && t.status !== "completed" && t.status !== "cancelled")
   const completed = tasks.filter((t) => inScope(t) && t.status === "completed")
 
+  const todayCount = active.filter((t) => !isUpcoming(t)).length
+  const upcomingCount = active.filter((t) => isUpcoming(t)).length
+  const activeScoped =
+    scope === "all" ? active : scope === "upcoming" ? active.filter(isUpcoming) : active.filter((t) => !isUpcoming(t))
+  const SCOPES: { key: Scope; label: string; count: number }[] = [
+    { key: "today", label: "Hoje", count: todayCount },
+    { key: "upcoming", label: "Próximos", count: upcomingCount },
+    { key: "all", label: "Todos", count: active.length },
+  ]
+
   const groupsFor = (items: Task[]) => {
     const groups: { key: string; label: string; items: Task[] }[] = []
     const general = items.filter((t) => !t.list_id)
@@ -384,19 +416,61 @@ export default function TasksPage() {
                 <ListTodo className="h-12 w-12 text-muted-foreground/40" />
                 <p className="mt-4 text-muted-foreground">Nenhuma tarefa por aqui. Que tal adicionar uma?</p>
               </div>
-            ) : activeList === GENERAL ? (
-              <div className="space-y-6">
-                {groupsFor(active).map((g) => (
-                  <section key={g.key}>
-                    <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {g.label} <span className="opacity-60">({g.items.length})</span>
-                    </h2>
-                    {renderTasks(g.items)}
-                  </section>
-                ))}
-              </div>
             ) : (
-              renderTasks(active)
+              <>
+                {/* Filtro por data: Hoje (vence hoje/atrasada/sem data) · Próximos · Todos */}
+                <div className="mb-5 inline-flex items-center gap-0.5 rounded-full border border-border/50 p-0.5">
+                  {SCOPES.map((s) => (
+                    <button
+                      key={s.key}
+                      onClick={() => setScope(s.key)}
+                      className={cn(
+                        "rounded-full px-3 py-1 text-sm font-medium transition-colors",
+                        scope === s.key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {s.label} <span className="tabular-nums opacity-60">{s.count}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {activeScoped.length === 0 ? (
+                  <p className="py-10 text-center text-sm text-muted-foreground">
+                    {scope === "today" ? "Nada para hoje. 🎉" : scope === "upcoming" ? "Nada nos próximos dias." : "Nenhuma tarefa."}
+                  </p>
+                ) : activeList === GENERAL ? (
+                  <div className="space-y-6">
+                    {groupsFor(activeScoped).map((g) => {
+                      const isCol = collapsed.has(g.key)
+                      return (
+                        <section key={g.key}>
+                          <button
+                            onClick={() => toggleCollapsed(g.key)}
+                            className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", !isCol && "rotate-90")} />
+                            {g.label} <span className="opacity-60">({g.items.length})</span>
+                          </button>
+                          <AnimatePresence initial={false}>
+                            {!isCol && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                {renderTasks(g.items)}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </section>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  renderTasks(activeScoped)
+                )}
+              </>
             )}
 
             {/* Seção Concluídas (retrátil) */}
