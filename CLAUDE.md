@@ -93,9 +93,13 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 
 ## Integrações externas (Fase 4)
 
-- **Extensão de navegador** (`extension/`): tempo de tela em redes sociais → card no
-  dashboard. Pareamento por código (Configurações → token de dispositivo em
-  `/api/extension/exchange`); ingestão em `/api/extension/screen-time`.
+- **Extensão de navegador** (`extension/`): estima tempo de tela em redes sociais a
+  partir do `chrome.history` (permissão opcional, pedida em runtime) → card no
+  dashboard. Pareamento em 2 passos iniciados pela própria extensão: permissão de
+  histórico, depois `app/extension/connect` (aba autenticada, 1 clique) grava o vínculo
+  que o popup troca por token em `/api/extension/exchange`; ingestão em
+  `/api/extension/screen-time`. Sem duração real disponível no histórico, o tempo é
+  aproximado pelo intervalo entre visitas consecutivas (teto de 30 min por intervalo).
 - **Bot do Telegram**: mensagem → tarefa. Mesmo pareamento por código
   (`/start CODIGO`). Webhook em `app/api/telegram/webhook` protegido pelo header
   `x-telegram-bot-api-secret-token`; `app/api/telegram/setup` registra o webhook.

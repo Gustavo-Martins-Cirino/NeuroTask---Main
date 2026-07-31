@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "NeuroTask — Tempo de tela",
-  "version": "1.0.0",
-  "description": "Rastreia tempo de tela em redes sociais e envia insights para o NeuroTask.",
-  "permissions": ["storage", "idle", "tabs", "alarms"],
+  "version": "2.0.0",
+  "description": "Estima, com sua permissão, quanto tempo você passa em redes sociais a partir do histórico do Chrome e manda pro NeuroTask.",
+  "permissions": ["storage", "alarms"],
+  "optional_permissions": ["history"],
   "host_permissions": ["https://neuro-task-main.vercel.app/*"],
   "background": {
     "service_worker": "background.js"

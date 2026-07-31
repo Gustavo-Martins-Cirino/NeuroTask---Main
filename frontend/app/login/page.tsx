@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,6 +26,14 @@ function translateLoginError(error: AuthError): string {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -33,6 +41,7 @@ export default function LoginPage() {
   const [unconfirmed, setUnconfirmed] = useState(false)
   const [resent, setResent] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const handleResend = async () => {
@@ -63,7 +72,8 @@ export default function LoginPage() {
       return
     }
 
-    router.push("/app")
+    const redirect = searchParams.get("redirect")
+    router.push(redirect && redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/app")
     router.refresh()
   }
 

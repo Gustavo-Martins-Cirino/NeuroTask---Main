@@ -7,7 +7,11 @@ export const runtime = "nodejs"
 // autentica pelo token de dispositivo). Service role pra escrever
 // screen_time_log, que não tem policy de insert pro cliente.
 
-const MAX_SECONDS_PER_ENTRY = 120
+// Cada entrada é um intervalo entre duas visitas no histórico (ver
+// extension/background.js), não mais um tick fixo de 1 min — o teto acompanha
+// o MAX_GAP_MS de lá (30 min): acima disso a extensão já nem manda a entrada,
+// isso aqui é só a rede de segurança contra um cliente malformado.
+const MAX_SECONDS_PER_ENTRY = 1800
 
 interface Entry {
   domain: string

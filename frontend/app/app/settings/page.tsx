@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Puzzle, Send } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
-import { generatePairingCode, fetchPairedDevices, revokeDevice, type PairedDevice } from "@/lib/extension-pairing"
+import { fetchPairedDevices, revokeDevice, type PairedDevice } from "@/lib/extension-pairing"
 import { generateTelegramCode, fetchTelegramLinks, unlinkTelegram, type TelegramLink } from "@/lib/telegram"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
 import { toast } from "sonner"
@@ -145,36 +145,10 @@ export default function SettingsPage() {
   }
 
   const [devices, setDevices] = useState<PairedDevice[]>([])
-  const [pairing, setPairing] = useState<{ code: string; expiresAt: string } | null>(null)
-  const [pairingBusy, setPairingBusy] = useState(false)
-  const [secondsLeft, setSecondsLeft] = useState(0)
 
   useEffect(() => {
     fetchPairedDevices().then(setDevices)
   }, [])
-
-  useEffect(() => {
-    if (!pairing) return
-    const tick = () => {
-      const left = Math.max(0, Math.round((new Date(pairing.expiresAt).getTime() - Date.now()) / 1000))
-      setSecondsLeft(left)
-      if (left === 0) setPairing(null)
-    }
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [pairing])
-
-  const handleGeneratePairingCode = async () => {
-    setPairingBusy(true)
-    const result = await generatePairingCode()
-    setPairingBusy(false)
-    if (!result) {
-      toast.error("Não deu para gerar o código", { description: "Tente novamente." })
-      return
-    }
-    setPairing(result)
-  }
 
   const handleRevokeDevice = async (id: string) => {
     setDevices((prev) => prev.filter((d) => d.id !== id))
@@ -606,24 +580,10 @@ export default function SettingsPage() {
             description="Tempo de tela em redes sociais → insights no dashboard"
           >
             <div className="space-y-3">
-              {pairing ? (
-                <div className="rounded-xl border border-border/50 p-4 text-center">
-                  <p className="text-2xl font-bold tracking-[0.3em] tabular-nums">{pairing.code}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Cole esse código na extensão. Expira em {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}.
-                  </p>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleGeneratePairingCode}
-                  disabled={pairingBusy}
-                  className="flex h-9 items-center gap-2 rounded-lg border border-border/50 px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
-                >
-                  {pairingBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Puzzle className="h-4 w-4" />}
-                  Gerar código de pareamento
-                </button>
-              )}
+              <p className="text-xs text-muted-foreground">
+                A conexão começa pela própria extensão: clique no ícone dela na barra do
+                navegador e siga os dois passos (permissão de histórico + conectar à conta).
+              </p>
 
               {devices.length > 0 && (
                 <div className="space-y-2">

@@ -166,14 +166,28 @@ from error_log order by criado_em desc limit 50;
 
 ### Extensão de navegador (`extension/`)
 
-Mede tempo de tela em redes sociais e alimenta o card do dashboard. Manifest V3, sem build:
-carregue a pasta em `chrome://extensions` → *Carregar sem compactação*.
+Estima tempo de tela em redes sociais a partir do **histórico do Chrome** (não mais
+observando a aba ativa) e alimenta o card do dashboard. Manifest V3, sem build: carregue a
+pasta em `chrome://extensions` → *Carregar sem compactação*.
 
-Pareamento **por código**, não por login (evita as restrições de CSP do MV3):
-Configurações → gera 6 dígitos (validade 10 min) → cola no popup da extensão →
-`/api/extension/exchange` devolve um token de dispositivo. O token é guardado só como
-hash SHA-256; o valor puro existe uma vez na resposta e vive no `chrome.storage.local`.
-Dispositivos são listáveis e revogáveis em Configurações.
+Pareamento em dois passos, direto do popup da extensão (sem digitar código):
+1. **Permissão de histórico** — `chrome.permissions.request({ permissions: ["history"] })`,
+   declarada como `optional_permissions` no manifest, então o Chrome só pede quando o
+   usuário clica.
+2. **Conectar à conta** — o popup gera um nonce e abre `/extension/connect?state=...` numa
+   aba (já autenticada, mesma sessão do navegador); o usuário clica "Autorizar" e a página
+   grava o vínculo (`extension_pairing_codes`, RLS pelo `auth.uid()`). O popup troca esse
+   nonce por um token via `/api/extension/exchange` (endpoint inalterado — só quem inicia
+   o pareamento mudou de lugar). Token guardado como hash SHA-256; o valor puro existe uma
+   vez na resposta e vive no `chrome.storage.local`. Dispositivos são listáveis e revogáveis
+   em Configurações.
+
+Estimativa de tempo: o `chrome.history` só dá timestamp de visita, não duração — a
+extensão varre todas as visitas (não só as redes sociais) a cada 10 min
+(`chrome.alarms`) e usa o intervalo até a *próxima* visita, de qualquer domínio, como
+"tempo gasto" na anterior. Intervalos acima de 30 min não contam (aba esquecida aberta,
+PC ocioso). É uma aproximação, não medição em tempo real — trade-off aceito pela
+permissão de escopo o mais mínimo possível: só o histórico, nada de observar abas ao vivo.
 
 ### Bot do Telegram
 
