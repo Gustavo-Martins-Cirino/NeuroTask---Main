@@ -11,11 +11,6 @@ __v0_jsx-dev-runtime.ts
 .env.*
 !.env.example
 
-# Python
-venv/
-__pycache__/
-*.pyc
-
 # Common ignores
 node_modules
 .next/

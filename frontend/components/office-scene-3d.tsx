@@ -240,6 +240,17 @@ function Scene({
   )
 }
 
+// Sem WebGL o <Canvas> do R3F estoura e derruba a página inteira. Aqui a cena
+// simplesmente não aparece e o resto (loja, avatar, visita) continua de pé.
+function temWebGL() {
+  try {
+    const c = document.createElement("canvas")
+    return !!(c.getContext("webgl2") || c.getContext("webgl"))
+  } catch {
+    return false
+  }
+}
+
 export function OfficeScene3D({
   working = false, onAvatarClick = () => {}, avatar, equipped, skinTint, nivel, className,
 }: OfficeScene3DProps) {
@@ -248,12 +259,37 @@ export function OfficeScene3D({
   const camD = 18 * (tamanhoDaSala(nivel) / 4)
   const alvoZ = -4 * (0.9 + recuoDaSala(nivel))
   const [phase, setPhase] = useState<Phase>("day")
+  // Síncrono no PRIMEIRO render: num useEffect o <Canvas> já teria montado e
+  // estourado antes da checagem. A cena só entra por dynamic(ssr:false), então
+  // aqui é sempre cliente — o typeof é só cinto de segurança.
+  const [webgl] = useState(() => (typeof window === "undefined" ? true : temWebGL()))
   useEffect(() => {
     const tick = () => setPhase(phaseOf(new Date().getHours()))
     tick()
     const t = setInterval(tick, 60_000)
     return () => clearInterval(t)
   }, [])
+
+  if (!webgl) {
+    return (
+      <div
+        className={className}
+        style={{ background: `linear-gradient(160deg, ${LIGHT[phase].bg}, ${LIGHT[phase].bg}cc)` }}
+      >
+        <div
+          className="flex flex-col items-center justify-center gap-1.5 px-6 text-center"
+          style={{ width: "100%", aspectRatio: "480 / 340" }}
+        >
+          <span className="text-3xl">🪑</span>
+          <p className="text-sm font-medium text-white/90">Seu escritório precisa de 3D</p>
+          <p className="max-w-xs text-xs text-white/70">
+            Este navegador está sem WebGL. A loja e o avatar continuam funcionando — abra em
+            outro navegador para ver a sala.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={className} style={{ background: `linear-gradient(160deg, ${LIGHT[phase].bg}, ${LIGHT[phase].bg}cc)` }}>

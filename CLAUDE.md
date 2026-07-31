@@ -4,9 +4,11 @@ Aplicativo pessoal de produtividade com gerenciamento de tarefas, time blocking,
 
 ## Stack
 
-**Frontend** (`frontend/`) — Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · shadcn/ui (Radix) · Framer Motion 12 · Supabase JS · Geist font
+**Aplicação única** (`frontend/`) — Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · shadcn/ui (Radix) · Framer Motion 12 · React Three Fiber · Supabase JS · Geist font
 
-**Backend** (`backend/`) — Python · FastAPI · Alembic (migrações) · Supabase (banco de dados e autenticação)
+**Servidor** — Route Handlers do próprio Next (`app/api/*`). Não existe serviço separado: o
+scaffold FastAPI/Alembic do commit inicial nunca foi usado e foi removido. Banco, auth,
+Realtime e agendamento (pg_cron) são do Supabase; SQLs rodados à mão (ver README.md).
 
 ## Estrutura do frontend
 
@@ -45,8 +47,8 @@ frontend/
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
 │   ├── robot-mascot.tsx      # Robozinho SVG animado (mascote da Neuro IA no modo voz)
-│   ├── office-scene.tsx      # Cena SVG isométrica 2.5D do Escritório (viva/reativa)
-│   ├── avatar-figure.tsx     # Bonequinho paper-doll (usado na cena e no editor)
+│   ├── office-scene-3d.tsx   # Cena 3D do Escritório (R3F) — sala/itens/avatar por nível
+│   ├── avatar-figure.tsx     # Bonequinho paper-doll (preview do editor de avatar)
 │   ├── avatar-editor.tsx     # Editor de avatar (cabelo/pele/roupa/fones)
 │   ├── friends-section.tsx   # Seção de amigos (usada em /app/friends)
 │   ├── page-transition.tsx   # Transições de página (AnimatePresence)
@@ -71,12 +73,8 @@ frontend/
 extension/                    # Extensão Chrome/Edge (Manifest V3, sem build step)
   manifest.json · background.js (tempo de tela) · popup.html/js (pareamento)
 
-supabase/                     # SQLs por feature (rodar no SQL Editor do Supabase)
-  fix_schema.sql · notes.sql · favorites.sql · task_lists.sql · gamification.sql
-  realtime.sql · reminders.sql · day_notes.sql · routine_profile.sql
-  routine_activities.sql · task_recurrence.sql · task_order.sql · activity_log.sql
-  xp_anticheat.sql · push.sql · push_cron.sql · coins_shop.sql · task_meeting.sql
-  friends.sql · social_v2.sql · friends_agenda.sql · skins.sql
+supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
+  27 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
 
 ## Rotas existentes
@@ -142,13 +140,15 @@ calendário com drag/recorrência/painel, mixer, lembretes, conversa por voz). E
 
 ## Como rodar
 
+Setup completo (env vars, ordem dos SQLs, pareamento da extensão/Telegram, deploy): **README.md**.
+
 ```bash
 cd frontend
 pnpm dev     # ou npm run dev
 ```
 
 **Notas de ambiente (pnpm 11):**
-- O build do `sharp` precisa estar autorizado em `frontend/pnpm-workspace.yaml` (`allowBuilds: { sharp: true }`). Sem isso, `pnpm install` sai com exit 1 e o pré-check `verify-deps-before-run` impede o `pnpm dev` de iniciar.
+- Os builds de `sharp` e `msedge-tts` precisam estar autorizados em `frontend/pnpm-workspace.yaml` (`allowBuilds`). Sem isso, `pnpm install` sai com exit 1 e o pré-check `verify-deps-before-run` impede o `pnpm dev` de iniciar.
 - Não copie a pasta `node_modules` entre diretórios: os symlinks do pnpm são absolutos e quebram (ex.: erro `Cannot find module '@swc/helpers/...'`). Rode `pnpm install` na pasta.
 
 ## Convenções
