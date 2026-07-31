@@ -117,7 +117,7 @@ export default function NotesPage() {
               </div>
             ) : notes.length === 0 ? (
               <p className="px-3 py-8 text-center text-sm text-muted-foreground">
-                Nenhuma nota ainda.
+                Nenhuma nota ainda. Clique em <b>Nova nota</b> para começar a escrever.
               </p>
             ) : (
               <AnimatePresence initial={false}>

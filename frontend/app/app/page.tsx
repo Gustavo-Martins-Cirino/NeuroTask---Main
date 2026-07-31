@@ -1,6 +1,7 @@
 "use client"
 
 import { Header } from "@/components/header"
+import { GettingStarted } from "@/components/getting-started"
 import { Calendar, CheckSquare, Bot, ArrowRight, Clock, Target, ListTodo, LayoutDashboard, Bell, Brain, Timer } from "lucide-react"
 import { fetchActivityInsights, type ActivityInsight } from "@/lib/activity-log"
 import { fetchScreenTimeInsights, type ScreenTimeInsight } from "@/lib/screen-time"
@@ -189,6 +190,8 @@ export default function DashboardPage() {
                 : "Tudo em dia. Que tal planejar algo novo?"}
             </p>
           </motion.div>
+
+          <GettingStarted />
 
           <motion.div
             variants={container}

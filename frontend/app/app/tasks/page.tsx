@@ -415,6 +415,9 @@ export default function TasksPage() {
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <ListTodo className="h-12 w-12 text-muted-foreground/40" />
                 <p className="mt-4 text-muted-foreground">Nenhuma tarefa por aqui. Que tal adicionar uma?</p>
+                <Button onClick={() => setDialogOpen(true)} size="sm" className="mt-4">
+                  <Plus className="mr-1.5 h-4 w-4" /> Criar tarefa
+                </Button>
               </div>
             ) : (
               <>
