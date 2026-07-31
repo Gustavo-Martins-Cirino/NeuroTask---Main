@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Header } from "@/components/header"
+import { ErrorsPanel } from "@/components/errors-panel"
 import { createClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
@@ -726,6 +727,8 @@ export default function SettingsPage() {
               Atualmente o app suporta Groq, Gemini e Claude — basta ter a chave correspondente.
             </p>
           </Section>
+
+          <ErrorsPanel />
 
           <Section icon={<LogOut className="h-5 w-5" />} title="Conta">
             <button

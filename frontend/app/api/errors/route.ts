@@ -98,3 +98,42 @@ export async function POST(req: Request) {
 
   return new Response(null, { status: 204 })
 }
+
+// Painel de erros pro DONO do app (ver quando quebra na mão dos testadores, sem
+// abrir o Supabase). Só responde com dados se o e-mail logado for OWNER_EMAIL —
+// senão devolve { owner: false } e o painel some. Lê TUDO pela service role
+// (a policy de RLS só deixa cada um ver os PRÓPRIOS erros).
+export async function GET() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase()
+  if (!supabaseUrl || !serviceKey) return Response.json({ owner: false })
+  if (!ownerEmail) return Response.json({ owner: false, unconfigured: true })
+
+  let email: string | undefined
+  try {
+    const supabase = await createClient()
+    const { data } = await supabase.auth.getUser()
+    email = data.user?.email?.toLowerCase()
+  } catch {}
+  if (!email || email !== ownerEmail) return Response.json({ owner: false })
+
+  const db = createServiceClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+  const desde = (ms: number) => new Date(Date.now() - ms).toISOString()
+  const [recentesR, total24R, total7R] = await Promise.all([
+    db.from("error_log").select("id, mensagem, rota, origem, commit_sha, criado_em, user_id").order("criado_em", { ascending: false }).limit(50),
+    db.from("error_log").select("id", { count: "exact", head: true }).gte("criado_em", desde(86_400_000)),
+    db.from("error_log").select("id", { count: "exact", head: true }).gte("criado_em", desde(7 * 86_400_000)),
+  ])
+  const recentes = recentesR.data ?? []
+  const porRota: Record<string, number> = {}
+  for (const e of recentes) {
+    const r = (e.rota as string) || "?"
+    porRota[r] = (porRota[r] ?? 0) + 1
+  }
+  return Response.json({
+    owner: true,
+    resumo: { total24: total24R.count ?? 0, total7: total7R.count ?? 0, porRota },
+    recentes,
+  })
+}

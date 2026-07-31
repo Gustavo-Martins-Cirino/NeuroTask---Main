@@ -47,9 +47,10 @@ pessoa** e **ela abrir o app e não saber o que fazer**.
 
 ### Não quebrar na frente do usuário
 
-- [ ] **Ver os erros sem abrir o Supabase**: a tabela `error_log` já recebe as falhas, mas
-      hoje só dá pra lê-la pelo painel. Enquanto olhar der trabalho, ninguém olha — falta
-      uma visão simples (Configurações?) com os últimos erros e um resumo.
+- [x] **Ver os erros sem abrir o Supabase**: `GET /api/errors` (service role, gated pelo
+      e-mail `OWNER_EMAIL`) + `ErrorsPanel` em Configurações — resumo (24h/7d + rotas que mais
+      quebram) e os últimos 50 erros (mensagem, rota, origem, commit, se deslogado). Aparece
+      SÓ pro dono; pra qualquer outro devolve `owner:false` e o painel some. Env nova: `OWNER_EMAIL`.
 - [x] **Cobertura dos módulos determinísticos** (`pnpm test`, 89 testes): fechada com
       `routine-insights` (19) e o planejamento retroativo (17). Os dois exigiram separar
       a decisão do I/O — `computeSuggestions` saiu de dentro do fetch, e a cadeia do dia
