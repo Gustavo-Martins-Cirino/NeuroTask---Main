@@ -74,7 +74,7 @@ extension/                    # Extensão Chrome/Edge (Manifest V3, sem build st
   manifest.json · background.js (tempo de tela) · popup.html/js (pareamento)
 
 supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
-  27 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
+  28 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
 
 ## Rotas existentes

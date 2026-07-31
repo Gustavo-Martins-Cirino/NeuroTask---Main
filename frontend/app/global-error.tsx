@@ -1,5 +1,8 @@
 "use client"
 
+import { useEffect } from "react"
+import { reportarErro } from "@/lib/error-report"
+
 // Último recurso: só dispara quando o PRÓPRIO layout raiz quebra. Substitui o
 // <html>/<body> inteiro, então não há ThemeProvider, fonte nem globals.css aqui
 // — o estilo vai inline de propósito, senão a tela de erro também quebraria.
@@ -11,6 +14,11 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    console.error("[global] layout raiz quebrou:", error)
+    reportarErro(error, "boundary-global", error.digest)
+  }, [error])
+
   return (
     <html lang="pt-BR">
       <body

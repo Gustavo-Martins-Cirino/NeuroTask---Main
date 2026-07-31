@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
+import { ErrorListener } from '@/components/error-listener'
 import './globals.css'
 
 const geistSans = Geist({ 
@@ -49,6 +50,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <ErrorListener />
           {children}
           <Toaster richColors position="bottom-right" />
         </ThemeProvider>

@@ -121,9 +121,24 @@ friends.sql → social_v2.sql → friends_agenda.sql → friends_v3.sql
 push.sql → push_cron.sql
 ```
 
-**6. Integrações externas** (só se for usá-las)
+**6. Registro de erros** — falhas do navegador capturadas por `/api/errors`
+```
+error_log.sql
+```
+
+**7. Integrações externas** (só se for usá-las)
 ```
 extension_screen_time.sql · telegram.sql
+```
+
+### Ver os erros que aconteceram
+
+`error_log` guarda as falhas do navegador por 30 dias. Enquanto não há tela para isso,
+consulte pelo SQL Editor:
+
+```sql
+select criado_em, origem, rota, mensagem, digest, commit_sha
+from error_log order by criado_em desc limit 50;
 ```
 
 ### Configuração do Supabase Auth

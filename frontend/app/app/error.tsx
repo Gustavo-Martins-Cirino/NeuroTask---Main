@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { RotateCw, House, TriangleAlert } from "lucide-react"
+import { reportarErro } from "@/lib/error-report"
 
 // Erro dentro do app logado. Fica DENTRO do AppShell, então o dock continua na
 // tela: a pessoa sai andando pra outra rota em vez de ficar presa. Sem isso,
@@ -17,9 +18,8 @@ export default function AppError({
   reset: () => void
 }) {
   useEffect(() => {
-    // Único lugar onde o erro aparece hoje. É aqui que o monitoramento entra
-    // quando existir (Fase 5) — sem ele, só descobrimos a falha se contarem.
     console.error("[app] erro não tratado:", error)
+    reportarErro(error, "boundary-app", error.digest)
   }, [error])
 
   return (

@@ -47,12 +47,9 @@ pessoa** e **ela abrir o app e não saber o que fazer**.
 
 ### Não quebrar na frente do usuário
 
-- [ ] **Error boundaries** (`error.tsx` por rota + `global-error.tsx`): hoje só existe
-      `app/not-found.tsx`, então qualquer erro de render vira a tela branca "Application
-      error" do Next — sem mensagem, sem saída, sem volta. Precisa de tela amigável com
-      "tentar de novo" e caminho de volta pro app.
-- [ ] **Monitoramento de erro**: hoje só há `@vercel/analytics`, que conta pageview e não
-      exceção. Sem isso você só descobre uma falha se a pessoa contar — e ela não conta.
+- [ ] **Ver os erros sem abrir o Supabase**: a tabela `error_log` já recebe as falhas, mas
+      hoje só dá pra lê-la pelo painel. Enquanto olhar der trabalho, ninguém olha — falta
+      uma visão simples (Configurações?) com os últimos erros e um resumo.
 - [ ] **Testes dos módulos determinísticos**: `task-recurrence`, `gamification` (anti-farm),
       `calendar-warnings`, `routine-insights`, `telegram-commands`. São funções puras: barato
       de testar e exatamente onde a lógica sutil regride sem ninguém ver. Hoje não há nenhum

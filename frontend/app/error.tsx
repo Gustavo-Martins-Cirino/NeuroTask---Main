@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { RotateCw } from "lucide-react"
+import { reportarErro } from "@/lib/error-report"
 
 // Erro nas rotas públicas (landing, login, cadastro). Aqui não há AppShell nem
 // dock pra segurar a pessoa, então o caminho de volta é explícito. Quebrar no
@@ -17,6 +18,7 @@ export default function PublicError({
 }) {
   useEffect(() => {
     console.error("[público] erro não tratado:", error)
+    reportarErro(error, "boundary-publico", error.digest)
   }, [error])
 
   return (
