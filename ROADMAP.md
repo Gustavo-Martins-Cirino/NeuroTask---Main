@@ -50,10 +50,11 @@ pessoa** e **ela abrir o app e não saber o que fazer**.
 - [ ] **Ver os erros sem abrir o Supabase**: a tabela `error_log` já recebe as falhas, mas
       hoje só dá pra lê-la pelo painel. Enquanto olhar der trabalho, ninguém olha — falta
       uma visão simples (Configurações?) com os últimos erros e um resumo.
-- [ ] **Testes dos módulos determinísticos**: `task-recurrence`, `gamification` (anti-farm),
-      `calendar-warnings`, `routine-insights`, `telegram-commands`. São funções puras: barato
-      de testar e exatamente onde a lógica sutil regride sem ninguém ver. Hoje não há nenhum
-      teste no repo nem script `test` no `package.json`.
+- [ ] **Terminar a cobertura de testes**: falta `routine-insights` (mineração dos blocos e
+      dos check-ins) e o planejamento retroativo da rota de IA, que é a lógica mais delicada
+      do app e hoje não tem rede de proteção nenhuma. Os quatro primeiros módulos já estão
+      cobertos (`pnpm test`) e a suíte achou um bug de verdade logo de cara, então vale
+      continuar.
 - [ ] **Varredura do fluxo principal fora da sua máquina**: navegador sem WebGL, tela pequena,
       fuso diferente, e o primeiro login com o banco zerado.
 

@@ -35,11 +35,34 @@ export function nextOccurrence(from: Date, rule: string): Date | null {
 
 // Próxima ocorrência garantidamente no futuro (pula ocorrências já passadas)
 export function nextFutureOccurrence(base: Date | null, rule: string): Date | null {
-  let next = nextOccurrence(base ?? new Date(), rule)
+  const next = nextOccurrence(base ?? new Date(), rule)
+  if (!next) return null
+
+  const agora = Date.now()
+  if (next.getTime() > agora) return next
+
+  // Regras em dias saltam DIRETO para a próxima ocorrência futura. Avançar de
+  // um em um esbarrava no limite do laço: uma tarefa diária largada por mais
+  // de ~2,7 anos devolvia data no PASSADO como se fosse o próximo prazo.
+  const dias =
+    rule === "daily" ? 1 : rule === "weekly" ? 7 : Number(rule.match(/^every:(\d+)$/)?.[1] ?? 0)
+
+  if (dias > 0) {
+    const passo = dias * 86_400_000
+    const saltos = Math.ceil((agora - next.getTime()) / passo)
+    next.setDate(next.getDate() + saltos * dias)
+    // O salto é por ms e a aplicação é por dia de calendário: no horário de
+    // verão isso pode faltar uma hora. Uma volta resolve.
+    while (next.getTime() <= agora) next.setDate(next.getDate() + dias)
+    return next
+  }
+
+  // monthly/yearly convergem rápido (cada volta é um mês ou um ano).
+  let atual: Date | null = next
   let guard = 0
-  while (next && next.getTime() <= Date.now() && guard < 1000) {
-    next = nextOccurrence(next, rule)
+  while (atual && atual.getTime() <= agora && guard < 5000) {
+    atual = nextOccurrence(atual, rule)
     guard++
   }
-  return next
+  return atual
 }

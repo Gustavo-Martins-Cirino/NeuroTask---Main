@@ -33,16 +33,29 @@ cd frontend
 pnpm install
 cp .env.example .env.local   # preencha (ver abaixo)
 pnpm dev                     # http://localhost:3000
+pnpm test                    # suíte dos módulos determinísticos
 ```
 
 Antes do primeiro login, rode os SQLs em [supabase/](supabase/) — ver
 [Banco de dados](#banco-de-dados).
 
+### Testes
+
+`pnpm test` (Vitest) cobre só os módulos **determinísticos** de `lib/` — os que decidem
+datas, XP, recorrência e parsing sem tocar em rede: `task-recurrence`, `gamification`
+(anti-farm), `calendar-warnings` e `telegram-commands`. É onde a lógica sutil regride sem
+ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de
+Supabase, e não é ali que mora o risco.
+
+A config é `vitest.config.mts` — a extensão `.mts` é obrigatória, porque o Vite 7 é
+ESM-only e o `package.json` não é `type: module`.
+
 ### Notas de ambiente (pnpm 11)
 
-- Os builds de `sharp` e `msedge-tts` precisam estar autorizados em
+- Os builds de `sharp`, `msedge-tts` e `esbuild` precisam estar autorizados em
   [frontend/pnpm-workspace.yaml](frontend/pnpm-workspace.yaml) (`allowBuilds`). Sem isso o
-  `pnpm install` sai com exit 1 e o pré-check impede o `pnpm dev` de iniciar.
+  `pnpm install` sai com exit 1 e o pré-check impede o `pnpm dev` de iniciar. O `esbuild`
+  é do Vitest: sem a aprovação, `pnpm test` não acha o binário nativo.
 - **Não copie `node_modules` entre pastas**: os symlinks do pnpm são absolutos e quebram
   (ex.: `Cannot find module '@swc/helpers/...'`). Rode `pnpm install` na pasta.
 

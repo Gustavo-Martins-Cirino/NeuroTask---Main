@@ -157,4 +157,5 @@ pnpm dev     # ou npm run dev
 - Ícones: `lucide-react`
 - Classes: `cn()` de `@/lib/utils` para condicionais
 - Sem comentários desnecessários no código
+- Módulo determinístico novo em `lib/` nasce com `lib/<nome>.test.ts` (Vitest, `pnpm test`)
 - Framer Motion: `motion.*` components, `AnimatePresence` para enter/exit, `layoutId` para shared layout animations
