@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
 
 export const runtime = "nodejs"
 
@@ -641,40 +642,16 @@ async function executeTool(
           supabase.from("routine_activities").select("name, category, duration_minutes"),
           supabase.from("routine_profile").select("sleep_hours").maybeSingle(),
         ])
-        const acts = actsRaw ?? []
-        const sleepH = Number(prof?.sleep_hours ?? 8)
-        const notes: string[] = []
+        // A cadeia é calculada por regra em lib/backward-plan.ts (puro e
+        // testado) — o modelo só extrai o compromisso-âncora.
+        const { plan, wake, sleepStart, notes } = planejarDeTrasPraFrente({
+          anchorTitle,
+          anchorStart,
+          anchorEnd,
+          atividades: actsRaw ?? [],
+          sleepHours: Number(prof?.sleep_hours ?? 8),
+        })
 
-        // Escolhe a atividade de cada categoria: melhor match com o nome do
-        // compromisso (ex.: "faculdade" → "Deslocamento → Faculdade"), senão a única/primeira
-        const pick = (cat: string, fallbackName: string, fallbackDur: number) => {
-          const cands = acts.filter((a) => a.category === cat)
-          if (cands.length === 0) return { name: fallbackName, dur: fallbackDur }
-          if (cands.length === 1) return { name: cands[0].name, dur: cands[0].duration_minutes }
-          const tokens = normTitle(anchorTitle).split(" ").filter((t) => t.length >= 4)
-          const match = cands.find((c) => tokens.some((t) => normTitle(c.name).includes(t)))
-          if (match) return { name: match.name, dur: match.duration_minutes }
-          notes.push(`Usei "${cands[0].name}"; você também tem: ${cands.slice(1).map((c) => c.name).join(", ")} — me avise se preferir outra.`)
-          return { name: cands[0].name, dur: cands[0].duration_minutes }
-        }
-        const prep = pick("preparo", "Se arrumar", 45)
-        const meal = pick("refeicao", "Café da manhã", 20)
-        const move = pick("deslocamento", "Deslocamento", 30)
-
-        // Cadeia de trás pra frente (determinística)
-        const min = 60_000
-        const moveStart = new Date(anchorStart.getTime() - move.dur * min)
-        const mealStart = new Date(moveStart.getTime() - meal.dur * min)
-        const wake = new Date(mealStart.getTime() - prep.dur * min)
-        const sleepStart = new Date(wake.getTime() - sleepH * 3_600_000)
-
-        const plan = [
-          { title: "Dormir", start: sleepStart, end: wake, color: "#6366f1" },
-          { title: prep.name, start: wake, end: mealStart, color: "#8b5cf6" },
-          { title: meal.name, start: mealStart, end: moveStart, color: "#f97316" },
-          { title: move.name, start: moveStart, end: anchorStart, color: "#06b6d4" },
-          { title: anchorTitle, start: anchorStart, end: anchorEnd, color: "#3b82f6" },
-        ]
         const proposal = plan.map(
           (p) => `${fmtDM(p.start, tzMin)} ${fmtHM(p.start, tzMin)}–${fmtHM(p.end, tzMin)} · ${p.title}`
         )

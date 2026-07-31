@@ -52,25 +52,30 @@ function ignoredSet(): Set<string> {
   }
 }
 
-export async function fetchRoutineSuggestions(activities: RoutineActivity[]): Promise<RoutineSuggestion[]> {
-  const supabase = createClient()
-  const since = new Date(Date.now() - 30 * 24 * 3_600_000).toISOString()
+// Blocos e check-ins como vêm do banco — só o que a decisão precisa.
+export interface BlocoBruto {
+  title: string
+  start_time: string
+  end_time: string
+}
+export interface CheckinBruto {
+  title: string
+  actual_minutes: number
+}
 
-  const [blocksR, logR] = await Promise.all([
-    supabase
-      .from("time_blocks")
-      .select("title, start_time, end_time")
-      .gte("start_time", since)
-      .lte("start_time", new Date().toISOString()),
-    supabase.from("activity_log").select("title, actual_minutes").gte("done_at", since).limit(300),
-  ])
-
-  const ignored = ignoredSet()
+// Núcleo determinístico, separado do I/O para poder ser testado sozinho:
+// dados dentro → sugestões fora, sem rede, banco ou localStorage.
+export function computeSuggestions(
+  blocks: BlocoBruto[],
+  checkins: CheckinBruto[],
+  activities: RoutineActivity[],
+  ignored: Set<string> = new Set()
+): RoutineSuggestion[] {
   const out: RoutineSuggestion[] = []
 
   // ---- 1. Novas atividades: título recorrente em ≥ 3 dias distintos ----
   const groups = new Map<string, { title: string; days: Set<string>; durations: number[] }>()
-  for (const b of blocksR.data ?? []) {
+  for (const b of blocks) {
     const t = norm(b.title)
     if (!t || /dormir|sono|sleep/.test(t)) continue
     if (!groups.has(t)) groups.set(t, { title: b.title, days: new Set(), durations: [] })
@@ -92,7 +97,7 @@ export async function fetchRoutineSuggestions(activities: RoutineActivity[]): Pr
 
   // ---- 2. Ajustes de duração: check-ins dizem que a atividade leva outro tempo ----
   const logByTitle = new Map<string, number[]>()
-  for (const row of logR.data ?? []) {
+  for (const row of checkins) {
     const t = norm(row.title)
     if (!logByTitle.has(t)) logByTitle.set(t, [])
     logByTitle.get(t)!.push(row.actual_minutes)
@@ -110,4 +115,20 @@ export async function fetchRoutineSuggestions(activities: RoutineActivity[]): Pr
   }
 
   return out.slice(0, 4)
+}
+
+export async function fetchRoutineSuggestions(activities: RoutineActivity[]): Promise<RoutineSuggestion[]> {
+  const supabase = createClient()
+  const since = new Date(Date.now() - 30 * 24 * 3_600_000).toISOString()
+
+  const [blocksR, logR] = await Promise.all([
+    supabase
+      .from("time_blocks")
+      .select("title, start_time, end_time")
+      .gte("start_time", since)
+      .lte("start_time", new Date().toISOString()),
+    supabase.from("activity_log").select("title, actual_minutes").gte("done_at", since).limit(300),
+  ])
+
+  return computeSuggestions(blocksR.data ?? [], logR.data ?? [], activities, ignoredSet())
 }
