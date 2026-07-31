@@ -67,10 +67,12 @@ pessoa** e **ela abrir o app e não saber o que fazer**.
       precisa de um primeiro caminho óbvio.
 - [ ] **Estados vazios com ação**: cada rota vazia deve dizer o que fazer ali, não só que
       está vazia.
-- [ ] **Caminho de migração de quem já usa calendário**: a agenda dele já existe no Google.
-      Enquanto migrar significar digitar tudo de novo, ele não migra. Isso promove a
-      **importação** de item de integração a requisito de adoção — ver "Calendário aberto
-      pra fora", abaixo.
+- [ ] **Importação de calendário (`.ics`)**: a agenda de quem vamos convidar já existe no
+      Google. Enquanto migrar significar digitar tudo de novo, ninguém migra — por mais
+      estável que o app esteja. Ler um `.ics` exportado do Google e criar os blocos é o que
+      transforma "app interessante" em "app que dá pra usar amanhã", então é requisito de
+      adoção e não item de integração. Escopo mínimo: upload do arquivo, prévia do que será
+      criado, confirmação do usuário (nunca importar às cegas) e dedupe ao reimportar.
 
 ### Fechar o ciclo de feedback
 
@@ -97,9 +99,9 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 ### Calendário aberto pra fora
 
-- [ ] **Importação ICS** — *puxada para a Fase 5*: ler um `.ics` exportado do Google e criar
-      os blocos. É o que tira "digitar tudo de novo" do caminho de quem já tem calendário,
-      então virou requisito de adoção e não item de integração.
+> A **importação** `.ics` está na Fase 5, acima: sem ela ninguém migra do Google, então
+> ela é requisito de adoção. O que sobra aqui é o caminho de volta.
+
 - [ ] **Exportação ICS**: os blocos de tempo viram um `.ics`. Hoje a agenda do NeuroTask não
       sai do NeuroTask. Ponto de atenção: a recorrência tem regra própria em
       `lib/task-recurrence.ts` e precisa virar `RRULE` de verdade — nos dois sentidos.
