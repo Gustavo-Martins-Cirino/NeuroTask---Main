@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { Header } from "@/components/header"
 import { TimeBlockDialog } from "@/components/time-block-dialog"
+import { IcsImportDialog } from "@/components/ics-import-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
 import type { TimeBlock, Task, Reminder } from "@/lib/types"
 import { REMINDER_COLORS } from "@/lib/reminders"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarPlus, ChevronDown, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
 import { fetchRoutine, type RoutineProfile } from "@/lib/routine"
 import { computeWarnings } from "@/lib/calendar-warnings"
 
@@ -91,6 +92,7 @@ export default function CalendarPage() {
   const [blocks, setBlocks] = useState<TimeBlock[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editingBlock, setEditingBlock] = useState<TimeBlock | null>(null)
   const [defaultStart, setDefaultStart] = useState<Date | undefined>()
   const [defaultEnd, setDefaultEnd] = useState<Date | undefined>()
@@ -433,7 +435,16 @@ export default function CalendarPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Meu Dia · Time Blocking" icon={<CalendarDays className="h-4 w-4" />} />
+      <Header title="Meu Dia · Time Blocking" icon={<CalendarDays className="h-4 w-4" />}>
+        <button
+          onClick={() => setImportOpen(true)}
+          className="ml-2 flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          title="Importar agenda do Google Calendar (.ics)"
+        >
+          <CalendarPlus className="h-4 w-4" />
+          <span className="hidden sm:inline">Importar</span>
+        </button>
+      </Header>
 
       <div className="flex flex-1 flex-col">
         {/* Toolbar */}
@@ -850,6 +861,8 @@ export default function CalendarPage() {
         tasks={tasks}
         onSuccess={fetchData}
       />
+
+      <IcsImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={fetchData} />
     </div>
   )
 }

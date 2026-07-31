@@ -65,12 +65,13 @@ pessoa** e **ela abrir o app e não saber o que fazer**.
       precisa de um primeiro caminho óbvio.
 - [ ] **Estados vazios com ação**: cada rota vazia deve dizer o que fazer ali, não só que
       está vazia.
-- [ ] **Importação de calendário (`.ics`)**: a agenda de quem vamos convidar já existe no
-      Google. Enquanto migrar significar digitar tudo de novo, ninguém migra — por mais
-      estável que o app esteja. Ler um `.ics` exportado do Google e criar os blocos é o que
-      transforma "app interessante" em "app que dá pra usar amanhã", então é requisito de
-      adoção e não item de integração. Escopo mínimo: upload do arquivo, prévia do que será
-      criado, confirmação do usuário (nunca importar às cegas) e dedupe ao reimportar.
+- [x] **Importação de calendário (`.ics`)**: o que transforma "app interessante" em "app que
+      dá pra usar amanhã" — a agenda de quem convidamos já existe no Google. Parser puro e
+      testado (`lib/ics.ts` + `ics.test.ts`, 8 casos: UTC/local/dia-inteiro/RRULE/unfold);
+      `IcsImportDialog` no Calendário (botão Importar) faz upload → **prévia com seleção** →
+      cria os blocos, sempre com confirmação (nunca às cegas). Dedupe por título+início
+      (reimportar não duplica). Recorrência simples (diário/semanal/dias úteis) mapeada de
+      RRULE; mensal/complexa vira evento único. TZID tratado como fuso do navegador (v1).
 
 ### Fechar o ciclo de feedback
 
