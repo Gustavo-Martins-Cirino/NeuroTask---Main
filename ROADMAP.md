@@ -60,11 +60,12 @@ pessoa** e **ela abrir o app e não saber o que fazer**.
 
 ### Sobreviver ao primeiro dia
 
-- [ ] **Onboarding**: hoje o novo usuário cai num dashboard vazio, sem pista de que existem
-      planejamento retroativo, Escritório, modo voz e foco. Não precisa de tour longo —
-      precisa de um primeiro caminho óbvio.
-- [ ] **Estados vazios com ação**: cada rota vazia deve dizer o que fazer ali, não só que
-      está vazia.
+- [x] **Onboarding**: card "Comece por aqui" no dashboard (`GettingStarted`) — checklist de
+      3 passos que se marcam sozinhos (tarefa criada/concluída, algum bloco no calendário) e
+      some ao fechar; atalhos p/ planejar com a IA, importar do Google e o Escritório.
+      Dispensável (localStorage).
+- [x] **Estados vazios com ação**: o vazio de Tarefas ganhou botão "Criar tarefa" e o de
+      Notas aponta o "Nova nota". (Varrer as demais rotas conforme o feedback pedir.)
 - [x] **Importação de calendário (`.ics`)**: o que transforma "app interessante" em "app que
       dá pra usar amanhã" — a agenda de quem convidamos já existe no Google. Parser puro e
       testado (`lib/ics.ts` + `ics.test.ts`, 8 casos: UTC/local/dia-inteiro/RRULE/unfold);
@@ -75,10 +76,10 @@ pessoa** e **ela abrir o app e não saber o que fazer**.
 
 ### Fechar o ciclo de feedback
 
-- [ ] **Botão de feedback dentro do app**, gravando junto o commit devolvido por
-      `/api/version` (a rota já existe e hoje nada a consome). Sem isso o feedback chega
-      solto no WhatsApp, sem versão e sem contexto — e some.
-- [ ] **Caminho para reproduzir** o que a pessoa viu (rota, horário, o que ela tentou).
+- [x] **Botão de feedback dentro do app** (`FeedbackButton` no header + `supabase/feedback.sql`):
+      tipo (problema/ideia/outro) + texto, gravando junto a ROTA, o COMMIT (`/api/version`),
+      o user-agent e a hora — o "caminho para reproduzir" já vai anexado, então o feedback
+      não chega mais solto e sem contexto.
 
 **Critério de pronto**: alguém que nunca viu o app abre, entende o que fazer sem você do
 lado, e volta no dia seguinte sozinho.

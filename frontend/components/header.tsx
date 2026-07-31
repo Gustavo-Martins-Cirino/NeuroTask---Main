@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { XpBar } from "@/components/xp-bar"
+import { FeedbackButton } from "@/components/feedback-button"
 import { createClient } from "@/lib/supabase/client"
 import { fetchGamification, computeGamification, XP_UPDATED_EVENT, type Gamification, type XpUpdateDetail } from "@/lib/gamification"
 import { useRouter } from "next/navigation"
@@ -95,6 +96,8 @@ export function Header({ title, icon, children }: HeaderProps) {
         />
 
         <div className="h-6 w-px bg-border/60" />
+
+        <FeedbackButton />
 
         <Button
           variant="ghost"
