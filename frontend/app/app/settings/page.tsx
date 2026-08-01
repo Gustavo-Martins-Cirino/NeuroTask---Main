@@ -8,9 +8,8 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Puzzle, Send } from "lucide-react"
+import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Send } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
-import { fetchPairedDevices, revokeDevice, type PairedDevice } from "@/lib/extension-pairing"
 import { generateTelegramCode, fetchTelegramLinks, unlinkTelegram, type TelegramLink } from "@/lib/telegram"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
 import { toast } from "sonner"
@@ -142,17 +141,6 @@ export default function SettingsPage() {
       }
     }
     setPushBusy(false)
-  }
-
-  const [devices, setDevices] = useState<PairedDevice[]>([])
-
-  useEffect(() => {
-    fetchPairedDevices().then(setDevices)
-  }, [])
-
-  const handleRevokeDevice = async (id: string) => {
-    setDevices((prev) => prev.filter((d) => d.id !== id))
-    await revokeDevice(id)
   }
 
   const [tgLinks, setTgLinks] = useState<TelegramLink[]>([])
@@ -572,45 +560,6 @@ export default function SettingsPage() {
                 />
               </span>
             </button>
-          </Section>
-
-          <Section
-            icon={<Puzzle className="h-5 w-5" />}
-            title="Extensão do navegador"
-            description="Tempo de tela em redes sociais → insights no dashboard"
-          >
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                A conexão começa pela própria extensão: clique no ícone dela na barra do
-                navegador e siga os dois passos (permissão de histórico + conectar à conta).
-              </p>
-
-              {devices.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Dispositivos pareados</p>
-                  {devices.map((d) => (
-                    <div
-                      key={d.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-border/50 p-3"
-                    >
-                      <span>
-                        <span className="block text-sm font-medium">{d.label}</span>
-                        <span className="block text-xs text-muted-foreground">
-                          {d.last_seen_at ? `Visto por último em ${new Date(d.last_seen_at).toLocaleDateString("pt-BR")}` : "Ainda sem dados"}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRevokeDevice(d.id)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </Section>
 
           <Section

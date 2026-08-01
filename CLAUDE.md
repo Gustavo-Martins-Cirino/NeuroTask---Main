@@ -70,9 +70,6 @@ frontend/
 │   └── utils.ts              # cn()
 └── styles/global.css
 
-extension/                    # Extensão Chrome/Edge (Manifest V3, sem build step)
-  manifest.json · background.js (tempo de tela) · popup.html/js (pareamento)
-
 supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
   28 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
@@ -89,24 +86,17 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 | `/app/ai` | Chat de IA (Vercel AI SDK, rota `app/api/ai`) |
 | `/app/office` | Escritório — cena 3D (R3F) viva + loja cosmética (moedas via XP) |
 | `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório (em 3D) |
-| `/app/settings` | Configurações (rotina, push, tema, extensão de navegador, Telegram) |
+| `/app/settings` | Configurações (rotina, push, tema, Telegram) |
 
 ## Integrações externas (Fase 4)
 
-- **Extensão de navegador** (`extension/`): estima tempo de tela em redes sociais a
-  partir do `chrome.history` (permissão opcional, pedida em runtime) → card no
-  dashboard. Pareamento em 2 passos iniciados pela própria extensão: permissão de
-  histórico, depois `app/extension/connect` (aba autenticada, 1 clique) grava o vínculo
-  que o popup troca por token em `/api/extension/exchange`; ingestão em
-  `/api/extension/screen-time`. Sem duração real disponível no histórico, o tempo é
-  aproximado pelo intervalo entre visitas consecutivas (teto de 30 min por intervalo).
-- **Bot do Telegram**: mensagem → tarefa. Mesmo pareamento por código
-  (`/start CODIGO`). Webhook em `app/api/telegram/webhook` protegido pelo header
-  `x-telegram-bot-api-secret-token`; `app/api/telegram/setup` registra o webhook.
-  Parser puro e determinístico em `lib/telegram-commands.ts` (sem LLM).
+- **Bot do Telegram**: mensagem → tarefa. Pareamento por código
+  (`/start CODIGO`, gerado em Configurações). Webhook em `app/api/telegram/webhook`
+  protegido pelo header `x-telegram-bot-api-secret-token`; `app/api/telegram/setup`
+  registra o webhook. Parser puro e determinístico em `lib/telegram-commands.ts` (sem LLM).
 
 **Variáveis de ambiente novas**: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`.
-Ambas as integrações reaproveitam `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
+Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
 
 ## Decisões de design ativas
 
@@ -144,7 +134,7 @@ calendário com drag/recorrência/painel, mixer, lembretes, conversa por voz). E
 
 ## Como rodar
 
-Setup completo (env vars, ordem dos SQLs, pareamento da extensão/Telegram, deploy): **README.md**.
+Setup completo (env vars, ordem dos SQLs, pareamento do Telegram, deploy): **README.md**.
 
 ```bash
 cd frontend

@@ -51,9 +51,6 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/signup') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/reset-password') &&
-    // /extension/connect precisa do próprio usuário deslogado pra mostrar o
-    // convite de login sem perder o ?state= do pareamento (a página cuida disso).
-    !request.nextUrl.pathname.startsWith('/extension') &&
     request.nextUrl.pathname !== '/'
   ) {
     const url = request.nextUrl.clone()

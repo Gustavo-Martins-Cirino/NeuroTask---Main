@@ -25,8 +25,8 @@ As quatro fases planejadas foram entregues: fundação de uso real (deploy, mobi
 próprio), o copiloto (planejamento retroativo, perfil e atividades de rotina, avisos
 determinísticos, check-in pós-horário, rotina aprendida), hábito e gamificação (anti-farm
 de XP no servidor, moedas, Escritório 3D com loja e avatar, social com amigos/agenda/
-convites, push real via pg_cron) e as integrações externas (extensão de navegador e bot do
-Telegram, ambas com pareamento por código).
+convites, push real via pg_cron) e a integração externa do bot do Telegram, com
+pareamento por código.
 
 O app está feature-complete nas rotas existentes. O que falta não é capacidade nova — é
 **confiança**: ele ainda não foi entregue a ninguém além do autor.

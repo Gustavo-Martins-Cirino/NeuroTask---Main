@@ -16,11 +16,9 @@ em Route Handlers do Next; o banco, a autenticação e o agendamento são do Sup
   shadcn/ui (Radix) · Framer Motion 12 · React Three Fiber (Escritório 3D)
 - **Dados e auth** — Supabase (Postgres + RLS + Realtime + pg_cron)
 - **IA** — Groq (padrão, com tool-calling), com Gemini e Anthropic como alternativas
-- **Extensão** — Chrome/Edge Manifest V3, sem build step
 
 ```
 frontend/     app Next.js (UI + rotas de API)
-extension/    extensão de navegador (tempo de tela)
 supabase/     scripts SQL por feature + templates de e-mail
 ```
 
@@ -70,7 +68,7 @@ Todas em `frontend/.env.local` (e nas envs do projeto na Vercel). O arquivo
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chave pública (aceita `NEXT_PUBLIC_SUPABASE_ANON_KEY` como fallback) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Só no servidor.** Bypass de RLS no dispatcher de push, na extensão e no webhook do Telegram |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Só no servidor.** Bypass de RLS no dispatcher de push e no webhook do Telegram |
 
 ### IA — pelo menos uma
 
@@ -97,8 +95,6 @@ O `GROQ_API_KEY` também serve à transcrição de áudio (Whisper) do botão de
 | `TELEGRAM_WEBHOOK_SECRET` | Valida o header `x-telegram-bot-api-secret-token`. **Sem ele qualquer um forja um update e escreve na conta de outra pessoa** |
 | `DEFAULT_TZ_OFFSET_MIN` | Fuso dos horários locais. Padrão `180` (Brasil, UTC−3) |
 | `NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL` | Redirect de cadastro em desenvolvimento |
-
-A extensão de navegador não pede env nova — reusa o `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Banco de dados
 
@@ -141,7 +137,7 @@ error_log.sql
 
 **7. Integrações externas** (só se for usá-las)
 ```
-extension_screen_time.sql · telegram.sql
+telegram.sql
 ```
 
 ### Ver os erros que aconteceram
@@ -163,31 +159,6 @@ from error_log order by criado_em desc limit 50;
   cross-device — confirmar o e-mail no celular e voltar no desktop.
 
 ## Integrações externas
-
-### Extensão de navegador (`extension/`)
-
-Estima tempo de tela em redes sociais a partir do **histórico do Chrome** (não mais
-observando a aba ativa) e alimenta o card do dashboard. Manifest V3, sem build: carregue a
-pasta em `chrome://extensions` → *Carregar sem compactação*.
-
-Pareamento em dois passos, direto do popup da extensão (sem digitar código):
-1. **Permissão de histórico** — `chrome.permissions.request({ permissions: ["history"] })`,
-   declarada como `optional_permissions` no manifest, então o Chrome só pede quando o
-   usuário clica.
-2. **Conectar à conta** — o popup gera um nonce e abre `/extension/connect?state=...` numa
-   aba (já autenticada, mesma sessão do navegador); o usuário clica "Autorizar" e a página
-   grava o vínculo (`extension_pairing_codes`, RLS pelo `auth.uid()`). O popup troca esse
-   nonce por um token via `/api/extension/exchange` (endpoint inalterado — só quem inicia
-   o pareamento mudou de lugar). Token guardado como hash SHA-256; o valor puro existe uma
-   vez na resposta e vive no `chrome.storage.local`. Dispositivos são listáveis e revogáveis
-   em Configurações.
-
-Estimativa de tempo: o `chrome.history` só dá timestamp de visita, não duração — a
-extensão varre todas as visitas (não só as redes sociais) a cada 10 min
-(`chrome.alarms`) e usa o intervalo até a *próxima* visita, de qualquer domínio, como
-"tempo gasto" na anterior. Intervalos acima de 30 min não contam (aba esquecida aberta,
-PC ocioso). É uma aproximação, não medição em tempo real — trade-off aceito pela
-permissão de escopo o mais mínimo possível: só o histórico, nada de observar abas ao vivo.
 
 ### Bot do Telegram
 
