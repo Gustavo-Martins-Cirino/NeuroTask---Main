@@ -87,6 +87,12 @@ O `GROQ_API_KEY` também serve à transcrição de áudio (Whisper) do botão de
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Par VAPID do Web Push (`npx web-push generate-vapid-keys`) |
 | `CRON_SECRET` | Protege `/api/push/dispatch` e `/api/telegram/setup`. O **mesmo** valor vai dentro de `push_cron.sql` |
 
+### Painel do dono
+
+| Variável | Para quê |
+|---|---|
+| `OWNER_EMAIL` | Seu e-mail. Libera `/admin` (feedbacks, usuários, erros, uso) e o painel de erros em Configurações. **Sem ela `/admin` responde 404 para todo mundo, inclusive você** |
+
 ### Integrações (opcionais)
 
 | Variável | Para quê |
@@ -142,13 +148,24 @@ telegram.sql
 
 ### Ver os erros que aconteceram
 
-`error_log` guarda as falhas do navegador por 30 dias. Enquanto não há tela para isso,
-consulte pelo SQL Editor:
+O caminho normal é o painel do dono em **`/admin`** (ver abaixo) — `error_log` guarda as
+falhas do navegador por 30 dias. Direto pelo SQL Editor, se preferir:
 
 ```sql
 select criado_em, origem, rota, mensagem, digest, commit_sha
 from error_log order by criado_em desc limit 50;
 ```
+
+## Painel do dono (`/admin`)
+
+Rota do próprio app com feedbacks, usuários (cadastro, último acesso, nível), erros
+recentes e números de uso. O portão é **do lado do servidor**: quem não estiver logado
+com o `OWNER_EMAIL` recebe 404 e nunca chega a receber os dados — não é só esconder da
+tela. Lê tudo pela service role de propósito (a tabela `feedback` não tem policy de
+`select`, e nenhum usuário deve ver dado de outro pelo app).
+
+Não há link para `/admin` na navegação: é acesso por URL direta, para não anunciar a
+existência do painel a quem usa o app.
 
 ### Configuração do Supabase Auth
 

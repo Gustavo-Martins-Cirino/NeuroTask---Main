@@ -32,6 +32,7 @@ frontend/
 │   ├── auth/
 │   │   ├── callback/route.ts # OAuth callback Supabase
 │   │   └── error/page.tsx
+│   ├── admin/page.tsx        # Painel do dono (server component, gate por OWNER_EMAIL)
 │   ├── login/page.tsx
 │   ├── signup/page.tsx
 │   ├── page.tsx              # Landing pública
@@ -65,6 +66,7 @@ frontend/
 │   ├── gamification.ts       # Lógica de XP/níveis (+ anti-farm)
 │   ├── shop.ts               # Catálogo/estado da loja do Escritório (preços no banco)
 │   ├── routine-insights.ts   # Rotina aprendida: sugestões determinísticas de rotina
+│   ├── admin.ts              # Agregações do painel do dono (puro, sem Supabase)
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
 │   ├── types.ts
 │   └── utils.ts              # cn()
@@ -87,6 +89,7 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 | `/app/office` | Escritório — cena 3D (R3F) viva + loja cosmética (moedas via XP) |
 | `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório (em 3D) |
 | `/app/settings` | Configurações (rotina, push, tema, Telegram) |
+| `/admin` | Painel do dono — feedbacks, usuários, erros e uso. Server component: quem não é `OWNER_EMAIL` recebe `notFound()`. Fora de `/app` (sem dock) e sem link na navegação |
 
 ## Integrações externas (Fase 4)
 

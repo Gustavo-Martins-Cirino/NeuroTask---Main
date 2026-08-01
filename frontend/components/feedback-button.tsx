@@ -20,6 +20,23 @@ const KINDS = [
 
 type Kind = (typeof KINDS)[number]["value"]
 
+// O erro do Postgres vem pelo código, não pelo texto: a mensagem de violação de
+// RLS cita o nome da tabela ("...for table \"feedback\""), então casar por
+// substring fazia RLS e cache virarem "a tabela não existe" — e mandava rodar de
+// novo um SQL que já estava rodado.
+function explicaErro(err: { code?: string; message: string }): string {
+  switch (err.code) {
+    case "42P01":
+      return "A tabela de feedback ainda não existe. Rode supabase/feedback.sql no Supabase."
+    case "PGRST205":
+      return "A tabela existe, mas a API do Supabase ainda não a enxerga (cache do schema). Espere alguns segundos e tente de novo."
+    case "42501":
+      return "Sem permissão para gravar (RLS). Confira se você está logado e se a policy de insert do feedback.sql foi criada."
+    default:
+      return err.message
+  }
+}
+
 export function FeedbackButton() {
   const [open, setOpen] = useState(false)
   const [kind, setKind] = useState<Kind>("geral")
@@ -55,11 +72,7 @@ export function FeedbackButton() {
 
     setLoading(false)
     if (err) {
-      setError(
-        err.message.includes("feedback") || err.message.includes("does not exist")
-          ? "A tabela de feedback ainda não existe. Rode supabase/feedback.sql no Supabase."
-          : err.message
-      )
+      setError(explicaErro(err))
       return
     }
     toast.success("Valeu pelo feedback! 🙏", { description: "Faz muita diferença pra melhorar o app." })
