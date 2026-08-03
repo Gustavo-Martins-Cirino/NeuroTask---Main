@@ -69,6 +69,7 @@ function extrasDe(equipped?: Set<string>): EscritorioExtras {
     neon: equipped.has("quadro-neon"),
     trofeu: equipped.has("trofeu"),
     gato: equipped.has("pet-gato"),
+    setup: equipped.has("setup-ultrawide") ? "ultrawide" : equipped.has("setup-duplo") ? "duplo" : undefined,
   }
 }
 
@@ -181,10 +182,16 @@ function CartoonOffice({
     [avatar, skinTint, equipKey]
   )
   const personRef = useRef<Group>(null)
-  const tela = useMemo(() => room.getObjectByName("Monitor_Tela") as Mesh | undefined, [room])
+  // Todas as telas (o setup duplo tem duas) brilham juntas ao "trabalhar".
+  const telas = useMemo(() => {
+    const out: Mesh[] = []
+    room.traverse((o) => { if ((o as Mesh).isMesh && o.name.startsWith("Monitor_Tela")) out.push(o as Mesh) })
+    return out
+  }, [room])
   useFrame((state) => {
     const t = state.clock.elapsedTime
-    if (tela) (tela.material as MeshToonMaterial).emissiveIntensity = working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
+    const glow = working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
+    for (const tela of telas) (tela.material as MeshToonMaterial).emissiveIntensity = glow
     if (personRef.current) personRef.current.position.z = Math.sin(t * 1.7) * 0.012 // respiração
   })
   return (

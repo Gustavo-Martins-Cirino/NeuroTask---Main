@@ -63,6 +63,36 @@ function sph(name: string, raio: number, pos: V3, material: Material, esc?: V3):
   return m
 }
 
+// Um monitor = grupo (bezel + tela) num sub-Group, pra girar em bloco (toe-in
+// do setup duplo) mantendo a tela colada no bezel. A tela leva "Monitor_Tela"
+// no nome — é por ela que a cena acha o brilho ao "trabalhar".
+function monitorUnit(sufixo: string, centro: V3, yaw: number, w: number, h: number, mBezel: Material, mGlow: Material): Group {
+  const grp = new Group()
+  grp.name = `Monitor${sufixo}`
+  grp.add(box(`Monitor_Bezel${sufixo}`, [w, 0.035, h], [0, 0.012, 0], mBezel))
+  grp.add(box(`Monitor_Tela${sufixo}`, [w - 0.08, 0.012, h - 0.06], [0, -0.006, 0], mGlow))
+  grp.position.set(...centro)
+  grp.rotation.z = yaw
+  return grp
+}
+
+// Constrói o(s) monitor(es) + suporte(s) conforme o setup comprado na loja.
+function buildMonitores(g: Group, dy: number, setup: EscritorioExtras["setup"], mBezel: Material, mGlow: Material, mPC: Material) {
+  if (setup === "ultrawide") {
+    g.add(box("Monitor_Suporte", [0.18, 0.06, 0.14], [0, 1.35 + dy, 0.87], mPC))
+    g.add(monitorUnit("", [0, 1.31 + dy, 1.08], 0, 0.95, 0.34, mBezel, mGlow))
+  } else if (setup === "duplo") {
+    for (const s of [-1, 1] as const) {
+      const suf = s < 0 ? "_L" : "_R"
+      g.add(box(`Monitor_Suporte${suf}`, [0.08, 0.06, 0.14], [s * 0.34, 1.36 + dy, 0.87], mPC))
+      g.add(monitorUnit(suf, [s * 0.34, 1.33 + dy, 1.06], -s * 0.26, 0.46, 0.34, mBezel, mGlow))
+    }
+  } else {
+    g.add(box("Monitor_Suporte", [0.08, 0.06, 0.14], [0, 1.35 + dy, 0.87], mPC))
+    g.add(monitorUnit("", [0, 1.31 + dy, 1.1], 0, 0.58, 0.36, mBezel, mGlow))
+  }
+}
+
 const D = (g: number) => (g * Math.PI) / 180
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -89,6 +119,8 @@ export interface EscritorioExtras {
   neon?: boolean
   trofeu?: boolean
   gato?: boolean
+  /** Setup da mesa: undefined = 1 monitor; "duplo" = 2; "ultrawide" = 1 largão. */
+  setup?: "duplo" | "ultrawide"
 }
 
 export interface EscritorioOpts {
@@ -149,9 +181,7 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   g.add(cyl("Cadeira_Coluna", 0.04, 0.42, [0, 0.9 + dy, 0.21], mCad))
   g.add(cyl("Cadeira_Base", 0.32, 0.05, [0, 0.9 + dy, 0.03], mCad))
 
-  g.add(box("Monitor_Suporte", [0.08, 0.06, 0.14], [0, 1.35 + dy, 0.87], mPC))
-  g.add(box("Monitor_Bezel", [0.58, 0.035, 0.36], [0, 1.32 + dy, 1.1], mBezel))
-  g.add(box("Monitor_Tela", [0.5, 0.01, 0.3], [0, 1.3 + dy, 1.1], mGlow))
+  buildMonitores(g, dy, extras.setup, mBezel, mGlow, mPC)
   g.add(box("PC_Torre", [0.14, 0.3, 0.36], [0.6, 1.5 + dy, 0.96], mPC))
   g.add(box("Teclado", [0.32, 0.12, 0.02], [0, 1.32 + dy, TAMPO_Z + 0.01], mPC))
   g.add(box("Mouse", [0.06, 0.09, 0.02], [0.26, 1.32 + dy, TAMPO_Z + 0.01], mPC))
