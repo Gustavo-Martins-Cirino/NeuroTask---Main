@@ -69,8 +69,8 @@ pessoa** e **ela abrir o app e não saber o que fazer**.
       Notas aponta o "Nova nota". (Varrer as demais rotas conforme o feedback pedir.)
 - [x] **Importação de calendário (`.ics`)**: o que transforma "app interessante" em "app que
       dá pra usar amanhã" — a agenda de quem convidamos já existe no Google. Parser puro e
-      testado (`lib/ics.ts` + `ics.test.ts`, 8 casos: UTC/local/dia-inteiro/RRULE/unfold);
-      `IcsImportDialog` no Calendário (botão Importar) faz upload → **prévia com seleção** →
+      testado (`lib/ics.ts` + `ics.test.ts`, 11 casos: UTC/local/dia-inteiro/RRULE/unfold + export/round-trip);
+      `IcsImportDialog` em Configurações → "Importar e exportar" faz upload → **prévia com seleção** →
       cria os blocos, sempre com confirmação (nunca às cegas). Dedupe por título+início
       (reimportar não duplica). Recorrência simples (diário/semanal/dias úteis) mapeada de
       RRULE; mensal/complexa vira evento único. TZID tratado como fuso do navegador (v1).
