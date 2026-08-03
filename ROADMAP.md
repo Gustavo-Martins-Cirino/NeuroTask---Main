@@ -103,10 +103,10 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > A **importação** `.ics` está na Fase 5, acima: sem ela ninguém migra do Google, então
 > ela é requisito de adoção. O que sobra aqui é o caminho de volta.
 
-- [x] **Exportação ICS**: os blocos de tempo viram um `.ics` baixável (botão "Exportar" no
-      Calendário). Fecha o caminho de volta — o que entrou pela importação pode sair. Horas em
-      UTC e a recorrência do app (`daily`/`weekly`/`weekdays`) vira `RRULE` de verdade
-      (`toIcs` em `lib/ics.ts`, com teste de round-trip export→parse).
+- [x] **Importar e exportar (`.ics`)**: ambos moram em Configurações → "Importar e exportar",
+      como no Google Calendar — discretos, sem poluir a tela do calendário. Exportar baixa os
+      blocos com horas em UTC e a recorrência do app (`daily`/`weekly`/`weekdays`) virando
+      `RRULE` de verdade (`toIcs` em `lib/ics.ts`, com teste de round-trip export→parse).
 - [ ] **Integrações de calendário** (Google/Outlook): começar por feed assinável
       (somente leitura) antes de considerar escrita bidirecional, que traz OAuth e
       conflito de sincronização.

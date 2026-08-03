@@ -3,16 +3,13 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { Header } from "@/components/header"
 import { TimeBlockDialog } from "@/components/time-block-dialog"
-import { IcsImportDialog } from "@/components/ics-import-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
 import type { TimeBlock, Task, Reminder } from "@/lib/types"
 import { REMINDER_COLORS } from "@/lib/reminders"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight, CalendarDays, CalendarPlus, Download, ChevronDown, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
-import { toIcs } from "@/lib/ics"
-import { toast } from "sonner"
+import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
 import { fetchRoutine, type RoutineProfile } from "@/lib/routine"
 import { computeWarnings } from "@/lib/calendar-warnings"
 
@@ -94,7 +91,6 @@ export default function CalendarPage() {
   const [blocks, setBlocks] = useState<TimeBlock[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
   const [editingBlock, setEditingBlock] = useState<TimeBlock | null>(null)
   const [defaultStart, setDefaultStart] = useState<Date | undefined>()
   const [defaultEnd, setDefaultEnd] = useState<Date | undefined>()
@@ -162,31 +158,6 @@ export default function CalendarPage() {
     const { data: taskData } = await supabase.from("tasks").select("*")
     if (taskData) setTasks(taskData)
   }, [supabase, rangeStart, rangeEnd])
-
-  // Exporta TODOS os blocos do usuário como .ics (caminho de volta: dá pra
-  // reimportar no Google/Outlook). Horas em UTC; recorrência vira RRULE.
-  const exportarIcs = async () => {
-    const { data } = await supabase
-      .from("time_blocks")
-      .select("id, title, description, start_time, end_time, recurrence_rule")
-    const eventos = (data ?? []).map((b) => ({
-      uid: b.id as string,
-      title: b.title as string,
-      start: new Date(b.start_time as string),
-      end: new Date(b.end_time as string),
-      description: (b.description as string | null) ?? null,
-      recurrence: (["daily", "weekly", "weekdays"] as const).find((r) => r === b.recurrence_rule) ?? null,
-    }))
-    if (eventos.length === 0) { toast.info("Nenhum bloco pra exportar ainda."); return }
-    const blob = new Blob([toIcs(eventos)], { type: "text/calendar;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "neurotask.ics"
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success(`${eventos.length} ${eventos.length === 1 ? "bloco exportado" : "blocos exportados"} (.ics)`)
-  }
 
   useEffect(() => {
     fetchData()
@@ -462,24 +433,7 @@ export default function CalendarPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Meu Dia · Time Blocking" icon={<CalendarDays className="h-4 w-4" />}>
-        <button
-          onClick={() => setImportOpen(true)}
-          className="ml-2 flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Importar agenda do Google Calendar (.ics)"
-        >
-          <CalendarPlus className="h-4 w-4" />
-          <span className="hidden sm:inline">Importar</span>
-        </button>
-        <button
-          onClick={exportarIcs}
-          className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Exportar sua agenda como .ics (Google Calendar, Outlook…)"
-        >
-          <Download className="h-4 w-4" />
-          <span className="hidden sm:inline">Exportar</span>
-        </button>
-      </Header>
+      <Header title="Meu Dia · Time Blocking" icon={<CalendarDays className="h-4 w-4" />} />
 
       <div className="flex flex-1 flex-col">
         {/* Toolbar */}
@@ -896,8 +850,6 @@ export default function CalendarPage() {
         tasks={tasks}
         onSuccess={fetchData}
       />
-
-      <IcsImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={fetchData} />
     </div>
   )
 }
