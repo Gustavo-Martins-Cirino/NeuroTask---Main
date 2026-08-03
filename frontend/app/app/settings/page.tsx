@@ -78,7 +78,7 @@ function Section({ icon, title, description, children }: {
     <motion.section
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-border/40 bg-card/30 p-6"
+      className="rounded-2xl border border-border/40 bg-card/30 p-4 md:p-6"
     >
       <div className="mb-4 flex items-center gap-3">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -274,7 +274,7 @@ export default function SettingsPage() {
     <div className="flex min-h-screen flex-col">
       <Header title="Configurações" icon={<Settings className="h-4 w-4" />} />
 
-      <div className="flex-1 px-6 py-8">
+      <div className="flex-1 px-4 py-8 md:px-6">
         <div className="mx-auto w-full max-w-2xl space-y-5">
           <Section icon={<User className="h-5 w-5" />} title="Perfil" description="Seu nome e email">
             <div className="space-y-4">
@@ -335,7 +335,7 @@ export default function SettingsPage() {
             description="Seus tempos pessoais — usados pelo planejamento e pelos avisos do calendário"
           >
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <RoutineField
                   label="Sono desejado"
                   value={routine.sleep_hours}
