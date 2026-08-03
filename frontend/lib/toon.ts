@@ -5,13 +5,15 @@
 // (personagem) — o MeshToonMaterial suporta skinning nativamente.
 
 import {
+  BackSide,
   Color,
   DataTexture,
+  Mesh,
+  MeshBasicMaterial,
   MeshToonMaterial,
   NearestFilter,
   RedFormat,
   type Material,
-  type Mesh,
   type MeshStandardMaterial,
   type Object3D,
 } from "three"
@@ -48,4 +50,50 @@ export function toonifyObject(root: Object3D) {
     if (!m.isMesh || !m.material) return
     m.material = Array.isArray(m.material) ? m.material.map(toToon) : toToon(m.material)
   })
+}
+
+// Contorno de tinta (cartoon ink) por inverted hull: para cada malha, um clone
+// de face traseira (BackSide) empurrado ao longo da normal por uma largura FIXA
+// em espaço-objeto — assim o traço tem espessura uniforme entre objetos grandes
+// e pequenos (escalar proporcional deixaria o contorno grosso nos grandes e
+// invisível nos pequenos). O objeto da frente cobre o miolo; sobra só a borda.
+function outlineMaterial(color: Color, width: number): MeshBasicMaterial {
+  const mat = new MeshBasicMaterial({ color, side: BackSide })
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.outlineW = { value: width }
+    shader.vertexShader =
+      "uniform float outlineW;\n" +
+      shader.vertexShader.replace(
+        "#include <begin_vertex>",
+        "#include <begin_vertex>\n  transformed += normalize(normal) * outlineW;"
+      )
+  }
+  return mat
+}
+
+// Adiciona contornos a todas as malhas de `root`, pulando as que `skip` recusa
+// (ex.: casca da sala — piso/paredes não levam traço). Idempotente por nome.
+export function addOutlines(
+  root: Object3D,
+  opts: { color?: string; width?: number; skip?: (name: string) => boolean } = {}
+) {
+  const color = new Color(opts.color ?? "#2a2320")
+  const width = opts.width ?? 0.018
+  const alvos: Mesh[] = []
+  root.traverse((o) => {
+    const m = o as Mesh
+    if (!m.isMesh || !m.geometry) return
+    if (m.name.endsWith("_contorno")) return
+    if (opts.skip?.(m.name)) return
+    alvos.push(m)
+  })
+  for (const m of alvos) {
+    const outline = new Mesh(m.geometry, outlineMaterial(color, width))
+    outline.name = m.name + "_contorno"
+    outline.position.copy(m.position)
+    outline.rotation.copy(m.rotation)
+    outline.scale.copy(m.scale)
+    outline.renderOrder = -1
+    ;(m.parent ?? root).add(outline)
+  }
 }

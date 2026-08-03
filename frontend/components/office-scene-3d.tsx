@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
 import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial, type MeshToonMaterial } from "three"
-import { toonifyObject } from "@/lib/toon"
+import { toonifyObject, addOutlines } from "@/lib/toon"
 import {
   buildEscritorio, buildPersonagem, recuoDaSala, tamanhoDaSala,
   type EscritorioExtras, type PersonagemAcessorios, type PersonagemCores,
@@ -153,20 +153,30 @@ function CartoonOffice({
   // Chave estável: o Set costuma ser recriado a cada render (prévia da loja).
   const equipKey = [...(equipped ?? [])].sort().join("|")
   const room = useMemo(
-    () => buildEscritorio({
-      nivel,
-      extras: extrasDe(equipped),
-      cores: {
-        parede: pick(WALL_COLORS, equipped),
-        piso: pick(FLOOR_COLORS, equipped),
-        cadeira: pick(CHAIR_COLORS, equipped),
-      },
-    }),
+    () => {
+      const r = buildEscritorio({
+        nivel,
+        extras: extrasDe(equipped),
+        cores: {
+          parede: pick(WALL_COLORS, equipped),
+          piso: pick(FLOOR_COLORS, equipped),
+          cadeira: pick(CHAIR_COLORS, equipped),
+        },
+      })
+      // Contorno cartoon nos objetos, mas NÃO na casca (piso/paredes/rodapé) —
+      // traço em volta de plano de chão vira moldura feia.
+      addOutlines(r, { skip: (n) => /^(Piso|Parede|Rodape)/.test(n) })
+      return r
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [equipKey, nivel]
   )
   const person = useMemo(
-    () => buildPersonagem(coresDoAvatar(avatar, skinTint), acessoriosDe(equipped)),
+    () => {
+      const p = buildPersonagem(coresDoAvatar(avatar, skinTint), acessoriosDe(equipped))
+      addOutlines(p)
+      return p
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [avatar, skinTint, equipKey]
   )
@@ -223,6 +233,9 @@ function Scene({
         shadow-camera-far={80}
       />
       <directionalLight color="#bcd0ff" intensity={0.5} position={[-10, 8, -6]} />
+      {/* Luz de recorte por trás/alto: um fio de luz na borda superior separa o
+          boneco e os móveis do fundo — dá profundidade sem clarear a cena. */}
+      <directionalLight color={L.key} intensity={0.85} position={[-6, 12, -12]} />
       <pointLight color="#ffcf8a" intensity={6 + L.lampI * 0.15} distance={40} decay={2} position={[4, 7, -4]} />
 
       <CartoonOffice
@@ -235,7 +248,10 @@ function Scene({
       />
       {equipped?.has("pet-cachorro") && <PetBeagle recuo={recuoDaSala(nivel)} />}
 
-      <ContactShadows position={[0, 0.02, -4 * (0.9 + recuoDaSala(nivel))]} opacity={0.3} scale={20} blur={2.6} far={9} />
+      {/* Duas camadas: uma ampla e suave (ambiente) + uma justa e mais escura
+          logo sob os móveis (contato) — assenta tudo no chão sem virar borrão. */}
+      <ContactShadows position={[0, 0.02, -4 * (0.9 + recuoDaSala(nivel))]} opacity={0.28} scale={22} blur={3.0} far={9} />
+      <ContactShadows position={[0, 0.03, -4 * (0.9 + recuoDaSala(nivel))]} opacity={0.35} scale={12} blur={1.4} far={5} />
     </>
   )
 }
@@ -292,11 +308,11 @@ export function OfficeScene3D({
   }
 
   return (
-    <div className={className} style={{ background: `linear-gradient(160deg, ${LIGHT[phase].bg}, ${LIGHT[phase].bg}cc)` }}>
+    <div className={className} style={{ position: "relative", background: `linear-gradient(160deg, ${LIGHT[phase].bg}, ${LIGHT[phase].bg}cc)` }}>
       <Canvas
         shadows="soft"
         dpr={[1, 2]}
-        gl={{ toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.15 }}
+        gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
         style={{ width: "100%", aspectRatio: "480 / 340" }}
       >
         <OrthographicCamera
@@ -321,6 +337,17 @@ export function OfficeScene3D({
           nivel={nivel}
         />
       </Canvas>
+      {/* Vinheta suave: escurece só os cantos, focando o olhar no centro. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          borderRadius: "inherit",
+          background: "radial-gradient(120% 100% at 50% 34%, transparent 56%, rgba(24,18,12,0.24) 100%)",
+        }}
+      />
     </div>
   )
 }
