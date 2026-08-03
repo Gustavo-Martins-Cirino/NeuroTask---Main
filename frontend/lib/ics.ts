@@ -135,3 +135,58 @@ export function parseIcs(text: string): IcsEvent[] {
   }
   return events.sort((a, b) => a.start.getTime() - b.start.getTime())
 }
+
+// ───────────────────────── Exportação (.ics) ─────────────────────────
+// Caminho de volta: os blocos do NeuroTask viram um .ics que se importa no
+// Google/Outlook. Horas sempre em UTC (sufixo Z) — sem ambiguidade de fuso na
+// hora de importar de volta. A recorrência do app (daily/weekly/weekdays) vira
+// RRULE de verdade.
+
+export interface IcsExportEvent {
+  uid: string
+  title: string
+  start: Date
+  end: Date
+  description?: string | null
+  recurrence?: "daily" | "weekly" | "weekdays" | null
+}
+
+const pad = (n: number) => String(n).padStart(2, "0")
+
+// Data → UTC básico: YYYYMMDDTHHMMSSZ.
+function icsDate(d: Date): string {
+  return (
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}` +
+    `T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`
+  )
+}
+
+function icsEscape(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n")
+}
+
+function toRrule(r: IcsExportEvent["recurrence"]): string | null {
+  if (r === "daily") return "FREQ=DAILY"
+  if (r === "weekly") return "FREQ=WEEKLY"
+  if (r === "weekdays") return "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+  return null
+}
+
+export function toIcs(events: IcsExportEvent[]): string {
+  const now = icsDate(new Date())
+  const lines: string[] = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//NeuroTask//PT-BR//", "CALSCALE:GREGORIAN"]
+  for (const e of events) {
+    lines.push("BEGIN:VEVENT")
+    lines.push(`UID:${e.uid}@neurotask`)
+    lines.push(`DTSTAMP:${now}`)
+    lines.push(`DTSTART:${icsDate(e.start)}`)
+    lines.push(`DTEND:${icsDate(e.end)}`)
+    lines.push(`SUMMARY:${icsEscape(e.title)}`)
+    if (e.description) lines.push(`DESCRIPTION:${icsEscape(e.description)}`)
+    const rr = toRrule(e.recurrence ?? null)
+    if (rr) lines.push(`RRULE:${rr}`)
+    lines.push("END:VEVENT")
+  }
+  lines.push("END:VCALENDAR")
+  return lines.join("\r\n") + "\r\n"
+}

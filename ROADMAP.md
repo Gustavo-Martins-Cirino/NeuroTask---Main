@@ -103,9 +103,10 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > A **importação** `.ics` está na Fase 5, acima: sem ela ninguém migra do Google, então
 > ela é requisito de adoção. O que sobra aqui é o caminho de volta.
 
-- [ ] **Exportação ICS**: os blocos de tempo viram um `.ics`. Hoje a agenda do NeuroTask não
-      sai do NeuroTask. Ponto de atenção: a recorrência tem regra própria em
-      `lib/task-recurrence.ts` e precisa virar `RRULE` de verdade — nos dois sentidos.
+- [x] **Exportação ICS**: os blocos de tempo viram um `.ics` baixável (botão "Exportar" no
+      Calendário). Fecha o caminho de volta — o que entrou pela importação pode sair. Horas em
+      UTC e a recorrência do app (`daily`/`weekly`/`weekdays`) vira `RRULE` de verdade
+      (`toIcs` em `lib/ics.ts`, com teste de round-trip export→parse).
 - [ ] **Integrações de calendário** (Google/Outlook): começar por feed assinável
       (somente leitura) antes de considerar escrita bidirecional, que traz OAuth e
       conflito de sincronização.

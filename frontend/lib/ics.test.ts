@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseIcs } from "./ics"
+import { parseIcs, toIcs } from "./ics"
 
 // A importação cria blocos de tempo na agenda do usuário a partir de um .ics
 // (ex.: exportação do Google). Um erro aqui cria evento na hora/dia errado ou
@@ -69,5 +69,45 @@ describe("parseIcs", () => {
   it("arquivo vazio/sem eventos → lista vazia", () => {
     expect(parseIcs("")).toEqual([])
     expect(parseIcs("BEGIN:VCALENDAR\r\nEND:VCALENDAR")).toEqual([])
+  })
+})
+
+describe("toIcs (exportação)", () => {
+  const ev = (over: Partial<Parameters<typeof toIcs>[0][number]> = {}) => ({
+    uid: "b1",
+    title: "Reunião",
+    start: new Date(Date.UTC(2026, 0, 15, 13, 0, 0)),
+    end: new Date(Date.UTC(2026, 0, 15, 14, 0, 0)),
+    ...over,
+  })
+
+  it("gera VEVENT com hora em UTC e escapa texto", () => {
+    const ics = toIcs([ev({ title: "Café, com; barra\\" })])
+    expect(ics).toContain("BEGIN:VCALENDAR")
+    expect(ics).toContain("DTSTART:20260115T130000Z")
+    expect(ics).toContain("DTEND:20260115T140000Z")
+    expect(ics).toContain("SUMMARY:Café\\, com\\; barra\\\\")
+    expect(ics).toContain("UID:b1@neurotask")
+    expect(ics).toContain("END:VCALENDAR")
+  })
+
+  it("mapeia a recorrência do app para RRULE", () => {
+    expect(toIcs([ev({ recurrence: "daily" })])).toMatch(/RRULE:FREQ=DAILY\r\n/)
+    expect(toIcs([ev({ recurrence: "weekly" })])).toMatch(/RRULE:FREQ=WEEKLY\r\n/)
+    expect(toIcs([ev({ recurrence: "weekdays" })])).toContain("RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR")
+    expect(toIcs([ev({ recurrence: null })])).not.toContain("RRULE")
+  })
+
+  it("round-trip: exporta e reimporta batendo", () => {
+    const orig = [
+      ev({ uid: "a", title: "Standup", recurrence: "weekdays" as const }),
+      ev({ uid: "b", title: "Almoço", start: new Date(Date.UTC(2026, 0, 15, 15, 0, 0)), end: new Date(Date.UTC(2026, 0, 15, 16, 0, 0)), recurrence: null }),
+    ]
+    const parsed = parseIcs(toIcs(orig))
+    expect(parsed.map((e) => e.title)).toEqual(["Standup", "Almoço"])
+    expect(parsed[0].start.toISOString()).toBe("2026-01-15T13:00:00.000Z")
+    expect(parsed[0].end.toISOString()).toBe("2026-01-15T14:00:00.000Z")
+    expect(parsed[0].recurrence).toBe("weekdays")
+    expect(parsed[1].recurrence).toBeNull()
   })
 })
