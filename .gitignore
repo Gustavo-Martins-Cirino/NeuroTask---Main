@@ -17,3 +17,8 @@ node_modules
 .DS_Store
 *.tsbuildinfo
 .vercel
+
+# Backend removido (scaffold FastAPI não usado) — só sobrou venv + bytecode
+/backend/
+__pycache__/
+*.pyc
