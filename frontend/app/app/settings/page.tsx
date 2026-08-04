@@ -9,7 +9,7 @@ import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Bot, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Send, CalendarSync } from "lucide-react"
+import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Send, CalendarSync } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
 import { generateTelegramCode, fetchTelegramLinks, unlinkTelegram, type TelegramLink } from "@/lib/telegram"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
@@ -636,14 +636,6 @@ export default function SettingsPage() {
                 <code className="mx-1 rounded bg-muted px-1 py-0.5">/ajuda</code>.
               </p>
             </div>
-          </Section>
-
-          <Section icon={<Bot className="h-5 w-5" />} title="Neuro IA" description="Assistente de produtividade">
-            <p className="text-sm text-muted-foreground">
-              O provedor de IA é configurado no servidor (variável de ambiente no
-              <code className="mx-1 rounded bg-muted px-1 py-0.5 text-xs">.env.local</code>).
-              Atualmente o app suporta Groq, Gemini e Claude — basta ter a chave correspondente.
-            </p>
           </Section>
 
           <ErrorsPanel />
