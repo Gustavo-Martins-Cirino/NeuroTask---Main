@@ -6,15 +6,22 @@ export type OfficeBg = string
 
 export const OFFICE_BG_DEFAULT: OfficeBg = "auto"
 
+// Fundo do "Automático": segue o tema do app (claro/escuro). Parecidos com o
+// tema (hue azulado 260), mas não idênticos — um pouco mais presentes pra a
+// sala destacar do fundo.
+export const AUTO_LIGHT = "#e7ebf2"
+export const AUTO_DARK = "#20232e"
+
 export interface OfficeBgOption {
   id: OfficeBg
   label: string
-  /** Cor da bolinha no seletor; vazio = mostra o gradiente da hora do dia. */
+  /** Cor (ou gradiente) da bolinha no seletor. */
   swatch: string
 }
 
 export const OFFICE_BG_OPTIONS: OfficeBgOption[] = [
-  { id: "auto", label: "Hora do dia", swatch: "" },
+  // "Automático" segue o tema — meia bolinha clara, meia escura pra sinalizar.
+  { id: "auto", label: "Automático (tema)", swatch: `linear-gradient(135deg, ${AUTO_LIGHT} 0 50%, ${AUTO_DARK} 50% 100%)` },
   { id: "#dfeaf4", label: "Céu", swatch: "#dfeaf4" },
   { id: "#e7dcef", label: "Lavanda", swatch: "#e7dcef" },
   { id: "#f0dcc8", label: "Pêssego", swatch: "#f0dcc8" },
@@ -28,4 +35,11 @@ export function parseOfficeBg(v: string | null): OfficeBg {
   if (v === "auto") return "auto"
   if (v && /^#[0-9a-fA-F]{6}$/.test(v)) return v
   return OFFICE_BG_DEFAULT
+}
+
+// Resolve a preferência na cor real usada no fundo: "auto" vira claro/escuro
+// conforme o tema; qualquer outra é a própria cor escolhida.
+export function resolveOfficeBg(bg: OfficeBg, isDark: boolean): string {
+  if (bg === "auto") return isDark ? AUTO_DARK : AUTO_LIGHT
+  return bg
 }

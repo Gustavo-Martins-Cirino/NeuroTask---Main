@@ -6,6 +6,8 @@ import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
 import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial, type MeshToonMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
 import { toonifyObject, addOutlines } from "@/lib/toon"
 import { fitOrthoCamera } from "@/lib/office-camera"
+import { resolveOfficeBg } from "@/lib/office-bg"
+import { useTheme } from "next-themes"
 import {
   buildEscritorio, buildPersonagem, recuoDaSala,
   type EscritorioExtras, type PersonagemAcessorios, type PersonagemCores,
@@ -310,9 +312,11 @@ export function OfficeScene3D({
     return () => clearInterval(t)
   }, [])
 
-  // Fundo escolhido pelo usuário vence a hora do dia; "auto" (ou nada) mantém o
-  // gradiente que segue o relógio.
-  const bg = bgColor && bgColor !== "auto" ? bgColor : LIGHT[phase].bg
+  // Fundo: cor fixa escolhida, ou "Automático" seguindo o tema (claro/escuro).
+  // A hora do dia continua mandando na LUZ interna da cena (LIGHT[phase]), só
+  // não no fundo. resolvedTheme pode vir undefined no 1º render → trata como claro.
+  const { resolvedTheme } = useTheme()
+  const bg = resolveOfficeBg(bgColor ?? "auto", resolvedTheme === "dark")
   const bgStyle = `linear-gradient(160deg, ${bg}, ${bg}cc)`
 
   if (!webgl) {

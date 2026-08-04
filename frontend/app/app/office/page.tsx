@@ -207,11 +207,7 @@ export default function OfficePage() {
                         "h-5 w-5 rounded-full border transition-transform hover:scale-110",
                         officeBg === o.id ? "border-primary ring-2 ring-primary/40" : "border-border/60"
                       )}
-                      style={
-                        o.swatch
-                          ? { background: o.swatch }
-                          : { background: "conic-gradient(from 210deg, #f0dcc8, #dfeaf4, #2b2f4a, #f0dcc8)" }
-                      }
+                      style={{ background: o.swatch }}
                     />
                   ))}
                 </div>
