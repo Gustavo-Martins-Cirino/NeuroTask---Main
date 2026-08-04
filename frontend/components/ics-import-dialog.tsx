@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { parseIcs, type IcsEvent } from "@/lib/ics"
 import { cn } from "@/lib/utils"
+import { useTimeFormat } from "@/hooks/use-time-format"
+import { formatTime, type TimeFormat } from "@/lib/time-format"
 import { CalendarPlus, Upload, Loader2, Repeat } from "lucide-react"
 import { toast } from "sonner"
 
@@ -26,15 +28,14 @@ const RECUR_LABEL: Record<NonNullable<IcsEvent["recurrence"]>, string> = {
 // ISO/UTC nos dois lados). Reimportar o mesmo arquivo não duplica.
 const dedupeKey = (title: string, startISO: string) => `${title.trim().toLowerCase()}|${startISO.slice(0, 16)}`
 
-function formatWhen(e: IcsEvent): string {
+function formatWhen(e: IcsEvent, f: TimeFormat): string {
   const dia = e.start.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
   if (e.allDay) return `${dia} · dia inteiro`
-  const hi = e.start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  const hf = e.end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  return `${dia} · ${hi}–${hf}`
+  return `${dia} · ${formatTime(e.start, f)}–${formatTime(e.end, f)}`
 }
 
 export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
+  const timeFormat = useTimeFormat()
   const [fileName, setFileName] = useState("")
   const [events, setEvents] = useState<IcsEvent[]>([])
   const [dupes, setDupes] = useState<Set<number>>(new Set())
@@ -184,7 +185,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
                           )}
                           {isDupe && <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">já existe</span>}
                         </span>
-                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{formatWhen(e)}{e.location ? ` · ${e.location}` : ""}</span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{formatWhen(e, timeFormat)}{e.location ? ` · ${e.location}` : ""}</span>
                       </span>
                     </button>
                   )

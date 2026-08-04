@@ -11,6 +11,8 @@ import type { Reminder } from "@/lib/types"
 import { REMINDER_COLORS } from "@/lib/reminders"
 import { motion, animate } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { useTimeFormat } from "@/hooks/use-time-format"
+import { formatTime, formatClock } from "@/lib/time-format"
 
 function localDateKey() {
   const d = new Date()
@@ -53,6 +55,7 @@ const item = {
 }
 
 export default function DashboardPage() {
+  const timeFormat = useTimeFormat()
   const [stats, setStats] = useState<Stats>({
     totalTasks: 0,
     completedTasks: 0,
@@ -226,8 +229,7 @@ export default function DashboardPage() {
               </h3>
               {(() => {
                 const nowMs = Date.now()
-                const fmt = (iso: string) =>
-                  new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                const fmt = (iso: string) => formatTime(new Date(iso), timeFormat)
                 const current = todayBlocks.find(
                   (b) => new Date(b.start_time).getTime() <= nowMs && new Date(b.end_time).getTime() > nowMs
                 )
@@ -360,7 +362,7 @@ export default function DashboardPage() {
                       {r.remind_time && (
                         <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {r.remind_time.slice(0, 5)}
+                          {formatClock(r.remind_time, timeFormat)}
                         </span>
                       )}
                     </li>

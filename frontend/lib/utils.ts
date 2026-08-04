@@ -14,14 +14,6 @@ export function formatDate(date: Date | string): string {
   })
 }
 
-export function formatTime(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date
-  return d.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
-
 export function getWeekDays(date: Date): Date[] {
   const day = date.getDay()
   const diff = date.getDate() - day

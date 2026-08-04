@@ -8,6 +8,8 @@ import { useRealtime } from "@/hooks/use-realtime"
 import type { TimeBlock, Task, Reminder } from "@/lib/types"
 import { REMINDER_COLORS } from "@/lib/reminders"
 import { cn } from "@/lib/utils"
+import { useTimeFormat } from "@/hooks/use-time-format"
+import { formatTime, formatClock, formatHourMinute } from "@/lib/time-format"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
 import { fetchRoutine, type RoutineProfile } from "@/lib/routine"
@@ -86,6 +88,7 @@ interface DragState {
 }
 
 export default function CalendarPage() {
+  const timeFormat = useTimeFormat()
   const [view, setView] = useState<ViewMode>("semana")
   const [anchor, setAnchor] = useState(() => new Date())
   const [blocks, setBlocks] = useState<TimeBlock[]>([])
@@ -625,7 +628,7 @@ export default function CalendarPage() {
                               className="pointer-events-none truncate rounded px-1 py-0.5 text-left text-[10px] font-medium"
                               style={{ backgroundColor: `${occ.block.color}22`, color: occ.block.color }}
                             >
-                              {occ.start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} {occ.block.title}
+                              {formatTime(occ.start, timeFormat)} {occ.block.title}
                             </div>
                           ))}
                           {dayBlocks.length > 3 && (
@@ -682,7 +685,7 @@ export default function CalendarPage() {
                       {Array.from({ length: 24 }, (_, h) => (
                         <div key={h} className="relative" style={{ height: HOUR_HEIGHT }}>
                           <span className="absolute -top-2 right-2 text-[11px] tabular-nums text-muted-foreground">
-                            {h.toString().padStart(2, "0")}:00
+                            {formatHourMinute(h, 0, timeFormat)}
                           </span>
                         </div>
                       ))}
@@ -770,9 +773,9 @@ export default function CalendarPage() {
                                     <span className="truncate">{block.title}</span>
                                   </p>
                                   <p className="truncate text-[10px] text-muted-foreground">
-                                    {start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                    {formatTime(start, timeFormat)}
                                     {" – "}
-                                    {end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                                    {formatTime(end, timeFormat)}
                                   </p>
                                   {!virtual && (
                                     <div
@@ -930,6 +933,7 @@ function ContextualNotes({ anchor }: { anchor: Date }) {
 }
 
 function ContextualReminders({ anchor }: { anchor: Date }) {
+  const timeFormat = useTimeFormat()
   const supabase = createClient()
   const dateStr = dateKey(anchor)
   const [reminders, setReminders] = useState<Reminder[]>([])
@@ -1067,7 +1071,7 @@ function ContextualReminders({ anchor }: { anchor: Date }) {
                 {r.remind_time && (
                   <span className="flex shrink-0 items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
                     <Clock className="h-2.5 w-2.5" />
-                    {r.remind_time.slice(0, 5)}
+                    {formatClock(r.remind_time, timeFormat)}
                   </span>
                 )}
                 <button

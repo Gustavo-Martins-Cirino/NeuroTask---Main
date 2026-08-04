@@ -32,9 +32,10 @@ import {
 } from "@/lib/invites"
 import { InviteDialog } from "@/components/invite-dialog"
 import { normalizeAvatar } from "@/lib/avatar"
+import { useTimeFormat } from "@/hooks/use-time-format"
+import { formatTime, type TimeFormat } from "@/lib/time-format"
 
-const fmtTime = (d: Date | string) =>
-  new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+const fmtTime = (d: Date | string, f: TimeFormat) => formatTime(new Date(d), f)
 
 const fmtDay = (d: string) =>
   new Date(d).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })
@@ -62,6 +63,7 @@ function StatusDot({ busy }: { busy: boolean | null }) {
 }
 
 export function FriendsSection() {
+  const timeFormat = useTimeFormat()
   const [profile, setProfile] = useState<MyProfile | null | undefined>(undefined)
   const [friends, setFriends] = useState<FriendEntry[]>([])
   const [query, setQuery] = useState("")
@@ -418,7 +420,7 @@ export function FriendsSection() {
                       <span className="font-semibold">{inv.title}</span>
                       <span className="text-muted-foreground">
                         {" · "}
-                        {fmtDay(inv.starts_at)} {fmtTime(inv.starts_at)}–{fmtTime(inv.ends_at)}
+                        {fmtDay(inv.starts_at)} {fmtTime(inv.starts_at, timeFormat)}–{fmtTime(inv.ends_at, timeFormat)}
                         {" · "}
                         {inv.direction === "received" ? "de" : "para"} @{inv.other_username}
                       </span>
@@ -574,7 +576,7 @@ export function FriendsSection() {
                     <li key={i} className="flex items-center gap-2.5 rounded-lg bg-red-500/10 px-3 py-2 text-sm">
                       <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
                       <span className="font-medium tabular-nums">
-                        {fmtTime(r.start)} – {fmtTime(r.end)}
+                        {fmtTime(r.start, timeFormat)} – {fmtTime(r.end, timeFormat)}
                       </span>
                       <span className="text-xs text-muted-foreground">ocupado</span>
                     </li>
