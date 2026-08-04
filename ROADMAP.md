@@ -1,8 +1,8 @@
 # NeuroTask · Roadmap
 
-> Este arquivo é o **caminho à frente**. O que já foi entregue sai daqui — o registro vive
-> no histórico do git, e o que o app faz hoje está no [README.md](README.md) e no
-> [CLAUDE.md](CLAUDE.md).
+> Este arquivo é o **caminho à frente**: só o que ainda falta. O que já foi entregue sai
+> daqui — o registro vive no histórico do git, e o que o app faz hoje está no
+> [README.md](README.md) e no [CLAUDE.md](CLAUDE.md).
 
 ## A tese do produto
 
@@ -19,18 +19,6 @@ Google Calendar). É um **copiloto de rotina**:
 4. **Vira hábito**: briefing diário, check-ins, gamificação com propósito e captura sem
    fricção (voz, mensageiro) fazem o app fazer parte da rotina.
 
-## Onde estamos
-
-As quatro fases planejadas foram entregues: fundação de uso real (deploy, mobile, e-mail
-próprio), o copiloto (planejamento retroativo, perfil e atividades de rotina, avisos
-determinísticos, check-in pós-horário, rotina aprendida), hábito e gamificação (anti-farm
-de XP no servidor, moedas, Escritório 3D com loja e avatar, social com amigos/agenda/
-convites, push real via pg_cron) e a integração externa do bot do Telegram, com
-pareamento por código.
-
-O app está feature-complete nas rotas existentes. O que falta não é capacidade nova — é
-**confiança**: ele ainda não foi entregue a ninguém além do autor.
-
 ## Agora — Fase 5: pronto para outras pessoas usarem
 
 O objetivo é passar o app para amigos e família e colher feedback de uso real. Isso não se
@@ -42,45 +30,15 @@ Ele não vai trocar por algo equivalente — só troca por algo que faça o que 
 frente dele**. Um bug basta: ele volta pro Google e não reclama, só some. Feedback que não
 chega é o pior resultado possível.
 
-Duas coisas matam essa entrega, e nenhuma é falta de funcionalidade: **quebrar na cara da
-pessoa** e **ela abrir o app e não saber o que fazer**.
+O que sobrou não é código, é **verificação** — e é a parte que não dá para fazer lendo o
+repositório:
 
-### Não quebrar na frente do usuário
-
-- [x] **Ver os erros sem abrir o Supabase**: `GET /api/errors` (service role, gated pelo
-      e-mail `OWNER_EMAIL`) + `ErrorsPanel` em Configurações — resumo (24h/7d + rotas que mais
-      quebram) e os últimos 50 erros (mensagem, rota, origem, commit, se deslogado). Aparece
-      SÓ pro dono; pra qualquer outro devolve `owner:false` e o painel some. Env nova: `OWNER_EMAIL`.
-- [x] **Cobertura dos módulos determinísticos** (`pnpm test`, 89 testes): fechada com
-      `routine-insights` (19) e o planejamento retroativo (17). Os dois exigiram separar
-      a decisão do I/O — `computeSuggestions` saiu de dentro do fetch, e a cadeia do dia
-      saiu da rota de IA para `lib/backward-plan.ts` (puro: sem Supabase, sem fuso). A
-      rota agora só busca a rotina, chama e formata.
-- [ ] **Varredura do fluxo principal fora da sua máquina**: navegador sem WebGL, tela pequena,
-      fuso diferente, e o primeiro login com o banco zerado.
-
-### Sobreviver ao primeiro dia
-
-- [x] **Onboarding**: card "Comece por aqui" no dashboard (`GettingStarted`) — checklist de
-      3 passos que se marcam sozinhos (tarefa criada/concluída, algum bloco no calendário) e
-      some ao fechar; atalhos p/ planejar com a IA, importar do Google e o Escritório.
-      Dispensável (localStorage).
-- [x] **Estados vazios com ação**: o vazio de Tarefas ganhou botão "Criar tarefa" e o de
-      Notas aponta o "Nova nota". (Varrer as demais rotas conforme o feedback pedir.)
-- [x] **Importação de calendário (`.ics`)**: o que transforma "app interessante" em "app que
-      dá pra usar amanhã" — a agenda de quem convidamos já existe no Google. Parser puro e
-      testado (`lib/ics.ts` + `ics.test.ts`, 11 casos: UTC/local/dia-inteiro/RRULE/unfold + export/round-trip);
-      `IcsImportDialog` em Configurações → "Importar e exportar" faz upload → **prévia com seleção** →
-      cria os blocos, sempre com confirmação (nunca às cegas). Dedupe por título+início
-      (reimportar não duplica). Recorrência simples (diário/semanal/dias úteis) mapeada de
-      RRULE; mensal/complexa vira evento único. TZID tratado como fuso do navegador (v1).
-
-### Fechar o ciclo de feedback
-
-- [x] **Botão de feedback dentro do app** (`FeedbackButton` no header + `supabase/feedback.sql`):
-      tipo (problema/ideia/outro) + texto, gravando junto a ROTA, o COMMIT (`/api/version`),
-      o user-agent e a hora — o "caminho para reproduzir" já vai anexado, então o feedback
-      não chega mais solto e sem contexto.
+- [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
+      percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
+      sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura
+      do código diz que aguenta (as consultas usam `maybeSingle`, os `.single()` são todos de
+      `insert`), mas ninguém abriu. Vale conferir junto: navegador sem WebGL (o fallback existe
+      em `office-scene-3d.tsx`, nunca foi visto rodando) e a tela de um celular real.
 
 **Critério de pronto**: alguém que nunca viu o app abre, entende o que fazer sem você do
 lado, e volta no dia seguinte sozinho.
@@ -88,6 +46,21 @@ lado, e volta no dia seguinte sozinho.
 ## Depois — evoluções por escolha
 
 Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
+
+### Dívidas conhecidas
+
+- [ ] **Fuso horário por usuário.** O dispatcher de push assume que todo mundo está em
+      UTC−3 (`DEFAULT_TZ_OFFSET_MIN`, padrão 180), porque `reminders` guarda hora de parede
+      sem fuso. Quem estiver fora do Brasil recebe o push na hora errada — o lembrete aparece
+      certo no app, só a notificação toca torta. **Adiado de propósito**: o público da Fase 5
+      é todo brasileiro, então o bug é dormente. Quando valer a pena: coluna de offset em
+      `push_subscriptions` (o dispositivo sabe o próprio fuso), `lib/push.ts` enviando na
+      inscrição, e o dispatcher agrupando por offset em vez de calcular um horário só.
+      Não confundir com o formato 12h/24h, que é outra coisa e já está resolvido.
+- [ ] **Seletores de hora ainda são 24h.** Quem escolhe AM/PM em Configurações *lê* `2:30 PM`
+      no app inteiro, mas ainda *digita* em 24h — os pickers de `time-block-dialog`,
+      `invite-dialog` e `task-dialog` alimentam o valor que vai pro banco, e mexer ali troca
+      risco de corromper dado por ganho cosmético. Só encarar se incomodar no uso real.
 
 ### Escritório vivo v3 — o que sobrou do Escritório
 
@@ -100,13 +73,9 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 ### Calendário aberto pra fora
 
-> A **importação** `.ics` está na Fase 5, acima: sem ela ninguém migra do Google, então
-> ela é requisito de adoção. O que sobra aqui é o caminho de volta.
+> Importar e exportar `.ics` já existem, em Configurações → "Importar e exportar". O que
+> falta aqui é o que depende de outra empresa.
 
-- [x] **Importar e exportar (`.ics`)**: ambos moram em Configurações → "Importar e exportar",
-      como no Google Calendar — discretos, sem poluir a tela do calendário. Exportar baixa os
-      blocos com horas em UTC e a recorrência do app (`daily`/`weekly`/`weekdays`) virando
-      `RRULE` de verdade (`toIcs` em `lib/ics.ts`, com teste de round-trip export→parse).
 - [ ] **Integrações de calendário** (Google/Outlook): começar por feed assinável
       (somente leitura) antes de considerar escrita bidirecional, que traz OAuth e
       conflito de sincronização.

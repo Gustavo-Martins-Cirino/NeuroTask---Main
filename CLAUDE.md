@@ -60,7 +60,7 @@ frontend/
 │   ├── time-block-dialog.tsx # Bloco de tempo + recorrência (diário/semanal/dias úteis)
 │   ├── theme-provider.tsx
 │   └── ui/                   # Componentes shadcn gerados
-├── hooks/                    # use-mobile · use-realtime · use-sound-mixer · use-toast
+├── hooks/                    # use-mobile · use-realtime · use-sound-mixer · use-time-format
 ├── lib/
 │   ├── supabase/             # client.ts · server.ts · middleware.ts (helper de updateSession)
 │   ├── gamification.ts       # Lógica de XP/níveis (+ anti-farm)
@@ -68,12 +68,13 @@ frontend/
 │   ├── routine-insights.ts   # Rotina aprendida: sugestões determinísticas de rotina
 │   ├── admin.ts              # Agregações do painel do dono (puro, sem Supabase)
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
+│   ├── time-format.ts        # 12h/24h — puro; o I/O mora em hooks/use-time-format
 │   ├── types.ts
 │   └── utils.ts              # cn()
 └── styles/global.css
 
 supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
-  28 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
+  29 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
 
 ## Rotas existentes
