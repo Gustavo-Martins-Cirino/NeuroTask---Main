@@ -6,7 +6,9 @@ import { Header } from "@/components/header"
 import { AvatarEditor } from "@/components/avatar-editor"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil } from "lucide-react"
+import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil, Palette } from "lucide-react"
+import { useOfficeBg, setOfficeBg } from "@/hooks/use-office-bg"
+import { OFFICE_BG_OPTIONS } from "@/lib/office-bg"
 
 // R3F usa WebGL: só no cliente (ssr:false), carregado sob demanda no 3D.
 const OfficeScene3D = dynamic(
@@ -37,6 +39,7 @@ export default function OfficePage() {
   const [avatarCfg, setAvatarCfg] = useState<AvatarConfig>(DEFAULT_AVATAR)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [nivel, setNivel] = useState(1)
+  const officeBg = useOfficeBg()
 
   const load = () => {
     fetchOfficeStats().then(setStats)
@@ -164,6 +167,7 @@ export default function OfficePage() {
                 skinUrl={skin.modelUrl}
                 skinTint={skin.tint}
                 nivel={nivel}
+                bgColor={officeBg}
                 onAvatarClick={() => setAvatarOpen(true)}
                 className="block w-full"
               />
@@ -181,15 +185,37 @@ export default function OfficePage() {
                 </motion.span>
               )}
             </AnimatePresence>
-            <div className="flex items-center gap-3 border-t border-border/50 px-4 py-2.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border/50 px-4 py-2.5">
               <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                 {ownedCount === 0
                   ? "Seu cantinho começa simples — decore-o com a sua produtividade."
                   : `${ownedCount} ${ownedCount === 1 ? "item conquistado" : "itens conquistados"}`}
               </p>
-              <p className="hidden text-xs text-muted-foreground md:block">
-                1 moeda a cada 5 XP 💪
-              </p>
+              {/* Cor de fundo do escritório (preferência do dispositivo) */}
+              <div className="flex shrink-0 items-center gap-1.5" title="Cor de fundo">
+                <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+                <div className="flex items-center gap-1">
+                  {OFFICE_BG_OPTIONS.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => setOfficeBg(o.id)}
+                      title={o.label}
+                      aria-label={`Fundo: ${o.label}`}
+                      aria-pressed={officeBg === o.id}
+                      className={cn(
+                        "h-5 w-5 rounded-full border transition-transform hover:scale-110",
+                        officeBg === o.id ? "border-primary ring-2 ring-primary/40" : "border-border/60"
+                      )}
+                      style={
+                        o.swatch
+                          ? { background: o.swatch }
+                          : { background: "conic-gradient(from 210deg, #f0dcc8, #dfeaf4, #2b2f4a, #f0dcc8)" }
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setAvatarOpen(true)}

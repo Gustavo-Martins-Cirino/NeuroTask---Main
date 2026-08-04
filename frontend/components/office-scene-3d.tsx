@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { Canvas, useFrame } from "@react-three/fiber"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
-import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial, type MeshToonMaterial } from "three"
+import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial, type MeshToonMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
 import { toonifyObject, addOutlines } from "@/lib/toon"
+import { fitOrthoCamera } from "@/lib/office-camera"
 import {
-  buildEscritorio, buildPersonagem, recuoDaSala, tamanhoDaSala,
+  buildEscritorio, buildPersonagem, recuoDaSala,
   type EscritorioExtras, type PersonagemAcessorios, type PersonagemCores,
 } from "@/lib/office-model"
 import type { AvatarConfig } from "@/lib/avatar"
@@ -27,6 +28,8 @@ interface OfficeScene3DProps {
   skinTint?: string
   /** Nível do dono da sala — ela cresce em degraus conforme ele sobe. */
   nivel?: number
+  /** Cor de fundo escolhida ("auto" = gradiente pela hora do dia). */
+  bgColor?: string
   className?: string
 }
 
@@ -207,7 +210,21 @@ function CartoonOffice({
   )
 }
 
-const CAM_ASP = 480 / 340
+// Reenquadra a câmera no conteúdo quando a sala muda de tamanho (nível) ou o
+// canvas é redimensionado — sala centralizada e cheia em qualquer nível. Não
+// depende dos itens equipados (todos cabem dentro da casca), então prever um
+// chapéu na loja não faz a câmera pular.
+function FitCamera({ contentRef, dep }: { contentRef: React.RefObject<Group | null>; dep: string }) {
+  const cam = useThree((s) => s.camera)
+  const size = useThree((s) => s.size)
+  useLayoutEffect(() => {
+    const content = contentRef.current
+    if (content && (cam as ThreeOrthoCam).isOrthographicCamera) {
+      fitOrthoCamera(cam as ThreeOrthoCam, content, size.width / size.height)
+    }
+  }, [cam, size.width, size.height, dep, contentRef])
+  return null
+}
 
 function Scene({
   working, onAvatarClick, phase, skinTint, avatar, equipped, nivel,
@@ -221,6 +238,7 @@ function Scene({
   nivel?: number
 }) {
   const L = LIGHT[phase]
+  const contentRef = useRef<Group>(null)
   return (
     <>
       {/* fill macio (céu/chão) + key quente com sombra + fill frio + luminária */}
@@ -245,14 +263,17 @@ function Scene({
       <directionalLight color={L.key} intensity={0.85} position={[-6, 12, -12]} />
       <pointLight color="#ffcf8a" intensity={6 + L.lampI * 0.15} distance={40} decay={2} position={[4, 7, -4]} />
 
-      <CartoonOffice
-        working={working}
-        skinTint={skinTint}
-        avatar={avatar}
-        equipped={equipped}
-        nivel={nivel}
-        onAvatarClick={onAvatarClick}
-      />
+      <group ref={contentRef}>
+        <CartoonOffice
+          working={working}
+          skinTint={skinTint}
+          avatar={avatar}
+          equipped={equipped}
+          nivel={nivel}
+          onAvatarClick={onAvatarClick}
+        />
+      </group>
+      <FitCamera contentRef={contentRef} dep={String(nivel ?? 1)} />
       {equipped?.has("pet-cachorro") && <PetBeagle recuo={recuoDaSala(nivel)} />}
 
       {/* Duas camadas: uma ampla e suave (ambiente) + uma justa e mais escura
@@ -275,12 +296,8 @@ function temWebGL() {
 }
 
 export function OfficeScene3D({
-  working = false, onAvatarClick = () => {}, avatar, equipped, skinTint, nivel, className,
+  working = false, onAvatarClick = () => {}, avatar, equipped, skinTint, nivel, bgColor, className,
 }: OfficeScene3DProps) {
-  // Sala maior → afasta a câmera na mesma proporção (senão as paredes novas
-  // saem do enquadramento) e mira na pessoa, que recuou junto com a mesa.
-  const camD = 18 * (tamanhoDaSala(nivel) / 4)
-  const alvoZ = -4 * (0.9 + recuoDaSala(nivel))
   const [phase, setPhase] = useState<Phase>("day")
   // Síncrono no PRIMEIRO render: num useEffect o <Canvas> já teria montado e
   // estourado antes da checagem. A cena só entra por dynamic(ssr:false), então
@@ -293,12 +310,14 @@ export function OfficeScene3D({
     return () => clearInterval(t)
   }, [])
 
+  // Fundo escolhido pelo usuário vence a hora do dia; "auto" (ou nada) mantém o
+  // gradiente que segue o relógio.
+  const bg = bgColor && bgColor !== "auto" ? bgColor : LIGHT[phase].bg
+  const bgStyle = `linear-gradient(160deg, ${bg}, ${bg}cc)`
+
   if (!webgl) {
     return (
-      <div
-        className={className}
-        style={{ background: `linear-gradient(160deg, ${LIGHT[phase].bg}, ${LIGHT[phase].bg}cc)` }}
-      >
+      <div className={className} style={{ background: bgStyle }}>
         <div
           className="flex flex-col items-center justify-center gap-1.5 px-6 text-center"
           style={{ width: "100%", aspectRatio: "480 / 340" }}
@@ -315,25 +334,16 @@ export function OfficeScene3D({
   }
 
   return (
-    <div className={className} style={{ position: "relative", background: `linear-gradient(160deg, ${LIGHT[phase].bg}, ${LIGHT[phase].bg}cc)` }}>
+    <div className={className} style={{ position: "relative", background: bgStyle }}>
       <Canvas
         shadows="soft"
         dpr={[1, 2]}
         gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
         style={{ width: "100%", aspectRatio: "480 / 340" }}
       >
-        <OrthographicCamera
-          makeDefault
-          manual
-          position={[16, 14, 16]}
-          left={(-camD * CAM_ASP) / 2}
-          right={(camD * CAM_ASP) / 2}
-          top={camD / 2}
-          bottom={-camD / 2}
-          near={-100}
-          far={300}
-          onUpdate={(c) => c.lookAt(0, 3.4, alvoZ)}
-        />
+        {/* Frustum e lookAt vêm do FitCamera (auto-fit); aqui só a posição
+            fixa que dá o ângulo isométrico. */}
+        <OrthographicCamera makeDefault manual position={[16, 14, 16]} near={-100} far={300} />
         <Scene
           working={working}
           onAvatarClick={onAvatarClick}
