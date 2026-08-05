@@ -3,10 +3,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
-import { ACESFilmicToneMapping, Box3, Color, Group, Mesh, Vector3, type Material, type MeshStandardMaterial, type MeshToonMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
+import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type Material, type MeshStandardMaterial, type MeshToonMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
 import { toonifyObject, addOutlines } from "@/lib/toon"
 import { fitOrthoCamera } from "@/lib/office-camera"
 import { resolveOfficeBg } from "@/lib/office-bg"
+import {
+  CELEBRATION_MS, buildConfetti, confettiAt, confettiOpacity, jumpHeight, bodyWiggle,
+} from "@/lib/office-celebration"
 import { useTheme } from "next-themes"
 import {
   buildEscritorio, buildPersonagem, recuoDaSala,
@@ -32,6 +35,9 @@ interface OfficeScene3DProps {
   nivel?: number
   /** Cor de fundo escolhida ("auto" = gradiente pela hora do dia). */
   bgColor?: string
+  /** Muda a cada conclusão de trabalho real: a sala comemora. Ver
+   *  hooks/use-office-celebration (0 = sala parada). */
+  celebrateNonce?: number
   className?: string
 }
 
@@ -142,12 +148,67 @@ function PetBeagle({ recuo = 0 }: { recuo?: number }) {
 }
 useGLTF.preload("/models/pet-beagle.glb")
 
+const CONFETTI_N = 36
+
+/** Progresso da festa (0→1). ≥ 1 significa "acabou" (ou nunca começou). */
+function progressoDaFesta(ref?: React.RefObject<number>): number {
+  if (!ref?.current) return 1
+  return (performance.now() - ref.current) / CELEBRATION_MS
+}
+
+// Confete da comemoração, em coordenadas da sala (z = altura). Fica montado e
+// invisível: a festa dura ~2,6 s e não vale remontar 36 malhas por conclusão.
+// As posições são determinísticas (lib/office-celebration) — o mesmo confete a
+// cada quadro, sem papel teleportando.
+function Confete({ startRef, recuo = 0 }: { startRef: React.RefObject<number>; recuo?: number }) {
+  const ref = useRef<Group>(null)
+  const { pieces, group, materials } = useMemo(() => {
+    const pieces = buildConfetti(CONFETTI_N)
+    const geo = new PlaneGeometry(0.075, 0.11)
+    const materials = new Map<string, MeshBasicMaterial>()
+    const group = new Group()
+    for (const p of pieces) {
+      let mat = materials.get(p.color)
+      if (!mat) {
+        mat = new MeshBasicMaterial({ color: new Color(p.color), side: DoubleSide, transparent: true })
+        materials.set(p.color, mat)
+      }
+      group.add(new Mesh(geo, mat))
+    }
+    return { pieces, group, materials }
+  }, [])
+
+  useFrame(() => {
+    const g = ref.current
+    if (!g) return
+    const p = progressoDaFesta(startRef)
+    if (p >= 1) {
+      if (g.visible) g.visible = false
+      return
+    }
+    g.visible = true
+    const o = confettiOpacity(p)
+    for (const m of materials.values()) m.opacity = o
+    group.children.forEach((child, i) => {
+      const { x, y, z, rot } = confettiAt(pieces[i], p)
+      child.position.set(x, y, z)
+      child.rotation.set(rot, rot * 0.7, rot * 1.3)
+    })
+  })
+
+  return (
+    <group ref={ref} position={[0, recuo, 0]} visible={false}>
+      <primitive object={group} />
+    </group>
+  )
+}
+
 // Cena cartoon NATIVA (sala + personagem em código, a partir dos scripts
 // Blender build_escritorio_base / build_personagem_base). Toon-shaded. O
 // monitor brilha mais quando "trabalhando" e o boneco respira (useFrame).
 // Coords Z-up → Y-up via group.
 function CartoonOffice({
-  working, skinTint, avatar, equipped, nivel, onAvatarClick,
+  working, skinTint, avatar, equipped, nivel, onAvatarClick, festaRef,
 }: {
   working?: boolean
   skinTint?: string
@@ -155,6 +216,8 @@ function CartoonOffice({
   equipped?: Set<string>
   nivel?: number
   onAvatarClick?: () => void
+  /** Instante em que a comemoração começou (performance.now); 0 = sala parada. */
+  festaRef?: React.RefObject<number>
 }) {
   // Chave estável: o Set costuma ser recriado a cada render (prévia da loja).
   const equipKey = [...(equipped ?? [])].sort().join("|")
@@ -195,9 +258,17 @@ function CartoonOffice({
   }, [room])
   useFrame((state) => {
     const t = state.clock.elapsedTime
-    const glow = working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
+    const festa = progressoDaFesta(festaRef)
+    const comemorando = festa < 1
+    const glow = comemorando ? 2.6 : working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
     for (const tela of telas) (tela.material as MeshToonMaterial).emissiveIntensity = glow
-    if (personRef.current) personRef.current.position.z = Math.sin(t * 1.7) * 0.012 // respiração
+    if (personRef.current) {
+      personRef.current.position.z = Math.sin(t * 1.7) * 0.012 // respiração
+      // Pula e balança. O eixo Y local passa pelos pés (x=0, z=0), então a
+      // inclinação vira uma dança apoiada no chão — não um giro em volta da sala.
+      personRef.current.position.z += comemorando ? jumpHeight(festa) : 0
+      personRef.current.rotation.y = comemorando ? bodyWiggle(festa) : 0
+    }
   })
   return (
     <group rotation={[-Math.PI / 2, 0, 0]} scale={4}>
@@ -229,7 +300,7 @@ function FitCamera({ contentRef, dep }: { contentRef: React.RefObject<Group | nu
 }
 
 function Scene({
-  working, onAvatarClick, phase, skinTint, avatar, equipped, nivel,
+  working, onAvatarClick, phase, skinTint, avatar, equipped, nivel, celebrateNonce,
 }: {
   working?: boolean
   onAvatarClick: () => void
@@ -238,9 +309,16 @@ function Scene({
   avatar?: AvatarConfig | null
   equipped?: Set<string>
   nivel?: number
+  celebrateNonce?: number
 }) {
   const L = LIGHT[phase]
   const contentRef = useRef<Group>(null)
+  // Início da comemoração (performance.now); 0 = sala parada. Vive num ref
+  // porque quem lê é o useFrame, não o render.
+  const festaRef = useRef(0)
+  useEffect(() => {
+    if (celebrateNonce && celebrateNonce > 0) festaRef.current = performance.now()
+  }, [celebrateNonce])
   return (
     <>
       {/* fill macio (céu/chão) + key quente com sombra + fill frio + luminária */}
@@ -273,9 +351,15 @@ function Scene({
           equipped={equipped}
           nivel={nivel}
           onAvatarClick={onAvatarClick}
+          festaRef={festaRef}
         />
       </group>
       <FitCamera contentRef={contentRef} dep={String(nivel ?? 1)} />
+      {/* Fora do contentRef de propósito: o confete não pode entrar na conta do
+          auto-fit, senão a sala encolheria para caber num papelzinho no teto. */}
+      <group rotation={[-Math.PI / 2, 0, 0]} scale={4}>
+        <Confete startRef={festaRef} recuo={recuoDaSala(nivel)} />
+      </group>
       {equipped?.has("pet-cachorro") && <PetBeagle recuo={recuoDaSala(nivel)} />}
 
       {/* Duas camadas: uma ampla e suave (ambiente) + uma justa e mais escura
@@ -298,7 +382,7 @@ function temWebGL() {
 }
 
 export function OfficeScene3D({
-  working = false, onAvatarClick = () => {}, avatar, equipped, skinTint, nivel, bgColor, className,
+  working = false, onAvatarClick = () => {}, avatar, equipped, skinTint, nivel, bgColor, celebrateNonce, className,
 }: OfficeScene3DProps) {
   const [phase, setPhase] = useState<Phase>("day")
   // Síncrono no PRIMEIRO render: num useEffect o <Canvas> já teria montado e
@@ -356,6 +440,7 @@ export function OfficeScene3D({
           avatar={avatar}
           equipped={equipped}
           nivel={nivel}
+          celebrateNonce={celebrateNonce}
         />
       </Canvas>
       {/* Vinheta suave: escurece só os cantos, focando o olhar no centro. */}

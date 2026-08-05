@@ -64,9 +64,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 ### Escritório vivo v3 — o que sobrou do Escritório
 
-- [ ] **Comemoração ao concluir**: evento na cena 3D quando uma tarefa é concluída.
-      Precisa nascer de trabalho real, nunca de login ou clique (mesma regra anti-farm
-      que rege a estante, o troféu e o quadro de streak).
 - [ ] **Snapshot compartilhável**: gerar uma imagem da sala para postar. Decisões em
       aberto: render no cliente (canvas do R3F) ou server-side; o que aparece além da
       cena (nível, streak); e se o link é público ou só entre amigos.

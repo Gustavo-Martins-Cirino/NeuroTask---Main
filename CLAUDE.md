@@ -61,6 +61,7 @@ frontend/
 │   ├── theme-provider.tsx
 │   └── ui/                   # Componentes shadcn gerados
 ├── hooks/                    # use-mobile · use-realtime · use-sound-mixer · use-time-format
+│                             # use-office-bg · use-office-celebration (I/O das prefs/festa do Escritório)
 ├── lib/
 │   ├── supabase/             # client.ts · server.ts · middleware.ts (helper de updateSession)
 │   ├── gamification.ts       # Lógica de XP/níveis (+ anti-farm)
@@ -69,6 +70,7 @@ frontend/
 │   ├── admin.ts              # Agregações do painel do dono (puro, sem Supabase)
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
 │   ├── time-format.ts        # 12h/24h — puro; o I/O mora em hooks/use-time-format
+│   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()
 └── styles/global.css

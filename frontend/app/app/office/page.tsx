@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil, Palette } from "lucide-react"
 import { useOfficeBg, setOfficeBg } from "@/hooks/use-office-bg"
 import { OFFICE_BG_OPTIONS } from "@/lib/office-bg"
+import { useOfficeCelebration } from "@/hooks/use-office-celebration"
 
 // R3F usa WebGL: só no cliente (ssr:false), carregado sob demanda no 3D.
 const OfficeScene3D = dynamic(
@@ -40,6 +41,9 @@ export default function OfficePage() {
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [nivel, setNivel] = useState(1)
   const officeBg = useOfficeBg()
+  // A sala comemora quando trabalho real rende XP — inclusive o que foi
+  // concluído em outra tela pouco antes de abrir o Escritório.
+  const celebrateNonce = useOfficeCelebration(!loading)
 
   const load = () => {
     fetchOfficeStats().then(setStats)
@@ -168,6 +172,7 @@ export default function OfficePage() {
                 skinTint={skin.tint}
                 nivel={nivel}
                 bgColor={officeBg}
+                celebrateNonce={celebrateNonce}
                 onAvatarClick={() => setAvatarOpen(true)}
                 className="block w-full"
               />

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import { queueOfficeCelebration } from "@/hooks/use-office-celebration"
 import type { TaskPriority } from "@/lib/types"
 
 export const XP_PER_LEVEL = 100
@@ -76,6 +77,9 @@ export async function awardXp(amount: number): Promise<Gamification | null> {
   }
   const result = computeGamification(typeof data === "number" ? data : 0)
   if (typeof window !== "undefined") {
+    // XP positivo = trabalho real (o anti-farm acima já filtrou): o Escritório
+    // deve comemorar, mesmo que a sala só seja aberta daqui a pouco.
+    if (amount > 0) queueOfficeCelebration()
     window.dispatchEvent(
       new CustomEvent<XpUpdateDetail>(XP_UPDATED_EVENT, {
         detail: { gamification: result, amount },
