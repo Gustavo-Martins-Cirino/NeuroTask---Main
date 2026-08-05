@@ -426,7 +426,9 @@ export function OfficeScene3D({
       <Canvas
         shadows="soft"
         dpr={[1, 2]}
-        gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
+        // preserveDrawingBuffer: mantém o buffer pra dar pra "tirar foto" da sala
+        // (snapshot compartilhável) com canvas.toBlob a qualquer momento.
+        gl={{ antialias: true, preserveDrawingBuffer: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
         style={{ width: "100%", aspectRatio: "480 / 340" }}
       >
         {/* Frustum e lookAt vêm do FitCamera (auto-fit); aqui só a posição

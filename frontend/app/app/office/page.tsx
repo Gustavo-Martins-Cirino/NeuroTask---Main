@@ -1,14 +1,16 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import dynamic from "next/dynamic"
+import { useTheme } from "next-themes"
 import { Header } from "@/components/header"
 import { AvatarEditor } from "@/components/avatar-editor"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil, Palette } from "lucide-react"
+import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil, Palette, Camera } from "lucide-react"
 import { useOfficeBg, setOfficeBg } from "@/hooks/use-office-bg"
-import { OFFICE_BG_OPTIONS } from "@/lib/office-bg"
+import { OFFICE_BG_OPTIONS, resolveOfficeBg } from "@/lib/office-bg"
+import { composeSnapshot, shareOrDownload, snapshotFilename } from "@/lib/office-snapshot"
 import { useOfficeCelebration } from "@/hooks/use-office-celebration"
 
 // R3F usa WebGL: só no cliente (ssr:false), carregado sob demanda no 3D.
@@ -41,9 +43,35 @@ export default function OfficePage() {
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [nivel, setNivel] = useState(1)
   const officeBg = useOfficeBg()
+  const { resolvedTheme } = useTheme()
+  const sceneWrapRef = useRef<HTMLDivElement>(null)
+  const [sharing, setSharing] = useState(false)
   // A sala comemora quando trabalho real rende XP — inclusive o que foi
   // concluído em outra tela pouco antes de abrir o Escritório.
   const celebrateNonce = useOfficeCelebration(!loading)
+
+  // "Tira uma foto" do escritório: captura o canvas do R3F, compõe com o fundo
+  // atual + selo e baixa/compartilha. Sem servidor.
+  const handleShare = async () => {
+    const canvas = sceneWrapRef.current?.querySelector("canvas")
+    if (!canvas) {
+      toast.error("Abra o escritório em 3D para gerar a imagem.")
+      return
+    }
+    setSharing(true)
+    try {
+      const bg = resolveOfficeBg(officeBg, resolvedTheme === "dark")
+      const blob = await composeSnapshot(canvas as HTMLCanvasElement, { bg, nivel })
+      if (!blob) throw new Error("sem imagem")
+      const outcome = await shareOrDownload(blob, snapshotFilename())
+      if (outcome === "downloaded") toast.success("Imagem do escritório baixada! 📸")
+      else if (outcome === "shared") toast.success("Escritório compartilhado! 📸")
+    } catch {
+      toast.error("Não consegui gerar a imagem.")
+    } finally {
+      setSharing(false)
+    }
+  }
 
   const load = () => {
     fetchOfficeStats().then(setStats)
@@ -155,6 +183,7 @@ export default function OfficePage() {
         <div className="mx-auto w-full max-w-5xl space-y-6">
           {/* Cena */}
           <motion.div
+            ref={sceneWrapRef}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
@@ -176,6 +205,18 @@ export default function OfficePage() {
                 onAvatarClick={() => setAvatarOpen(true)}
                 className="block w-full"
               />
+            )}
+            {!loading && (
+              <button
+                type="button"
+                onClick={handleShare}
+                disabled={sharing}
+                title="Salvar / compartilhar imagem do escritório"
+                aria-label="Salvar ou compartilhar imagem do escritório"
+                className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60 disabled:opacity-60"
+              >
+                {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              </button>
             )}
             <AnimatePresence>
               {previewItem && !equippedSet.has(previewItem.id) && (

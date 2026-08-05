@@ -62,12 +62,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       `invite-dialog` e `task-dialog` alimentam o valor que vai pro banco, e mexer ali troca
       risco de corromper dado por ganho cosmético. Só encarar se incomodar no uso real.
 
-### Escritório vivo v3 — o que sobrou do Escritório
-
-- [ ] **Snapshot compartilhável**: gerar uma imagem da sala para postar. Decisões em
-      aberto: render no cliente (canvas do R3F) ou server-side; o que aparece além da
-      cena (nível, streak); e se o link é público ou só entre amigos.
-
 ### Calendário aberto pra fora
 
 > Importar e exportar `.ics` já existem, em Configurações → "Importar e exportar". O que
