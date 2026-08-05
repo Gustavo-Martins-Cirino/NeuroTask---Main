@@ -57,10 +57,11 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       `push_subscriptions` (o dispositivo sabe o próprio fuso), `lib/push.ts` enviando na
       inscrição, e o dispatcher agrupando por offset em vez de calcular um horário só.
       Não confundir com o formato 12h/24h, que é outra coisa e já está resolvido.
-- [ ] **Seletores de hora ainda são 24h.** Quem escolhe AM/PM em Configurações *lê* `2:30 PM`
-      no app inteiro, mas ainda *digita* em 24h — os pickers de `time-block-dialog`,
-      `invite-dialog` e `task-dialog` alimentam o valor que vai pro banco, e mexer ali troca
-      risco de corromper dado por ganho cosmético. Só encarar se incomodar no uso real.
+- [ ] **Seletores nativos de hora seguem o SO, não o app.** O wheel do `time-block-dialog` já
+      respeita a preferência 12h/24h (mostra 12,1..11 + AM/PM; o valor guardado segue sempre
+      24h). Sobram os `<input type="time">` de `task-dialog` e `invite-dialog`, que exibem AM/PM
+      conforme o locale do SISTEMA, não a preferência do app — dá pra viver com isso (o navegador
+      não deixa forçar o formato do input nativo sem trocá-lo por um custom).
 
 ### Calendário aberto pra fora
 

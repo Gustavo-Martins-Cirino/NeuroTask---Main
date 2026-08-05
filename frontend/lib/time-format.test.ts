@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { formatClock, formatHourMinute, formatTime, parseTimeFormat } from "./time-format"
+import { formatClock, formatHourMinute, formatTime, parseTimeFormat, to12h, to24h } from "./time-format"
 
 // Meia-noite e meio-dia são onde todo relógio de 12h erra: 0h não é "0:00 AM"
 // e 12h não é "0:00 PM". O resto é padding.
@@ -70,5 +70,30 @@ describe("parseTimeFormat", () => {
   it("respeita o que foi salvo", () => {
     expect(parseTimeFormat("12h")).toBe("12h")
     expect(parseTimeFormat("24h")).toBe("24h")
+  })
+})
+
+describe("to12h / to24h — conversão dos seletores", () => {
+  it("meia-noite e meio-dia (os cantos)", () => {
+    expect(to12h(0)).toEqual({ h12: 12, period: "AM" })
+    expect(to12h(12)).toEqual({ h12: 12, period: "PM" })
+    expect(to24h(12, "AM")).toBe(0)
+    expect(to24h(12, "PM")).toBe(12)
+  })
+
+  it("manhã e tarde comuns", () => {
+    expect(to12h(9)).toEqual({ h12: 9, period: "AM" })
+    expect(to12h(13)).toEqual({ h12: 1, period: "PM" })
+    expect(to12h(23)).toEqual({ h12: 11, period: "PM" })
+    expect(to24h(9, "AM")).toBe(9)
+    expect(to24h(1, "PM")).toBe(13)
+    expect(to24h(11, "PM")).toBe(23)
+  })
+
+  it("round-trip: 0..23 → 12h → 24h volta igual", () => {
+    for (let h = 0; h < 24; h++) {
+      const { h12, period } = to12h(h)
+      expect(to24h(h12, period)).toBe(h)
+    }
   })
 })

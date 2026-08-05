@@ -32,3 +32,17 @@ export function formatClock(clock: string, format: TimeFormat): string {
 export function parseTimeFormat(raw: string | null | undefined): TimeFormat {
   return raw === "12h" || raw === "24h" ? raw : TIME_FORMAT_DEFAULT
 }
+
+// 12h ↔ 24h para os seletores de roda. O valor guardado é SEMPRE 24h; isto é só
+// pra exibir/coletar em AM/PM sem tocar no que vai pro banco. Meia-noite = 12 AM
+// (0h), meio-dia = 12 PM (12h) — os cantos onde 12h costuma errar.
+export function to12h(hours24: number): { h12: number; period: "AM" | "PM" } {
+  const period = hours24 < 12 ? "AM" : "PM"
+  const h12 = hours24 % 12 === 0 ? 12 : hours24 % 12
+  return { h12, period }
+}
+
+export function to24h(h12: number, period: "AM" | "PM"): number {
+  const base = h12 % 12 // 12 → 0
+  return period === "PM" ? base + 12 : base
+}

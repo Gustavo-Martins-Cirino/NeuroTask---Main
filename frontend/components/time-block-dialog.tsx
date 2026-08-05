@@ -17,6 +17,8 @@ import { DatePicker } from "@/components/date-picker"
 import { fetchActivities, categoryColor, type RoutineActivity } from "@/lib/routine"
 import type { TimeBlock, Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { useTimeFormat } from "@/hooks/use-time-format"
+import { formatClock, to12h, to24h } from "@/lib/time-format"
 import { Loader2, ChevronDown, Check, Clock, Trash2 } from "lucide-react"
 
 interface TimeBlockDialogProps {
@@ -132,12 +134,22 @@ function WheelColumn({
 }
 
 function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const timeFormat = useTimeFormat()
+  const is12h = timeFormat === "12h"
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
   const [hh = "09", mm = "00"] = value.split(":")
   const hours = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"))
   const minutes = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"))
+
+  // Modo 12h: os wheels mostram 12,1..11 + AM/PM, mas o valor emitido continua
+  // "HH:mm" em 24h — a preferência é só de apresentação, o banco não muda.
+  const h24 = Number(hh)
+  const { h12, period } = to12h(Number.isFinite(h24) ? h24 : 9)
+  const hours12 = ["12", ...Array.from({ length: 11 }, (_, i) => String(i + 1))]
+  const emit12 = (nh12: number, np: "AM" | "PM") =>
+    onChange(`${String(to24h(nh12, np)).padStart(2, "0")}:${mm}`)
 
   useEffect(() => {
     if (!open) return
@@ -159,7 +171,7 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: s
           open ? "border-primary/50" : "border-input focus:border-ring/50"
         )}
       >
-        <span className="tabular-nums">{value}</span>
+        <span className="tabular-nums">{formatClock(value, timeFormat)}</span>
         <Clock className={cn("h-4 w-4 transition-colors", open ? "text-primary" : "text-muted-foreground")} />
       </button>
 
@@ -172,9 +184,20 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: s
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 rounded-t-2xl bg-gradient-to-b from-popover to-transparent" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 rounded-b-2xl bg-gradient-to-t from-popover to-transparent" />
 
-            <WheelColumn values={hours} selected={hh} onSelect={(h) => onChange(`${h}:${mm}`)} />
-            <div className="z-0 flex w-4 items-center justify-center text-sm font-bold text-muted-foreground">:</div>
-            <WheelColumn values={minutes} selected={mm} onSelect={(m) => onChange(`${hh}:${m}`)} />
+            {is12h ? (
+              <>
+                <WheelColumn values={hours12} selected={String(h12)} onSelect={(h) => emit12(Number(h), period)} />
+                <div className="z-0 flex w-4 items-center justify-center text-sm font-bold text-muted-foreground">:</div>
+                <WheelColumn values={minutes} selected={mm} onSelect={(m) => onChange(`${hh}:${m}`)} />
+                <WheelColumn values={["AM", "PM"]} selected={period} onSelect={(p) => emit12(h12, p as "AM" | "PM")} />
+              </>
+            ) : (
+              <>
+                <WheelColumn values={hours} selected={hh} onSelect={(h) => onChange(`${h}:${mm}`)} />
+                <div className="z-0 flex w-4 items-center justify-center text-sm font-bold text-muted-foreground">:</div>
+                <WheelColumn values={minutes} selected={mm} onSelect={(m) => onChange(`${hh}:${m}`)} />
+              </>
+            )}
           </div>
         </div>
       )}
