@@ -28,9 +28,6 @@ interface OfficeScene3DProps {
   onAvatarClick?: () => void
   /** Ids de itens equipados/prévia — a cena reflete decorações e cores. */
   equipped?: Set<string>
-  /** Skin do personagem: cor da camisa (manequim). Vem de resolveSkin. */
-  skinUrl?: string
-  skinTint?: string
   /** Nível do dono da sala — ela cresce em degraus conforme ele sobe. */
   nivel?: number
   /** Cor de fundo escolhida ("auto" = gradiente pela hora do dia). */
@@ -96,16 +93,14 @@ function acessoriosDe(equipped?: Set<string>): PersonagemAcessorios {
   return a
 }
 
-// O avatar do editor pinta pele/cabelo/roupa; a skin comprada, quando
-// equipada, tem a última palavra sobre a camisa.
-function coresDoAvatar(avatar?: AvatarConfig | null, skinTint?: string): PersonagemCores {
+// Pele/cabelo/roupa vêm do editor de avatar — de graça, sem loja no meio.
+function coresDoAvatar(avatar?: AvatarConfig | null): PersonagemCores {
   const c: PersonagemCores = {}
   if (avatar) {
     c.pele = avatar.skin
     c.cabelo = avatar.hairColor
     c.camisa = avatar.outfitColor
   }
-  if (skinTint) c.camisa = skinTint
   return c
 }
 
@@ -208,10 +203,9 @@ function Confete({ startRef, recuo = 0 }: { startRef: React.RefObject<number>; r
 // monitor brilha mais quando "trabalhando" e o boneco respira (useFrame).
 // Coords Z-up → Y-up via group.
 function CartoonOffice({
-  working, skinTint, avatar, equipped, nivel, onAvatarClick, festaRef,
+  working, avatar, equipped, nivel, onAvatarClick, festaRef,
 }: {
   working?: boolean
-  skinTint?: string
   avatar?: AvatarConfig | null
   equipped?: Set<string>
   nivel?: number
@@ -242,12 +236,12 @@ function CartoonOffice({
   )
   const person = useMemo(
     () => {
-      const p = buildPersonagem(coresDoAvatar(avatar, skinTint), acessoriosDe(equipped))
+      const p = buildPersonagem(coresDoAvatar(avatar), acessoriosDe(equipped))
       addOutlines(p)
       return p
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [avatar, skinTint, equipKey]
+    [avatar, equipKey]
   )
   const personRef = useRef<Group>(null)
   // Todas as telas (o setup duplo tem duas) brilham juntas ao "trabalhar".
@@ -300,12 +294,11 @@ function FitCamera({ contentRef, dep }: { contentRef: React.RefObject<Group | nu
 }
 
 function Scene({
-  working, onAvatarClick, phase, skinTint, avatar, equipped, nivel, celebrateNonce,
+  working, onAvatarClick, phase, avatar, equipped, nivel, celebrateNonce,
 }: {
   working?: boolean
   onAvatarClick: () => void
   phase: Phase
-  skinTint?: string
   avatar?: AvatarConfig | null
   equipped?: Set<string>
   nivel?: number
@@ -346,7 +339,6 @@ function Scene({
       <group ref={contentRef}>
         <CartoonOffice
           working={working}
-          skinTint={skinTint}
           avatar={avatar}
           equipped={equipped}
           nivel={nivel}
@@ -382,7 +374,7 @@ function temWebGL() {
 }
 
 export function OfficeScene3D({
-  working = false, onAvatarClick = () => {}, avatar, equipped, skinTint, nivel, bgColor, celebrateNonce, className,
+  working = false, onAvatarClick = () => {}, avatar, equipped, nivel, bgColor, celebrateNonce, className,
 }: OfficeScene3DProps) {
   const [phase, setPhase] = useState<Phase>("day")
   // Síncrono no PRIMEIRO render: num useEffect o <Canvas> já teria montado e
@@ -438,7 +430,6 @@ export function OfficeScene3D({
           working={working}
           onAvatarClick={onAvatarClick}
           phase={phase}
-          skinTint={skinTint}
           avatar={avatar}
           equipped={equipped}
           nivel={nivel}

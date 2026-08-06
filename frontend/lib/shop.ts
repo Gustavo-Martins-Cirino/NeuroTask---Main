@@ -1,11 +1,15 @@
 import { createClient } from "@/lib/supabase/client"
-import { SKINS } from "@/lib/skins"
 
 // Loja cosmética do Escritório (Fase 3). Os PREÇOS autoritativos moram no
 // banco (shop_items) e a compra é a RPC buy_item — aqui fica só o catálogo
 // visual (nome/emoji/slot) e os helpers de estado.
+//
+// As "skins" saíram da loja: o personagem da cena é procedural, então elas só
+// trocavam a cor da camisa — coisa que o editor de avatar faz de graça. Vender
+// isso (ainda mais a "premium", que não mudava nada) não se sustentava. Os ids
+// continuam no banco, inofensivos; só não aparecem mais.
 
-export type ShopCategory = "decor" | "cadeira" | "setup" | "parede" | "piso" | "skin" | "chapeu" | "oculos"
+export type ShopCategory = "decor" | "cadeira" | "setup" | "parede" | "piso" | "chapeu" | "oculos"
 
 export interface ShopItem {
   id: string
@@ -17,7 +21,6 @@ export interface ShopItem {
 }
 
 export const CATEGORY_LABELS: Record<ShopCategory, string> = {
-  skin: "Skins",
   chapeu: "Chapéus",
   oculos: "Óculos",
   decor: "Decoração",
@@ -30,12 +33,10 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
 // Slots exclusivos: equipar um desequipa os irmãos (decor é livre).
 // Chapéu e óculos são slots SEPARADOS de propósito — dá para usar os dois
 // juntos, e dentro de cada um só cabe uma peça (nada de dois chapéus).
-export const EXCLUSIVE_CATEGORIES: ShopCategory[] = ["skin", "cadeira", "setup", "parede", "piso", "chapeu", "oculos"]
+export const EXCLUSIVE_CATEGORIES: ShopCategory[] = ["cadeira", "setup", "parede", "piso", "chapeu", "oculos"]
 
 // Metadados visuais por id — preço aqui é só exibição; o cobrado é o do banco.
-// Skins vêm primeiro (feature-título do Escritório 3D).
 export const CATALOG: ShopItem[] = [
-  ...SKINS,
   { id: "oculos-grau", name: "Óculos de grau", price: 35, category: "oculos", emoji: "👓", desc: "Ar de quem lê muito" },
   { id: "oculos-escuros", name: "Óculos escuros", price: 70, category: "oculos", emoji: "🕶️", desc: "Foco em modo estiloso" },
   { id: "chapeu-bone", name: "Boné", price: 45, category: "chapeu", emoji: "🧢", desc: "Clássico de todo dia" },
@@ -85,18 +86,38 @@ export async function fetchShopState(): Promise<ShopState> {
   }
 }
 
+// O catálogo da loja está espalhado em vários SQLs (coins_shop.sql nasceu antes
+// dos pets 3D e dos acessórios). Mandar rodar só o coins_shop.sql fazia quem já
+// o tinha rodado dar de cara com a mesma mensagem — o caso do beagle, que mora
+// no office_3d.sql. Por isso a dica aponta o arquivo por item.
+const SQL_DO_ITEM: Record<string, string> = {
+  "pet-cachorro": "office_3d.sql",
+  "chapeu-bone": "avatar_acessorios.sql",
+  "chapeu-social": "avatar_acessorios.sql",
+  "chapeu-coroa": "avatar_acessorios.sql",
+  "oculos-grau": "avatar_acessorios.sql",
+  "oculos-escuros": "avatar_acessorios.sql",
+}
+
 const BUY_ERRORS: Record<string, string> = {
   SALDO_INSUFICIENTE: "Moedas insuficientes — conclua mais tarefas! 💪",
   JA_COMPRADO: "Você já tem esse item.",
-  ITEM_INEXISTENTE: "Item não encontrado. Rode o SQL coins_shop.sql no Supabase.",
+}
+
+function erroDeCompra(code: string, itemId: string): string | undefined {
+  if (BUY_ERRORS[code]) return BUY_ERRORS[code]
+  if (code === "ITEM_INEXISTENTE") {
+    return `Este item ainda não existe no banco. Rode supabase/${SQL_DO_ITEM[itemId] ?? "coins_shop.sql"} no Supabase.`
+  }
+  return undefined
 }
 
 export async function buyItem(itemId: string): Promise<{ coins?: number; error?: string }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("buy_item", { p_item_id: itemId })
   if (error) {
-    const known = Object.keys(BUY_ERRORS).find((k) => error.message.includes(k))
-    return { error: known ? BUY_ERRORS[known] : error.message }
+    const code = ["SALDO_INSUFICIENTE", "JA_COMPRADO", "ITEM_INEXISTENTE"].find((k) => error.message.includes(k))
+    return { error: (code && erroDeCompra(code, itemId)) || error.message }
   }
   return { coins: typeof data === "number" ? data : 0 }
 }

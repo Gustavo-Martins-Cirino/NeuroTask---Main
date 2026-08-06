@@ -27,16 +27,17 @@ import {
 import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
 import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
 import { fetchAvatar, saveAvatar, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar"
-import { resolveSkin } from "@/lib/skins"
 
-const CATEGORY_ORDER: ShopCategory[] = ["skin", "chapeu", "oculos", "decor", "setup", "cadeira", "parede", "piso"]
+const CATEGORY_ORDER: ShopCategory[] = ["decor", "setup", "cadeira", "parede", "piso", "chapeu", "oculos"]
 
 export default function OfficePage() {
   const [loading, setLoading] = useState(true)
   const [coins, setCoins] = useState(0)
   const [owned, setOwned] = useState<Map<string, boolean>>(new Map())
   const [busyItem, setBusyItem] = useState<string | null>(null)
-  const [filter, setFilter] = useState<ShopCategory | "all">("all")
+  // Sem aba "Tudo": com o catálogo deste tamanho, a lista única virava um
+  // paredão sem informação. Uma categoria por vez.
+  const [filter, setFilter] = useState<ShopCategory>("decor")
 
   const [stats, setStats] = useState<OfficeStats | undefined>(undefined)
   const [avatarCfg, setAvatarCfg] = useState<AvatarConfig>(DEFAULT_AVATAR)
@@ -114,9 +115,6 @@ export default function OfficePage() {
     return s
   }, [equippedSet, previewItem])
 
-  // Skin do personagem (modelo 3D + cor) a partir do que está equipado/prévia.
-  const skin = useMemo(() => resolveSkin(sceneSet), [sceneSet])
-
   const handleBuy = async (item: ShopItem) => {
     setBusyItem(item.id)
     const { coins: newCoins, error } = await buyItem(item.id)
@@ -167,7 +165,7 @@ export default function OfficePage() {
     setBusyItem(null)
   }
 
-  const items = filter === "all" ? CATALOG : CATALOG.filter((i) => i.category === filter)
+  const items = CATALOG.filter((i) => i.category === filter)
   const ownedCount = owned.size
 
   return (
@@ -197,8 +195,6 @@ export default function OfficePage() {
                 avatar={avatarCfg}
                 working={stats?.working}
                 equipped={sceneSet}
-                skinUrl={skin.modelUrl}
-                skinTint={skin.tint}
                 nivel={nivel}
                 bgColor={officeBg}
                 celebrateNonce={celebrateNonce}
@@ -275,7 +271,7 @@ export default function OfficePage() {
               <Sparkles className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold">Loja</h2>
               <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                {(["all", ...CATEGORY_ORDER] as const).map((c) => (
+                {CATEGORY_ORDER.map((c) => (
                   <button
                     key={c}
                     type="button"
@@ -287,7 +283,7 @@ export default function OfficePage() {
                         : "border-border/50 text-muted-foreground hover:border-border"
                     )}
                   >
-                    {c === "all" ? "Tudo" : CATEGORY_LABELS[c]}
+                    {CATEGORY_LABELS[c]}
                   </button>
                 ))}
               </div>

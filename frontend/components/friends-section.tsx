@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { resolveSkin } from "@/lib/skins"
 
 // Mesma cena 3D do próprio escritório: o amigo vê as decorações e os
 // acessórios de verdade. R3F usa WebGL → só no cliente e sob demanda (o
@@ -625,7 +624,6 @@ export function FriendsSection() {
                 <OfficeScene3D
                   equipped={visitSet}
                   avatar={visit.avatar ? normalizeAvatar(visit.avatar) : null}
-                  skinTint={resolveSkin(visitSet).tint}
                   nivel={visit.level ?? 1}
                   className="block w-full"
                 />
