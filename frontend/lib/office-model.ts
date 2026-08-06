@@ -146,11 +146,93 @@ export interface EscritorioExtras {
   setup?: "duplo" | "ultrawide"
 }
 
+/** Silhueta da cadeira — "padrao" é a de plástico que já vem na sala; as
+ *  outras duas são compradas na loja e mudam a MALHA, não só a cor. */
+export type CadeiraTipo = "padrao" | "ergonomica" | "gamer"
+
 export interface EscritorioOpts {
   extras?: EscritorioExtras
   cores?: { parede?: string; piso?: string; cadeira?: string }
   /** Nível do dono: a sala cresce com ele (comparação social num relance). */
   nivel?: number
+  cadeira?: CadeiraTipo
+}
+
+// Base giratória de 5 pés com rodinha na ponta (cadeiras de escritório/gamer).
+// Cada pé é uma caixa comprida girada em torno de Z (o eixo "de cima" da sala)
+// para apontar pra fora, feito raio de roda — 5 em vez de 4 porque é o padrão
+// real dessas cadeiras (mais estável que um tripé, sem repetir a X da mesa).
+function baseEstrela(g: Group, prefixo: string, x: number, y: number, mMetal: Material, mRoda: Material) {
+  const braços = 5
+  const comprimento = 0.3
+  const raioInterno = 0.05
+  for (let i = 0; i < braços; i++) {
+    const ang = (i * 2 * Math.PI) / braços
+    const dx = Math.cos(ang), dy2 = Math.sin(ang)
+    const cx = x + dx * (raioInterno + comprimento / 2)
+    const cy = y + dy2 * (raioInterno + comprimento / 2)
+    g.add(box(`${prefixo}_Pe_${i}`, [comprimento, 0.045, 0.04], [cx, cy, 0.05], mMetal, [0, 0, ang]))
+    const rx = x + dx * (raioInterno + comprimento)
+    const ry = y + dy2 * (raioInterno + comprimento)
+    g.add(sph(`${prefixo}_Roda_${i}`, 0.033, [rx, ry, 0.033], mRoda))
+  }
+}
+
+// Cadeira de plástico de bar: assento e encosto finos e moldados, 4 pernas
+// retas — sem braço, sem coluna a gás, sem base giratória. É o que separa uma
+// cadeira "padrão" de uma comprada: aqui não tem mecanismo nenhum.
+function buildCadeiraPadrao(g: Group, x: number, y: number, mCad: Material, mMetal: Material) {
+  g.add(box("Cadeira_Assento", [0.46, 0.44, 0.045], [x, y, 0.44], mCad))
+  g.add(box("Cadeira_Encosto", [0.42, 0.04, 0.3], [x, y - 0.23, 0.6], mCad))
+  const pernas: V3[] = [[0.19, 0.18], [-0.19, 0.18], [0.19, -0.17], [-0.19, -0.17]].map(([ox, oy]) => [x + ox, y + oy, 0.21])
+  pernas.forEach((p, i) => g.add(cyl(`Cadeira_Perna_${i}`, 0.016, 0.42, p, mMetal)))
+}
+
+// Cadeira ergonômica: encosto em duas partes (lombar + alto, afunilando pro
+// topo — a curva que faz "ergonômica" ler como tal), braços com poste e
+// almofada, coluna a gás e base giratória de 5 pés.
+function buildCadeiraErgonomica(g: Group, x: number, y: number, mCad: Material, mMetal: Material, mRoda: Material) {
+  g.add(box("Cadeira_Assento", [0.52, 0.52, 0.09], [x, y, 0.47], mCad))
+  g.add(box("Cadeira_Encosto_Lombar", [0.46, 0.09, 0.24], [x, y - 0.25, 0.63], mCad))
+  g.add(box("Cadeira_Encosto_Alto", [0.4, 0.07, 0.42], [x, y - 0.24, 0.95], mCad))
+  for (const lado of [1, -1]) {
+    const suf = lado === 1 ? "Direito" : "Esquerdo"
+    g.add(cyl(`Cadeira_Braco_Poste_${suf}`, 0.02, 0.22, [x + lado * 0.29, y, 0.61], mMetal))
+    g.add(box(`Cadeira_Braco_Almofada_${suf}`, [0.07, 0.22, 0.03], [x + lado * 0.29, y, 0.735], mCad))
+  }
+  g.add(cyl("Cadeira_Coluna", 0.04, 0.4, [x, y, 0.22], mMetal))
+  baseEstrela(g, "Cadeira_Base", x, y, mMetal, mRoda)
+}
+
+// Cadeira gamer: balde com "asas" laterais no assento e no encosto (o que dá
+// a cara de racing seat), encosto alto com apêndice de encosto de cabeça,
+// friso de contraste no centro, braços maiores e a mesma base giratória.
+function buildCadeiraGamer(g: Group, x: number, y: number, mCad: Material, mMetal: Material, mRoda: Material, mFriso: Material) {
+  g.add(box("Cadeira_Assento", [0.5, 0.5, 0.1], [x, y, 0.47], mCad))
+  for (const lado of [1, -1]) {
+    const suf = lado === 1 ? "Direita" : "Esquerda"
+    g.add(box(`Cadeira_Assento_Asa_${suf}`, [0.06, 0.5, 0.13], [x + lado * 0.26, y, 0.5], mCad, [0, 0, lado * D(12)]))
+  }
+  g.add(box("Cadeira_Encosto", [0.44, 0.09, 0.62], [x, y - 0.25, 0.85], mCad))
+  g.add(box("Cadeira_Encosto_Friso", [0.06, 0.02, 0.58], [x, y - 0.295, 0.85], mFriso))
+  for (const lado of [1, -1]) {
+    const suf = lado === 1 ? "Direita" : "Esquerda"
+    g.add(box(`Cadeira_Encosto_Asa_${suf}`, [0.06, 0.16, 0.6], [x + lado * 0.21, y - 0.19, 0.85], mCad, [0, 0, -lado * D(18)]))
+  }
+  g.add(box("Cadeira_Encosto_Cabeca", [0.26, 0.08, 0.14], [x, y - 0.27, 1.18], mCad))
+  for (const lado of [1, -1]) {
+    const suf = lado === 1 ? "Direito" : "Esquerdo"
+    g.add(cyl(`Cadeira_Braco_Poste_${suf}`, 0.022, 0.24, [x + lado * 0.3, y, 0.6], mMetal))
+    g.add(box(`Cadeira_Braco_Almofada_${suf}`, [0.08, 0.24, 0.04], [x + lado * 0.3, y, 0.735], mFriso))
+  }
+  g.add(cyl("Cadeira_Coluna", 0.042, 0.4, [x, y, 0.22], mMetal))
+  baseEstrela(g, "Cadeira_Base", x, y, mMetal, mRoda)
+}
+
+function buildCadeira(g: Group, tipo: CadeiraTipo | undefined, x: number, y: number, mCad: Material, mMetal: Material, mRoda: Material, mFriso: Material) {
+  if (tipo === "ergonomica") return buildCadeiraErgonomica(g, x, y, mCad, mMetal, mRoda)
+  if (tipo === "gamer") return buildCadeiraGamer(g, x, y, mCad, mMetal, mRoda, mFriso)
+  return buildCadeiraPadrao(g, x, y, mCad, mMetal)
 }
 
 const TAMPO_Z = 0.81 // topo da mesa: onde os itens de mesa se apoiam
@@ -179,7 +261,14 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   const dy = recuoDaSala(opts.nivel) // deslocamento da zona de trabalho
   const mPiso = tmat(opts.cores?.piso ?? [0.82, 0.62, 0.4], 0, "piso")
   const mParede = tmat(opts.cores?.parede ?? [0.94, 0.9, 0.85], 0, "parede")
-  const mCad = tmat(opts.cores?.cadeira ?? [0.13, 0.13, 0.15], 0, "tecido")
+  // A padrão é plástico injetado (reflete um pouco); as compradas são estofadas
+  // e comem a luz. O acabamento é metade do que separa uma da outra — só a
+  // silhueta, com todas foscas iguais, ainda lia como "a mesma cadeira".
+  const mCad = tmat(
+    opts.cores?.cadeira ?? [0.13, 0.13, 0.15],
+    0,
+    opts.cadeira && opts.cadeira !== "padrao" ? "tecido" : "plastico"
+  )
   const mRodape = tmat([1, 1, 1], 0, "parede")
   const mTampo = tmat([0.74, 0.53, 0.34], 0, "madeira")
   const mPerna = tmat([0.22, 0.2, 0.18], 0, "metal")
@@ -199,10 +288,9 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   g.add(box("Mesa_Tampo", [1.6, 0.7, 0.06], [0, 1.55 + dy, 0.78], mTampo))
   for (const ox of [0.72, -0.72]) for (const oy of [1.85, 1.25]) g.add(cyl(`Mesa_Perna_${ox}_${oy}`, 0.025, 0.72, [ox, oy + dy, 0.36], mPerna))
 
-  g.add(box("Cadeira_Assento", [0.5, 0.5, 0.08], [0, 0.9 + dy, 0.46], mCad))
-  g.add(box("Cadeira_Encosto", [0.48, 0.08, 0.55], [0, 0.64 + dy, 0.775], mCad))
-  g.add(cyl("Cadeira_Coluna", 0.04, 0.42, [0, 0.9 + dy, 0.21], mCad))
-  g.add(cyl("Cadeira_Base", 0.32, 0.05, [0, 0.9 + dy, 0.03], mCad))
+  const mRoda = tmat([0.1, 0.1, 0.11], 0, "plastico")
+  const mFriso = tmat([0.06, 0.06, 0.07], 0, "plastico")
+  buildCadeira(g, opts.cadeira, 0, 0.9 + dy, mCad, mPerna, mRoda, mFriso)
 
   buildMonitores(g, dy, extras.setup, mBezel, mGlow, mPC)
   g.add(box("PC_Torre", [0.14, 0.3, 0.36], [0.6, 1.5 + dy, 0.96], mPC))
@@ -248,15 +336,35 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
 
   if (extras.estante) {
     const mLivro = [
-      tmat([0.75, 0.29, 0.18]), tmat([0.18, 0.42, 0.69]), tmat([0.88, 0.7, 0.23]),
-      tmat([0.31, 0.62, 0.35]), tmat([0.54, 0.36, 0.94]), tmat([0.84, 0.42, 0.53]),
+      tmat([0.72, 0.24, 0.16]), tmat([0.16, 0.38, 0.64]), tmat([0.86, 0.66, 0.2]),
+      tmat([0.27, 0.56, 0.32]), tmat([0.48, 0.32, 0.86]), tmat([0.8, 0.36, 0.46]),
+      tmat([0.15, 0.15, 0.17]), tmat([0.92, 0.89, 0.82]), tmat([0.62, 0.42, 0.22]),
     ]
     const x = -S + 0.26
     g.add(box("Estante_Corpo", [0.34, 0.9, 1.25], [x, 0.2, 0.625], mMadeira))
+    const nLivros = 8
     ;[0.4, 0.72, 1.04].forEach((z, si) => {
       g.add(box(`Estante_Prateleira_${si}`, [0.3, 0.86, 0.02], [x, 0.2, z], mTampo))
-      for (let i = 0; i < 6; i++) {
-        g.add(box(`Estante_Livro_${si}_${i}`, [0.2, 0.045, 0.2], [x + 0.02, -0.16 + i * 0.075, z + 0.11], mLivro[(si + i) % 6]))
+      // Espessura, altura e profundidade variam por livro (multiplicadores
+      // primos entre si pra não repetir padrão de prateleira pra prateleira)
+      // — é o que lê como vários livros encostados, não um bloco liso.
+      const espessuras = Array.from({ length: nLivros }, (_, i) => 0.028 + ((si * 5 + i * 3) % 5) * 0.006)
+      const largura = espessuras.reduce((a, b) => a + b, 0) + (nLivros - 1) * 0.003
+      let yCursor = 0.2 - largura / 2
+      for (let i = 0; i < nLivros; i++) {
+        const espessura = espessuras[i]
+        const altura = 0.15 + ((si * 2 + i * 7) % 6) * 0.011
+        const profundidade = 0.16 + (i % 3) * 0.012
+        const tombado = i === (si * 3 + 2) % nLivros // um livro caído por prateleira
+        yCursor += espessura / 2
+        g.add(box(
+          `Estante_Livro_${si}_${i}`,
+          [profundidade, espessura, altura],
+          [x + 0.02 + (tombado ? 0.006 : 0), yCursor, z + 0.011 + altura / 2],
+          mLivro[(si * 7 + i * 5) % mLivro.length],
+          tombado ? [D(9), 0, 0] : undefined
+        ))
+        yCursor += espessura / 2 + 0.003
       }
     })
   }

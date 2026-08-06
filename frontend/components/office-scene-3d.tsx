@@ -63,6 +63,12 @@ function pick(map: Record<string, string>, equipped: Set<string> | undefined): s
   return undefined
 }
 
+function cadeiraTipoDe(equipped?: Set<string>): "padrao" | "ergonomica" | "gamer" {
+  if (equipped?.has("cadeira-gamer")) return "gamer"
+  if (equipped?.has("cadeira-ergonomica")) return "ergonomica"
+  return "padrao"
+}
+
 function extrasDe(equipped?: Set<string>): EscritorioExtras {
   if (!equipped) return {}
   return {
@@ -226,6 +232,7 @@ function CartoonOffice({
           piso: pick(FLOOR_COLORS, equipped),
           cadeira: pick(CHAIR_COLORS, equipped),
         },
+        cadeira: cadeiraTipoDe(equipped),
       })
       return r
     },

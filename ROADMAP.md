@@ -85,11 +85,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Itens que existem mas não convencem**
 
-- [ ] **Cadeiras só mudam de cor.** As três precisam de silhueta própria: a padrão como
-      cadeira de plástico de bar, a ergonômica de fato bonita (encosto alto, apoios), e a
-      gamer com a cara de gamer — não a mesma malha pintada de vermelho.
-- [ ] **Estante de livros feia.** Dá pra ver que é uma estante, mas não os livros. Quer
-      lombadas visíveis, alinhadas e variadas na prateleira.
 - [ ] **Neon "focus" ilegível.** Parece um quadro aleatório na parede; não dá pra ler nada.
       Ou vira texto legível de verdade, ou vira outro objeto.
 - [ ] **Janela para a cidade parece mancha.** Hoje são formas soltas na parede. Precisa ler
