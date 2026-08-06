@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseIcs, toIcs } from "./ics"
+import { parseIcs, toIcs, blocksToIcsEvents } from "./ics"
 
 // A importação cria blocos de tempo na agenda do usuário a partir de um .ics
 // (ex.: exportação do Google). Um erro aqui cria evento na hora/dia errado ou
@@ -109,5 +109,40 @@ describe("toIcs (exportação)", () => {
     expect(parsed[0].end.toISOString()).toBe("2026-01-15T14:00:00.000Z")
     expect(parsed[0].recurrence).toBe("weekdays")
     expect(parsed[1].recurrence).toBeNull()
+  })
+})
+
+describe("blocksToIcsEvents (banco → eventos)", () => {
+  it("mapeia campos e normaliza a recorrência", () => {
+    const [e] = blocksToIcsEvents([
+      { id: "b1", title: "Foco", start_time: "2026-01-15T13:00:00Z", end_time: "2026-01-15T14:00:00Z", description: "sprint", recurrence_rule: "weekdays" },
+    ])
+    expect(e.uid).toBe("b1")
+    expect(e.title).toBe("Foco")
+    expect(e.start.toISOString()).toBe("2026-01-15T13:00:00.000Z")
+    expect(e.end.toISOString()).toBe("2026-01-15T14:00:00.000Z")
+    expect(e.description).toBe("sprint")
+    expect(e.recurrence).toBe("weekdays")
+  })
+
+  it("recorrência desconhecida/nula vira evento único; sem descrição vira null", () => {
+    const rows = [
+      { id: "a", title: "Mensal", start_time: "2026-02-01T09:00:00Z", end_time: "2026-02-01T10:00:00Z", recurrence_rule: "monthly" },
+      { id: "b", title: "Único", start_time: "2026-02-02T09:00:00Z", end_time: "2026-02-02T10:00:00Z", recurrence_rule: null },
+    ]
+    const evs = blocksToIcsEvents(rows)
+    expect(evs[0].recurrence).toBeNull()
+    expect(evs[1].recurrence).toBeNull()
+    expect(evs[0].description).toBeNull()
+  })
+
+  it("bate com o que o toIcs precisa (round-trip pelo parseIcs)", () => {
+    const ics = toIcs(blocksToIcsEvents([
+      { id: "x", title: "Reunião", start_time: "2026-03-10T18:30:00Z", end_time: "2026-03-10T19:00:00Z", recurrence_rule: "daily" },
+    ]))
+    const [e] = parseIcs(ics)
+    expect(e.title).toBe("Reunião")
+    expect(e.start.toISOString()).toBe("2026-03-10T18:30:00.000Z")
+    expect(e.recurrence).toBe("daily")
   })
 })

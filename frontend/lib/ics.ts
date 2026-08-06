@@ -151,6 +151,30 @@ export interface IcsExportEvent {
   recurrence?: "daily" | "weekly" | "weekdays" | null
 }
 
+// Linha de time_blocks como vem do Supabase (só o que o .ics usa).
+export interface TimeBlockRow {
+  id: string
+  title: string
+  start_time: string
+  end_time: string
+  description?: string | null
+  recurrence_rule?: string | null
+}
+
+// Mapeia blocos do banco → eventos de exportação. Compartilhado pelo botão
+// Exportar e pelo feed assinável, pra o .ics sair idêntico dos dois caminhos.
+// recurrence_rule desconhecida (mensal etc.) vira evento único.
+export function blocksToIcsEvents(rows: TimeBlockRow[]): IcsExportEvent[] {
+  return rows.map((b) => ({
+    uid: b.id,
+    title: b.title,
+    start: new Date(b.start_time),
+    end: new Date(b.end_time),
+    description: b.description ?? null,
+    recurrence: (["daily", "weekly", "weekdays"] as const).find((r) => r === b.recurrence_rule) ?? null,
+  }))
+}
+
 const pad = (n: number) => String(n).padStart(2, "0")
 
 // Data → UTC básico: YYYYMMDDTHHMMSSZ.

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { toIcs } from "@/lib/ics"
+import { toIcs, blocksToIcsEvents } from "@/lib/ics"
 import { IcsImportDialog } from "@/components/ics-import-dialog"
 import { CalendarPlus, Download, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -20,14 +20,7 @@ export function AgendaIo() {
     const { data } = await supabase
       .from("time_blocks")
       .select("id, title, description, start_time, end_time, recurrence_rule")
-    const eventos = (data ?? []).map((b) => ({
-      uid: b.id as string,
-      title: b.title as string,
-      start: new Date(b.start_time as string),
-      end: new Date(b.end_time as string),
-      description: (b.description as string | null) ?? null,
-      recurrence: (["daily", "weekly", "weekdays"] as const).find((r) => r === b.recurrence_rule) ?? null,
-    }))
+    const eventos = blocksToIcsEvents(data ?? [])
     setExporting(false)
     if (eventos.length === 0) { toast.info("Nenhum bloco pra exportar ainda."); return }
     const blob = new Blob([toIcs(eventos)], { type: "text/calendar;charset=utf-8" })
