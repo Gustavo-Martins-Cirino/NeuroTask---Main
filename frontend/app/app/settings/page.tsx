@@ -4,12 +4,13 @@ import { useEffect, useState } from "react"
 import { Header } from "@/components/header"
 import { ErrorsPanel } from "@/components/errors-panel"
 import { AgendaIo } from "@/components/agenda-io"
+import { CalendarFeed } from "@/components/calendar-feed"
 import { createClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
-import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Send, CalendarSync } from "lucide-react"
+import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Send, CalendarSync, CalendarClock } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
 import { generateTelegramCode, fetchTelegramLinks, unlinkTelegram, type TelegramLink } from "@/lib/telegram"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
@@ -566,6 +567,14 @@ export default function SettingsPage() {
             description="Traga sua agenda de outro calendário (.ics) ou leve a sua pra fora"
           >
             <AgendaIo />
+          </Section>
+
+          <Section
+            icon={<CalendarClock className="h-5 w-5" />}
+            title="Assinar no Google/Outlook"
+            description="Um link que mostra seus blocos no seu calendário de sempre, atualizando sozinho"
+          >
+            <CalendarFeed />
           </Section>
 
           <Section

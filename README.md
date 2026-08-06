@@ -144,8 +144,9 @@ error_log.sql
 
 **7. Integrações externas** (só se for usá-las)
 ```
-telegram.sql
+telegram.sql · calendar_feed.sql
 ```
+`calendar_feed.sql` liga o feed assinável (Configurações → "Assinar no Google/Outlook"). Sem dependências.
 
 ### Ver os erros que aconteceram
 

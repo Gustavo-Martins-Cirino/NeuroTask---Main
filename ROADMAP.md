@@ -68,9 +68,10 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > Importar e exportar `.ics` já existem, em Configurações → "Importar e exportar". O que
 > falta aqui é o que depende de outra empresa.
 
-- [ ] **Integrações de calendário** (Google/Outlook): começar por feed assinável
-      (somente leitura) antes de considerar escrita bidirecional, que traz OAuth e
-      conflito de sincronização.
+- [ ] **Sincronização bidirecional de calendário** (Google/Outlook): o feed assinável
+      (só-leitura) já existe — Configurações → "Assinar no Google/Outlook", rota
+      `/api/calendar/[token]` (token secreto por usuário). O que falta é escrita nos dois
+      sentidos, que traz OAuth e conflito de sincronização — só se houver demanda real.
 - [ ] **Compartilhamento** de agenda para fora da base de amigos.
 
 ### Mensageiros
