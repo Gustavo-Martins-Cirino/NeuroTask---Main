@@ -13,17 +13,40 @@ import {
   CylinderGeometry,
   Group,
   Mesh,
-  MeshToonMaterial,
+  MeshStandardMaterial,
   SphereGeometry,
   type Material,
 } from "three"
-import { TOON_GRADIENT } from "@/lib/toon"
 
 type V3 = [number, number, number]
 
-function tmat(cor: string | [number, number, number], emissive = 0): MeshToonMaterial {
+// Acabamentos: o que separa "3D de verdade" de desenho é a luz reagir DIFERENTE
+// em cada superfície. Antes tudo era MeshToonMaterial com 3 bandas duras, então
+// parede, metal e tecido brilhavam igual — a cara de cartoon. Agora é PBR
+// (MeshStandardMaterial) e cada superfície tem rugosidade/metalicidade própria.
+export type Acabamento = "parede" | "piso" | "madeira" | "metal" | "plastico" | "tecido" | "pele" | "ceramica" | "vidro" | "brilhante"
+
+const ACABAMENTOS: Record<Acabamento, { roughness: number; metalness: number }> = {
+  parede: { roughness: 0.96, metalness: 0 },   // tinta fosca
+  piso: { roughness: 0.82, metalness: 0 },
+  madeira: { roughness: 0.62, metalness: 0 },  // verniz de leve
+  metal: { roughness: 0.34, metalness: 0.9 },  // pé de cadeira, haste
+  plastico: { roughness: 0.42, metalness: 0 }, // gabinete, teclado
+  tecido: { roughness: 0.94, metalness: 0 },   // roupa, tapete
+  pele: { roughness: 0.72, metalness: 0 },
+  ceramica: { roughness: 0.35, metalness: 0 }, // vaso, caneca
+  vidro: { roughness: 0.08, metalness: 0.1 },  // lente, janela
+  brilhante: { roughness: 0.18, metalness: 0.75 }, // troféu, dourado
+}
+
+function tmat(
+  cor: string | [number, number, number],
+  emissive = 0,
+  acabamento: Acabamento = "plastico"
+): MeshStandardMaterial {
   const color = Array.isArray(cor) ? new Color(cor[0], cor[1], cor[2]) : new Color(cor)
-  const m = new MeshToonMaterial({ color, gradientMap: TOON_GRADIENT })
+  const { roughness, metalness } = ACABAMENTOS[acabamento]
+  const m = new MeshStandardMaterial({ color, roughness, metalness })
   if (emissive > 0) {
     m.emissive = color.clone()
     m.emissiveIntensity = emissive
@@ -154,18 +177,18 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   const tam = tamanhoDaSala(opts.nivel)
   const S = tam / 2        // meia-sala: face interna das paredes
   const dy = recuoDaSala(opts.nivel) // deslocamento da zona de trabalho
-  const mPiso = tmat(opts.cores?.piso ?? [0.82, 0.62, 0.4])
-  const mParede = tmat(opts.cores?.parede ?? [0.94, 0.9, 0.85])
-  const mCad = tmat(opts.cores?.cadeira ?? [0.13, 0.13, 0.15])
-  const mRodape = tmat([1, 1, 1])
-  const mTampo = tmat([0.74, 0.53, 0.34])
-  const mPerna = tmat([0.22, 0.2, 0.18])
-  const mBezel = tmat([0.07, 0.07, 0.09])
+  const mPiso = tmat(opts.cores?.piso ?? [0.82, 0.62, 0.4], 0, "piso")
+  const mParede = tmat(opts.cores?.parede ?? [0.94, 0.9, 0.85], 0, "parede")
+  const mCad = tmat(opts.cores?.cadeira ?? [0.13, 0.13, 0.15], 0, "tecido")
+  const mRodape = tmat([1, 1, 1], 0, "parede")
+  const mTampo = tmat([0.74, 0.53, 0.34], 0, "madeira")
+  const mPerna = tmat([0.22, 0.2, 0.18], 0, "metal")
+  const mBezel = tmat([0.07, 0.07, 0.09], 0, "plastico")
   const mGlow = tmat([0.35, 0.75, 1.0], 1.2)
-  const mPC = tmat([0.9, 0.9, 0.92])
-  const mMadeira = tmat([0.48, 0.32, 0.19])
-  const mVaso = tmat([0.88, 0.88, 0.88])
-  const mFolha = tmat([0.27, 0.55, 0.3])
+  const mPC = tmat([0.9, 0.9, 0.92], 0, "plastico")
+  const mMadeira = tmat([0.48, 0.32, 0.19], 0, "madeira")
+  const mVaso = tmat([0.88, 0.88, 0.88], 0, "ceramica")
+  const mFolha = tmat([0.27, 0.55, 0.3], 0, "tecido")
 
   g.add(box("Piso", [tam, tam, 0.1], [0, 0, -0.05], mPiso))
   g.add(box("Parede_Fundo", [tam, 0.1, 2.6], [0, S, 1.3], mParede))
@@ -196,7 +219,7 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   }
 
   if (extras.tapete) {
-    g.add(cyl("Tapete", 0.95, 0.03, [0, 0.85 + dy, 0.015], tmat([0.9, 0.53, 0.18])))
+    g.add(cyl("Tapete", 0.95, 0.03, [0, 0.85 + dy, 0.015], tmat([0.9, 0.53, 0.18], 0, "tecido")))
   }
 
   // Vaso apoiado no piso/mesa: o centro sobe metade da altura para não afundar.
@@ -213,8 +236,8 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   if (extras.plantaPequena) planta("Planta_Pequena", [0.45, 1.78 + dy, TAMPO_Z], 0.34)
 
   if (extras.luminaria) {
-    const mMetal = tmat([0.23, 0.26, 0.31])
-    const mCupula = tmat([0.88, 0.7, 0.23])
+    const mMetal = tmat([0.23, 0.26, 0.31], 0, "metal")
+    const mCupula = tmat([0.88, 0.7, 0.23], 0, "metal")
     const x = -0.6, y = 1.76 + dy
     g.add(cyl("Luminaria_Base", 0.07, 0.02, [x, y, TAMPO_Z + 0.01], mMetal))
     g.add(cyl("Luminaria_Haste", 0.012, 0.3, [x, y, TAMPO_Z + 0.16], mMetal))
@@ -267,7 +290,7 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   }
 
   if (extras.trofeu) {
-    const ouro = tmat([0.91, 0.72, 0.23], 0.35)
+    const ouro = tmat([0.91, 0.72, 0.23], 0.15, "brilhante")
     const x = -0.58, y = 1.32 + dy
     g.add(box("Trofeu_Base", [0.1, 0.1, 0.03], [x, y, TAMPO_Z + 0.015], tmat([0.29, 0.21, 0.14])))
     g.add(cyl("Trofeu_Haste", 0.014, 0.06, [x, y, TAMPO_Z + 0.06], ouro))
@@ -275,8 +298,8 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   }
 
   if (extras.gato) {
-    const mPelo = tmat([0.85, 0.54, 0.25])
-    const mPeloD = tmat([0.79, 0.47, 0.21])
+    const mPelo = tmat([0.85, 0.54, 0.25], 0, "tecido")
+    const mPeloD = tmat([0.79, 0.47, 0.21], 0, "tecido")
     const x = 0.8, y = 0.3 + dy
     g.add(sph("Gato_Corpo", 0.12, [x, y, 0.12], mPelo, [1, 1.35, 1]))
     g.add(sph("Gato_Cabeca", 0.085, [x, y - 0.15, 0.26], mPelo))
@@ -311,11 +334,11 @@ const CENTRO_Y = 0.9
 
 export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAcessorios = {}): Group {
   const g = new Group()
-  const mPele = tmat(cores.pele ?? [0.94, 0.76, 0.62])
-  const mCam = tmat(cores.camisa ?? [0.25, 0.55, 0.78])
-  const mCal = tmat(cores.calca ?? [0.24, 0.24, 0.3])
-  const mSap = tmat(cores.sapato ?? [0.15, 0.15, 0.16])
-  const mCab = tmat(cores.cabelo ?? [0.32, 0.2, 0.14])
+  const mPele = tmat(cores.pele ?? [0.94, 0.76, 0.62], 0, "pele")
+  const mCam = tmat(cores.camisa ?? [0.25, 0.55, 0.78], 0, "tecido")
+  const mCal = tmat(cores.calca ?? [0.24, 0.24, 0.3], 0, "tecido")
+  const mSap = tmat(cores.sapato ?? [0.15, 0.15, 0.16], 0, "plastico")
+  const mCab = tmat(cores.cabelo ?? [0.32, 0.2, 0.14], 0, "tecido")
   const mOlho = tmat([0.08, 0.08, 0.08])
   const mBoca = tmat([0.55, 0.3, 0.28])
 

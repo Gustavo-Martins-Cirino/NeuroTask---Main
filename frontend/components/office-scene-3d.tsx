@@ -2,9 +2,8 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { ContactShadows, OrthographicCamera, useGLTF } from "@react-three/drei"
-import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type Material, type MeshStandardMaterial, type MeshToonMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
-import { toonifyObject, addOutlines } from "@/lib/toon"
+import { ContactShadows, Environment, Lightformer, OrthographicCamera, useGLTF } from "@react-three/drei"
+import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type Material, type MeshStandardMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
 import { fitOrthoCamera } from "@/lib/office-camera"
 import { resolveOfficeBg } from "@/lib/office-bg"
 import {
@@ -119,14 +118,16 @@ function PetBeagle({ recuo = 0 }: { recuo?: number }) {
       const m = o as Mesh
       if (!m.isMesh) return
       m.castShadow = true
+      // Pelo fosco: sem toon, o beagle passa a receber a luz como o resto da sala.
       const tint = (mat: Material): Material => {
         const cl = (mat as MeshStandardMaterial).clone()
         if (!cl.map) cl.color = brown
+        cl.roughness = 0.9
+        cl.metalness = 0
         return cl
       }
       m.material = Array.isArray(m.material) ? m.material.map(tint) : tint(m.material)
     })
-    toonifyObject(c)
     return c
   }, [scene])
   useFrame((state) => {
@@ -226,9 +227,6 @@ function CartoonOffice({
           cadeira: pick(CHAIR_COLORS, equipped),
         },
       })
-      // Contorno cartoon nos objetos, mas NÃO na casca (piso/paredes/rodapé) —
-      // traço em volta de plano de chão vira moldura feia.
-      addOutlines(r, { skip: (n) => /^(Piso|Parede|Rodape)/.test(n) })
       return r
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -236,9 +234,7 @@ function CartoonOffice({
   )
   const person = useMemo(
     () => {
-      const p = buildPersonagem(coresDoAvatar(avatar), acessoriosDe(equipped))
-      addOutlines(p)
-      return p
+      return buildPersonagem(coresDoAvatar(avatar), acessoriosDe(equipped))
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [avatar, equipKey]
@@ -255,7 +251,7 @@ function CartoonOffice({
     const festa = progressoDaFesta(festaRef)
     const comemorando = festa < 1
     const glow = comemorando ? 2.6 : working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
-    for (const tela of telas) (tela.material as MeshToonMaterial).emissiveIntensity = glow
+    for (const tela of telas) (tela.material as MeshStandardMaterial).emissiveIntensity = glow
     if (personRef.current) {
       personRef.current.position.z = Math.sin(t * 1.7) * 0.012 // respiração
       // Pula e balança. O eixo Y local passa pelos pés (x=0, z=0), então a
@@ -314,11 +310,22 @@ function Scene({
   }, [celebrateNonce])
   return (
     <>
-      {/* fill macio (céu/chão) + key quente com sombra + fill frio + luminária */}
-      <hemisphereLight args={["#fff1e0", "#9a7b5a", L.hemiI]} />
+      {/* Environment PROCEDURAL (nada baixado da rede): painéis de luz viram um
+          cubemap que os materiais PBR refletem. É o que dá "peso" de 3D — sem
+          isso metal e cerâmica ficam chapados feito desenho. frames={1}: gera
+          uma vez, não a cada quadro. */}
+      <Environment resolution={128} frames={1} environmentIntensity={0.4}>
+        <Lightformer intensity={2.4} color={L.key} position={[0, 6, 4]} scale={[12, 8, 1]} />
+        <Lightformer intensity={1.1} color="#bcd0ff" position={[-8, 4, -4]} scale={[8, 6, 1]} rotation={[0, Math.PI / 2, 0]} />
+        <Lightformer intensity={0.7} color="#8a6a4a" position={[0, -5, 0]} scale={[12, 12, 1]} rotation={[Math.PI / 2, 0, 0]} />
+      </Environment>
+
+      {/* fill macio (céu/chão) + key quente com sombra + fill frio + luminária.
+          Intensidades menores que na era toon: o environment já preenche. */}
+      <hemisphereLight args={["#fff1e0", "#9a7b5a", L.hemiI * 0.55]} />
       <directionalLight
         color={L.key}
-        intensity={L.keyI}
+        intensity={L.keyI * 0.85}
         position={[9, 16, 11]}
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -330,11 +337,11 @@ function Scene({
         shadow-camera-near={1}
         shadow-camera-far={80}
       />
-      <directionalLight color="#bcd0ff" intensity={0.5} position={[-10, 8, -6]} />
+      <directionalLight color="#bcd0ff" intensity={0.28} position={[-10, 8, -6]} />
       {/* Luz de recorte por trás/alto: um fio de luz na borda superior separa o
           boneco e os móveis do fundo — dá profundidade sem clarear a cena. */}
-      <directionalLight color={L.key} intensity={0.85} position={[-6, 12, -12]} />
-      <pointLight color="#ffcf8a" intensity={6 + L.lampI * 0.15} distance={40} decay={2} position={[4, 7, -4]} />
+      <directionalLight color={L.key} intensity={0.5} position={[-6, 12, -12]} />
+      <pointLight color="#ffcf8a" intensity={4 + L.lampI * 0.12} distance={40} decay={2} position={[4, 7, -4]} />
 
       <group ref={contentRef}>
         <CartoonOffice
@@ -420,7 +427,9 @@ export function OfficeScene3D({
         dpr={[1, 2]}
         // preserveDrawingBuffer: mantém o buffer pra dar pra "tirar foto" da sala
         // (snapshot compartilhável) com canvas.toBlob a qualquer momento.
-        gl={{ antialias: true, preserveDrawingBuffer: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
+        // Exposição menor que na era toon: com PBR a luz soma de verdade
+        // (environment + key + fill) e 1.18 estourava as paredes.
+        gl={{ antialias: true, preserveDrawingBuffer: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.95 }}
         style={{ width: "100%", aspectRatio: "480 / 340" }}
       >
         {/* Frustum e lookAt vêm do FitCamera (auto-fit); aqui só a posição
