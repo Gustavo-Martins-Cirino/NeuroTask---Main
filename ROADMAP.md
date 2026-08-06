@@ -63,6 +63,51 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       conforme o locale do SISTEMA, não a preferência do app — dá pra viver com isso (o navegador
       não deixa forçar o formato do input nativo sem trocá-lo por um custom).
 
+### Escritório 3D — do desenho para o ambiente
+
+> A primeira rodada de refino já foi: materiais **PBR** com acabamento por superfície +
+> environment procedural, sem os contornos de tinta (era o que gritava "cartoon"); skins fora
+> da loja (só trocavam a cor da camisa, que o editor de avatar faz de graça) e loja navegada
+> por categoria. O que sobra é **conteúdo**: a cena está mais realista, mas vários itens ainda
+> não estão à altura dela.
+>
+> **Regra prática**: item novo precisa de linha em `shop_items` (SQL) além do modelo 3D —
+> sem isso a compra falha com `ITEM_INEXISTENTE`. Foi o caso do beagle, que mora no
+> `office_3d.sql` enquanto a mensagem mandava rodar o `coins_shop.sql`.
+
+**Vida na cena**
+
+- [ ] **Boneco digitando.** Hoje ele só respira. Quando estiver "trabalhando", as mãos
+      precisam se mexer no teclado — é o que faz a sala parecer viva em vez de um diorama.
+- [ ] **Calibrar o realismo com uso real.** A troca pra PBR foi validada em render headless,
+      não no olho de quem usa. Ajustar rugosidade/luz conforme o feedback: o alvo é "3D de
+      verdade", nem plástico de desenho nem foto.
+
+**Itens que existem mas não convencem**
+
+- [ ] **Cadeiras só mudam de cor.** As três precisam de silhueta própria: a padrão como
+      cadeira de plástico de bar, a ergonômica de fato bonita (encosto alto, apoios), e a
+      gamer com a cara de gamer — não a mesma malha pintada de vermelho.
+- [ ] **Estante de livros feia.** Dá pra ver que é uma estante, mas não os livros. Quer
+      lombadas visíveis, alinhadas e variadas na prateleira.
+- [ ] **Neon "focus" ilegível.** Parece um quadro aleatório na parede; não dá pra ler nada.
+      Ou vira texto legível de verdade, ou vira outro objeto.
+- [ ] **Janela para a cidade parece mancha.** Hoje são formas soltas na parede. Precisa ler
+      como janela com vista — moldura, vidro, prédios ao fundo.
+- [ ] **Boné muito reto.** Falta a curva da aba e uma inclinação; do jeito que está parece
+      uma caixa na cabeça.
+- [ ] **Óculos (grau/escuros) não aparecem.** Equipar e desequipar não muda nada visível —
+      confirmar se o modelo está sendo montado, e deixá-los legíveis no ângulo isométrico.
+      (Chapéu e óculos são slots separados de propósito: dá pra usar os dois, um de cada.)
+
+**Catálogo novo**
+
+- [ ] **Mais paredes**: preta, cinza e uma com papel de parede (padrão, não cor chapada).
+- [ ] **Mais criatividade nos objetos**, com o Escritório valendo como vitrine do progresso:
+      prateleira, uma luminária melhor que a atual, relógio de parede, um computador mais
+      caprichado, a opção de trocar o desktop por **notebook**, e **fita de LED RGB** pra
+      iluminar o quarto com cor.
+
 ### Calendário aberto pra fora
 
 > Importar e exportar `.ics` já existem, em Configurações → "Importar e exportar". O que
