@@ -9,12 +9,14 @@
 
 import {
   BoxGeometry,
+  CatmullRomCurve3,
   Color,
   CylinderGeometry,
   Group,
   Mesh,
   MeshStandardMaterial,
   SphereGeometry,
+  TubeGeometry,
   Vector3,
   type Material,
 } from "three"
@@ -257,67 +259,15 @@ function buildCadeira(g: Group, tipo: CadeiraTipo | undefined, x: number, y: num
 
 const TAMPO_Z = 0.81 // topo da mesa: onde os itens de mesa se apoiam
 
-// ---- Giro da zona de trabalho ----
-//
-// A câmera é isométrica e olha a sala do lado ABERTO (não há parede ali). A
-// mesa encosta na parede do fundo e a pessoa encara a mesa — ou seja, encara
-// para longe de quem olha. Resultado medido: o rosto ficava a 137° da câmera,
-// e óculos, olhos e boca nunca apareciam; do boné só se via a copa, porque a
-// aba apontava para o lado oposto. Não era bug de modelo — era a composição.
-//
-// Mover a câmera não resolve: para ver o rosto ela teria de ir para trás da
-// parede do fundo, que passaria a tapar a sala. O que resolve é girar a MESA
-// JUNTO COM A PESSOA: ela continua de frente para o próprio monitor (e as mãos
-// seguem no teclado), só que o conjunto fica angulado na sala e o rosto vira
-// para quem olha. Em 25° o rosto sai de 137° para ~112° da câmera — perfil de
-// três quartos, o bastante para ler acessório sem a mesa parecer torta.
-//
-// O sinal importa e não é óbvio: girando para +Z o rosto vai para 156° (PIOR
-// que os 137° de antes). O lado certo é o negativo, que traz a mesa para a
-// direita de quem olha. Há teste travando isso.
-//
-// Para calibrar, mexa AQUI: é o único número que manda no ângulo.
-export const GIRO_ZONA = D(-25)
-
-/** Onde fica o eixo do giro (y na sala): o assento, para a pessoa girar no
- *  lugar e a mesa é que descrever o arco — o contrário jogaria ela na parede. */
-export const PIVO_ZONA_Y = 0.9
-
-// Medidas do tampo usadas para saber onde o canto dele vai parar ao girar.
-const MESA_MEIO_X = 0.8
-const MESA_MEIO_Y = 0.35
-const MESA_CENTRO_DY = 0.65 // do assento até o centro do tampo
-
-/**
- * Quanto a zona anda para a FRENTE ao girar. Girando, o canto do tampo descreve
- * um arco e avança em direção à parede do fundo — em 25° ele avançaria 24 cm e
- * atravessaria a parede (encostada, a mesa só tem 5 cm de folga). Este recuo
- * devolve exatamente essa folga, então o tampo continua rente à parede em
- * qualquer ângulo. Deriva de GIRO_ZONA: mudar o ângulo não pede outra conta.
- */
-export function avancoDoGiro(giro = GIRO_ZONA): number {
-  const a = Math.abs(giro)
-  const alcance = (MESA_CENTRO_DY + MESA_MEIO_Y) * Math.cos(a) + MESA_MEIO_X * Math.sin(a)
-  return Math.max(0, alcance - (MESA_CENTRO_DY + MESA_MEIO_Y))
-}
-
-/**
- * Par de grupos que gira a zona de trabalho em torno do assento: `eixo` leva o
- * pivô até lá e gira, `conteudo` devolve a origem — assim os filhos entram com
- * as coordenadas absolutas da sala, sem recalcular nada.
- *
- * Pendure o `eixo` na cena e adicione as malhas no `conteudo`.
- */
-export function giroDaZona(dy = 0): { eixo: Group; conteudo: Group } {
-  const eixo = new Group()
-  eixo.name = "Zona_Trabalho"
-  eixo.position.set(0, PIVO_ZONA_Y + dy - avancoDoGiro(), 0)
-  eixo.rotation.z = GIRO_ZONA
-  const conteudo = new Group()
-  conteudo.name = "Zona_Trabalho_Conteudo"
-  conteudo.position.set(0, -(PIVO_ZONA_Y + dy), 0)
-  eixo.add(conteudo)
-  return { eixo, conteudo }
+// Cabo: tubo ao longo de uma curva suave. Um cilindro reto não serviria — o que
+// faz um cabo parecer cabo é a barriga que ele forma ao cair. Os pontos são o
+// caminho; a curva passa por todos e arredonda os cantos sozinha.
+function cabo(name: string, pontos: V3[], raio: number, material: Material): Mesh {
+  const curva = new CatmullRomCurve3(pontos.map((p) => new Vector3(...p)))
+  const m = new Mesh(new TubeGeometry(curva, 28, raio, 6, false), material)
+  m.name = name
+  m.castShadow = true
+  return m
 }
 
 // A sala cresce em degraus, não continuamente — assim subir de nível é um
@@ -368,23 +318,44 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   g.add(box("Rodape_Fundo", [tam, 0.12, 0.14], [0, S - 0.09, 0.07], mRodape))
   g.add(box("Rodape_Lateral", [0.12, tam, 0.14], [-S + 0.09, 0, 0.07], mRodape))
 
-  // Tudo que gira junto com a pessoa mora aqui dentro (ver GIRO_ZONA). Os
-  // filhos entram com as MESMAS coordenadas de sempre: o par de grupos põe o
-  // pivô no assento e devolve a origem, então nada precisou ser recalculado.
-  const { eixo, conteudo: zona } = giroDaZona(dy)
-  g.add(eixo)
-
-  zona.add(box("Mesa_Tampo", [1.6, 0.7, 0.06], [0, 1.55 + dy, 0.78], mTampo))
-  for (const ox of [0.72, -0.72]) for (const oy of [1.85, 1.25]) zona.add(cyl(`Mesa_Perna_${ox}_${oy}`, 0.025, 0.72, [ox, oy + dy, 0.36], mPerna))
+  g.add(box("Mesa_Tampo", [1.6, 0.7, 0.06], [0, 1.55 + dy, 0.78], mTampo))
+  for (const ox of [0.72, -0.72]) for (const oy of [1.85, 1.25]) g.add(cyl(`Mesa_Perna_${ox}_${oy}`, 0.025, 0.72, [ox, oy + dy, 0.36], mPerna))
 
   const mRoda = tmat([0.1, 0.1, 0.11], 0, "plastico")
   const mFriso = tmat([0.06, 0.06, 0.07], 0, "plastico")
-  buildCadeira(zona, opts.cadeira, 0, 0.9 + dy, mCad, mPerna, mRoda, mFriso)
+  buildCadeira(g, opts.cadeira, 0, 0.9 + dy, mCad, mPerna, mRoda, mFriso)
 
-  buildMonitores(zona, dy, extras.setup, mBezel, mGlow, mPC)
-  zona.add(box("PC_Torre", [0.14, 0.3, 0.36], [0.6, 1.5 + dy, 0.96], mPC))
-  zona.add(box("Teclado", [0.32, 0.12, 0.02], [0, 1.32 + dy, TAMPO_Z + 0.01], mPC))
-  zona.add(box("Mouse", [0.06, 0.09, 0.02], [0.26, 1.32 + dy, TAMPO_Z + 0.01], mPC))
+  buildMonitores(g, dy, extras.setup, mBezel, mGlow, mPC)
+  g.add(box("PC_Torre", [0.14, 0.3, 0.36], [0.6, 1.5 + dy, 0.96], mPC))
+  g.add(box("Teclado", [0.32, 0.12, 0.02], [0, 1.32 + dy, TAMPO_Z + 0.01], mPC))
+  g.add(box("Mouse", [0.06, 0.09, 0.02], [0.26, 1.32 + dy, TAMPO_Z + 0.01], mPC))
+
+  // ---- Tomada e cabos ----
+  // A sala tinha um PC ligado em nada. A tomada fica FORA da sombra da mesa
+  // (x=1.05, à direita do tampo, que acaba em 0.8) e acima do rodapé, senão
+  // ninguém a vê. Os cabos caem por trás da mesa, com barriga, e sobem até ela.
+  const mTomada = tmat([0.93, 0.92, 0.9], 0, "plastico")
+  const mFuro = tmat([0.1, 0.1, 0.12], 0, "plastico")
+  const mCabo = tmat([0.09, 0.09, 0.1], 0, "plastico")
+  const xTom = 1.05
+  const yParede = S - 0.055 // face interna da parede do fundo (espessura 0.1)
+  g.add(box("Tomada_Espelho", [0.13, 0.02, 0.13], [xTom, yParede, 0.32], mTomada))
+  g.add(cyl("Tomada_Furo_Esq", 0.014, 0.012, [xTom - 0.028, yParede - 0.016, 0.335], mFuro, [D(90), 0, 0]))
+  g.add(cyl("Tomada_Furo_Dir", 0.014, 0.012, [xTom + 0.028, yParede - 0.016, 0.335], mFuro, [D(90), 0, 0]))
+  g.add(cyl("Tomada_Furo_Terra", 0.014, 0.012, [xTom, yParede - 0.016, 0.29], mFuro, [D(90), 0, 0]))
+
+  g.add(cabo("Cabo_PC", [
+    [0.62, 1.66 + dy, 0.80],
+    [0.74, 1.87 + dy, 0.5],
+    [0.9, 1.9 + dy, 0.14],
+    [xTom - 0.03, yParede - 0.05, 0.26],
+  ], 0.012, mCabo))
+  g.add(cabo("Cabo_Monitor", [
+    [0.05, 1.37 + dy, 0.85],
+    [0.34, 1.86 + dy, 0.58],
+    [0.72, 1.91 + dy, 0.16],
+    [xTom + 0.03, yParede - 0.05, 0.26],
+  ], 0.01, mCabo))
 
   // ---- Itens da loja ----
 
@@ -412,17 +383,17 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     )
   }
   if (extras.plantaGrande) planta(g, "Planta_Grande", [-S + 0.5, S - 0.55, 0], 1.15)
-  if (extras.plantaPequena) planta(zona, "Planta_Pequena", [0.45, 1.78 + dy, TAMPO_Z], 0.34)
+  if (extras.plantaPequena) planta(g, "Planta_Pequena", [0.45, 1.78 + dy, TAMPO_Z], 0.34)
 
   if (extras.luminaria) {
     const mMetal = tmat([0.23, 0.26, 0.31], 0, "metal")
     const mCupula = tmat([0.88, 0.7, 0.23], 0, "metal")
     const x = -0.6, y = 1.76 + dy
-    zona.add(cyl("Luminaria_Base", 0.07, 0.02, [x, y, TAMPO_Z + 0.01], mMetal))
-    zona.add(cyl("Luminaria_Haste", 0.012, 0.3, [x, y, TAMPO_Z + 0.16], mMetal))
-    zona.add(cyl("Luminaria_Braco", 0.012, 0.22, [x + 0.08, y - 0.02, TAMPO_Z + 0.31], mMetal, [D(70), 0, 0]))
-    zona.add(cyl("Luminaria_Cupula", 0.09, 0.11, [x + 0.15, y - 0.09, TAMPO_Z + 0.3], mCupula, [D(50), 0, 0], 0.04))
-    zona.add(sph("Luminaria_Bulbo", 0.04, [x + 0.15, y - 0.11, TAMPO_Z + 0.26], tmat([1, 0.94, 0.78], 1.8)))
+    g.add(cyl("Luminaria_Base", 0.07, 0.02, [x, y, TAMPO_Z + 0.01], mMetal))
+    g.add(cyl("Luminaria_Haste", 0.012, 0.3, [x, y, TAMPO_Z + 0.16], mMetal))
+    g.add(cyl("Luminaria_Braco", 0.012, 0.22, [x + 0.08, y - 0.02, TAMPO_Z + 0.31], mMetal, [D(70), 0, 0]))
+    g.add(cyl("Luminaria_Cupula", 0.09, 0.11, [x + 0.15, y - 0.09, TAMPO_Z + 0.3], mCupula, [D(50), 0, 0], 0.04))
+    g.add(sph("Luminaria_Bulbo", 0.04, [x + 0.15, y - 0.11, TAMPO_Z + 0.26], tmat([1, 0.94, 0.78], 1.8)))
   }
 
   if (extras.estante) {
@@ -491,9 +462,9 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   if (extras.trofeu) {
     const ouro = tmat([0.91, 0.72, 0.23], 0.15, "brilhante")
     const x = -0.58, y = 1.32 + dy
-    zona.add(box("Trofeu_Base", [0.1, 0.1, 0.03], [x, y, TAMPO_Z + 0.015], tmat([0.29, 0.21, 0.14])))
-    zona.add(cyl("Trofeu_Haste", 0.014, 0.06, [x, y, TAMPO_Z + 0.06], ouro))
-    zona.add(cyl("Trofeu_Taca", 0.028, 0.09, [x, y, TAMPO_Z + 0.135], ouro, undefined, 0.07))
+    g.add(box("Trofeu_Base", [0.1, 0.1, 0.03], [x, y, TAMPO_Z + 0.015], tmat([0.29, 0.21, 0.14])))
+    g.add(cyl("Trofeu_Haste", 0.014, 0.06, [x, y, TAMPO_Z + 0.06], ouro))
+    g.add(cyl("Trofeu_Taca", 0.028, 0.09, [x, y, TAMPO_Z + 0.135], ouro, undefined, 0.07))
   }
 
   if (extras.gato) {

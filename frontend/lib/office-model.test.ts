@@ -1,10 +1,8 @@
 import { describe, it, expect } from "vitest"
 import { Box3, Group, Mesh, Vector3 } from "three"
-import { buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO, GIRO_ZONA, avancoDoGiro } from "./office-model"
+import { buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO } from "./office-model"
 import { typingTap, TECLA_AMPLITUDE } from "./office-typing"
-
-const D10 = (10 * Math.PI) / 180
-const D30 = (30 * Math.PI) / 180
+import { CAMERA_POS } from "./office-camera"
 
 // O boneco "digitando" só funciona se a mão ALCANÇAR o teclado. Na primeira
 // versão ela parava 16 cm atrás dele e ao lado — nenhuma animação salvaria
@@ -98,6 +96,48 @@ describe("pose do boneco", () => {
     expect(cotovelo.z + f * (mao.z - cotovelo.z)).toBeGreaterThan(mesa.max.z)
   })
 
+  it("os cabos chegam na tomada, não morrem no meio do caminho", () => {
+    const sala = buildEscritorio()
+    sala.updateMatrixWorld(true)
+    const tomada = new Box3().setFromObject(malha(sala, "Tomada_Espelho"))
+    const centro = tomada.getCenter(new Vector3())
+    for (const nome of ["Cabo_PC", "Cabo_Monitor"]) {
+      const c = new Box3().setFromObject(malha(sala, nome))
+      // A ponta do cabo tem de estar encostada na tomada em todos os eixos.
+      expect(c.max.y).toBeGreaterThan(tomada.min.y - 0.06)
+      expect(Math.abs(c.max.x - centro.x)).toBeLessThan(0.15)
+      expect(c.min.z).toBeLessThan(centro.z + 0.1)
+    }
+  })
+
+  it("nem cabo nem tomada atravessam a parede do fundo", () => {
+    const sala = buildEscritorio()
+    sala.updateMatrixWorld(true)
+    const parede = new Box3().setFromObject(malha(sala, "Parede_Fundo"))
+    for (const nome of ["Cabo_PC", "Cabo_Monitor", "Tomada_Espelho"]) {
+      expect(new Box3().setFromObject(malha(sala, nome)).max.y).toBeLessThan(parede.max.y)
+    }
+  })
+
+  it("a tomada fica acima do rodapé e fora da sombra da mesa", () => {
+    const sala = buildEscritorio()
+    sala.updateMatrixWorld(true)
+    const tomada = new Box3().setFromObject(malha(sala, "Tomada_Espelho"))
+    const rodape = new Box3().setFromObject(malha(sala, "Rodape_Fundo"))
+    const mesa = new Box3().setFromObject(malha(sala, "Mesa_Tampo"))
+    expect(tomada.min.z).toBeGreaterThan(rodape.max.z)
+    expect(tomada.min.x).toBeGreaterThan(mesa.max.x) // à direita do tampo
+  })
+
+  it("os cabos caem com barriga — reta seria mangueira, não cabo", () => {
+    const sala = buildEscritorio()
+    sala.updateMatrixWorld(true)
+    const c = new Box3().setFromObject(malha(sala, "Cabo_PC"))
+    // Desce da mesa (~0.8) até perto do piso antes de subir para a tomada.
+    expect(c.min.z).toBeLessThan(0.2)
+    expect(c.max.z).toBeGreaterThan(0.7)
+  })
+
   it("o ombro nasce fora do torso, senão o braço some dentro do corpo", () => {
     const torso = new Box3().setFromObject(malha(buildPersonagem(), "Torso"))
     const p = buildPersonagem()
@@ -106,61 +146,38 @@ describe("pose do boneco", () => {
     expect(braco.max.x).toBeGreaterThan(torso.max.x)
   })
 
-  // A câmera isométrica da cena e a conversão sala→mundo de office-scene-3d:
-  // <OrthographicCamera position={[16,14,16]} /> dentro de
-  // <group rotation={[-PI/2,0,0]} scale={4}>, que leva (x,y,z) → (x, z, −y).
-  const CAMERA = new Vector3(16, 14, 16)
+  // Conversão sala→mundo de office-scene-3d: dentro de
+  // <group rotation={[-PI/2,0,0]} scale={4}>, (x,y,z) → (x, z, −y).
   const paraMundo = (p: Vector3) => new Vector3(p.x, p.z, -p.y).multiplyScalar(4)
 
   /** Ângulo entre a direção do rosto e a direção da câmera, em graus.
-   *  > 90° = vemos as costas. `giro` é o da zona de trabalho. */
-  function anguloRostoCamera(giro: number): number {
-    const cabeca = new Vector3(0, 0.9, 1.26)              // centro da cabeça
-    const frente = new Vector3(0, 1, 0)                    // o rosto olha para +Y
-    const gira = (v: Vector3, sobreEixo: boolean) => {
-      // Giro em torno do eixo vertical Z da sala, no assento (y = 0.9).
-      const oy = sobreEixo ? 0.9 : 0
-      const x = v.x
-      const y = v.y - oy
-      return new Vector3(x * Math.cos(giro) - y * Math.sin(giro), x * Math.sin(giro) + y * Math.cos(giro) + oy, v.z)
-    }
-    const cabecaG = gira(cabeca, true)
-    const frenteG = gira(frente.clone().add(new Vector3(0, 0, 1.26)), false).setZ(1.26)
-    const cabecaM = paraMundo(cabecaG)
-    const frenteM = paraMundo(frenteG).sub(paraMundo(new Vector3(0, 0, 1.26))).normalize()
-    const paraCamera = CAMERA.clone().sub(cabecaM).normalize()
+   *  > 90° = vemos as costas; 90° = perfil. */
+  function anguloRostoCamera(camera: readonly [number, number, number]): number {
+    const cabecaM = paraMundo(new Vector3(0, 0.9, 1.26))
+    // O rosto olha para +Y na sala, que no mundo é −Z.
+    const frenteM = new Vector3(0, 0, -1)
+    const paraCamera = new Vector3(...camera).sub(cabecaM).normalize()
     const dot = Math.max(-1, Math.min(1, frenteM.dot(paraCamera)))
     return (Math.acos(dot) * 180) / Math.PI
   }
 
-  it("o giro da zona vira o rosto para a câmera (era o ponto da mudança)", () => {
-    const sem = anguloRostoCamera(0)
-    const com = anguloRostoCamera(GIRO_ZONA)
-    // Sem giro a cena olhava para a nuca: óculos, olhos e boca invisíveis.
-    expect(sem).toBeGreaterThan(130)
-    expect(com).toBeLessThan(sem - 10) // melhora de verdade, não de um grau
+  it("o azimute da câmera tira a cena de trás da nuca do boneco", () => {
+    const antes = anguloRostoCamera([16, 14, 16]) // a diagonal de 45° de antes
+    const agora = anguloRostoCamera(CAMERA_POS)
+    expect(antes).toBeGreaterThan(130) // era quase a nuca pura
+    expect(agora).toBeLessThan(antes - 15)
+    expect(agora).toBeGreaterThan(90) // perfil; de frente a parede taparia tudo
   })
 
-  it("mas o giro é LEVE: a mesa não vira de frente para quem olha", () => {
-    expect(Math.abs(GIRO_ZONA)).toBeGreaterThan(0)
-    expect(Math.abs(GIRO_ZONA)).toBeLessThan(Math.PI / 5) // até 36°
+  it("a câmera manteve altura e distância — só o azimute mudou", () => {
+    const raio = Math.hypot(CAMERA_POS[0], CAMERA_POS[2])
+    expect(raio).toBeCloseTo(Math.hypot(16, 16), 6)
+    expect(CAMERA_POS[1]).toBe(14)
   })
 
-  it("girar para o outro lado seria PIOR — é a armadilha do sinal", () => {
-    expect(anguloRostoCamera(-GIRO_ZONA)).toBeGreaterThan(anguloRostoCamera(0))
-  })
-
-  it("mesmo girada, a mesa não atravessa a parede do fundo", () => {
-    const sala = buildEscritorio()
-    sala.updateMatrixWorld(true)
-    const tampo = new Box3().setFromObject(malha(sala, "Mesa_Tampo"))
-    const parede = new Box3().setFromObject(malha(sala, "Parede_Fundo"))
-    expect(tampo.max.y).toBeLessThanOrEqual(parede.min.y)
-  })
-
-  it("o avanço do giro é derivado do ângulo, não um número solto", () => {
-    expect(avancoDoGiro(0)).toBe(0) // sem giro, sem correção
-    expect(avancoDoGiro(D30)).toBeGreaterThan(avancoDoGiro(D10))
+  it("a câmera segue do lado ABERTO da sala, senão a parede tapa a cena", () => {
+    // Parede do fundo em z<0 no mundo: a câmera não pode cruzar para lá.
+    expect(CAMERA_POS[2]).toBeGreaterThan(0)
   })
 
   it("as mãos não sobem e descem juntas (elas cruzam, não marcham)", () => {

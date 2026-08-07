@@ -4,14 +4,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { ContactShadows, Environment, Lightformer, OrthographicCamera, useGLTF } from "@react-three/drei"
 import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type Material, type MeshStandardMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
-import { fitOrthoCamera } from "@/lib/office-camera"
+import { fitOrthoCamera, CAMERA_POS } from "@/lib/office-camera"
 import { resolveOfficeBg } from "@/lib/office-bg"
 import {
   CELEBRATION_MS, buildConfetti, confettiAt, confettiOpacity, jumpHeight, bodyWiggle,
 } from "@/lib/office-celebration"
 import { useTheme } from "next-themes"
 import {
-  buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO, GIRO_ZONA, PIVO_ZONA_Y, avancoDoGiro,
+  buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO,
   type EscritorioExtras, type PersonagemAcessorios, type PersonagemCores,
 } from "@/lib/office-model"
 import { typingTap, typingRamp } from "@/lib/office-typing"
@@ -288,16 +288,10 @@ function CartoonOffice({
   return (
     <group rotation={[-Math.PI / 2, 0, 0]} scale={4}>
       <primitive object={room} />
-      {/* A pessoa recua junto com a mesa quando a sala cresce, e gira pelo MESMO
-          eixo da zona de trabalho (o assento) — é o que mantém ela de frente
-          para o próprio monitor e as mãos no teclado. Ver GIRO_ZONA. */}
+      {/* A pessoa recua junto com a mesa quando a sala cresce */}
       <group position={[0, recuoDaSala(nivel), 0]}>
-        <group position={[0, PIVO_ZONA_Y - avancoDoGiro(), 0]} rotation={[0, 0, GIRO_ZONA]}>
-          <group position={[0, -PIVO_ZONA_Y, 0]}>
-            <group ref={personRef} onClick={onAvatarClick}>
-              <primitive object={person} />
-            </group>
-          </group>
+        <group ref={personRef} onClick={onAvatarClick}>
+          <primitive object={person} />
         </group>
       </group>
     </group>
@@ -394,8 +388,8 @@ function Scene({
 
       {/* Duas camadas: uma ampla e suave (ambiente) + uma justa e mais escura
           logo sob os móveis (contato) — assenta tudo no chão sem virar borrão. */}
-      <ContactShadows position={[0, 0.02, -4 * (PIVO_ZONA_Y - avancoDoGiro() + recuoDaSala(nivel))]} opacity={0.28} scale={22} blur={3.0} far={9} />
-      <ContactShadows position={[0, 0.03, -4 * (PIVO_ZONA_Y - avancoDoGiro() + recuoDaSala(nivel))]} opacity={0.35} scale={12} blur={1.4} far={5} />
+      <ContactShadows position={[0, 0.02, -4 * (0.9 + recuoDaSala(nivel))]} opacity={0.28} scale={22} blur={3.0} far={9} />
+      <ContactShadows position={[0, 0.03, -4 * (0.9 + recuoDaSala(nivel))]} opacity={0.35} scale={12} blur={1.4} far={5} />
     </>
   )
 }
@@ -465,7 +459,7 @@ export function OfficeScene3D({
       >
         {/* Frustum e lookAt vêm do FitCamera (auto-fit); aqui só a posição
             fixa que dá o ângulo isométrico. */}
-        <OrthographicCamera makeDefault manual position={[16, 14, 16]} near={-100} far={300} />
+        <OrthographicCamera makeDefault manual position={CAMERA_POS} near={-100} far={300} />
         <Scene
           working={working}
           onAvatarClick={onAvatarClick}

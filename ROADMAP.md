@@ -87,14 +87,17 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       Ou vira texto legível de verdade, ou vira outro objeto.
 - [ ] **Janela para a cidade parece mancha.** Hoje são formas soltas na parede. Precisa ler
       como janela com vista — moldura, vidro, prédios ao fundo.
-- [ ] **Conferir o giro da zona de trabalho no olho.** A mesa e a pessoa passaram a girar
-      juntas 25°, porque a cena olhava para a nuca do boneco (rosto a 137° da câmera:
-      óculos, olhos e boca nunca apareciam, e do boné só se via a copa). Agora o rosto está
-      a ~113° — três quartos de costas, o bastante para ler acessório. Falta ver se o ângulo
-      está bom: é uma constante só, `GIRO_ZONA` em `lib/office-model.ts`. Se 25° ficar
-      torto, dá pra afrouxar ou apertar sem mexer em mais nada.
+- [ ] **Conferir o novo ângulo de câmera no olho.** A cena olhava para a nuca do boneco
+      (rosto a 137° da câmera: óculos, olhos e boca nunca apareciam, e do boné só a copa).
+      O azimute saiu de 45° — a diagonal do canto — para 15°, e o rosto foi para ~112°,
+      quase perfil. Altura e distância são as mesmas, só o azimute mudou, mas o
+      enquadramento da sala muda bastante: a parede lateral vira o fundo e a do fundo
+      recua para a esquerda. É uma constante só, `AZIMUTE` em `lib/office-camera.ts`.
+      **Limite conhecido**: ver o rosto de FRENTE exigiria a câmera atrás da parede do
+      fundo, que passaria a tapar a sala. Perfil é o teto desta planta — só uma parede a
+      menos mudaria isso.
 - [ ] **Boné muito reto.** Falta a curva da aba e uma inclinação; do jeito que está parece
-      uma caixa na cabeça. Com o giro acima a aba enfim aparece — reavaliar depois dele.
+      uma caixa na cabeça. Com o ângulo novo a aba enfim aparece — reavaliar depois dele.
 - [ ] **Acessórios só existem no 3D.** O avatar 2D (`avatar-figure.tsx`) não desenha chapéu
       nem óculos, então o que se compra na loja não aparece no editor, na lista de amigos
       nem em lugar nenhum fora da cena. Vale desenhá-los lá também.
