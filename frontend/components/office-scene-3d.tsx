@@ -11,9 +11,10 @@ import {
 } from "@/lib/office-celebration"
 import { useTheme } from "next-themes"
 import {
-  buildEscritorio, buildPersonagem, recuoDaSala,
+  buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO,
   type EscritorioExtras, type PersonagemAcessorios, type PersonagemCores,
 } from "@/lib/office-model"
+import { typingTap, typingRamp } from "@/lib/office-typing"
 import type { AvatarConfig } from "@/lib/avatar"
 
 // Cena 3D (React-Three-Fiber) do Escritório. Câmera ortográfica isométrica,
@@ -253,12 +254,29 @@ function CartoonOffice({
     room.traverse((o) => { if ((o as Mesh).isMesh && o.name.startsWith("Monitor_Tela")) out.push(o as Mesh) })
     return out
   }, [room])
-  useFrame((state) => {
+  // Os dois cotovelos: girá-los é o boneco digitando (ver lib/office-typing).
+  const cotovelos = useMemo(() => {
+    const out: { pivo: Group; lado: 1 | -1 }[] = []
+    person.traverse((o) => {
+      if (!o.name.startsWith(PIVO_ANTEBRACO)) return
+      out.push({ pivo: o as Group, lado: o.name.endsWith("Direito") ? 1 : -1 })
+    })
+    return out
+  }, [person])
+  // Intensidade da digitação (0→1). Num ref porque quem lê é o useFrame.
+  const digitandoRef = useRef(0)
+  useFrame((state, delta) => {
     const t = state.clock.elapsedTime
     const festa = progressoDaFesta(festaRef)
     const comemorando = festa < 1
     const glow = comemorando ? 2.6 : working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
     for (const tela of telas) (tela.material as MeshStandardMaterial).emissiveIntensity = glow
+    // Comemorando, as mãos saem do teclado: quem pula não digita.
+    digitandoRef.current = typingRamp(digitandoRef.current, !!working && !comemorando, delta)
+    const intensidade = digitandoRef.current
+    for (const { pivo, lado } of cotovelos) {
+      pivo.rotation.x = intensidade > 0.001 ? typingTap(t, lado) * intensidade : 0
+    }
     if (personRef.current) {
       personRef.current.position.z = Math.sin(t * 1.7) * 0.012 // respiração
       // Pula e balança. O eixo Y local passa pelos pés (x=0, z=0), então a

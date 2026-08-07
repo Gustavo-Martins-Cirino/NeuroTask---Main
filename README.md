@@ -39,12 +39,18 @@ Antes do primeiro login, rode os SQLs em [supabase/](supabase/) — ver
 
 ### Testes
 
-`pnpm test` (Vitest) cobre só os módulos **determinísticos** de `lib/` — os que decidem
+`pnpm test` (Vitest) cobre os módulos **determinísticos** de `lib/` — os que decidem
 datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `backward-plan`,
-`calendar-warnings`, `gamification` (anti-farm), `ics`, `routine-insights`,
+`calendar-feed`, `calendar-warnings`, `gamification` (anti-farm), `ics`, `routine-insights`,
 `task-recurrence`, `telegram-commands` e `time-format`. É onde a lógica sutil regride sem
 ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de
 Supabase, e não é ali que mora o risco.
+
+O Escritório 3D tem um bloco à parte (`office-bg`, `office-camera`, `office-celebration`,
+`office-snapshot`, `office-typing` e `office-model`). O `office-model` é de um tipo
+diferente: ele **mede a geometria** da cena — se a mão do boneco pousa no teclado, se o
+antebraço passa por cima da mesa. É o olho que falta, já que ninguém consegue ver um
+render num teste. Rodam em Node puro: construir malhas do three.js não exige WebGL.
 
 A config é `vitest.config.mts` — a extensão `.mts` é obrigatória, porque o Vite 7 é
 ESM-only e o `package.json` não é `type: module`.

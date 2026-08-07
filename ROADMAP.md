@@ -77,8 +77,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Vida na cena**
 
-- [ ] **Boneco digitando.** Hoje ele só respira. Quando estiver "trabalhando", as mãos
-      precisam se mexer no teclado — é o que faz a sala parecer viva em vez de um diorama.
 - [ ] **Calibrar o realismo com uso real.** A troca pra PBR foi validada em render headless,
       não no olho de quem usa. Ajustar rugosidade/luz conforme o feedback: o alvo é "3D de
       verdade", nem plástico de desenho nem foto.

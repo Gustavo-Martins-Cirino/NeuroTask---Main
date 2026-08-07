@@ -15,6 +15,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   SphereGeometry,
+  Vector3,
   type Material,
 } from "three"
 
@@ -72,6 +73,25 @@ function cyl(name: string, raio: number, alt: number, pos: V3, material: Materia
   m.name = name
   m.position.set(...pos)
   if (rot) m.rotation.set(...rot)
+  m.castShadow = true
+  m.receiveShadow = true
+  return m
+}
+
+// Segmento de membro ENTRE DOIS PONTOS: o cilindro nasce com o eixo em Z
+// (convenção Blender) e é girado para ir de `a` até `b`. Posar o braço por
+// pontos, e não por ângulos, é o que deixa a mão pousar no teclado sem
+// trigonometria à mão — para mudar a pose, mexe-se no ponto.
+function segmento(name: string, a: V3, b: V3, raio: number, material: Material): Mesh {
+  const va = new Vector3(...a)
+  const vb = new Vector3(...b)
+  const dir = vb.clone().sub(va)
+  const geo = new CylinderGeometry(raio, raio, dir.length(), 14)
+  geo.rotateX(Math.PI / 2)
+  const m = new Mesh(geo, material)
+  m.name = name
+  m.position.copy(va).add(vb).multiplyScalar(0.5)
+  m.quaternion.setFromUnitVectors(new Vector3(0, 0, 1), dir.normalize())
   m.castShadow = true
   m.receiveShadow = true
   return m
@@ -440,6 +460,19 @@ export interface PersonagemAcessorios {
 
 const CENTRO_Y = 0.9
 
+/** Prefixo do grupo que a cena gira para o boneco digitar (sufixo = o lado). */
+export const PIVO_ANTEBRACO = "Antebraco_Pivo_"
+
+// Pose do braço em PONTOS (x é espelhado pelo lado; y/z valem para os dois).
+// O teclado ocupa y ∈ [1.26, 1.38] com o topo em z=0.83, então a mão pousa em
+// y=1.29 e paira 2 cm acima das teclas — a tecladinha de office-typing encosta
+// no fundo do movimento e não atravessa. Antes a mão parava em y=1.16, z=0.82:
+// 16 cm ATRÁS do teclado e ao lado dele (x=0.2, fora dos ±0.16 das teclas). O
+// boneco não deixava de digitar por falta de animação — ele nem alcançava.
+const OMBRO: [number, number, number] = [0.175, CENTRO_Y, 1.0]        // fora do torso (±0.16)
+const COTOVELO: [number, number, number] = [0.16, CENTRO_Y + 0.15, 0.8]
+const MAO: [number, number, number] = [0.09, CENTRO_Y + 0.39, 0.9]    // dentro das teclas
+
 export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAcessorios = {}): Group {
   const g = new Group()
   const mPele = tmat(cores.pele ?? [0.94, 0.76, 0.62], 0, "pele")
@@ -461,11 +494,21 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   g.add(box("Boca", [0.05, 0.015, 0.015], [0, CENTRO_Y + 0.12, 1.2], mBoca))
 
   for (const lado of [1, -1]) {
-    const ox = lado * 0.2
     const suf = lado === 1 ? "Direito" : "Esquerdo"
-    g.add(cyl(`Braco_${suf}`, 0.045, 0.22, [ox, CENTRO_Y + 0.03, 0.87], mCam, [D(25), 0, 0]))
-    g.add(cyl(`Antebraco_${suf}`, 0.04, 0.24, [ox, CENTRO_Y + 0.16, 0.8], mPele, [D(80), 0, 0]))
-    g.add(sph(`Mao_${suf}`, 0.05, [ox, CENTRO_Y + 0.26, 0.82], mPele))
+    const ombro: V3 = [lado * OMBRO[0], OMBRO[1], OMBRO[2]]
+    const cotovelo: V3 = [lado * COTOVELO[0], COTOVELO[1], COTOVELO[2]]
+    const mao: V3 = [lado * MAO[0], MAO[1], MAO[2]]
+    g.add(segmento(`Braco_${suf}`, ombro, cotovelo, 0.045, mCam))
+    // Antebraço e mão num grupo com origem no COTOVELO: girar esse grupo em X
+    // é exatamente o gesto de digitar (a mão sobe e desce em arco). É por este
+    // nome que a cena acha o pivô a cada quadro — ver lib/office-typing.
+    const pivo = new Group()
+    pivo.name = `${PIVO_ANTEBRACO}${suf}`
+    pivo.position.set(...cotovelo)
+    const rel: V3 = [mao[0] - cotovelo[0], mao[1] - cotovelo[1], mao[2] - cotovelo[2]]
+    pivo.add(segmento(`Antebraco_${suf}`, [0, 0, 0], rel, 0.04, mPele))
+    pivo.add(sph(`Mao_${suf}`, 0.05, rel, mPele))
+    g.add(pivo)
   }
   for (const lado of [1, -1]) {
     const qx = lado * 0.1
