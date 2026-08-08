@@ -60,6 +60,9 @@ export const CATALOG: ShopItem[] = [
   { id: "parede-azul", name: "Parede azul", price: 40, category: "parede", emoji: "🔵", desc: "Tom sereno de foco" },
   { id: "parede-verde", name: "Parede verde", price: 40, category: "parede", emoji: "🟢", desc: "Verde floresta calmante" },
   { id: "parede-rosa", name: "Parede rosa", price: 40, category: "parede", emoji: "🩷", desc: "Rosa suave e acolhedor" },
+  { id: "parede-cinza", name: "Parede cinza", price: 40, category: "parede", emoji: "⚪", desc: "Concreto sóbrio" },
+  { id: "parede-preta", name: "Parede preta", price: 55, category: "parede", emoji: "⚫", desc: "Fundo escuro, foco no que brilha" },
+  { id: "parede-papel", name: "Papel de parede", price: 70, category: "parede", emoji: "🧻", desc: "Listras verticais, não só cor" },
   { id: "piso-madeira", name: "Piso de madeira", price: 30, category: "piso", emoji: "🪵", desc: "Taco clássico" },
   { id: "piso-carpete", name: "Carpete", price: 30, category: "piso", emoji: "🧶", desc: "Piso macio azulado" },
 ]

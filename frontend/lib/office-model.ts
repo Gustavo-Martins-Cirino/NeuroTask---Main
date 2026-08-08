@@ -211,6 +211,8 @@ export interface EscritorioExtras {
   gato?: boolean
   /** Setup da mesa: undefined = 1 monitor; "duplo" = 2; "ultrawide" = 1 largão. */
   setup?: "duplo" | "ultrawide"
+  /** Papel de parede listrado — padrão de verdade, não cor chapada. */
+  papelParede?: boolean
 }
 
 /** Silhueta da cadeira — "padrao" é a de plástico que já vem na sala; as
@@ -362,6 +364,20 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   g.add(box("Parede_Lateral", [0.1, tam, 2.6], [-S, 0, 1.3], mParede))
   g.add(box("Rodape_Fundo", [tam, 0.12, 0.14], [0, S - 0.09, 0.07], mRodape))
   g.add(box("Rodape_Lateral", [0.12, tam, 0.14], [-S + 0.09, 0, 0.07], mRodape))
+
+  // Papel de parede: listras verticais coladas na face interna das duas paredes.
+  // É PADRÃO, não cor — trocar o tom da parede já é o que os outros itens fazem.
+  if (extras.papelParede) {
+    const mListra = tmat([0.72, 0.66, 0.58], 0, "parede")
+    const PASSO = 0.34, LARG = 0.13, ALT = 2.5, ZC = 1.32
+    const n = Math.floor(tam / PASSO)
+    const inicio = -(n - 1) * PASSO / 2
+    for (let i = 0; i < n; i++) {
+      const p = inicio + i * PASSO
+      g.add(box(`Papel_Listra_Fundo_${i}`, [LARG, 0.012, ALT], [p, S - 0.056, ZC], mListra))
+      g.add(box(`Papel_Listra_Lateral_${i}`, [0.012, LARG, ALT], [-S + 0.056, p, ZC], mListra))
+    }
+  }
 
   g.add(box("Mesa_Tampo", [1.6, 0.7, 0.06], [0, 1.55 + dy, 0.78], mTampo))
   for (const ox of [0.72, -0.72]) for (const oy of [1.85, 1.25]) g.add(cyl(`Mesa_Perna_${ox}_${oy}`, 0.025, 0.72, [ox, oy + dy, 0.36], mPerna))

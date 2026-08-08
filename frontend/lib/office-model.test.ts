@@ -375,3 +375,34 @@ describe("óculos", () => {
     expect(d.min.x).toBeGreaterThan(e.max.x)
   })
 })
+
+describe("papel de parede", () => {
+  it("é PADRÃO, não cor: gera listras nas duas paredes", () => {
+    const g = buildEscritorio({ extras: { papelParede: true } })
+    expect(pecas(g, "Papel_Listra_Fundo_").length).toBeGreaterThan(5)
+    expect(pecas(g, "Papel_Listra_Lateral_").length).toBeGreaterThan(5)
+  })
+
+  it("sem o item comprado, nenhuma listra aparece", () => {
+    expect(pecas(buildEscritorio(), "Papel_Listra_").length).toBe(0)
+  })
+
+  it("as listras ficam à frente da parede, não afundadas nela", () => {
+    const g = buildEscritorio({ extras: { papelParede: true } })
+    for (const n of pecas(g, "Papel_Listra_Fundo_")) {
+      expect(caixaMundo(g, n).max.y).toBeLessThanOrEqual(FACE_FUNDO + 1e-6)
+    }
+    for (const n of pecas(g, "Papel_Listra_Lateral_")) {
+      expect(caixaMundo(g, n).min.x).toBeGreaterThanOrEqual(FACE_LATERAL - 1e-6)
+    }
+  })
+
+  it("as listras cobrem a largura da sala, sem transbordar", () => {
+    const g = buildEscritorio({ extras: { papelParede: true } })
+    for (const n of pecas(g, "Papel_Listra_Fundo_")) {
+      const b = caixaMundo(g, n)
+      expect(b.min.x).toBeGreaterThanOrEqual(-2.01)
+      expect(b.max.x).toBeLessThanOrEqual(2.01)
+    }
+  })
+})

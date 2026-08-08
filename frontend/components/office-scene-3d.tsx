@@ -56,7 +56,10 @@ const LIGHT: Record<Phase, { key: string; keyI: number; hemiI: number; lampI: nu
 }
 
 // Itens da loja que viram COR (os demais viram malha em buildEscritorio).
-const WALL_COLORS: Record<string, string> = { "parede-azul": "#8fb3d9", "parede-verde": "#9ec6a6", "parede-rosa": "#e5b5c8" }
+const WALL_COLORS: Record<string, string> = {
+  "parede-azul": "#8fb3d9", "parede-verde": "#9ec6a6", "parede-rosa": "#e5b5c8",
+  "parede-cinza": "#8f939a", "parede-preta": "#232329", "parede-papel": "#cfc4b4",
+}
 const FLOOR_COLORS: Record<string, string> = { "piso-madeira": "#b5824f", "piso-carpete": "#8aa0b8" }
 const CHAIR_COLORS: Record<string, string> = { "cadeira-ergonomica": "#3a4250", "cadeira-gamer": "#b23b3b" }
 function pick(map: Record<string, string>, equipped: Set<string> | undefined): string | undefined {
@@ -84,6 +87,7 @@ function extrasDe(equipped?: Set<string>): EscritorioExtras {
     trofeu: equipped.has("trofeu"),
     gato: equipped.has("pet-gato"),
     setup: equipped.has("setup-ultrawide") ? "ultrawide" : equipped.has("setup-duplo") ? "duplo" : undefined,
+    papelParede: equipped.has("parede-papel"),
   }
 }
 

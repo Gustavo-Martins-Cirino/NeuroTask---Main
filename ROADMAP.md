@@ -98,7 +98,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Catálogo novo**
 
-- [ ] **Mais paredes**: preta, cinza e uma com papel de parede (padrão, não cor chapada).
 - [ ] **Mais criatividade nos objetos**, com o Escritório valendo como vitrine do progresso:
       prateleira, uma luminária melhor que a atual, relógio de parede, um computador mais
       caprichado, a opção de trocar o desktop por **notebook**, e **fita de LED RGB** pra
