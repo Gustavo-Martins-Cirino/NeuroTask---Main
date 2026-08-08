@@ -83,10 +83,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Itens que existem mas não convencem**
 
-- [ ] **Neon "focus" ilegível.** Parece um quadro aleatório na parede; não dá pra ler nada.
-      Ou vira texto legível de verdade, ou vira outro objeto.
-- [ ] **Janela para a cidade parece mancha.** Hoje são formas soltas na parede. Precisa ler
-      como janela com vista — moldura, vidro, prédios ao fundo.
 - [ ] **Conferir o novo ângulo de câmera no olho.** A cena olhava para a nuca do boneco
       (rosto a 137° da câmera: óculos, olhos e boca nunca apareciam, e do boné só a copa).
       O azimute saiu de 45° — a diagonal do canto — para 15°, e o rosto foi para ~112°,

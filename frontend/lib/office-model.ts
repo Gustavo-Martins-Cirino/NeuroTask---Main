@@ -138,6 +138,51 @@ function buildMonitores(g: Group, dy: number, setup: EscritorioExtras["setup"], 
   }
 }
 
+// Letras do letreiro de neon, em traços normalizados (u = 0→1 na largura da
+// letra, v = 0→1 na altura). Um neon é tubo dobrado, então a letra é uma lista
+// de segmentos — não uma caixa. Só H e V: diagonal em tubo fino não lê no
+// tamanho que a placa tem. Antes eram 4 barras soltas que não formavam letra
+// nenhuma ("parece um quadro aleatório").
+const NEON_LETRAS: Record<string, [number, number, number, number][]> = {
+  f: [[0.45, 0, 0.45, 0.95], [0.45, 0.95, 0.85, 0.95], [0.12, 0.55, 0.78, 0.55]],
+  o: [[0.1, 0, 0.9, 0], [0.1, 0.62, 0.9, 0.62], [0.1, 0, 0.1, 0.62], [0.9, 0, 0.9, 0.62]],
+  c: [[0.15, 0.62, 0.9, 0.62], [0.15, 0, 0.15, 0.62], [0.15, 0, 0.9, 0]],
+  u: [[0.1, 0.62, 0.1, 0], [0.1, 0, 0.9, 0], [0.9, 0.62, 0.9, 0]],
+  s: [[0.15, 0.62, 0.88, 0.62], [0.15, 0.35, 0.15, 0.62], [0.15, 0.35, 0.88, 0.35], [0.88, 0, 0.88, 0.35], [0.12, 0, 0.88, 0]],
+}
+
+/** Escreve `texto` em neon no plano YZ (parede lateral, x fixo). */
+function neonTexto(
+  g: Group,
+  texto: string,
+  x: number,
+  y0: number,
+  z0: number,
+  larg: number,
+  alt: number,
+  gap: number,
+  tubo: number,
+  mat: Material
+) {
+  let y = y0
+  for (const ch of texto) {
+    const segs = NEON_LETRAS[ch]
+    if (segs) {
+      segs.forEach(([u1, v1, u2, v2], i) => {
+        const ay = y + u1 * larg, az = z0 + v1 * alt
+        const by = y + u2 * larg, bz = z0 + v2 * alt
+        g.add(box(
+          `Neon_${ch}_${i}`,
+          [tubo, Math.max(Math.abs(by - ay), tubo), Math.max(Math.abs(bz - az), tubo)],
+          [x, (ay + by) / 2, (az + bz) / 2],
+          mat
+        ))
+      })
+    }
+    y += larg + gap
+  }
+}
+
 const D = (g: number) => (g * Math.PI) / 180
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -360,10 +405,60 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   // ---- Itens da loja ----
 
   if (extras.janela) {
-    const mJan = tmat([1, 1, 1])
-    const mPers = tmat([0.96, 0.95, 0.92])
-    g.add(box("Janela_Moldura", [1.3, 0.06, 1.4], [1.1, S - 0.02, 1.55], mJan))
-    for (let i = 0; i < 9; i++) g.add(box(`Persiana_Lamina_${i}`, [1.15, 0.03, 0.05], [1.1, S - 0.06, 1.0 + i * 0.14], mPers))
+    // Antes era uma moldura branca chapada + 9 lâminas de persiana, e a moldura
+    // ficava em y = S-0.02, DENTRO da parede (que ocupa S±0.05): z-fighting, daí
+    // a leitura de "manchas na parede". Agora é uma janela de verdade, montada em
+    // camadas da parede para dentro da sala — céu, prédios, vidro, caixilho.
+    const cx = 1.05          // centro na parede do fundo
+    const cz = 1.6           // altura do centro
+    const LARG = 1.3
+    const ALT = 1.25
+    const face = S - 0.05    // face interna da parede do fundo
+    const mCeu = tmat([0.62, 0.78, 0.93], 0.28)
+    const mPredio = tmat([0.3, 0.33, 0.4], 0, "parede")
+    const mPredioB = tmat([0.38, 0.41, 0.49], 0, "parede")
+    const mLuzJan = tmat([1, 0.86, 0.52], 1.5)
+    // Sem transparência o vidro TAPA a vista — a janela vira um retângulo claro.
+    const mVidro = tmat([0.82, 0.9, 0.96], 0, "vidro")
+    mVidro.transparent = true
+    mVidro.opacity = 0.18
+    const mCaix = tmat([0.24, 0.26, 0.3], 0, "metal")
+    const mPeit = tmat([0.93, 0.92, 0.89], 0, "parede")
+
+    // Céu ao fundo do vão
+    g.add(box("Janela_Ceu", [LARG, 0.012, ALT], [cx, face - 0.008, cz], mCeu))
+
+    // Silhueta de prédios: largura, altura e recuo variados dão profundidade.
+    const skyline: [number, number, number, boolean][] = [
+      [-0.5, 0.46, 0.2, false], [-0.29, 0.68, 0.17, true], [-0.1, 0.36, 0.19, false],
+      [0.12, 0.58, 0.16, true], [0.32, 0.3, 0.2, false], [0.51, 0.5, 0.15, true],
+    ]
+    skyline.forEach(([ox, h, w, claro], i) => {
+      const base = cz - ALT / 2 + 0.02
+      g.add(box(`Janela_Predio_${i}`, [w, 0.012, h], [cx + ox, face - 0.022, base + h / 2], claro ? mPredioB : mPredio))
+      // Janelinhas acesas — o que faz ler "cidade" e não "bloco cinza"
+      const linhas = Math.max(2, Math.floor(h / 0.12))
+      for (let l = 0; l < linhas; l++) {
+        for (const dx of [-w * 0.22, w * 0.22]) {
+          if ((l + i) % 3 === 0) continue // algumas apagadas: cidade não acende tudo
+          g.add(box(`Janela_Luz_${i}_${l}_${dx > 0 ? "d" : "e"}`, [w * 0.22, 0.01, 0.045],
+            [cx + ox + dx, face - 0.03, base + 0.07 + l * 0.12], mLuzJan))
+        }
+      }
+    })
+
+    // Vidro à frente da vista (levemente refletivo) e o caixilho por cima dele
+    g.add(box("Janela_Vidro", [LARG, 0.012, ALT], [cx, face - 0.05, cz], mVidro))
+    const e = 0.05 // espessura do caixilho
+    g.add(box("Janela_Caixilho_Topo", [LARG + e * 2, 0.05, e], [cx, face - 0.06, cz + ALT / 2 + e / 2], mCaix))
+    g.add(box("Janela_Caixilho_Base", [LARG + e * 2, 0.05, e], [cx, face - 0.06, cz - ALT / 2 - e / 2], mCaix))
+    for (const s of [-1, 1]) {
+      g.add(box(`Janela_Caixilho_${s < 0 ? "Esq" : "Dir"}`, [e, 0.05, ALT + e * 2], [cx + s * (LARG / 2 + e / 2), face - 0.06, cz], mCaix))
+    }
+    // Travessas em cruz: é o que dá escala de "janela" ao vão
+    g.add(box("Janela_Travessa_V", [0.035, 0.045, ALT], [cx, face - 0.06, cz], mCaix))
+    g.add(box("Janela_Travessa_H", [LARG, 0.045, 0.035], [cx, face - 0.06, cz], mCaix))
+    g.add(box("Janela_Peitoril", [LARG + 0.18, 0.13, 0.045], [cx, face - 0.09, cz - ALT / 2 - 0.06], mPeit))
   }
 
   if (extras.tapete) {
@@ -449,14 +544,19 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   }
 
   if (extras.neon) {
-    // Na parede LATERAL (x=-1.95) para não brigar com quadro/janela no fundo.
-    const rosa = tmat([1, 0.31, 0.64], 2.2)
-    const ciano = tmat([0.35, 0.88, 1], 2.2)
-    g.add(box("Neon_Placa", [0.04, 0.78, 0.34], [-S + 0.08, 0.75, 1.75], tmat([0.14, 0.11, 0.21])))
-    g.add(box("Neon_Barra_Topo", [0.02, 0.6, 0.035], [-S + 0.11, 0.75, 1.86], rosa))
-    for (let i = 0; i < 3; i++) {
-      g.add(box(`Neon_Barra_${i}`, [0.02, 0.035, 0.24], [-S + 0.11, 0.55 + i * 0.2, 1.68], ciano))
-    }
+    // Na parede LATERAL (x=-S) para não brigar com quadro/janela no fundo.
+    // A placa escura é o "apagado" atrás do tubo — é o contraste com ela que
+    // faz a luz do neon ler.
+    const rosa = tmat([1, 0.34, 0.66], 2.6)
+    const face = -S + 0.05 // face interna da parede lateral
+    const LARG = 0.115, ALT = 0.26, GAP = 0.035, TUBO = 0.022
+    const texto = "focus"
+    const larguraTexto = texto.length * LARG + (texto.length - 1) * GAP
+    const y0 = 0.75 - larguraTexto / 2
+    const z0 = 1.62
+
+    g.add(box("Neon_Placa", [0.03, larguraTexto + 0.16, ALT + 0.22], [face + 0.015, 0.75, z0 + ALT / 2 - 0.02], tmat([0.11, 0.09, 0.16])))
+    neonTexto(g, texto, face + 0.045, y0, z0, LARG, ALT, GAP, TUBO, rosa)
   }
 
   if (extras.trofeu) {

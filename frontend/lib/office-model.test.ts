@@ -194,3 +194,103 @@ describe("pose do boneco", () => {
     expect(separadas).toBeGreaterThan(amostras * 0.6)
   })
 })
+
+// A janela e o neon eram os dois itens que a loja vendia e a cena não entregava:
+// "a janela parece só algumas manchas na parede" e "o neon não dá pra ver nada".
+// A causa da janela era medível — as peças ficavam DENTRO da parede (z-fighting).
+
+const FACE_FUNDO = 1.95   // face interna da parede do fundo no nível padrão
+const FACE_LATERAL = -1.95
+
+function pecas(g: Group, prefixo: string): string[] {
+  const out: string[] = []
+  g.traverse((o) => { if (o.name.startsWith(prefixo)) out.push(o.name) })
+  return out
+}
+
+function caixaMundo(g: Group, nome: string): Box3 {
+  g.updateMatrixWorld(true)
+  return new Box3().setFromObject(malha(g, nome))
+}
+
+describe("janela para a cidade", () => {
+  const sala = () => buildEscritorio({ extras: { janela: true } })
+
+  it("nenhuma peça afunda na parede — era o que virava mancha", () => {
+    const g = sala()
+    const nomes = pecas(g, "Janela_")
+    expect(nomes.length).toBeGreaterThan(15) // caixilho + céu + prédios + luzes
+    for (const n of nomes) {
+      expect(caixaMundo(g, n).max.y).toBeLessThanOrEqual(FACE_FUNDO + 1e-6)
+    }
+  })
+
+  it("o vidro é transparente, senão tapa a vista que acabamos de montar", () => {
+    const vidro = malha(sala(), "Janela_Vidro") as Mesh
+    const mat = vidro.material as { transparent: boolean; opacity: number }
+    expect(mat.transparent).toBe(true)
+    expect(mat.opacity).toBeLessThan(0.5)
+  })
+
+  it("a vista fica ATRÁS do vidro, e o caixilho à frente dele", () => {
+    const g = sala()
+    const vidro = caixaMundo(g, "Janela_Vidro").getCenter(new Vector3()).y
+    const ceu = caixaMundo(g, "Janela_Ceu").getCenter(new Vector3()).y
+    const caixilho = caixaMundo(g, "Janela_Caixilho_Topo").getCenter(new Vector3()).y
+    expect(ceu).toBeGreaterThan(vidro)      // céu mais perto da parede
+    expect(caixilho).toBeLessThan(vidro)    // caixilho mais dentro da sala
+  })
+
+  it("os prédios cabem no vão — cidade transbordando vira mancha de novo", () => {
+    const g = sala()
+    const vao = caixaMundo(g, "Janela_Vidro")
+    for (const n of pecas(g, "Janela_Predio_")) {
+      const b = caixaMundo(g, n)
+      expect(b.min.x).toBeGreaterThanOrEqual(vao.min.x - 1e-6)
+      expect(b.max.x).toBeLessThanOrEqual(vao.max.x + 1e-6)
+      expect(b.max.z).toBeLessThanOrEqual(vao.max.z + 1e-6)
+    }
+  })
+})
+
+describe("letreiro de neon", () => {
+  const sala = () => buildEscritorio({ extras: { neon: true } })
+
+  it("escreve focus de verdade: um traço por segmento de cada letra", () => {
+    const g = sala()
+    // f=3, o=4, c=3, u=3, s=5 traços — antes eram 4 barras que não formavam letra
+    for (const [letra, traços] of [["f", 3], ["o", 4], ["c", 3], ["u", 3], ["s", 5]] as const) {
+      expect(pecas(g, `Neon_${letra}_`).length).toBe(traços)
+    }
+  })
+
+  it("as letras ficam à frente da placa e dentro dela", () => {
+    const g = sala()
+    const placa = caixaMundo(g, "Neon_Placa")
+    for (const letra of ["f", "o", "c", "u", "s"]) {
+      for (const n of pecas(g, `Neon_${letra}_`)) {
+        const b = caixaMundo(g, n)
+        expect(b.min.x).toBeGreaterThan(placa.max.x - 1e-6) // à frente (sala em x maior)
+        expect(b.min.y).toBeGreaterThanOrEqual(placa.min.y)
+        expect(b.max.y).toBeLessThanOrEqual(placa.max.y)
+        expect(b.max.z).toBeLessThanOrEqual(placa.max.z + 1e-6)
+      }
+    }
+  })
+
+  it("nada do letreiro atravessa a parede lateral", () => {
+    const g = sala()
+    for (const n of pecas(g, "Neon_")) {
+      expect(caixaMundo(g, n).min.x).toBeGreaterThanOrEqual(FACE_LATERAL - 1e-6)
+    }
+  })
+
+  it("as letras vêm na ordem de focus, da esquerda para a direita", () => {
+    const g = sala()
+    const centroY = (l: string) =>
+      pecas(g, `Neon_${l}_`).reduce((acc, n) => acc + caixaMundo(g, n).getCenter(new Vector3()).y, 0) /
+      pecas(g, `Neon_${l}_`).length
+    const ys = ["f", "o", "c", "u", "s"].map(centroY)
+    for (let i = 1; i < ys.length; i++) expect(ys[i]).toBeGreaterThan(ys[i - 1])
+  })
+})
