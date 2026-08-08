@@ -665,10 +665,49 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   // raio 0.14 centrada em z=1.26 — topo em z≈1.40. Tudo abaixo se apoia nisso.
 
   if (acess.chapeu === "bone") {
-    // Copa rasa e alta o bastante para não descer sobre os olhos (z≈1.28).
-    const mBone = tmat([0.16, 0.35, 0.62])
-    g.add(sph("Bone_Copa", 0.152, [0, CENTRO_Y, 1.362], mBone, [1, 1, 0.38]))
-    g.add(box("Bone_Aba", [0.26, 0.17, 0.022], [0, CENTRO_Y + 0.19, 1.32], mBone))
+    // A aba era UMA placa reta ([0.26,0.17,0.022]) espetada na frente — daí o
+    // "boné muito reto, parece uma caixa na cabeça". Agora ela é um leque de
+    // segmentos em arco que CAEM nas pontas (a curva do boné de verdade), e o
+    // conjunto vai num grupo inclinado: usado torto, como se usa boné.
+    const mBone = tmat([0.16, 0.35, 0.62], 0, "tecido")
+    const bone = new Group()
+    bone.name = "Bone"
+    // ANCORADO NO CENTRO DA CABEÇA: girar o grupo com origem no chão do boneco
+    // deslocava o boné ~17 cm para o lado (8° a 1,26 m de altura) — o boné saía
+    // flutuando ao lado da cabeça em vez de assentar nela.
+    bone.position.set(0, CENTRO_Y, 1.26)
+
+    // Copa rasa e alta o bastante para não descer sobre os olhos.
+    bone.add(sph("Bone_Copa", 0.152, [0, 0, 0.102], mBone, [1, 1, 0.38]))
+    bone.add(cyl("Bone_Botao", 0.022, 0.018, [0, 0, 0.158], mBone))
+
+    // A cabeça é uma esfera de raio 0.14: a aba nasce colada nela (raio 0.13) e
+    // projeta pouco mais de 5 cm. Leque estreito — abrir demais faz a aba virar
+    // uma pá saindo da cabeça, não um boné.
+    const SEGS = 7
+    const RAIO = 0.13
+    for (let i = 0; i < SEGS; i++) {
+      const t = i / (SEGS - 1)                 // 0 → 1 ao longo do leque
+      const ang = (t - 0.5) * D(96)            // ±48°, só a frente da cabeça
+      const borda = Math.abs(t - 0.5) * 2      // 0 no meio, 1 nas pontas
+      // Ponta cai: é a curva que faz o boné parecer boné, e não uma placa.
+      // A curva vem da POSIÇÃO (ponta mais baixa), com só um resto de pitch:
+      // somados, pitch e espessura desciam a ponta abaixo dos olhos (z≈1.28) e
+      // ela tapava o rosto — o teste de geometria pegou.
+      const queda = borda * borda * 0.018
+      bone.add(box(
+        `Bone_Aba_${i}`,
+        [0.05, 0.115, 0.017],
+        [Math.sin(ang) * RAIO, Math.cos(ang) * RAIO, 0.075 - queda],
+        mBone,
+        [-D(5) - borda * D(7), 0, -ang]
+      ))
+    }
+
+    // Torto de propósito: leve inclinação lateral + caído para trás. Mais que
+    // isso e o tilt lateral levanta uma ponta da aba mais do que a curva a baixa.
+    bone.rotation.set(D(-3), D(7), 0)
+    g.add(bone)
   }
 
   if (acess.chapeu === "social") {
@@ -689,17 +728,34 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   }
 
   if (acess.oculos) {
+    // "Coloco e nem consigo ver direito": as lentes eram pequenas (7,8 cm), sem
+    // aro em volta e a 3 mm do rosto — some contra a pele nesta escala. Agora
+    // têm ARO escuro contornando (é o aro que se enxerga de longe, não a lente),
+    // são maiores e ficam mais à frente.
     const escuros = acess.oculos === "escuros"
-    const mAro = tmat(escuros ? [0.12, 0.12, 0.14] : [0.28, 0.2, 0.14])
-    const mLente = escuros ? tmat([0.09, 0.1, 0.13]) : tmat([0.72, 0.85, 0.92])
-    // À FRENTE dos olhos: a esfera da cabeça chega a y≈1.04 na altura deles,
-    // então a lente precisa passar disso para não ficar embutida no rosto.
+    const mAro = tmat(escuros ? [0.08, 0.08, 0.1] : [0.24, 0.15, 0.09], 0, "plastico")
+    const mLente = escuros ? tmat([0.05, 0.06, 0.09]) : tmat([0.68, 0.84, 0.94])
+    if (!escuros) { mLente.transparent = true; mLente.opacity = 0.55 }
+
+    const LW = 0.095, LH = 0.075   // vão da lente
+    const ARO = 0.014              // espessura do aro
+    const yLente = CENTRO_Y + 0.158
+    const zOlhos = 1.283
+
     for (const lado of [1, -1]) {
       const suf = lado === 1 ? "Direita" : "Esquerda"
-      g.add(box(`Oculos_Lente_${suf}`, [0.078, 0.014, 0.062], [lado * 0.055, CENTRO_Y + 0.148, 1.281], mLente))
-      g.add(box(`Oculos_Haste_${suf}`, [0.012, 0.11, 0.012], [lado * 0.1, CENTRO_Y + 0.075, 1.281], mAro))
+      const cx = lado * 0.058
+      g.add(box(`Oculos_Lente_${suf}`, [LW, 0.01, LH], [cx, yLente, zOlhos], mLente))
+      // Aro em volta: topo, base e as duas laterais
+      g.add(box(`Oculos_Aro_${suf}_Topo`, [LW + ARO * 2, 0.018, ARO], [cx, yLente, zOlhos + LH / 2 + ARO / 2], mAro))
+      g.add(box(`Oculos_Aro_${suf}_Base`, [LW + ARO * 2, 0.018, ARO], [cx, yLente, zOlhos - LH / 2 - ARO / 2], mAro))
+      for (const s of [1, -1]) {
+        g.add(box(`Oculos_Aro_${suf}_${s > 0 ? "Ext" : "Int"}`, [ARO, 0.018, LH + ARO * 2], [cx + s * (LW / 2 + ARO / 2), yLente, zOlhos], mAro))
+      }
+      // Haste correndo para trás, até a orelha
+      g.add(box(`Oculos_Haste_${suf}`, [0.014, 0.13, 0.014], [lado * 0.118, CENTRO_Y + 0.07, zOlhos + 0.012], mAro))
     }
-    g.add(box("Oculos_Ponte", [0.038, 0.014, 0.012], [0, CENTRO_Y + 0.148, 1.288], mAro))
+    g.add(box("Oculos_Ponte", [0.045, 0.016, 0.016], [0, yLente, zOlhos + 0.018], mAro))
   }
 
   return g

@@ -294,3 +294,84 @@ describe("letreiro de neon", () => {
     for (let i = 1; i < ys.length; i++) expect(ys[i]).toBeGreaterThan(ys[i - 1])
   })
 })
+
+// Boné e óculos: "o boné tá muito reto" e "coloco os óculos e nem consigo ver".
+// A cabeça é uma esfera de raio 0.14 centrada em (0, 0.9, 1.26) — é dela que
+// saem todas as medidas abaixo.
+
+const CABECA = new Vector3(0, 0.9, 1.26)
+const R_CABECA = 0.14
+
+function boneco(acess: Parameters<typeof buildPersonagem>[1]) {
+  const p = buildPersonagem(undefined, acess)
+  p.updateMatrixWorld(true)
+  return p
+}
+
+describe("boné", () => {
+  const comBone = () => boneco({ chapeu: "bone" })
+
+  it("assenta NA cabeça — girar o grupo pela origem jogava o boné pro lado", () => {
+    // O bug: rotation no grupo com origem no chão do boneco deslocava tudo
+    // ~17 cm (8° a 1,26 m de altura). A copa tem que continuar sobre a cabeça.
+    const copa = new Box3().setFromObject(malha(comBone(), "Bone_Copa")).getCenter(new Vector3())
+    expect(Math.abs(copa.x - CABECA.x)).toBeLessThan(0.05)
+    expect(Math.abs(copa.y - CABECA.y)).toBeLessThan(0.05)
+    expect(copa.z).toBeGreaterThan(CABECA.z) // em cima, não em volta
+  })
+
+  it("a aba projeta para a FRENTE, na direção para onde o rosto olha (+Y)", () => {
+    const p = comBone()
+    const abas = pecas(p, "Bone_Aba_")
+    expect(abas.length).toBeGreaterThan(4) // leque, não uma placa só
+    for (const n of abas) {
+      expect(new Box3().setFromObject(malha(p, n)).getCenter(new Vector3()).y).toBeGreaterThan(CABECA.y)
+    }
+  })
+
+  it("as pontas da aba CAEM — reta é a placa de antes", () => {
+    const p = comBone()
+    const abas = pecas(p, "Bone_Aba_").map((n) => new Box3().setFromObject(malha(p, n)).getCenter(new Vector3()))
+    // Média das DUAS pontas: o boné é usado torto, e o tilt lateral levanta uma
+    // ponta enquanto baixa a outra. A média cancela isso e sobra a curva.
+    const meio = abas[Math.floor(abas.length / 2)]
+    const pontas = (abas[0].z + abas[abas.length - 1].z) / 2
+    expect(pontas).toBeLessThan(meio.z - 0.008)
+  })
+
+  it("a aba não desce sobre os olhos (z≈1.28), senão tapa o rosto", () => {
+    const p = comBone()
+    for (const n of pecas(p, "Bone_Aba_")) {
+      expect(new Box3().setFromObject(malha(p, n)).min.z).toBeGreaterThan(1.27)
+    }
+  })
+})
+
+describe("óculos", () => {
+  for (const tipo of ["grau", "escuros"] as const) {
+    it(`${tipo}: a lente fica À FRENTE do rosto, não embutida nele`, () => {
+      const p = boneco({ oculos: tipo })
+      const lente = new Box3().setFromObject(malha(p, "Oculos_Lente_Direita"))
+      const z = lente.getCenter(new Vector3()).z
+      // Raio da seção da cabeça naquela altura: o que a lente precisa passar.
+      const raioNaAltura = Math.sqrt(Math.max(0, R_CABECA ** 2 - (z - CABECA.z) ** 2))
+      expect(lente.min.y).toBeGreaterThan(CABECA.y + raioNaAltura - 0.005)
+    })
+
+    it(`${tipo}: tem ARO em volta — é ele que se enxerga de longe, não a lente`, () => {
+      const p = boneco({ oculos: tipo })
+      const aros = pecas(p, "Oculos_Aro_")
+      expect(aros.length).toBe(8) // 4 lados × 2 olhos
+      const lente = new Box3().setFromObject(malha(p, "Oculos_Lente_Direita"))
+      const topo = new Box3().setFromObject(malha(p, "Oculos_Aro_Direita_Topo"))
+      expect(topo.min.z).toBeGreaterThanOrEqual(lente.max.z - 1e-6) // contorna por cima
+    })
+  }
+
+  it("os dois olhos ganham lente, e elas não se cruzam no meio do rosto", () => {
+    const p = boneco({ oculos: "grau" })
+    const d = new Box3().setFromObject(malha(p, "Oculos_Lente_Direita"))
+    const e = new Box3().setFromObject(malha(p, "Oculos_Lente_Esquerda"))
+    expect(d.min.x).toBeGreaterThan(e.max.x)
+  })
+})

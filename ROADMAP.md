@@ -92,8 +92,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       **Limite conhecido**: ver o rosto de FRENTE exigiria a câmera atrás da parede do
       fundo, que passaria a tapar a sala. Perfil é o teto desta planta — só uma parede a
       menos mudaria isso.
-- [ ] **Boné muito reto.** Falta a curva da aba e uma inclinação; do jeito que está parece
-      uma caixa na cabeça. Com o ângulo novo a aba enfim aparece — reavaliar depois dele.
 - [ ] **Acessórios só existem no 3D.** O avatar 2D (`avatar-figure.tsx`) não desenha chapéu
       nem óculos, então o que se compra na loja não aparece no editor, na lista de amigos
       nem em lugar nenhum fora da cena. Vale desenhá-los lá também.
