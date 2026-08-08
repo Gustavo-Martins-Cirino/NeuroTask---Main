@@ -86,8 +86,14 @@ function extrasDe(equipped?: Set<string>): EscritorioExtras {
     neon: equipped.has("quadro-neon"),
     trofeu: equipped.has("trofeu"),
     gato: equipped.has("pet-gato"),
-    setup: equipped.has("setup-ultrawide") ? "ultrawide" : equipped.has("setup-duplo") ? "duplo" : undefined,
+    setup: equipped.has("setup-ultrawide") ? "ultrawide"
+      : equipped.has("setup-duplo") ? "duplo"
+      : equipped.has("setup-notebook") ? "notebook"
+      : undefined,
     papelParede: equipped.has("parede-papel"),
+    relogio: equipped.has("relogio"),
+    prateleira: equipped.has("prateleira"),
+    ledRgb: equipped.has("led-rgb"),
   }
 }
 

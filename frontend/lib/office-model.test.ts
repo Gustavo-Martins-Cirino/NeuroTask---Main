@@ -406,3 +406,70 @@ describe("papel de parede", () => {
     }
   })
 })
+
+describe("itens novos da loja", () => {
+  it("relógio: mostrador, 12 marcas e ponteiros — disco pelado não lê como relógio", () => {
+    const g = buildEscritorio({ extras: { relogio: true } })
+    expect(pecas(g, "Relogio_Marca_").length).toBe(12)
+    expect(pecas(g, "Relogio_Ponteiro_").length).toBe(2)
+    // Ponteiro da hora mais curto que o dos minutos, senão não dá pra distinguir
+    const hora = caixaMundo(g, "Relogio_Ponteiro_Hora").getSize(new Vector3()).length()
+    const min = caixaMundo(g, "Relogio_Ponteiro_Min").getSize(new Vector3()).length()
+    expect(hora).toBeLessThan(min)
+  })
+
+  it("relógio: fica na parede do fundo, sem afundar nela", () => {
+    const g = buildEscritorio({ extras: { relogio: true } })
+    for (const n of pecas(g, "Relogio_")) {
+      expect(caixaMundo(g, n).max.y).toBeLessThanOrEqual(FACE_FUNDO + 1e-6)
+    }
+  })
+
+  it("prateleira: as coisas ficam EM CIMA da tábua, não atravessando ela", () => {
+    const g = buildEscritorio({ extras: { prateleira: true } })
+    const tabua = caixaMundo(g, "Prateleira_Tabua")
+    for (const n of ["Prateleira_Livro_0", "Prateleira_Vaso", "Prateleira_Caneca"]) {
+      expect(caixaMundo(g, n).min.z).toBeGreaterThanOrEqual(tabua.max.z - 1e-6)
+    }
+    expect(pecas(g, "Prateleira_Livro_").length).toBe(3)
+  })
+
+  it("prateleira: presa na parede lateral, sem atravessá-la", () => {
+    const g = buildEscritorio({ extras: { prateleira: true } })
+    for (const n of pecas(g, "Prateleira_")) {
+      expect(caixaMundo(g, n).min.x).toBeGreaterThanOrEqual(FACE_LATERAL - 1e-6)
+    }
+  })
+
+  it("LED RGB: contorna as DUAS paredes e as cores variam ao longo da fita", () => {
+    const g = buildEscritorio({ extras: { ledRgb: true } })
+    const fundo = pecas(g, "Led_Fundo_")
+    expect(fundo.length).toBeGreaterThan(8)
+    expect(pecas(g, "Led_Lateral_").length).toBe(fundo.length)
+    // Cor de segmentos vizinhos tem de ser diferente — fita de uma cor só não é RGB
+    const cor = (n: string) => ((malha(g, n) as Mesh).material as unknown as { color: { getHex(): number } }).color.getHex()
+    expect(cor("Led_Fundo_0")).not.toBe(cor("Led_Fundo_1"))
+  })
+
+  it("LED RGB: é luz — os segmentos emitem, não só têm cor", () => {
+    const g = buildEscritorio({ extras: { ledRgb: true } })
+    const mat = (malha(g, "Led_Fundo_0") as Mesh).material as unknown as { emissiveIntensity: number }
+    expect(mat.emissiveIntensity).toBeGreaterThan(1)
+  })
+
+  it("notebook: troca o desktop inteiro — sem torre e sem suporte de monitor", () => {
+    const g = buildEscritorio({ extras: { setup: "notebook" } })
+    expect(pecas(g, "PC_Torre").length).toBe(0)
+    expect(pecas(g, "Monitor_Suporte").length).toBe(0)
+    expect(pecas(g, "Notebook_").length).toBeGreaterThan(2)
+  })
+
+  it("notebook: a tela fica acima do tampo e inclinada para trás", () => {
+    const g = buildEscritorio({ extras: { setup: "notebook" } })
+    const tampo = caixaMundo(g, "Mesa_Tampo")
+    const tela = caixaMundo(g, "Monitor_Tela_Note")
+    expect(tela.min.z).toBeGreaterThan(tampo.max.z)
+    // Inclinada: mais alta atrás do que na frente (a dobradiça fica embaixo)
+    expect(tela.max.z - tela.min.z).toBeGreaterThan(0.15)
+  })
+})

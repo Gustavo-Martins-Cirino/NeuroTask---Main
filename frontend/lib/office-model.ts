@@ -132,6 +132,22 @@ function buildMonitores(g: Group, dy: number, setup: EscritorioExtras["setup"], 
       g.add(box(`Monitor_Suporte${suf}`, [0.08, 0.06, 0.14], [s * 0.34, 1.36 + dy, 0.87], mPC))
       g.add(monitorUnit(suf, [s * 0.34, 1.33 + dy, 1.06], -s * 0.26, 0.46, 0.34, mBezel, mGlow))
     }
+  } else if (setup === "notebook") {
+    // Sem torre nem suporte: só o laptop, tampa inclinada como a de verdade.
+    const y = 1.42 + dy
+    g.add(box("Notebook_Base", [0.42, 0.3, 0.022], [0, y - 0.04, TAMPO_Z + 0.011], mPC))
+    g.add(box("Notebook_Teclado", [0.34, 0.18, 0.006], [0, y - 0.07, TAMPO_Z + 0.025], mBezel))
+    // O grupo é a DOBRADIÇA, não o centro da tampa: girando pelo centro, metade
+    // dela descia abaixo do tampo da mesa (o teste de geometria pegou).
+    const tampa = new Group()
+    tampa.name = "Notebook_Tampa"
+    tampa.position.set(0, y + 0.11, TAMPO_Z + 0.022)
+    // +72°, não −72°: com o sinal invertido a tampa girava para BAIXO, para
+    // dentro da mesa. A tela vai na face de dentro (voltada para quem digita).
+    tampa.rotation.x = D(72)
+    tampa.add(box("Notebook_Carcaca", [0.42, 0.28, 0.014], [0, 0.15, 0], mPC))
+    tampa.add(box("Monitor_Tela_Note", [0.38, 0.24, 0.006], [0, 0.15, 0.011], mGlow))
+    g.add(tampa)
   } else {
     g.add(box("Monitor_Suporte", [0.08, 0.06, 0.14], [0, 1.35 + dy, 0.87], mPC))
     g.add(monitorUnit("", [0, 1.31 + dy, 1.1], 0, 0.58, 0.36, mBezel, mGlow))
@@ -209,10 +225,15 @@ export interface EscritorioExtras {
   neon?: boolean
   trofeu?: boolean
   gato?: boolean
-  /** Setup da mesa: undefined = 1 monitor; "duplo" = 2; "ultrawide" = 1 largão. */
-  setup?: "duplo" | "ultrawide"
+  /** Setup da mesa: undefined = 1 monitor; "duplo" = 2; "ultrawide" = 1 largão;
+   *  "notebook" troca o desktop inteiro por um laptop. */
+  setup?: "duplo" | "ultrawide" | "notebook"
   /** Papel de parede listrado — padrão de verdade, não cor chapada. */
   papelParede?: boolean
+  relogio?: boolean
+  prateleira?: boolean
+  /** Fita de LED colorida contornando o alto das paredes. */
+  ledRgb?: boolean
 }
 
 /** Silhueta da cadeira — "padrao" é a de plástico que já vem na sala; as
@@ -387,7 +408,10 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   buildCadeira(g, opts.cadeira, 0, 0.9 + dy, mCad, mPerna, mRoda, mFriso)
 
   buildMonitores(g, dy, extras.setup, mBezel, mGlow, mPC)
-  g.add(box("PC_Torre", [0.14, 0.3, 0.36], [0.6, 1.5 + dy, 0.96], mPC))
+  // Notebook não tem torre: é o ponto do item, mesa limpa.
+  if (extras.setup !== "notebook") {
+    g.add(box("PC_Torre", [0.14, 0.3, 0.36], [0.6, 1.5 + dy, 0.96], mPC))
+  }
   g.add(box("Teclado", [0.32, 0.12, 0.02], [0, 1.32 + dy, TAMPO_Z + 0.01], mPC))
   g.add(box("Mouse", [0.06, 0.09, 0.02], [0.26, 1.32 + dy, TAMPO_Z + 0.01], mPC))
 
@@ -581,6 +605,66 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     g.add(box("Trofeu_Base", [0.1, 0.1, 0.03], [x, y, TAMPO_Z + 0.015], tmat([0.29, 0.21, 0.14])))
     g.add(cyl("Trofeu_Haste", 0.014, 0.06, [x, y, TAMPO_Z + 0.06], ouro))
     g.add(cyl("Trofeu_Taca", 0.028, 0.09, [x, y, TAMPO_Z + 0.135], ouro, undefined, 0.07))
+  }
+
+  // Relógio de parede: na parede do FUNDO, à esquerda do quadro/janela.
+  if (extras.relogio) {
+    const mAro = tmat([0.16, 0.15, 0.17], 0, "plastico")
+    const mMostr = tmat([0.96, 0.95, 0.92], 0, "ceramica")
+    const mPont = tmat([0.1, 0.1, 0.12], 0, "plastico")
+    const x = -1.15, yP = S - 0.075, z = 1.92
+    const emPe: V3 = [D(90), 0, 0] // gira o cilindro para o eixo furar a parede
+    g.add(cyl("Relogio_Aro", 0.145, 0.045, [x, yP, z], mAro, emPe))
+    g.add(cyl("Relogio_Mostrador", 0.125, 0.012, [x, yP - 0.026, z], mMostr, emPe))
+    // Marcadores das 12/3/6/9 — sem eles o disco não lê como relógio
+    for (let i = 0; i < 12; i++) {
+      const a = (i * 30 * Math.PI) / 180
+      const forte = i % 3 === 0
+      g.add(box(`Relogio_Marca_${i}`, [forte ? 0.016 : 0.008, 0.008, forte ? 0.028 : 0.016],
+        [x + Math.sin(a) * 0.1, yP - 0.034, z + Math.cos(a) * 0.1], mPont, [0, -a, 0]))
+    }
+    // Ponteiros parados às 10h10 — a hora que todo relógio de vitrine marca.
+    g.add(box("Relogio_Ponteiro_Hora", [0.012, 0.01, 0.07], [x - 0.017, yP - 0.04, z + 0.03], mPont, [0, D(-30), 0]))
+    g.add(box("Relogio_Ponteiro_Min", [0.01, 0.01, 0.1], [x + 0.026, yP - 0.042, z + 0.043], mPont, [0, D(35), 0]))
+    g.add(cyl("Relogio_Eixo", 0.012, 0.014, [x, yP - 0.046, z], mPont, emPe))
+  }
+
+  // Prateleira na parede lateral, com coisas em cima (uma tábua vazia é só uma
+  // tábua): livros deitados, um vaso e uma caneca.
+  if (extras.prateleira) {
+    const mTabua = tmat([0.55, 0.38, 0.24], 0, "madeira")
+    const mSup = tmat([0.2, 0.2, 0.22], 0, "metal")
+    // xP dá a folga para a tábua (22 cm de profundidade) não furar a parede.
+    const xP = -S + 0.17, yC = -0.45, z = 1.45
+    g.add(box("Prateleira_Tabua", [0.22, 0.92, 0.035], [xP, yC, z], mTabua))
+    for (const oy of [-0.36, 0.36]) {
+      g.add(box(`Prateleira_Suporte_${oy > 0 ? "D" : "E"}`, [0.16, 0.03, 0.1], [xP - 0.02, yC + oy, z - 0.06], mSup))
+    }
+    // Livros deitados em pilha
+    const capas: V3[] = [[0.7, 0.28, 0.2], [0.24, 0.42, 0.62], [0.86, 0.66, 0.24]]
+    capas.forEach((c, i) => {
+      g.add(box(`Prateleira_Livro_${i}`, [0.17, 0.13, 0.032], [xP, yC - 0.3, z + 0.036 + i * 0.034], tmat(c, 0, "tecido")))
+    })
+    // Offsets calculados a partir do TOPO da tábua (z + 0.0175): meia altura de
+    // cada peça, senão a base afunda na madeira.
+    g.add(cyl("Prateleira_Vaso", 0.045, 0.09, [xP, yC + 0.05, z + 0.065], tmat([0.85, 0.83, 0.8], 0, "ceramica")))
+    g.add(sph("Prateleira_Folhagem", 0.07, [xP, yC + 0.05, z + 0.135], tmat([0.3, 0.55, 0.32], 0, "tecido"), [1, 1, 0.8]))
+    g.add(cyl("Prateleira_Caneca", 0.035, 0.07, [xP, yC + 0.32, z + 0.056], tmat([0.82, 0.3, 0.28], 0, "ceramica")))
+  }
+
+  // Fita de LED contornando o alto das duas paredes. É luz, então emissiva e em
+  // segmentos de cores que variam — o ponto do RGB é a cor mudar ao longo dela.
+  if (extras.ledRgb) {
+    const CORES: V3[] = [[1, 0.2, 0.45], [0.75, 0.3, 1], [0.25, 0.55, 1], [0.2, 0.95, 0.85], [0.45, 1, 0.35], [1, 0.85, 0.25]]
+    const N = 14
+    const passo = tam / N
+    for (let i = 0; i < N; i++) {
+      const cor = CORES[i % CORES.length]
+      const m = tmat(cor, 2.4)
+      const p = -tam / 2 + passo * (i + 0.5)
+      g.add(box(`Led_Fundo_${i}`, [passo * 0.92, 0.03, 0.035], [p, S - 0.062, 2.42], m))
+      g.add(box(`Led_Lateral_${i}`, [0.03, passo * 0.92, 0.035], [-S + 0.062, p, 2.42], m))
+    }
   }
 
   if (extras.gato) {

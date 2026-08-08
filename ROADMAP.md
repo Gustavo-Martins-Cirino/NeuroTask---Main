@@ -98,10 +98,10 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Catálogo novo**
 
-- [ ] **Mais criatividade nos objetos**, com o Escritório valendo como vitrine do progresso:
-      prateleira, uma luminária melhor que a atual, relógio de parede, um computador mais
-      caprichado, a opção de trocar o desktop por **notebook**, e **fita de LED RGB** pra
-      iluminar o quarto com cor.
+- [ ] **Luminária melhor que a atual** — a de hoje é haste + cúpula, e ficou atrás dos
+      itens novos (relógio, prateleira, LED, notebook já entraram). Refazer no mesmo nível.
+- [ ] **Computador mais caprichado**: a torre é uma caixa lisa. Cabe gabinete com painel de
+      vidro, ventoinha e luz — agora que o LED RGB deu o vocabulário visual.
 
 ### Calendário aberto pra fora
 
