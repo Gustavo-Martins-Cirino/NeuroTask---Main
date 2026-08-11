@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Box3, Group, Mesh, Vector3 } from "three"
+import { Box3, DoubleSide, Group, Mesh, Vector3 } from "three"
 import { buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO } from "./office-model"
 import { typingTap, TECLA_AMPLITUDE } from "./office-typing"
 import { CAMERA_POS } from "./office-camera"
@@ -462,6 +462,77 @@ describe("itens novos da loja", () => {
     expect(pecas(g, "PC_Torre").length).toBe(0)
     expect(pecas(g, "Monitor_Suporte").length).toBe(0)
     expect(pecas(g, "Notebook_").length).toBeGreaterThan(2)
+  })
+
+  // O gabinete é um chassi de painéis (aberto no lado do vidro), então a "caixa
+  // da torre" é a união deles — não existe uma peça única que a represente.
+  const caixaDaTorre = (g: Group) => {
+    const b = new Box3()
+    for (const n of pecas(g, "PC_Torre_")) b.union(caixaMundo(g, n))
+    return b
+  }
+
+  it("gabinete: é chassi aberto no lado do vidro — caixa fechada não mostra nada", () => {
+    const g = buildEscritorio()
+    // 5 painéis: base, topo, fundo e as duas laterais em y. O 6º lado é o vão.
+    expect(pecas(g, "PC_Torre_").length).toBe(5)
+    const dentro = caixaMundo(g, "PC_Placa_Mae")
+    // Nenhum painel tapa a abertura: todos ficam atrás do plano do vidro.
+    const abertura = caixaMundo(g, "PC_Vidro").min.x
+    for (const n of pecas(g, "PC_Torre_")) {
+      expect(caixaMundo(g, n).min.x).toBeLessThan(abertura)
+    }
+    expect(dentro.max.x).toBeLessThan(abertura)
+  })
+
+  it("gabinete: vidro na face que a câmera vê, e ele é transparente de verdade", () => {
+    const g = buildEscritorio()
+    const vidro = caixaMundo(g, "PC_Vidro")
+    // A câmera está em +x: o vidro tem de ser a peça mais à direita da torre.
+    expect(vidro.min.x).toBeGreaterThanOrEqual(caixaDaTorre(g).max.x - 1e-6)
+    const mat = (malha(g, "PC_Vidro") as Mesh).material as unknown as { transparent: boolean; opacity: number }
+    expect(mat.transparent).toBe(true)
+    expect(mat.opacity).toBeLessThan(0.5)
+  })
+
+  it("gabinete: o chassi é DoubleSide — visto por dentro, o teto não some", () => {
+    const g = buildEscritorio()
+    const mat = (malha(g, "PC_Torre_Topo") as Mesh).material as unknown as { side: number }
+    expect(mat.side).toBe(DoubleSide)
+  })
+
+  it("gabinete: duas ventoinhas na FRENTE, com aro aceso e pás — não discos chapados", () => {
+    const g = buildEscritorio()
+    const torre = caixaDaTorre(g)
+    for (const fan of ["PC_Fan_A", "PC_Fan_B"]) {
+      expect(pecas(g, `${fan}_Pa_`).length).toBe(5)
+      // Frente = y menor (o lado de quem senta): o aro fica à frente da caixa.
+      expect(caixaMundo(g, `${fan}_Aro`).max.y).toBeLessThanOrEqual(torre.min.y + 1e-6)
+      const mat = (malha(g, `${fan}_Aro`) as Mesh).material as unknown as { emissiveIntensity: number }
+      expect(mat.emissiveIntensity).toBeGreaterThan(1)
+    }
+    // Cores diferentes entre elas — duas iguais não é RGB, é lanterna dupla
+    const cor = (n: string) => ((malha(g, n) as Mesh).material as unknown as { color: { getHex(): number } }).color.getHex()
+    expect(cor("PC_Fan_A_Aro")).not.toBe(cor("PC_Fan_B_Aro"))
+  })
+
+  it("gabinete: as tripas ficam DENTRO da caixa — nada vazando pelas laterais", () => {
+    const g = buildEscritorio()
+    const torre = caixaDaTorre(g)
+    for (const n of ["PC_Placa_Mae", "PC_Fonte", "PC_Gpu", "PC_Gpu_Led", "PC_Led_Interno", "PC_Cooler_Aro", "PC_Cooler_Hub"]) {
+      expect(torre.containsBox(caixaMundo(g, n))).toBe(true)
+    }
+  })
+
+  it("gabinete: apoia no tampo, sem afundar nele (a caixa antiga entrava 3 cm)", () => {
+    const g = buildEscritorio()
+    const tampo = caixaMundo(g, "Mesa_Tampo")
+    expect(caixaDaTorre(g).min.z).toBeGreaterThanOrEqual(tampo.max.z - 1e-6)
+  })
+
+  it("gabinete: o notebook não traz peça nenhuma dele junto", () => {
+    const g = buildEscritorio({ extras: { setup: "notebook" } })
+    expect(pecas(g, "PC_").length).toBe(0)
   })
 
   it("luminária: braço articulado de verdade — duas barras com junta no meio", () => {

@@ -12,6 +12,7 @@ import {
   CatmullRomCurve3,
   Color,
   CylinderGeometry,
+  DoubleSide,
   Group,
   Mesh,
   MeshStandardMaterial,
@@ -153,6 +154,88 @@ function buildMonitores(g: Group, dy: number, setup: EscritorioExtras["setup"], 
     g.add(box("Monitor_Suporte", [0.08, 0.06, 0.14], [0, 1.35 + dy, 0.87], mPC))
     g.add(monitorUnit("", [0, 1.31 + dy, 1.1], 0, 0.58, 0.36, mBezel, mGlow))
   }
+}
+
+// LED: base ESCURA com emissivo saturado. Deixando a base na mesma cor do
+// emissivo (o que tmat faz sozinho), o tone mapping soma as duas e o RGB sai
+// pastel esbranquiçado — o rosa e o azul das ventoinhas viravam dois donuts
+// desbotados. A cor tem de vir só da emissão.
+function mled(cor: V3, intensidade = 1.1): MeshStandardMaterial {
+  const m = tmat(cor, intensidade)
+  m.color.multiplyScalar(0.28)
+  return m
+}
+
+// Ventoinha com anel de LED, eixo em Y (a face aponta para a frente da sala).
+// O que faz um cooler ler como cooler é o ARO ACESO com as pás girando dentro —
+// um disco chapado seria só uma mancha colorida na caixa.
+function ventoinha(g: Group, nome: string, cx: number, cy: number, cz: number, raio: number, cor: V3, mEscuro: Material) {
+  const eixoY: V3 = [D(90), 0, 0]
+  g.add(cyl(`${nome}_Aro`, raio, 0.014, [cx, cy, cz], mled(cor), eixoY))
+  g.add(cyl(`${nome}_Hub`, raio * 0.32, 0.018, [cx, cy - 0.002, cz], mEscuro, eixoY))
+  for (let i = 0; i < 5; i++) {
+    const t = (i * 2 * Math.PI) / 5
+    g.add(box(
+      `${nome}_Pa_${i}`,
+      [raio * 0.78, 0.005, raio * 0.26],
+      [cx + Math.cos(t) * raio * 0.5, cy - 0.003, cz + Math.sin(t) * raio * 0.5],
+      mEscuro,
+      [0, -t, 0]
+    ))
+  }
+}
+
+// Gabinete com painel de vidro, ventoinhas RGB e tripas à mostra. A torre era
+// UMA caixa lisa — do lado do LED RGB e do notebook, era o item que denunciava
+// que a cena tinha sido feita por partes. O vidro fica na face +x porque é a
+// que a câmera enxerga; a frente (−y, onde a pessoa está) leva as ventoinhas.
+function buildTorre(g: Group, cx: number, cy: number) {
+  const mGab = tmat([0.11, 0.11, 0.13], 0, "plastico")
+  // Chassi visto por DENTRO pelo vidro: com backface culling, o teto e o fundo
+  // sumiriam de dentro e daria pra enxergar a sala através do gabinete.
+  mGab.side = DoubleSide
+  const mPeca = tmat([0.16, 0.17, 0.2], 0, "plastico")
+  const mVidro = tmat([0.3, 0.36, 0.44], 0, "vidro")
+  mVidro.transparent = true
+  mVidro.opacity = 0.16
+
+  const W = 0.16, P = 0.32, H = 0.38, E = 0.012
+  const zc = TAMPO_Z + H / 2
+  const frente = cy - P / 2
+
+  // Chassi ABERTO no lado +x (o que a câmera vê): é o vão que faz o vidro
+  // valer alguma coisa. Um box fechado com um vidro colado por fora era uma
+  // caixa preta com um reflexo — foi assim que a primeira versão saiu.
+  g.add(box("PC_Torre_Base", [W, P, E], [cx, cy, TAMPO_Z + E / 2], mGab))
+  g.add(box("PC_Torre_Topo", [W, P, E], [cx, cy, TAMPO_Z + H - E / 2], mGab))
+  g.add(box("PC_Torre_Fundo", [E, P, H], [cx - W / 2 + E / 2, cy, zc], mGab))
+  g.add(box("PC_Torre_Frente", [W, E, H], [cx, frente + E / 2, zc], mGab))
+  g.add(box("PC_Torre_Tras", [W, E, H], [cx, cy + P / 2 - E / 2, zc], mGab))
+
+  // Tripas visíveis pelo vidro: placa-mãe encostada na face oposta, placa de
+  // vídeo atravessada e uma fita acesa no alto.
+  g.add(box("PC_Placa_Mae", [0.006, 0.26, 0.3], [cx - W / 2 + 0.017, cy, zc], tmat([0.09, 0.2, 0.18], 0, "plastico")))
+  // Tampa da fonte: sem ela o fundo do gabinete fica um vão vazio pelo vidro.
+  g.add(box("PC_Fonte", [0.12, 0.26, 0.055], [cx + 0.01, cy, TAMPO_Z + 0.045], tmat([0.13, 0.14, 0.16], 0, "plastico")))
+  g.add(box("PC_Gpu", [0.085, 0.18, 0.036], [cx, cy - 0.01, TAMPO_Z + 0.115], mPeca))
+  // Fio de luz na beirada da placa, do lado do vidro: cobrindo o topo inteiro
+  // virava uma lâmina branca, não um detalhe aceso.
+  g.add(box("PC_Gpu_Led", [0.01, 0.15, 0.006], [cx + 0.03, cy - 0.01, TAMPO_Z + 0.136], mled([0.2, 0.95, 0.85])))
+  g.add(box("PC_Led_Interno", [0.008, 0.26, 0.008], [cx - W / 2 + 0.032, cy, TAMPO_Z + H - 0.03], mled([0.45, 1, 0.35])))
+
+  // Cooler do processador, virado para o vidro
+  const eixoX: V3 = [0, D(90), 0]
+  g.add(cyl("PC_Cooler_Aro", 0.036, 0.016, [cx + 0.05, cy + 0.04, TAMPO_Z + 0.265], mled([0.75, 0.3, 1]), eixoX))
+  g.add(cyl("PC_Cooler_Hub", 0.013, 0.02, [cx + 0.052, cy + 0.04, TAMPO_Z + 0.265], mPeca, eixoX))
+
+  // 5 mm à frente da abertura, não coplanar com ela: encostado dá z-fighting.
+  g.add(box("PC_Vidro", [0.008, P - 0.02, H - 0.03], [cx + W / 2 + 0.005, cy, zc], mVidro))
+
+  // Emissivo baixo de propósito: em 2.4 (o da fita de LED, que é vista de longe)
+  // o aro estourava para branco no tone mapping e a cor do RGB sumia.
+  ventoinha(g, "PC_Fan_A", cx, frente - 0.008, TAMPO_Z + 0.105, 0.048, [1, 0.16, 0.4], mPeca)
+  ventoinha(g, "PC_Fan_B", cx, frente - 0.008, TAMPO_Z + 0.275, 0.048, [0.18, 0.45, 1], mPeca)
+  g.add(cyl("PC_Botao", 0.009, 0.01, [cx - 0.055, frente - 0.006, TAMPO_Z + H - 0.028], mled([0.7, 0.92, 1], 1.4), [D(90), 0, 0]))
 }
 
 // Letras do letreiro de neon, em traços normalizados (u = 0→1 na largura da
@@ -410,9 +493,7 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
 
   buildMonitores(g, dy, extras.setup, mBezel, mGlow, mPC)
   // Notebook não tem torre: é o ponto do item, mesa limpa.
-  if (extras.setup !== "notebook") {
-    g.add(box("PC_Torre", [0.14, 0.3, 0.36], [0.6, 1.5 + dy, 0.96], mPC))
-  }
+  if (extras.setup !== "notebook") buildTorre(g, 0.6, 1.5 + dy)
   g.add(box("Teclado", [0.32, 0.12, 0.02], [0, 1.32 + dy, TAMPO_Z + 0.01], mPC))
   g.add(box("Mouse", [0.06, 0.09, 0.02], [0.26, 1.32 + dy, TAMPO_Z + 0.01], mPC))
 

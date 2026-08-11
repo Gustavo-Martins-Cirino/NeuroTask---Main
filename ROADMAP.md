@@ -101,8 +101,11 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Catálogo novo**
 
-- [ ] **Computador mais caprichado**: a torre é uma caixa lisa. Cabe gabinete com painel de
-      vidro, ventoinha e luz — agora que o LED RGB deu o vocabulário visual.
+- [ ] **A fita de LED da sala estoura para branco.** Os segmentos usam emissivo 2,4 com a
+      base na mesma cor, e o tone mapping soma as duas: de longe a fita "RGB" fica pastel
+      esbranquiçada. O gabinete já resolveu isso com `mled()` em `lib/office-model.ts`
+      (base escura, cor só na emissão) — falta aplicar o mesmo à fita e ao neon. Casa com
+      "calibrar o realismo" acima: é o mesmo ajuste de exposição.
 
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 
