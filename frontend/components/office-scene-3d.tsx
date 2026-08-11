@@ -12,8 +12,9 @@ import {
 import { useTheme } from "next-themes"
 import {
   buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO,
-  type EscritorioExtras, type PersonagemAcessorios, type PersonagemCores,
+  type EscritorioExtras, type PersonagemCores,
 } from "@/lib/office-model"
+import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { typingTap, typingRamp } from "@/lib/office-typing"
 import type { AvatarConfig } from "@/lib/avatar"
 
@@ -95,18 +96,6 @@ function extrasDe(equipped?: Set<string>): EscritorioExtras {
     prateleira: equipped.has("prateleira"),
     ledRgb: equipped.has("led-rgb"),
   }
-}
-
-// Acessórios vestíveis (slots exclusivos na loja, então no máximo um de cada).
-function acessoriosDe(equipped?: Set<string>): PersonagemAcessorios {
-  if (!equipped) return {}
-  const a: PersonagemAcessorios = {}
-  if (equipped.has("chapeu-bone")) a.chapeu = "bone"
-  else if (equipped.has("chapeu-social")) a.chapeu = "social"
-  else if (equipped.has("chapeu-coroa")) a.chapeu = "coroa"
-  if (equipped.has("oculos-grau")) a.oculos = "grau"
-  else if (equipped.has("oculos-escuros")) a.oculos = "escuros"
-  return a
 }
 
 // Pele/cabelo/roupa vêm do editor de avatar — de graça, sem loja no meio.
@@ -252,7 +241,7 @@ function CartoonOffice({
   )
   const person = useMemo(
     () => {
-      return buildPersonagem(coresDoAvatar(avatar), acessoriosDe(equipped))
+      return buildPersonagem(coresDoAvatar(avatar), acessoriosEquipados(equipped))
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [avatar, equipKey]

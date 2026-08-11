@@ -92,9 +92,12 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       **Limite conhecido**: ver o rosto de FRENTE exigiria a câmera atrás da parede do
       fundo, que passaria a tapar a sala. Perfil é o teto desta planta — só uma parede a
       menos mudaria isso.
-- [ ] **Acessórios só existem no 3D.** O avatar 2D (`avatar-figure.tsx`) não desenha chapéu
-      nem óculos, então o que se compra na loja não aparece no editor, na lista de amigos
-      nem em lugar nenhum fora da cena. Vale desenhá-los lá também.
+- [ ] **A lista de amigos ainda é letra dentro de um círculo.** O bonequinho 2D já sabe
+      desenhar chapéu e óculos (`avatar-figure.tsx` + `lib/avatar-accessories.ts`), mas
+      `friends-section.tsx` mostra a inicial do nome, não o avatar — o amigo só aparece
+      inteiro quando se abre a visita em 3D. Trocar a inicial por um bonequinho exige o
+      `avatar` e os itens equipados de cada amigo virem junto na consulta da lista (hoje só
+      `fetchFriendOffice` traz isso, uma pessoa por vez).
 
 **Catálogo novo**
 

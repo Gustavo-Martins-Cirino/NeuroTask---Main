@@ -1,4 +1,5 @@
 import { type AvatarConfig } from "@/lib/avatar"
+import { type AvatarAccessories } from "@/lib/avatar-accessories"
 
 // Bonequinho 2D (paper-doll) sentado DE COSTAS (¾ traseiro), olhando para
 // a mesa/monitores da cena isométrica (direção frente = cima-esquerda na
@@ -13,7 +14,104 @@ function darken(hex: string, amt: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`
 }
 
-export function AvatarFigure({ config, working = false, seated = false }: { config: AvatarConfig; working?: boolean; seated?: boolean }) {
+// Paleta dos acessórios — os mesmos tons do personagem 3D (lib/office-model),
+// para o boné do editor não ser de outro azul que o boné da cena.
+const BONE = "#29599e"
+// Feltro um pouco mais claro que o do 3D (0.18,0.16,0.19): lá a luz separa o
+// chapéu do cabelo, aqui é tudo chapado — no tom original virava uma mancha só.
+const FELTRO = "#3b3542"
+const FITA = "#8c2333"
+const OURO = "#edbf3d"
+
+// Acessórios da loja no bonequinho DE COSTAS. Chapéu se vê inteiro; do óculos
+// sobra o que passa da silhueta da cabeça: as hastes correndo até a orelha e a
+// pontinha do aro de cada lado. É o teto desta vista — ela não tem rosto.
+function Acessorios({ acess, hx, hy }: { acess: AvatarAccessories; hx: number; hy: number }) {
+  return (
+    <>
+      {acess.oculos && (() => {
+        const escuros = acess.oculos === "escuros"
+        const aro = escuros ? "#14141a" : "#4d3120"
+        const lente = escuros ? "#0d0f17" : "#addbf0"
+        // Fica ACIMA da linha das orelhas de propósito: a haste do óculos passa
+        // por cima delas na vida real e, no desenho, é o único jeito de não
+        // sumir atrás das conchas do fone (que ficam em hy+2).
+        return (
+          <g>
+            {[-1, 1].map((s) => (
+              <g key={s}>
+                {/* haste correndo por cima do cabelo, em direção à orelha */}
+                <path
+                  d={`M ${hx + s * 10.4} ${hy - 5.2} q ${s * -0.6} 2.6 ${s * -2} 4.2`}
+                  fill="none" stroke={aro} strokeWidth="1.8" strokeLinecap="round"
+                />
+                {/* borda do aro escapando da silhueta da cabeça */}
+                <ellipse cx={hx + s * 11.3} cy={hy - 5.2} rx="1.9" ry="3.4" fill={aro} />
+                <ellipse cx={hx + s * 11.6} cy={hy - 5.2} rx="0.9" ry="2.1" fill={lente} opacity={escuros ? 1 : 0.75} />
+              </g>
+            ))}
+          </g>
+        )
+      })()}
+
+      {acess.chapeu === "bone" && (
+        <g>
+          {/* a aba aponta para a frente: de costas só as pontas aparecem */}
+          <ellipse cx={hx} cy={hy - 3.4} rx="14" ry="4.4" fill={darken(BONE, 26)} />
+          <path d={`M ${hx - 10.4} ${hy - 1} a 10.4 10.4 0 0 1 20.8 0 z`} fill={BONE} />
+          <rect x={hx - 10.4} y={hy - 3.4} width="20.8" height="2.6" rx="1.1" fill={darken(BONE, 12)} />
+          {/* o vão da regulagem, atrás — é o que diz "estou vendo por trás" */}
+          <path d={`M ${hx - 2.6} ${hy - 0.9} v -3.2 h 5.2 v 3.2 z`} fill={darken(BONE, 34)} />
+          <circle cx={hx} cy={hy - 10.8} r="1.5" fill={darken(BONE, 16)} />
+        </g>
+      )}
+
+      {acess.chapeu === "social" && (
+        <g>
+          {/* aba: a face de baixo mais escura dá espessura e destaca do cabelo */}
+          <ellipse cx={hx} cy={hy - 2.2} rx="15.4" ry="5" fill={darken(FELTRO, 22)} />
+          <ellipse cx={hx} cy={hy - 3.4} rx="15.4" ry="5" fill={darken(FELTRO, -16)} />
+          <path
+            d={`M ${hx - 7.4} ${hy - 4} L ${hx - 7} ${hy - 13} Q ${hx - 6.8} ${hy - 15} ${hx} ${hy - 15} Q ${hx + 6.8} ${hy - 15} ${hx + 7} ${hy - 13} L ${hx + 7.4} ${hy - 4} Z`}
+            fill={FELTRO}
+          />
+          <path d={`M ${hx - 7.5} ${hy - 8.2} h 15 v 3.6 h -15 z`} fill={FITA} />
+        </g>
+      )}
+
+      {acess.chapeu === "coroa" && (
+        <g fill={OURO}>
+          {/* aro acompanhando a curva da cabeça (o centro afunda: vemos de cima-trás) */}
+          <path d={`M ${hx - 9.7} ${hy - 5.4} q 9.7 6.4 19.4 0 v 3.4 q -9.7 6.4 -19.4 0 z`} />
+          {[0, 1, 2, 3, 4].map((i) => {
+            const t = 0.1 + i * 0.2
+            const x = hx - 9.7 + 19.4 * t
+            const base = hy - 5.4 + 2 * t * (1 - t) * 6.4
+            const alt = 5.2 + (1 - Math.abs(t - 0.5) * 2) * 2.4
+            return (
+              <g key={i}>
+                <path d={`M ${x - 2.1} ${base} L ${x} ${base - alt} L ${x + 2.1} ${base} Z`} />
+                <circle cx={x} cy={base - alt - 0.9} r="1.1" fill="#f6e6a8" />
+              </g>
+            )
+          })}
+        </g>
+      )}
+    </>
+  )
+}
+
+export function AvatarFigure({
+  config,
+  accessories,
+  working = false,
+  seated = false,
+}: {
+  config: AvatarConfig
+  accessories?: AvatarAccessories
+  working?: boolean
+  seated?: boolean
+}) {
   const { body, skin, hairStyle, hairColor, outfit, outfitColor, headphones } = config
   const fem = body === "f"
   const pants = outfit === "terno" ? darken(outfitColor, 18) : "#3b5378"
@@ -165,6 +263,10 @@ export function AvatarFigure({ config, working = false, seated = false }: { conf
         <path d={`M ${hx - 8} ${hy + 3} q -2.5 15 0.5 23 q 7 3.5 15 0 q 3 -8 0.5 -23 q -8 4 -16 0 z`} fill={hairColor} />
       )}
       {hairStyle === "coque" && <circle cx={hx} cy={hy - 11} r="4.5" fill={hairColor} />}
+
+      {/* acessórios da loja — depois do cabelo, antes dos fones (na vida real
+          o arco do headphone passa por cima do boné e das hastes do óculos) */}
+      {accessories && <Acessorios acess={accessories} hx={hx} hy={hy} />}
 
       {/* fones (de costas: arco + as duas conchas) */}
       {headphones && (

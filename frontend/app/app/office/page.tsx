@@ -27,6 +27,7 @@ import {
 import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
 import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
 import { fetchAvatar, saveAvatar, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar"
+import { acessoriosEquipados } from "@/lib/avatar-accessories"
 
 const CATEGORY_ORDER: ShopCategory[] = ["decor", "setup", "cadeira", "parede", "piso", "chapeu", "oculos"]
 
@@ -371,6 +372,7 @@ export default function OfficePage() {
         open={avatarOpen}
         onOpenChange={setAvatarOpen}
         value={avatarCfg}
+        accessories={acessoriosEquipados(equippedSet)}
         onSave={(cfg) => {
           setAvatarCfg(cfg)
           setAvatarOpen(false)

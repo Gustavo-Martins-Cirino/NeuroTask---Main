@@ -40,9 +40,9 @@ Antes do primeiro login, rode os SQLs em [supabase/](supabase/) — ver
 ### Testes
 
 `pnpm test` (Vitest) cobre os módulos **determinísticos** de `lib/` — os que decidem
-datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `backward-plan`,
-`calendar-feed`, `calendar-warnings`, `gamification` (anti-farm), `ics`, `routine-insights`,
-`task-recurrence`, `telegram-commands` e `time-format`. É onde a lógica sutil regride sem
+datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `avatar-accessories`,
+`backward-plan`, `calendar-feed`, `calendar-warnings`, `gamification` (anti-farm), `ics`,
+`routine-insights`, `task-recurrence`, `telegram-commands` e `time-format`. É onde a lógica sutil regride sem
 ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de
 Supabase, e não é ali que mora o risco.
 

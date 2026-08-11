@@ -10,11 +10,15 @@ import {
   HAIR_STYLES, OUTFITS, SKIN_TONES, HAIR_COLORS, OUTFIT_COLORS, BODY_TYPES,
   type AvatarConfig,
 } from "@/lib/avatar"
+import { type AvatarAccessories } from "@/lib/avatar-accessories"
 
 interface AvatarEditorProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   value: AvatarConfig
+  /** Chapéu/óculos equipados na loja — não se editam aqui, mas a prévia
+   *  precisa mostrá-los ou o que se comprou "some" fora da cena 3D. */
+  accessories?: AvatarAccessories
   onSave: (cfg: AvatarConfig) => void
 }
 
@@ -38,7 +42,7 @@ function Swatches({ colors, value, onPick }: { colors: string[]; value: string; 
   )
 }
 
-export function AvatarEditor({ open, onOpenChange, value, onSave }: AvatarEditorProps) {
+export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }: AvatarEditorProps) {
   const [cfg, setCfg] = useState<AvatarConfig>(value)
 
   useEffect(() => {
@@ -63,7 +67,7 @@ export function AvatarEditor({ open, onOpenChange, value, onSave }: AvatarEditor
           <div className="mx-auto flex w-36 shrink-0 items-center justify-center rounded-2xl border border-border/50 bg-gradient-to-b from-sky-100/60 to-sky-50/40 dark:from-slate-800 dark:to-slate-900">
             <svg viewBox="-48 -62 78 96" className="h-44 w-32">
               <ellipse cx="-8" cy="26" rx="26" ry="6" fill="#000" opacity="0.1" />
-              <AvatarFigure config={cfg} />
+              <AvatarFigure config={cfg} accessories={accessories} />
             </svg>
           </div>
 

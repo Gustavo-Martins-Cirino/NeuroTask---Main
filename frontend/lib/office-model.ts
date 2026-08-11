@@ -20,6 +20,7 @@ import {
   Vector3,
   type Material,
 } from "three"
+import type { AvatarAccessories } from "./avatar-accessories"
 
 type V3 = [number, number, number]
 
@@ -694,11 +695,9 @@ export interface PersonagemCores {
 }
 
 // Acessórios vestíveis comprados na loja. Slots independentes (dá para usar
-// chapéu E óculos juntos); dentro de cada slot só um por vez.
-export interface PersonagemAcessorios {
-  chapeu?: "bone" | "social" | "coroa"
-  oculos?: "grau" | "escuros"
-}
+// chapéu E óculos juntos); dentro de cada slot só um por vez. O tipo é o mesmo
+// do bonequinho 2D — ver lib/avatar-accessories.
+export type PersonagemAcessorios = AvatarAccessories
 
 const CENTRO_Y = 0.9
 
