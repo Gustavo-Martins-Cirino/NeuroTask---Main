@@ -26,6 +26,7 @@ import {
 } from "@dnd-kit/core"
 import { SortableContext, rectSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { useLenis } from "lenis/react"
 
 const GENERAL = "__general__"
 
@@ -79,6 +80,8 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [scope, setScope] = useState<Scope>("today")
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [destacada, setDestacada] = useState<string | null>(null)
+  const lenis = useLenis()
 
   const toggleCollapsed = (key: string) =>
     setCollapsed((prev) => {
@@ -95,6 +98,29 @@ export default function TasksPage() {
     if (data) setTasks(sortTasks(data))
     setLoading(false)
   }, [supabase])
+
+  // Chegando do dashboard com ?tarefa=<id>: desliza até o card e o destaca por
+  // um instante. A URL é lida direto de window em vez de useSearchParams para
+  // não obrigar a página inteira a viver dentro de um <Suspense>.
+  useEffect(() => {
+    if (loading) return
+
+    const alvo = new URLSearchParams(window.location.search).get("tarefa")
+    if (!alvo) return
+
+    const el = document.getElementById(`tarefa-${alvo}`)
+    if (!el) return
+
+    if (lenis) lenis.scrollTo(el, { offset: -120 })
+    else el.scrollIntoView({ block: "center", behavior: "smooth" })
+
+    setDestacada(alvo)
+    // Some com o parâmetro: recarregar a página não deve repetir o deslize.
+    window.history.replaceState(null, "", "/app/tasks")
+
+    const timer = setTimeout(() => setDestacada(null), 2400)
+    return () => clearTimeout(timer)
+  }, [loading, lenis])
 
   const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -293,13 +319,21 @@ export default function TasksPage() {
         <AnimatePresence>
           {items.map((task) => {
             const card = (
-              <TaskCard
-                task={task}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onStatusChange={handleStatusChange}
-                onToggleFavorite={handleToggleFavorite}
-              />
+              <div
+                id={`tarefa-${task.id}`}
+                className={cn(
+                  "rounded-xl transition-shadow duration-300",
+                  destacada === task.id && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                )}
+              >
+                <TaskCard
+                  task={task}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onStatusChange={handleStatusChange}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              </div>
             )
             return sortable ? (
               <SortableTask key={task.id} id={task.id} className={itemCls}>

@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
 import { fetchRoutine, type RoutineProfile } from "@/lib/routine"
 import { computeWarnings } from "@/lib/calendar-warnings"
+import { alvoDeScroll, partidaDoScroll } from "@/lib/calendar-scroll"
 
 type ViewMode = "dia" | "semana" | "mes" | "ano"
 
@@ -223,10 +224,30 @@ export default function CalendarPage() {
     return computeWarnings(blocks, routine.sleep_hours).filter((w) => !dismissedWarnings.has(w.id))
   }, [blocks, routine, dismissedWarnings])
 
+  // Ao abrir, a grade desliza até a hora atual em vez de aparecer parada nas 7h.
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 7 * HOUR_HEIGHT
+    const el = scrollRef.current
+    if (!el) return
+
+    const agora = new Date()
+    const alvo = alvoDeScroll({
+      minutosAgora: minutesFromMidnight(agora),
+      alturaHora: HOUR_HEIGHT,
+      alturaVisivel: el.clientHeight,
+      hoje: days.some((d) => isSameDay(d, agora)),
+    })
+
+    const reduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (reduzido) {
+      el.scrollTop = alvo
+      return
     }
+
+    el.scrollTop = partidaDoScroll(alvo, HOUR_HEIGHT)
+    const id = requestAnimationFrame(() => el.scrollTo({ top: alvo, behavior: "smooth" }))
+    return () => cancelAnimationFrame(id)
+    // Só na montagem: trocar de semana não deve arrastar a grade de volta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const openNew = (start?: Date) => {

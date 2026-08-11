@@ -283,14 +283,19 @@ export default function DashboardPage() {
               ) : (
                 <ul className="mt-3 space-y-1.5">
                   {todayTasks.map((t) => (
-                    <li key={t.id} className="flex items-center gap-2 text-sm text-foreground">
-                      <span
-                        className={cn(
-                          "h-2 w-2 shrink-0 rounded-full",
-                          t.priority === "urgent" ? "bg-red-500" : t.priority === "high" ? "bg-amber-500" : t.priority === "medium" ? "bg-blue-500" : "bg-emerald-500"
-                        )}
-                      />
-                      <span className="truncate">{t.title}</span>
+                    <li key={t.id}>
+                      <Link
+                        href={`/app/tasks?tarefa=${t.id}`}
+                        className="-mx-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-sm text-foreground transition-colors hover:bg-muted/60"
+                      >
+                        <span
+                          className={cn(
+                            "h-2 w-2 shrink-0 rounded-full",
+                            t.priority === "urgent" ? "bg-red-500" : t.priority === "high" ? "bg-amber-500" : t.priority === "medium" ? "bg-blue-500" : "bg-emerald-500"
+                          )}
+                        />
+                        <span className="truncate">{t.title}</span>
+                      </Link>
                     </li>
                   ))}
                 </ul>
