@@ -103,6 +103,88 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 - [ ] **Computador mais caprichado**: a torre é uma caixa lisa. Cabe gabinete com painel de
       vidro, ventoinha e luz — agora que o LED RGB deu o vocabulário visual.
 
+### Camada visual — ShaderGradient · Lenis · three.js · GSAP
+
+> Quatro repositórios de referência, escolhidos em 10/08/2026:
+> [shadergradient](https://github.com/ruucm/shadergradient) (MIT, gradientes 3D animados que
+> rodam dentro do R3F que já temos), [lenis](https://github.com/darkroomengineering/lenis)
+> (MIT, scroll suave sem quebrar âncora/sticky/acessibilidade),
+> [three.js](https://github.com/mrdoob/three.js) (já é dependência — aqui entra como técnica,
+> não como pacote novo) e [gsap](https://github.com/greensock/gsap) (grátis com todos os
+> plugins desde a 3.13, patrocínio da Webflow).
+>
+> **O framer-motion continua sendo o padrão de animação de UI.** O GSAP entra só onde o FM
+> não alcança (SplitText, MotionPath, ticker único) — migrar o que já funciona seria
+> retrabalho sem ganho.
+>
+> **Regra que vale para tudo desta seção**: efeito pesado é opt-in ou desligável, respeita
+> `prefers-reduced-motion`, tem fallback estático e pausa quando a aba está oculta. Um item
+> por commit — a ordem abaixo é a ordem de execução.
+
+**Lenis — barato e some na experiência**
+
+- [ ] **Scroll suave global.** `<ReactLenis root>` no `app-shell.tsx`; pega listas de tarefas,
+      notas e calendário de uma vez só.
+- [ ] **`scrollTo` programático.** Clicar num lembrete/tarefa no dashboard desliza até o item
+      na lista em vez de saltar; o calendário abre deslizando até a hora atual.
+
+**ShaderGradient — o carro-chefe visual**
+
+> Instalar `@shadergradient/react` + peers (`three-stdlib`, `camera-controls`). `three` e
+> `@react-three/fiber` já estão no projeto.
+
+- [ ] **Ambientes animados no Modo Foco — alguns, não todos.** Os ambientes estáticos atuais
+      do `focus.tsx` **continuam existindo**; os novos entram ao lado deles, marcados como
+      animados. Quem achar distraente escolhe um dos antigos e pronto. A velocidade da
+      animação cai conforme o timer avança.
+- [ ] **Céu do Escritório 3D.** Gradiente animado atrás da janela, com a paleta acompanhando a
+      hora real do dia. Casa com o item "janela para a cidade parece mancha" acima — fazer os
+      dois juntos.
+- [ ] **Faixa do Dashboard.** Header de ~180px em `/app` com gradiente lento; a paleta
+      enriquece conforme o nível/XP sobe.
+- [ ] **Login / Signup.** Referência escolhida: `inspirações/better-auth-6.webp` — fundo quase
+      preto, textura de ruído sutil e um brilho azul difuso **sangrando das bordas**, com o
+      card de auth contido no centro. Não é gradiente berrante atrás do formulário. Ver também
+      `Captura de tela 2026-08-07 214418.png`, que é a mesma ideia levada ao extremo (cor só
+      na moldura, miolo preto).
+
+**three.js — sem dependência nova**
+
+- [ ] **Bloom seletivo no Escritório.** Pós-processamento para o neon e a tela do PC brilharem
+      de verdade. É o que mais aproxima a cena de um visual profissional.
+- [ ] **InstancedMesh** quando o catálogo da loja crescer: centenas de objetos em 1 draw call.
+- [ ] **Shader material customizado**: "código" rolando na tela do monitor, chuva no vidro da
+      janela.
+- [ ] **WebGPU + TSL** (`three/webgpu`) — já está no core, mas é migração grande. Só depois
+      que o resto desta seção estiver estável.
+
+**GSAP — pontual**
+
+- [ ] **SplitText**: saudação do dashboard entrando letra a letra sob máscara.
+- [ ] **MotionPath**: a moeda voa em curva do card da tarefa concluída até o contador do
+      header.
+- [ ] **`gsap.ticker` como loop único**, amarrando Lenis + R3F + animações num só
+      `requestAnimationFrame` em vez de vários.
+
+### A pasta `frontend/components/inspirações/`
+
+Pasta de **referência visual**, não de código de produção: prints e trechos de componentes
+que o Gustavo gostou. Nada ali é importado pelo app.
+
+- **Nada ali é compilado.** A pasta está no `exclude` do `tsconfig.json` — por isso os `.tsx`
+  podem importar pacotes que não temos (`@number-flow/react`, `react-intersection-observer`,
+  `@/components/originkit/...`). Sem essa exclusão o `next build` typechecka a pasta e falha.
+- Para usar uma ideia de lá, **reescreva** o componente em `components/` nos padrões do
+  projeto (Tailwind + shadcn/ui + framer-motion + tokens oklch). Nunca copiar e colar: os
+  arquivos vêm de outros design systems.
+- Quando um print virar decisão de design, anotar a referência no item correspondente deste
+  roadmap — como está feito no item de Login/Signup acima.
+
+Além das referências de auth já citadas, valem nota: `Captura de tela 2026-08-10 202826.png`
+(mesh gradient pastel com uma barra "Ask anything" flutuando — ideia para o chat da Neuro IA)
+e `skiper.tsx` / `time.tsx` (números animados com `NumberFlow` — ideia para o timer do Modo
+Foco e para os contadores de XP).
+
 ### Calendário aberto pra fora
 
 > Importar e exportar `.ics` já existem, em Configurações → "Importar e exportar". O que
