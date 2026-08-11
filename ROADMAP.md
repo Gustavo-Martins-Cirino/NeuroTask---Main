@@ -121,12 +121,8 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > `prefers-reduced-motion`, tem fallback estático e pausa quando a aba está oculta. Um item
 > por commit — a ordem abaixo é a ordem de execução.
 
-**Lenis — barato e some na experiência**
-
-- [ ] **Scroll suave global.** `<ReactLenis root>` no `app-shell.tsx`; pega listas de tarefas,
-      notas e calendário de uma vez só.
-- [ ] **`scrollTo` programático.** Clicar num lembrete/tarefa no dashboard desliza até o item
-      na lista em vez de saltar; o calendário abre deslizando até a hora atual.
+> O Lenis já está montado (`components/smooth-scroll.tsx`, envolvendo o `AppShell`). Efeito
+> novo que precise rolar a página deve usar o `useLenis()` dele, não `window.scrollTo`.
 
 **ShaderGradient — o carro-chefe visual**
 
