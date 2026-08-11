@@ -521,15 +521,49 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   if (extras.plantaGrande) planta(g, "Planta_Grande", [-S + 0.5, S - 0.55, 0], 1.15)
   if (extras.plantaPequena) planta(g, "Planta_Pequena", [0.45, 1.78 + dy, TAMPO_Z], 0.34)
 
+  // Luminária de arquiteto: haste reta + cúpula espetada não sustentavam mais a
+  // cena depois do relógio e da prateleira. Agora o braço é ARTICULADO (duas
+  // barras com esfera nas juntas, posadas por pontos como o braço do boneco) e
+  // a cabeça é um grupo apontado para o tampo — é a inclinação dela, e o disco
+  // de luz na boca, que dizem "está acesa e iluminando a mesa".
   if (extras.luminaria) {
     const mMetal = tmat([0.23, 0.26, 0.31], 0, "metal")
     const mCupula = tmat([0.88, 0.7, 0.23], 0, "metal")
-    const x = -0.6, y = 1.76 + dy
-    g.add(cyl("Luminaria_Base", 0.07, 0.02, [x, y, TAMPO_Z + 0.01], mMetal))
-    g.add(cyl("Luminaria_Haste", 0.012, 0.3, [x, y, TAMPO_Z + 0.16], mMetal))
-    g.add(cyl("Luminaria_Braco", 0.012, 0.22, [x + 0.08, y - 0.02, TAMPO_Z + 0.31], mMetal, [D(70), 0, 0]))
-    g.add(cyl("Luminaria_Cupula", 0.09, 0.11, [x + 0.15, y - 0.09, TAMPO_Z + 0.3], mCupula, [D(50), 0, 0], 0.04))
-    g.add(sph("Luminaria_Bulbo", 0.04, [x + 0.15, y - 0.11, TAMPO_Z + 0.26], tmat([1, 0.94, 0.78], 1.8)))
+    const mAro = tmat([0.42, 0.31, 0.11], 0, "metal")
+    const mLuz = tmat([1, 0.93, 0.74], 2.2)
+    const bx = -0.62, by = 1.78 + dy, bz = TAMPO_Z
+
+    const ombro: V3 = [bx, by, bz + 0.05]
+    const cotovelo: V3 = [bx + 0.06, by - 0.05, bz + 0.38]
+    const punho: V3 = [bx + 0.24, by - 0.2, bz + 0.3]
+    // Para onde a luz aponta: o pedaço de tampo à frente da luminária.
+    const alvo = new Vector3(bx + 0.34, by - 0.34, bz)
+
+    g.add(cyl("Luminaria_Base", 0.085, 0.018, [bx, by, bz + 0.009], mMetal))
+    g.add(sph("Luminaria_Base_Domo", 0.058, [bx, by, bz + 0.028], mMetal, [1, 1, 0.45]))
+    g.add(sph("Luminaria_Ombro", 0.03, ombro, mMetal))
+    g.add(segmento("Luminaria_Braco_1", ombro, cotovelo, 0.014, mMetal))
+    g.add(sph("Luminaria_Cotovelo", 0.028, cotovelo, mMetal))
+    g.add(segmento("Luminaria_Braco_2", cotovelo, punho, 0.013, mMetal))
+    g.add(sph("Luminaria_Punho", 0.024, punho, mMetal))
+
+    // Cabeça num grupo com +Z local na direção da luz: dentro dela tudo é reto.
+    const cabeca = new Group()
+    cabeca.name = "Luminaria_Cabeca"
+    cabeca.position.set(...punho)
+    cabeca.quaternion.setFromUnitVectors(
+      new Vector3(0, 0, 1),
+      alvo.clone().sub(new Vector3(...punho)).normalize()
+    )
+    // As peças são sólidas com tampa: o que estivesse DENTRO da cúpula não se
+    // veria. Por isso a ordem em z é crescente — aro, disco de luz e bulbo vêm
+    // um à frente do outro, e a boca da cúpula acaba sendo a face acesa.
+    cabeca.add(cyl("Luminaria_Pescoco", 0.016, 0.05, [0, 0, 0.025], mMetal))
+    cabeca.add(cyl("Luminaria_Cupula", 0.05, 0.14, [0, 0, 0.12], mCupula, undefined, 0.115))
+    cabeca.add(cyl("Luminaria_Aro", 0.118, 0.014, [0, 0, 0.189], mAro, undefined, 0.122))
+    cabeca.add(cyl("Luminaria_Luz", 0.11, 0.006, [0, 0, 0.2], mLuz))
+    cabeca.add(sph("Luminaria_Bulbo", 0.03, [0, 0, 0.207], tmat([1, 0.95, 0.82], 2.6)))
+    g.add(cabeca)
   }
 
   if (extras.estante) {

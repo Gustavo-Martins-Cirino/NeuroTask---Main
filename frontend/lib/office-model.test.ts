@@ -464,6 +464,61 @@ describe("itens novos da loja", () => {
     expect(pecas(g, "Notebook_").length).toBeGreaterThan(2)
   })
 
+  it("luminária: braço articulado de verdade — duas barras com junta no meio", () => {
+    const g = buildEscritorio({ extras: { luminaria: true } })
+    expect(pecas(g, "Luminaria_Braco_").length).toBe(2)
+    const cot = caixaMundo(g, "Luminaria_Cotovelo").getCenter(new Vector3())
+    const b1 = caixaMundo(g, "Luminaria_Braco_1")
+    const b2 = caixaMundo(g, "Luminaria_Braco_2")
+    // A junta fecha o vão: as duas barras se encontram nela, não flutuam soltas.
+    expect(b1.distanceToPoint(cot)).toBeLessThan(0.02)
+    expect(b2.distanceToPoint(cot)).toBeLessThan(0.02)
+  })
+
+  it("luminária: a cúpula aponta para BAIXO, para a mesa — não para o teto", () => {
+    const g = buildEscritorio({ extras: { luminaria: true } })
+    const punho = caixaMundo(g, "Luminaria_Punho").getCenter(new Vector3())
+    const boca = caixaMundo(g, "Luminaria_Luz").getCenter(new Vector3())
+    expect(boca.z).toBeLessThan(punho.z)
+    // e para a frente da mesa (y menor), onde a pessoa trabalha
+    expect(boca.y).toBeLessThan(punho.y)
+  })
+
+  it("luminária: fica em cima do tampo, sem cúpula atravessando a mesa", () => {
+    const g = buildEscritorio({ extras: { luminaria: true } })
+    const tampo = caixaMundo(g, "Mesa_Tampo")
+    expect(caixaMundo(g, "Luminaria_Base").min.z).toBeGreaterThanOrEqual(tampo.max.z - 1e-6)
+    for (const n of pecas(g, "Luminaria_")) {
+      const c = caixaMundo(g, n)
+      expect(c.min.z).toBeGreaterThan(tampo.max.z - 1e-6)
+      expect(c.min.x).toBeGreaterThan(tampo.min.x)
+      expect(c.max.x).toBeLessThan(tampo.max.x)
+      expect(c.max.y).toBeLessThan(tampo.max.y)
+    }
+  })
+
+  it("luminária: a boca é a face acesa — o que emite fica na FRENTE da cúpula", () => {
+    const g = buildEscritorio({ extras: { luminaria: true } })
+    const mat = (malha(g, "Luminaria_Luz") as Mesh).material as unknown as { emissiveIntensity: number }
+    expect(mat.emissiveIntensity).toBeGreaterThan(1)
+    // Peças sólidas com tampa: o disco aceso precisa estar além da boca da
+    // cúpula, senão fica escondido dentro dela e a luminária parece apagada.
+    const eixo = caixaMundo(g, "Luminaria_Punho").getCenter(new Vector3())
+    const dist = (n: string) => caixaMundo(g, n).getCenter(new Vector3()).distanceTo(eixo)
+    expect(dist("Luminaria_Luz")).toBeGreaterThan(dist("Luminaria_Cupula"))
+    expect(dist("Luminaria_Bulbo")).toBeGreaterThan(dist("Luminaria_Luz"))
+  })
+
+  it("luminária: não bate no monitor nem no setup ultrawide", () => {
+    for (const setup of [undefined, "ultrawide"] as const) {
+      const g = buildEscritorio({ extras: { luminaria: true, setup } })
+      const tela = caixaMundo(g, setup === "ultrawide" ? "Monitor_Bezel" : "Monitor_Bezel")
+      for (const n of pecas(g, "Luminaria_")) {
+        expect(caixaMundo(g, n).intersectsBox(tela)).toBe(false)
+      }
+    }
+  })
+
   it("notebook: a tela fica acima do tampo e inclinada para trás", () => {
     const g = buildEscritorio({ extras: { setup: "notebook" } })
     const tampo = caixaMundo(g, "Mesa_Tampo")

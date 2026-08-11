@@ -101,8 +101,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Catálogo novo**
 
-- [ ] **Luminária melhor que a atual** — a de hoje é haste + cúpula, e ficou atrás dos
-      itens novos (relógio, prateleira, LED, notebook já entraram). Refazer no mesmo nível.
 - [ ] **Computador mais caprichado**: a torre é uma caixa lisa. Cabe gabinete com painel de
       vidro, ventoinha e luz — agora que o LED RGB deu o vocabulário visual.
 
