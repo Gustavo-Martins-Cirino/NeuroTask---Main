@@ -156,13 +156,16 @@ function buildMonitores(g: Group, dy: number, setup: EscritorioExtras["setup"], 
   }
 }
 
-// LED: base ESCURA com emissivo saturado. Deixando a base na mesma cor do
-// emissivo (o que tmat faz sozinho), o tone mapping soma as duas e o RGB sai
-// pastel esbranquiçado — o rosa e o azul das ventoinhas viravam dois donuts
-// desbotados. A cor tem de vir só da emissão.
+// LED: base quase preta com emissivo em intensidade BAIXA. O instinto de que
+// "luz forte = emissivo alto" é o que desbotava todo o RGB da cena: com ACES,
+// emissivo 2,4 sobre uma base da mesma cor põe os três canais acima de 1 e o
+// tone mapping devolve branco. O rosa do neon e o azul das ventoinhas eram
+// pastéis por isso. A cor precisa vir SÓ da emissão, e a emissão precisa caber
+// na faixa — quem faz a peça parecer acesa é o contraste com o que está atrás,
+// não o número. Comparado em render: 0,28/2,2 sai branco; 0,08/1,1 sai rosa.
 function mled(cor: V3, intensidade = 1.1): MeshStandardMaterial {
   const m = tmat(cor, intensidade)
-  m.color.multiplyScalar(0.28)
+  m.color.multiplyScalar(0.08)
   return m
 }
 
@@ -235,7 +238,7 @@ function buildTorre(g: Group, cx: number, cy: number) {
   // o aro estourava para branco no tone mapping e a cor do RGB sumia.
   ventoinha(g, "PC_Fan_A", cx, frente - 0.008, TAMPO_Z + 0.105, 0.048, [1, 0.16, 0.4], mPeca)
   ventoinha(g, "PC_Fan_B", cx, frente - 0.008, TAMPO_Z + 0.275, 0.048, [0.18, 0.45, 1], mPeca)
-  g.add(cyl("PC_Botao", 0.009, 0.01, [cx - 0.055, frente - 0.006, TAMPO_Z + H - 0.028], mled([0.7, 0.92, 1], 1.4), [D(90), 0, 0]))
+  g.add(cyl("PC_Botao", 0.009, 0.01, [cx - 0.055, frente - 0.006, TAMPO_Z + H - 0.028], mled([0.7, 0.92, 1], 1.3), [D(90), 0, 0]))
 }
 
 // Letras do letreiro de neon, em traços normalizados (u = 0→1 na largura da
@@ -703,7 +706,7 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     // Na parede LATERAL (x=-S) para não brigar com quadro/janela no fundo.
     // A placa escura é o "apagado" atrás do tubo — é o contraste com ela que
     // faz a luz do neon ler.
-    const rosa = tmat([1, 0.34, 0.66], 2.6)
+    const rosa = mled([1, 0.34, 0.66], 1.15)
     const face = -S + 0.05 // face interna da parede lateral
     const LARG = 0.115, ALT = 0.26, GAP = 0.035, TUBO = 0.022
     const texto = "focus"
@@ -776,7 +779,7 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     const passo = tam / N
     for (let i = 0; i < N; i++) {
       const cor = CORES[i % CORES.length]
-      const m = tmat(cor, 2.4)
+      const m = mled(cor, 1.15)
       const p = -tam / 2 + passo * (i + 0.5)
       g.add(box(`Led_Fundo_${i}`, [passo * 0.92, 0.03, 0.035], [p, S - 0.062, 2.42], m))
       g.add(box(`Led_Lateral_${i}`, [0.03, passo * 0.92, 0.035], [-S + 0.062, p, 2.42], m))

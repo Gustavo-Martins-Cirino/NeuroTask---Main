@@ -101,11 +101,11 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Catálogo novo**
 
-- [ ] **A fita de LED da sala estoura para branco.** Os segmentos usam emissivo 2,4 com a
-      base na mesma cor, e o tone mapping soma as duas: de longe a fita "RGB" fica pastel
-      esbranquiçada. O gabinete já resolveu isso com `mled()` em `lib/office-model.ts`
-      (base escura, cor só na emissão) — falta aplicar o mesmo à fita e ao neon. Casa com
-      "calibrar o realismo" acima: é o mesmo ajuste de exposição.
+- [ ] **A tela do monitor ainda é uma chapa clara.** `Monitor_Tela` é um plano com emissivo
+      pulsando entre 1,0 e 2,6 — não há nada NELA, então de perto o setup mais caro da loja
+      mostra um retângulo branco. Casa com o item "shader material customizado" da camada
+      visual (código rolando na tela). Cuidado com o mesmo estouro do RGB: a tela é o único
+      lugar da cena onde branco chapado é aceitável, mas 2,6 apaga qualquer conteúdo.
 
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 

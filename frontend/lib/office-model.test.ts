@@ -457,6 +457,27 @@ describe("itens novos da loja", () => {
     expect(mat.emissiveIntensity).toBeGreaterThan(1)
   })
 
+  // O que desbotava a cena inteira: "luz forte" virava emissivo alto sobre uma
+  // base da MESMA cor, os três canais passavam de 1 e o ACES devolvia branco.
+  // Neon rosa, fita RGB e ventoinhas saíam pastel. Vale para toda peça colorida
+  // que acende — a luz da luminária fica de fora, ela é branca de propósito.
+  it("peças coloridas acesas: a cor vem da emissão, e ela cabe na faixa do tone mapping", () => {
+    const g = buildEscritorio({ extras: { ledRgb: true, neon: true } })
+    const coloridas = ["Led_Fundo_0", "Neon_f_0", "PC_Fan_A_Aro", "PC_Fan_B_Aro", "PC_Cooler_Aro", "PC_Gpu_Led"]
+    for (const n of coloridas) {
+      const m = (malha(g, n) as Mesh).material as unknown as {
+        color: { r: number; g: number; b: number }
+        emissive: { r: number; g: number; b: number }
+        emissiveIntensity: number
+      }
+      const pico = (c: { r: number; g: number; b: number }) => Math.max(c.r, c.g, c.b)
+      // Base quase preta: se ela repetir a cor, soma com a emissão e estoura.
+      expect(pico(m.color)).toBeLessThan(pico(m.emissive) * 0.2)
+      // E a emissão não pode jogar o canal mais forte muito acima de 1.
+      expect(pico(m.emissive) * m.emissiveIntensity).toBeLessThan(1.4)
+    }
+  })
+
   it("notebook: troca o desktop inteiro — sem torre e sem suporte de monitor", () => {
     const g = buildEscritorio({ extras: { setup: "notebook" } })
     expect(pecas(g, "PC_Torre").length).toBe(0)
