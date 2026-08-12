@@ -22,6 +22,7 @@ import {
   type Material,
 } from "three"
 import type { AvatarAccessories } from "./avatar-accessories"
+import { PALETA_CIDADE, type FaseDoDia } from "./office-city"
 
 type V3 = [number, number, number]
 
@@ -397,6 +398,9 @@ export interface EscritorioOpts {
   /** Nível do dono: a sala cresce com ele (comparação social num relance). */
   nivel?: number
   cadeira?: CadeiraTipo
+  /** Hora do dia — por enquanto só a vista da janela depende dela. Padrão
+   *  "dusk" para quem não passa nada ver a cidade no melhor horário dela. */
+  fase?: FaseDoDia
 }
 
 // Base giratória de 5 pés com rodinha na ponta (cadeiras de escritório/gamer).
@@ -603,15 +607,17 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     const LARG = 1.3
     const ALT = 1.25
     const face = S - 0.05    // face interna da parede do fundo
-    const mCeu = tmat([0.62, 0.78, 0.93], 0.28)
-    // Os prédios eram cinza-médios contra um céu claro: nem silhueta, nem cor —
-    // uma mancha. Cidade se lê por CONTRASTE, e é ele que faz a janelinha acesa
-    // parecer acesa. A fileira da frente é quase silhueta; a de trás é clara e
-    // azulada (perspectiva atmosférica), o que dá a profundidade.
-    const mPredio = tmat([0.15, 0.17, 0.24], 0, "parede")
-    const mPredioB = tmat([0.21, 0.23, 0.31], 0, "parede")
-    const mPredioLonge = tmat([0.44, 0.52, 0.64], 0, "parede")
-    const mLuzJan = mled([1, 0.84, 0.5], 1.3)
+    // Cidade se lê por CONTRASTE, e é ele que faz a janelinha acesa parecer
+    // acesa: a fileira da frente é quase silhueta e a de trás é clara e azulada
+    // (perspectiva atmosférica). Quanto de cada coisa depende da HORA — a
+    // tabela mora em lib/office-city.
+    const pal = PALETA_CIDADE[opts.fase ?? "dusk"]
+    const mCeu = tmat(pal.ceu, pal.ceuBrilho)
+    const mPredio = tmat(pal.predioFrente, 0, "parede")
+    const mPredioB = tmat(pal.predioFrente.map((c) => c + 0.06) as V3, 0, "parede")
+    const mPredioLonge = tmat(pal.predioTras, 0, "parede")
+    // De dia elas não acendem: viram vidro escuro no prédio claro.
+    const mLuzJan = pal.janelaBrilho > 0 ? mled(pal.janela, pal.janelaBrilho) : tmat(pal.janela, 0, "vidro")
     // Sem transparência o vidro TAPA a vista — a janela vira um retângulo claro.
     const mVidro = tmat([0.82, 0.9, 0.96], 0, "vidro")
     mVidro.transparent = true

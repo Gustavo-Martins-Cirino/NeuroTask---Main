@@ -92,11 +92,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       **Limite conhecido**: ver o rosto de FRENTE exigiria a câmera atrás da parede do
       fundo, que passaria a tapar a sala. Perfil é o teto desta planta — só uma parede a
       menos mudaria isso.
-- [ ] **A cidade da janela está sempre no mesmo horário.** Os prédios agora são silhueta
-      escura com janelinhas acesas — leitura de fim de tarde, fixa. A cena inteira já sabe
-      a hora real (`phaseOf` em `office-scene-3d.tsx` muda luz e fundo), então de manhã a
-      vista continua anoitecida. Casa com o "céu do Escritório 3D" da camada visual: quando
-      o céu virar gradiente animado pela hora, prédio e janelinha acompanham.
 - [ ] **A lista de amigos ainda é letra dentro de um círculo.** O bonequinho 2D já sabe
       desenhar chapéu e óculos (`avatar-figure.tsx` + `lib/avatar-accessories.ts`), mas
       `friends-section.tsx` mostra a inicial do nome, não o avatar — o amigo só aparece
@@ -134,9 +129,9 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       do `focus.tsx` **continuam existindo**; os novos entram ao lado deles, marcados como
       animados. Quem achar distraente escolhe um dos antigos e pronto. A velocidade da
       animação cai conforme o timer avança.
-- [ ] **Céu do Escritório 3D.** Gradiente animado atrás da janela, com a paleta acompanhando a
-      hora real do dia. Casa com o item "janela para a cidade parece mancha" acima — fazer os
-      dois juntos.
+- [ ] **Céu do Escritório 3D.** Gradiente animado atrás da janela. A PALETA já acompanha a
+      hora real (`lib/office-city.ts`: céu, prédios e janelinhas mudam por fase); o que falta
+      é o céu deixar de ser uma cor chapada e virar gradiente — e, aí sim, animado.
 - [ ] **Faixa do Dashboard.** Header de ~180px em `/app` com gradiente lento; a paleta
       enriquece conforme o nível/XP sobe.
 - [ ] **Login / Signup.** Referência escolhida: `inspirações/better-auth-6.webp` — fundo quase

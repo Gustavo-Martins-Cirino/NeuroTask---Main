@@ -47,7 +47,7 @@ ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e moc
 Supabase, e não é ali que mora o risco.
 
 O Escritório 3D tem um bloco à parte (`office-bg`, `office-camera`, `office-celebration`,
-`office-snapshot`, `office-typing` e `office-model`). O `office-model` é de um tipo
+`office-city`, `office-snapshot`, `office-typing` e `office-model`). O `office-model` é de um tipo
 diferente: ele **mede a geometria** da cena — se a mão do boneco pousa no teclado, se o
 antebraço passa por cima da mesa. É o olho que falta, já que ninguém consegue ver um
 render num teste. Rodam em Node puro: construir malhas do three.js não exige WebGL.

@@ -72,6 +72,7 @@ frontend/
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
 │   ├── time-format.ts        # 12h/24h — puro; o I/O mora em hooks/use-time-format
 │   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
+│   ├── office-city.ts        # Fase do dia + paleta da vista da janela (puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()
 └── styles/global.css

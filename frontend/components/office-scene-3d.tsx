@@ -15,6 +15,7 @@ import {
   type EscritorioExtras, type PersonagemCores,
 } from "@/lib/office-model"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
+import { faseDaHora, type FaseDoDia } from "@/lib/office-city"
 import { typingTap, typingRamp } from "@/lib/office-typing"
 import type { AvatarConfig } from "@/lib/avatar"
 
@@ -39,13 +40,7 @@ interface OfficeScene3DProps {
   className?: string
 }
 
-type Phase = "dawn" | "day" | "dusk" | "night"
-function phaseOf(h: number): Phase {
-  if (h >= 5 && h < 8) return "dawn"
-  if (h >= 8 && h < 17) return "day"
-  if (h >= 17 && h < 19) return "dusk"
-  return "night"
-}
+type Phase = FaseDoDia
 // Sala SEMPRE aconchegante (luzes internas acesas). A fase só muda o tom da
 // luz-chave, o brilho da luminária e o fundo — nunca escurece a cena a ponto
 // de "sumir" a pessoa (o erro que deixou tudo sombrio à noite).
@@ -210,12 +205,14 @@ function Confete({ startRef, recuo = 0 }: { startRef: React.RefObject<number>; r
 // monitor brilha mais quando "trabalhando" e o boneco respira (useFrame).
 // Coords Z-up → Y-up via group.
 function CartoonOffice({
-  working, avatar, equipped, nivel, onAvatarClick, festaRef,
+  working, avatar, equipped, nivel, fase, onAvatarClick, festaRef,
 }: {
   working?: boolean
   avatar?: AvatarConfig | null
   equipped?: Set<string>
   nivel?: number
+  /** Hora do dia: a vista da janela é pintada com ela. */
+  fase: FaseDoDia
   onAvatarClick?: () => void
   /** Instante em que a comemoração começou (performance.now); 0 = sala parada. */
   festaRef?: React.RefObject<number>
@@ -226,6 +223,7 @@ function CartoonOffice({
     () => {
       const r = buildEscritorio({
         nivel,
+        fase,
         extras: extrasDe(equipped),
         cores: {
           parede: pick(WALL_COLORS, equipped),
@@ -237,7 +235,7 @@ function CartoonOffice({
       return r
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [equipKey, nivel]
+    [equipKey, nivel, fase]
   )
   const person = useMemo(
     () => {
@@ -373,6 +371,7 @@ function Scene({
           avatar={avatar}
           equipped={equipped}
           nivel={nivel}
+          fase={phase}
           onAvatarClick={onAvatarClick}
           festaRef={festaRef}
         />
@@ -413,7 +412,7 @@ export function OfficeScene3D({
   // aqui é sempre cliente — o typeof é só cinto de segurança.
   const [webgl] = useState(() => (typeof window === "undefined" ? true : temWebGL()))
   useEffect(() => {
-    const tick = () => setPhase(phaseOf(new Date().getHours()))
+    const tick = () => setPhase(faseDaHora(new Date().getHours()))
     tick()
     const t = setInterval(tick, 60_000)
     return () => clearInterval(t)
