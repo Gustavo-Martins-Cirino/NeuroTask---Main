@@ -244,12 +244,58 @@ describe("janela para a cidade", () => {
   it("os prédios cabem no vão — cidade transbordando vira mancha de novo", () => {
     const g = sala()
     const vao = caixaMundo(g, "Janela_Vidro")
-    for (const n of pecas(g, "Janela_Predio_")) {
+    for (const n of [...pecas(g, "Janela_Predio_"), ...pecas(g, "Janela_PredioLonge_")]) {
       const b = caixaMundo(g, n)
       expect(b.min.x).toBeGreaterThanOrEqual(vao.min.x - 1e-6)
       expect(b.max.x).toBeLessThanOrEqual(vao.max.x + 1e-6)
       expect(b.max.z).toBeLessThanOrEqual(vao.max.z + 1e-6)
     }
+  })
+
+  // Cidade se lê por CONTRASTE. Com tudo do mesmo cinza-médio a vista era uma
+  // mancha: nem silhueta contra o céu, nem janelinha que parecesse acesa.
+  it("duas camadas de prédios: a de trás é mais clara e fica atrás da da frente", () => {
+    const g = sala()
+    const longe = pecas(g, "Janela_PredioLonge_")
+    expect(longe.length).toBeGreaterThan(2)
+    const luz = (n: string) => {
+      const c = ((malha(g, n) as Mesh).material as unknown as { color: { r: number; g: number; b: number } }).color
+      return (c.r + c.g + c.b) / 3
+    }
+    // Perspectiva atmosférica: o que está longe puxa para a cor do céu.
+    expect(luz("Janela_PredioLonge_0")).toBeGreaterThan(luz("Janela_Predio_0") * 2)
+    expect(luz("Janela_PredioLonge_0")).toBeLessThan(luz("Janela_Ceu"))
+    // E fica mais perto da parede do que a fileira da frente.
+    expect(caixaMundo(g, "Janela_PredioLonge_0").getCenter(new Vector3()).y)
+      .toBeGreaterThan(caixaMundo(g, "Janela_Predio_0").getCenter(new Vector3()).y)
+  })
+
+  it("cada janelinha acesa fica dentro do prédio dela, não solta no céu", () => {
+    const g = sala()
+    const luzes = pecas(g, "Janela_Luz_")
+    expect(luzes.length).toBeGreaterThan(10)
+    for (const n of luzes) {
+      const predio = caixaMundo(g, `Janela_Predio_${n.split("_")[2]}`)
+      const b = caixaMundo(g, n)
+      expect(b.min.x).toBeGreaterThanOrEqual(predio.min.x - 1e-6)
+      expect(b.max.x).toBeLessThanOrEqual(predio.max.x + 1e-6)
+      expect(b.min.z).toBeGreaterThanOrEqual(predio.min.z - 1e-6)
+      expect(b.max.z).toBeLessThanOrEqual(predio.max.z + 1e-6)
+    }
+  })
+
+  it("a cidade não acende tudo — prédio com todas as janelas acesas é escritório, não cidade", () => {
+    const g = sala()
+    let possiveis = 0
+    for (const n of pecas(g, "Janela_Predio_")) {
+      const b = caixaMundo(g, n)
+      const larg = b.max.x - b.min.x
+      const alt = b.max.z - b.min.z
+      possiveis += Math.max(2, Math.floor(alt / 0.12)) * (larg > 0.18 ? 3 : 2)
+    }
+    const acesas = pecas(g, "Janela_Luz_").length
+    expect(acesas).toBeLessThan(possiveis)
+    expect(acesas).toBeGreaterThan(possiveis * 0.4)
   })
 })
 

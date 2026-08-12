@@ -604,9 +604,14 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     const ALT = 1.25
     const face = S - 0.05    // face interna da parede do fundo
     const mCeu = tmat([0.62, 0.78, 0.93], 0.28)
-    const mPredio = tmat([0.3, 0.33, 0.4], 0, "parede")
-    const mPredioB = tmat([0.38, 0.41, 0.49], 0, "parede")
-    const mLuzJan = tmat([1, 0.86, 0.52], 1.5)
+    // Os prédios eram cinza-médios contra um céu claro: nem silhueta, nem cor —
+    // uma mancha. Cidade se lê por CONTRASTE, e é ele que faz a janelinha acesa
+    // parecer acesa. A fileira da frente é quase silhueta; a de trás é clara e
+    // azulada (perspectiva atmosférica), o que dá a profundidade.
+    const mPredio = tmat([0.15, 0.17, 0.24], 0, "parede")
+    const mPredioB = tmat([0.21, 0.23, 0.31], 0, "parede")
+    const mPredioLonge = tmat([0.44, 0.52, 0.64], 0, "parede")
+    const mLuzJan = mled([1, 0.84, 0.5], 1.3)
     // Sem transparência o vidro TAPA a vista — a janela vira um retângulo claro.
     const mVidro = tmat([0.82, 0.9, 0.96], 0, "vidro")
     mVidro.transparent = true
@@ -617,22 +622,35 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     // Céu ao fundo do vão
     g.add(box("Janela_Ceu", [LARG, 0.012, ALT], [cx, face - 0.008, cz], mCeu))
 
+    const base = cz - ALT / 2 + 0.02
+
+    // Fileira de trás: mais baixa, sem luz e quase da cor do céu. É ela que dá
+    // o "fundo" — sem uma segunda camada a vista é um recorte de papel.
+    const longe: [number, number, number][] = [
+      [-0.42, 0.3, 0.26], [-0.14, 0.42, 0.22], [0.16, 0.26, 0.28], [0.45, 0.38, 0.22],
+    ]
+    longe.forEach(([ox, h, w], i) => {
+      g.add(box(`Janela_PredioLonge_${i}`, [w, 0.01, h], [cx + ox, face - 0.014, base + h / 2], mPredioLonge))
+    })
+
     // Silhueta de prédios: largura, altura e recuo variados dão profundidade.
     const skyline: [number, number, number, boolean][] = [
       [-0.5, 0.46, 0.2, false], [-0.29, 0.68, 0.17, true], [-0.1, 0.36, 0.19, false],
       [0.12, 0.58, 0.16, true], [0.32, 0.3, 0.2, false], [0.51, 0.5, 0.15, true],
     ]
     skyline.forEach(([ox, h, w, claro], i) => {
-      const base = cz - ALT / 2 + 0.02
       g.add(box(`Janela_Predio_${i}`, [w, 0.012, h], [cx + ox, face - 0.022, base + h / 2], claro ? mPredioB : mPredio))
-      // Janelinhas acesas — o que faz ler "cidade" e não "bloco cinza"
+      // Janelinhas acesas — o que faz ler "cidade" e não "bloco cinza". Duas ou
+      // três colunas conforme a largura: prédio largo com duas janelas fica com
+      // cara de fachada de casa.
+      const colunas = w > 0.18 ? [-0.28, 0, 0.28] : [-0.24, 0.24]
       const linhas = Math.max(2, Math.floor(h / 0.12))
       for (let l = 0; l < linhas; l++) {
-        for (const dx of [-w * 0.22, w * 0.22]) {
-          if ((l + i) % 3 === 0) continue // algumas apagadas: cidade não acende tudo
-          g.add(box(`Janela_Luz_${i}_${l}_${dx > 0 ? "d" : "e"}`, [w * 0.22, 0.01, 0.045],
-            [cx + ox + dx, face - 0.03, base + 0.07 + l * 0.12], mLuzJan))
-        }
+        colunas.forEach((f, c) => {
+          if ((l * 2 + c + i) % 3 === 0) return // cidade não acende tudo
+          g.add(box(`Janela_Luz_${i}_${l}_${c}`, [w * 0.2, 0.01, 0.042],
+            [cx + ox + w * f, face - 0.03, base + 0.07 + l * 0.12], mLuzJan))
+        })
       }
     })
 

@@ -101,11 +101,11 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Catálogo novo**
 
-- [ ] **A janela para a cidade ainda é uma chapa.** Os prédios são caixas de cor lisa: à
-      noite não há uma janelinha acesa sequer. É o mesmo problema que a tela do monitor
-      tinha, e a solução provavelmente é a mesma — peças pequenas em padrão determinístico
-      (ver `linhasDeCodigo` em `lib/office-model.ts`). Casa com o "céu do Escritório 3D" da
-      camada visual: fazer os dois juntos.
+- [ ] **A cidade da janela está sempre no mesmo horário.** Os prédios agora são silhueta
+      escura com janelinhas acesas — leitura de fim de tarde, fixa. A cena inteira já sabe
+      a hora real (`phaseOf` em `office-scene-3d.tsx` muda luz e fundo), então de manhã a
+      vista continua anoitecida. Casa com o "céu do Escritório 3D" da camada visual: quando
+      o céu virar gradiente animado pela hora, prédio e janelinha acompanham.
 
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 
