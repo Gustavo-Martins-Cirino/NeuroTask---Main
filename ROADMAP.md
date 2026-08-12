@@ -101,11 +101,11 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Catálogo novo**
 
-- [ ] **A tela do monitor ainda é uma chapa clara.** `Monitor_Tela` é um plano com emissivo
-      pulsando entre 1,0 e 2,6 — não há nada NELA, então de perto o setup mais caro da loja
-      mostra um retângulo branco. Casa com o item "shader material customizado" da camada
-      visual (código rolando na tela). Cuidado com o mesmo estouro do RGB: a tela é o único
-      lugar da cena onde branco chapado é aceitável, mas 2,6 apaga qualquer conteúdo.
+- [ ] **A janela para a cidade ainda é uma chapa.** Os prédios são caixas de cor lisa: à
+      noite não há uma janelinha acesa sequer. É o mesmo problema que a tela do monitor
+      tinha, e a solução provavelmente é a mesma — peças pequenas em padrão determinístico
+      (ver `linhasDeCodigo` em `lib/office-model.ts`). Casa com o "céu do Escritório 3D" da
+      camada visual: fazer os dois juntos.
 
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 
@@ -153,8 +153,9 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 - [ ] **Bloom seletivo no Escritório.** Pós-processamento para o neon e a tela do PC brilharem
       de verdade. É o que mais aproxima a cena de um visual profissional.
 - [ ] **InstancedMesh** quando o catálogo da loja crescer: centenas de objetos em 1 draw call.
-- [ ] **Shader material customizado**: "código" rolando na tela do monitor, chuva no vidro da
-      janela.
+- [ ] **Shader material customizado**: fazer o código da tela ROLAR (hoje ele existe, mas é
+      estático — barras em `linhasDeCodigo`, geometria, não textura) e chuva escorrendo no
+      vidro da janela.
 - [ ] **WebGPU + TSL** (`three/webgpu`) — já está no core, mas é migração grande. Só depois
       que o resto desta seção estiver estável.
 

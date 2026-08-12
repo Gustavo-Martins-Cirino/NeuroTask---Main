@@ -113,11 +113,73 @@ function sph(name: string, raio: number, pos: V3, material: Material, esc?: V3):
 // Um monitor = grupo (bezel + tela) num sub-Group, pra girar em bloco (toe-in
 // do setup duplo) mantendo a tela colada no bezel. A tela leva "Monitor_Tela"
 // no nome — é por ela que a cena acha o brilho ao "trabalhar".
-function monitorUnit(sufixo: string, centro: V3, yaw: number, w: number, h: number, mBezel: Material, mGlow: Material): Group {
+// Linhas de "código" na tela, em coordenadas normalizadas (u = 0→1 da esquerda
+// para a direita, v = 0→1 de baixo para cima). DETERMINÍSTICO de propósito: a
+// tela mostrando um trecho diferente a cada build seria pior que tela vazia —
+// é cenário, não conteúdo.
+interface LinhaCodigo { u: number; v: number; larg: number; alt: number; cor: number }
+
+const CODIGO_CORES = 4
+
+function linhasDeCodigo(n: number): LinhaCodigo[] {
+  const out: LinhaCodigo[] = []
+  const passo = 1 / (n + 1)
+  const rnd = (i: number, s: number) => {
+    const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453
+    return x - Math.floor(x)
+  }
+  for (let i = 0; i < n; i++) {
+    const v = 1 - passo * (i + 1)
+    let u = 0.06 + Math.floor(rnd(i, 1) * 3) * 0.08 // indentação em 3 degraus
+    const blocos = 1 + Math.floor(rnd(i, 2) * 2)
+    for (let b = 0; b < blocos; b++) {
+      const larg = 0.12 + rnd(i, 3 + b) * 0.26
+      if (u + larg > 0.94) break
+      out.push({ u: u + larg / 2, v, larg, alt: passo * 0.42, cor: Math.floor(rnd(i, 7 + b) * CODIGO_CORES) })
+      u += larg + 0.04
+    }
+  }
+  return out
+}
+
+// Escreve as linhas numa tela. `plano` diz por onde a tela olha: "xz" é o
+// monitor em pé (frente em −y) e "xy" é a tampa do notebook (frente em +z).
+function codigoNaTela(
+  parent: Group, sufixo: string, larg: number, alt: number, base: V3,
+  plano: "xz" | "xy", mats: Material[]
+) {
+  const n = Math.max(6, Math.round(alt / 0.034))
+  linhasDeCodigo(n).forEach((l, k) => {
+    const du = larg * l.larg, dv = alt * l.alt
+    const ou = (l.u - 0.5) * larg, ov = (l.v - 0.5) * alt
+    const dims: V3 = plano === "xz" ? [du, 0.004, dv] : [du, dv, 0.004]
+    const pos: V3 = plano === "xz"
+      ? [base[0] + ou, base[1], base[2] + ov]
+      : [base[0] + ou, base[1] + ov, base[2]]
+    parent.add(box(`Monitor_Codigo${sufixo}_${k}`, dims, pos, mats[l.cor]))
+  })
+}
+
+// Tons escuros de editor: as barras ficam SOBRE uma tela que acende (o brilho do
+// "trabalhando" chega a 2,6), então elas têm de ser escuras — barra clara sobre
+// tela clara some justamente quando a pessoa está trabalhando.
+function materiaisDeCodigo(): Material[] {
+  return [
+    tmat([0.44, 0.5, 0.58], 0, "plastico"), // comentário
+    tmat([0.42, 0.24, 0.62], 0, "plastico"), // palavra-chave
+    tmat([0.16, 0.2, 0.28], 0, "plastico"), // texto
+    tmat([0.13, 0.44, 0.3], 0, "plastico"), // string
+  ]
+}
+
+function monitorUnit(sufixo: string, centro: V3, yaw: number, w: number, h: number, mBezel: Material, mGlow: Material, mCodigo: Material[]): Group {
   const grp = new Group()
   grp.name = `Monitor${sufixo}`
   grp.add(box(`Monitor_Bezel${sufixo}`, [w, 0.035, h], [0, 0.012, 0], mBezel))
   grp.add(box(`Monitor_Tela${sufixo}`, [w - 0.08, 0.012, h - 0.06], [0, -0.006, 0], mGlow))
+  // A tela era uma chapa lisa: o setup mais caro da loja mostrava um retângulo
+  // e nada mais. As barras ficam 2,5 mm à frente do vidro (1 cm na escala 4).
+  codigoNaTela(grp, sufixo, w - 0.1, h - 0.08, [0, -0.0145, 0], "xz", mCodigo)
   grp.position.set(...centro)
   grp.rotation.z = yaw
   return grp
@@ -125,14 +187,15 @@ function monitorUnit(sufixo: string, centro: V3, yaw: number, w: number, h: numb
 
 // Constrói o(s) monitor(es) + suporte(s) conforme o setup comprado na loja.
 function buildMonitores(g: Group, dy: number, setup: EscritorioExtras["setup"], mBezel: Material, mGlow: Material, mPC: Material) {
+  const mCodigo = materiaisDeCodigo()
   if (setup === "ultrawide") {
     g.add(box("Monitor_Suporte", [0.18, 0.06, 0.14], [0, 1.35 + dy, 0.87], mPC))
-    g.add(monitorUnit("", [0, 1.31 + dy, 1.08], 0, 0.95, 0.34, mBezel, mGlow))
+    g.add(monitorUnit("", [0, 1.31 + dy, 1.08], 0, 0.95, 0.34, mBezel, mGlow, mCodigo))
   } else if (setup === "duplo") {
     for (const s of [-1, 1] as const) {
       const suf = s < 0 ? "_L" : "_R"
       g.add(box(`Monitor_Suporte${suf}`, [0.08, 0.06, 0.14], [s * 0.34, 1.36 + dy, 0.87], mPC))
-      g.add(monitorUnit(suf, [s * 0.34, 1.33 + dy, 1.06], -s * 0.26, 0.46, 0.34, mBezel, mGlow))
+      g.add(monitorUnit(suf, [s * 0.34, 1.33 + dy, 1.06], -s * 0.26, 0.46, 0.34, mBezel, mGlow, mCodigo))
     }
   } else if (setup === "notebook") {
     // Sem torre nem suporte: só o laptop, tampa inclinada como a de verdade.
@@ -149,10 +212,11 @@ function buildMonitores(g: Group, dy: number, setup: EscritorioExtras["setup"], 
     tampa.rotation.x = D(72)
     tampa.add(box("Notebook_Carcaca", [0.42, 0.28, 0.014], [0, 0.15, 0], mPC))
     tampa.add(box("Monitor_Tela_Note", [0.38, 0.24, 0.006], [0, 0.15, 0.011], mGlow))
+    codigoNaTela(tampa, "_Note", 0.36, 0.22, [0, 0.15, 0.0165], "xy", mCodigo)
     g.add(tampa)
   } else {
     g.add(box("Monitor_Suporte", [0.08, 0.06, 0.14], [0, 1.35 + dy, 0.87], mPC))
-    g.add(monitorUnit("", [0, 1.31 + dy, 1.1], 0, 0.58, 0.36, mBezel, mGlow))
+    g.add(monitorUnit("", [0, 1.31 + dy, 1.1], 0, 0.58, 0.36, mBezel, mGlow, mCodigo))
   }
 }
 

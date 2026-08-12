@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { Box3, DoubleSide, Group, Mesh, Vector3 } from "three"
-import { buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO } from "./office-model"
+import { buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO, type EscritorioExtras } from "./office-model"
 import { typingTap, TECLA_AMPLITUDE } from "./office-typing"
 import { CAMERA_POS } from "./office-camera"
 
@@ -608,6 +608,54 @@ describe("itens novos da loja", () => {
       for (const n of pecas(g, "Luminaria_")) {
         expect(caixaMundo(g, n).intersectsBox(tela)).toBe(false)
       }
+    }
+  })
+
+  it("tela: todo setup mostra código, não uma chapa lisa", () => {
+    const casos: [EscritorioExtras["setup"], string][] = [
+      [undefined, "Monitor_Codigo_"],
+      ["ultrawide", "Monitor_Codigo_"],
+      ["duplo", "Monitor_Codigo_L_"],
+      ["notebook", "Monitor_Codigo_Note_"],
+    ]
+    for (const [setup, prefixo] of casos) {
+      const g = buildEscritorio({ extras: { setup } })
+      expect(pecas(g, prefixo).length).toBeGreaterThan(5)
+    }
+    // O setup duplo escreve nas DUAS telas
+    const duplo = buildEscritorio({ extras: { setup: "duplo" } })
+    expect(pecas(duplo, "Monitor_Codigo_R_").length).toBeGreaterThan(5)
+  })
+
+  it("tela: as linhas cabem dentro do vidro e ficam À FRENTE dele", () => {
+    const g = buildEscritorio()
+    const tela = caixaMundo(g, "Monitor_Tela")
+    for (const n of pecas(g, "Monitor_Codigo_")) {
+      const c = caixaMundo(g, n)
+      expect(c.min.x).toBeGreaterThan(tela.min.x)
+      expect(c.max.x).toBeLessThan(tela.max.x)
+      expect(c.min.z).toBeGreaterThan(tela.min.z)
+      expect(c.max.z).toBeLessThan(tela.max.z)
+      // Frente do monitor = y menor (o lado de quem senta).
+      expect(c.max.y).toBeLessThanOrEqual(tela.min.y + 1e-6)
+    }
+  })
+
+  it("tela: a mesma sala desenha sempre o mesmo trecho — nada de piscar texto", () => {
+    const posicoes = (g: Group) =>
+      pecas(g, "Monitor_Codigo_").map((n) => caixaMundo(g, n).getCenter(new Vector3()).toArray().join(","))
+    expect(posicoes(buildEscritorio())).toEqual(posicoes(buildEscritorio()))
+  })
+
+  it("tela: as linhas são escuras — a tela acende até 2,6 ao trabalhar", () => {
+    const g = buildEscritorio()
+    for (const n of pecas(g, "Monitor_Codigo_")) {
+      const m = (malha(g, n) as Mesh).material as unknown as {
+        color: { r: number; g: number; b: number }
+        emissive: { getHex(): number }
+      }
+      expect(Math.max(m.color.r, m.color.g, m.color.b)).toBeLessThan(0.65)
+      expect(m.emissive.getHex()).toBe(0) // não acendem: quem acende é a tela
     }
   })
 
