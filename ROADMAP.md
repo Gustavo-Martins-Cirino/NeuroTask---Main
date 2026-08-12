@@ -92,20 +92,17 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       **Limite conhecido**: ver o rosto de FRENTE exigiria a câmera atrás da parede do
       fundo, que passaria a tapar a sala. Perfil é o teto desta planta — só uma parede a
       menos mudaria isso.
+- [ ] **A cidade da janela está sempre no mesmo horário.** Os prédios agora são silhueta
+      escura com janelinhas acesas — leitura de fim de tarde, fixa. A cena inteira já sabe
+      a hora real (`phaseOf` em `office-scene-3d.tsx` muda luz e fundo), então de manhã a
+      vista continua anoitecida. Casa com o "céu do Escritório 3D" da camada visual: quando
+      o céu virar gradiente animado pela hora, prédio e janelinha acompanham.
 - [ ] **A lista de amigos ainda é letra dentro de um círculo.** O bonequinho 2D já sabe
       desenhar chapéu e óculos (`avatar-figure.tsx` + `lib/avatar-accessories.ts`), mas
       `friends-section.tsx` mostra a inicial do nome, não o avatar — o amigo só aparece
       inteiro quando se abre a visita em 3D. Trocar a inicial por um bonequinho exige o
       `avatar` e os itens equipados de cada amigo virem junto na consulta da lista (hoje só
       `fetchFriendOffice` traz isso, uma pessoa por vez).
-
-**Catálogo novo**
-
-- [ ] **A cidade da janela está sempre no mesmo horário.** Os prédios agora são silhueta
-      escura com janelinhas acesas — leitura de fim de tarde, fixa. A cena inteira já sabe
-      a hora real (`phaseOf` em `office-scene-3d.tsx` muda luz e fundo), então de manhã a
-      vista continua anoitecida. Casa com o "céu do Escritório 3D" da camada visual: quando
-      o céu virar gradiente animado pela hora, prédio e janelinha acompanham.
 
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 
