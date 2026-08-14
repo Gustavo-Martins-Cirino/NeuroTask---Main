@@ -119,11 +119,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > Instalar `@shadergradient/react` + peers (`three-stdlib`, `camera-controls`). `three` e
 > `@react-three/fiber` já estão no projeto.
 
-- [ ] **Login / Signup.** Referência escolhida: `inspirações/better-auth-6.webp` — fundo quase
-      preto, textura de ruído sutil e um brilho azul difuso **sangrando das bordas**, com o
-      card de auth contido no centro. Não é gradiente berrante atrás do formulário. Ver também
-      `Captura de tela 2026-08-07 214418.png`, que é a mesma ideia levada ao extremo (cor só
-      na moldura, miolo preto).
 
 **three.js — sem dependência nova**
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { AuthBackdrop } from "@/components/auth-backdrop"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -105,15 +106,15 @@ export default function ResetPasswordPage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <AuthBackdrop>
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      </AuthBackdrop>
     )
   }
 
   if (sent) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+      <AuthBackdrop>
         <div className="w-full max-w-sm space-y-8 text-center">
           <div className="flex flex-col items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-500 shadow-lg">
@@ -136,12 +137,12 @@ export default function ResetPasswordPage() {
             <Button variant="outline" className="h-11 w-full">Voltar para o login</Button>
           </Link>
         </div>
-      </div>
+      </AuthBackdrop>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+    <AuthBackdrop>
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg">
@@ -234,6 +235,6 @@ export default function ResetPasswordPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </AuthBackdrop>
   )
 }
