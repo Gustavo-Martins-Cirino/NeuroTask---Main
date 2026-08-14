@@ -37,6 +37,11 @@ export interface FriendEntry {
   busy: boolean | null // null = não compartilha (ou pendente)
   can_visit: boolean
   can_schedule: boolean
+  /** Aparência do bonequinho na lista. null enquanto a amizade não foi aceita
+   *  (ou se o friends_v4.sql ainda não rodou) — cai na inicial do nome. */
+  avatar: unknown | null
+  /** Ids de chapéu/óculos equipados; mesmo portão do avatar. */
+  accessories: string[] | null
 }
 
 export interface FriendOffice {

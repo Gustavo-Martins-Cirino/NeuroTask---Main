@@ -31,6 +31,8 @@ import {
 } from "@/lib/invites"
 import { InviteDialog } from "@/components/invite-dialog"
 import { normalizeAvatar } from "@/lib/avatar"
+import { AvatarFigure } from "@/components/avatar-figure"
+import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { formatTime, type TimeFormat } from "@/lib/time-format"
 
@@ -43,6 +45,29 @@ function Initial({ name }: { name: string }) {
   return (
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold uppercase text-primary">
       {name.charAt(0)}
+    </span>
+  )
+}
+
+// Retrato do amigo: o mesmo bonequinho do editor, enquadrado da cabeça aos
+// ombros (o corpo inteiro num círculo de 32px não se enxergaria). Cai na
+// inicial quando não há avatar — amizade ainda pendente, ou o friends_v4.sql
+// não rodou. É o fallback que mantém a lista de pé nos dois casos.
+function FriendAvatar({
+  name,
+  avatar,
+  accessories,
+}: {
+  name: string
+  avatar?: unknown | null
+  accessories?: string[] | null
+}) {
+  if (!avatar) return <Initial name={name} />
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+      <svg viewBox="-18 -58 38 38" className="h-full w-full" aria-hidden>
+        <AvatarFigure config={normalizeAvatar(avatar)} accessories={acessoriosEquipados(accessories)} />
+      </svg>
     </span>
   )
 }
@@ -376,7 +401,7 @@ export function FriendsSection() {
               <p className="text-xs font-medium text-primary">Pedidos de amizade</p>
               {pendingIn.map((f) => (
                 <div key={f.friendship_id} className="flex items-center gap-2.5 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2">
-                  <Initial name={f.display_name || f.username} />
+                  <FriendAvatar name={f.display_name || f.username} avatar={f.avatar} accessories={f.accessories} />
                   <span className="min-w-0 flex-1 truncate text-sm">
                     {f.display_name ?? `@${f.username}`}
                     <span className="ml-1.5 text-xs text-muted-foreground">@{f.username}</span>
@@ -475,7 +500,7 @@ export function FriendsSection() {
             <div className="grid gap-1.5 sm:grid-cols-2">
               {accepted.map((f) => (
                 <div key={f.friendship_id} className="group flex items-center gap-2.5 rounded-xl border border-border/50 bg-card px-3 py-2">
-                  <Initial name={f.display_name || f.username} />
+                  <FriendAvatar name={f.display_name || f.username} avatar={f.avatar} accessories={f.accessories} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{f.display_name ?? `@${f.username}`}</span>
                     <StatusDot busy={f.busy} />
@@ -528,7 +553,7 @@ export function FriendsSection() {
             <div className="space-y-1.5">
               {pendingOut.map((f) => (
                 <div key={f.friendship_id} className="flex items-center gap-2.5 rounded-xl border border-border/40 px-3 py-2 opacity-75">
-                  <Initial name={f.display_name || f.username} />
+                  <FriendAvatar name={f.display_name || f.username} avatar={f.avatar} accessories={f.accessories} />
                   <span className="min-w-0 flex-1 truncate text-sm">@{f.username}</span>
                   <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                     <Clock3 className="h-3 w-3" /> aguardando
