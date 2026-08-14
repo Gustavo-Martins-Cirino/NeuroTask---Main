@@ -20,6 +20,7 @@ import {
   Video, Copy, MapPin,
 } from "lucide-react"
 import { recurrenceLabel } from "@/lib/task-recurrence"
+import { marcarOrigemDaMoeda } from "@/lib/coin-flight"
 import { toast } from "sonner"
 
 interface TaskCardProps {
@@ -76,10 +77,14 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleFavor
   const isInProgress = task.status === "in_progress"
   const due = dueInfo(task)
 
-  const toggleComplete = () => {
+  const toggleComplete = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!isCompleted) {
       setConfetti(true)
       setTimeout(() => setConfetti(false), 800)
+      // Marca de onde a moeda sai. Quem decide SE ela sai é o award_xp: com o
+      // anti-farm zerando o XP, não há prêmio e nenhuma moeda voa.
+      const r = e.currentTarget.getBoundingClientRect()
+      marcarOrigemDaMoeda({ x: r.left + r.width / 2, y: r.top + r.height / 2 })
       onStatusChange(task.id, "completed")
     } else {
       onStatusChange(task.id, "pending")

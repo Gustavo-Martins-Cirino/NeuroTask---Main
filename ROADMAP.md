@@ -128,9 +128,9 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **GSAP — pontual**
 
-- [ ] **SplitText**: saudação do dashboard entrando letra a letra sob máscara.
-- [ ] **MotionPath**: a moeda voa em curva do card da tarefa concluída até o contador do
-      header.
+> O pacote já está instalado (`gsap` 3.15, todos os plugins livres). SplitText e MotionPath
+> já estão em uso — `components/split-greeting.tsx` e `components/coin-flight.tsx`.
+
 - [ ] **`gsap.ticker` como loop único**, amarrando Lenis + R3F + animações num só
       `requestAnimationFrame` em vez de vários.
 
