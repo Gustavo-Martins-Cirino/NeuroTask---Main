@@ -1,7 +1,9 @@
 "use client"
 
 import { createContext, useContext, useCallback, useEffect, useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import { createClient } from "@/lib/supabase/client"
+import { GRADIENT_PRESETS, type GradientPreset } from "@/lib/focus-gradient"
 import { useRealtime } from "@/hooks/use-realtime"
 import { awardXp, taskXpAmount } from "@/lib/gamification"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
@@ -24,13 +26,40 @@ export const useFocus = () => {
   return ctx
 }
 
-const AMBIENTS = [
-  { id: "transparent", name: "Transparente", bg: "bg-background/60 backdrop-blur-xl", mode: "themed" as const, clock: false },
-  { id: "black", name: "Preto", bg: "bg-neutral-950", mode: "dark" as const, clock: false },
-  { id: "gray", name: "Cinza", bg: "bg-neutral-700", mode: "dark" as const, clock: false },
-  { id: "light", name: "Claro", bg: "bg-neutral-100", mode: "light" as const, clock: false },
-  { id: "white", name: "Branco", bg: "bg-white", mode: "light" as const, clock: false },
-  { id: "clock", name: "Relógio", bg: "bg-neutral-950", mode: "dark" as const, clock: true },
+// O fundo animado traz a própria cópia do R3F: só carrega quando alguém
+// escolhe um ambiente animado. Quem fica nos estáticos não paga esse bundle.
+const FocusGradient = dynamic(
+  () => import("@/components/focus-gradient").then((m) => m.FocusGradient),
+  { ssr: false }
+)
+
+interface Ambient {
+  id: string
+  name: string
+  bg: string
+  mode: "themed" | "dark" | "light"
+  clock: boolean
+  /** Presente = ambiente ANIMADO (ShaderGradient). */
+  gradient?: GradientPreset
+}
+
+// Os estáticos vêm primeiro e continuam sendo o padrão: os animados entram ao
+// lado, não no lugar. Quem achar o movimento distraente escolhe um dos de cima.
+const AMBIENTS: Ambient[] = [
+  { id: "transparent", name: "Transparente", bg: "bg-background/60 backdrop-blur-xl", mode: "themed", clock: false },
+  { id: "black", name: "Preto", bg: "bg-neutral-950", mode: "dark", clock: false },
+  { id: "gray", name: "Cinza", bg: "bg-neutral-700", mode: "dark", clock: false },
+  { id: "light", name: "Claro", bg: "bg-neutral-100", mode: "light", clock: false },
+  { id: "white", name: "Branco", bg: "bg-white", mode: "light", clock: false },
+  { id: "clock", name: "Relógio", bg: "bg-neutral-950", mode: "dark", clock: true },
+  ...GRADIENT_PRESETS.map((g) => ({
+    id: g.id,
+    name: g.name,
+    bg: "", // a cor vem do próprio canvas (e do fallback dele)
+    mode: g.mode,
+    clock: false,
+    gradient: g,
+  })),
 ]
 
 function pad(n: number) {
@@ -241,6 +270,12 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             exit={{ opacity: 0 }}
             className={cn("fixed inset-0 z-[100] flex flex-col items-center justify-center", amb.bg, txt, minimized && "hidden")}
           >
+            {/* Fundo animado: fica atrás de tudo e some quando o Foco é
+                minimizado (não adianta animar o que ninguém está vendo). */}
+            {amb.gradient && !minimized && (
+              <FocusGradient preset={amb.gradient} progresso={progress / 100} />
+            )}
+
             <div className="absolute right-6 top-6 flex items-center gap-1">
               <button onClick={() => { setMinimized(true); setPanel("none") }} aria-label="Minimizar" className={cn("rounded-full p-2 transition-colors", ctrl)}>
                 <Minimize2 className="h-5 w-5" />
@@ -317,7 +352,27 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                     <div className="grid grid-cols-3 gap-2">
                       {AMBIENTS.map((a, i) => (
                         <button key={a.id} onClick={() => setAmbient(i)} className="flex flex-col items-center gap-1">
-                          <span className={cn("h-12 w-full overflow-hidden rounded-lg border-2 transition-transform hover:scale-105", a.bg, ambient === i ? ring : "border-transparent")} />
+                          <span
+                            className={cn(
+                              "relative h-12 w-full overflow-hidden rounded-lg border-2 transition-transform hover:scale-105",
+                              a.bg,
+                              ambient === i ? ring : "border-transparent"
+                            )}
+                            // Prévia do animado: as três cores do preset. Mostrar
+                            // o canvas de verdade em cada miniatura seria um
+                            // contexto WebGL por ambiente, à toa.
+                            style={
+                              a.gradient
+                                ? { background: `linear-gradient(135deg, ${a.gradient.color1}, ${a.gradient.color2} 55%, ${a.gradient.color3})` }
+                                : undefined
+                            }
+                          >
+                            {a.gradient && (
+                              <span className="absolute bottom-0.5 right-0.5 rounded-sm bg-black/45 px-1 text-[8px] font-semibold leading-tight text-white">
+                                animado
+                              </span>
+                            )}
+                          </span>
                           <span className="text-[10px] opacity-70">{a.name}</span>
                         </button>
                       ))}

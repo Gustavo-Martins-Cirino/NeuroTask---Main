@@ -92,12 +92,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       **Limite conhecido**: ver o rosto de FRENTE exigiria a câmera atrás da parede do
       fundo, que passaria a tapar a sala. Perfil é o teto desta planta — só uma parede a
       menos mudaria isso.
-- [ ] **A lista de amigos ainda é letra dentro de um círculo.** O bonequinho 2D já sabe
-      desenhar chapéu e óculos (`avatar-figure.tsx` + `lib/avatar-accessories.ts`), mas
-      `friends-section.tsx` mostra a inicial do nome, não o avatar — o amigo só aparece
-      inteiro quando se abre a visita em 3D. Trocar a inicial por um bonequinho exige o
-      `avatar` e os itens equipados de cada amigo virem junto na consulta da lista (hoje só
-      `fetchFriendOffice` traz isso, uma pessoa por vez).
 
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 
@@ -125,10 +119,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > Instalar `@shadergradient/react` + peers (`three-stdlib`, `camera-controls`). `three` e
 > `@react-three/fiber` já estão no projeto.
 
-- [ ] **Ambientes animados no Modo Foco — alguns, não todos.** Os ambientes estáticos atuais
-      do `focus.tsx` **continuam existindo**; os novos entram ao lado deles, marcados como
-      animados. Quem achar distraente escolhe um dos antigos e pronto. A velocidade da
-      animação cai conforme o timer avança.
 - [ ] **Céu do Escritório 3D.** Gradiente animado atrás da janela. A PALETA já acompanha a
       hora real (`lib/office-city.ts`: céu, prédios e janelinhas mudam por fase); o que falta
       é o céu deixar de ser uma cor chapada e virar gradiente — e, aí sim, animado.
