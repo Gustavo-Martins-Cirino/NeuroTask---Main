@@ -279,7 +279,11 @@ function CartoonOffice({
     const t = state.clock.elapsedTime
     const festa = progressoDaFesta(festaRef)
     const comemorando = festa < 1
-    const glow = comemorando ? 2.6 : working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
+    // Bem mais baixo que antes: a tela é a única peça acesa com cor CLARA de
+    // base (os LEDs têm a cor reduzida em mled), então no bloom ela estourava e
+    // virava um borrão branco enquanto os LEDs ficavam no ponto. Aqui o valor
+    // cobre as duas coisas — brilho na cena e quanto ela espalha.
+    const glow = comemorando ? 1.15 : working ? 0.95 : 0.5 + Math.sin(t * 1.5) * 0.06
     for (const tela of telas) (tela.material as MeshStandardMaterial).emissiveIntensity = glow
     // Nuvens atravessando a janela, cada uma no seu ritmo. Bem devagar: o que
     // se quer é a sensação de que lá fora o tempo passa, não movimento na
