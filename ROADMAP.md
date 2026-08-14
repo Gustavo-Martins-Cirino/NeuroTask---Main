@@ -119,9 +119,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > Instalar `@shadergradient/react` + peers (`three-stdlib`, `camera-controls`). `three` e
 > `@react-three/fiber` já estão no projeto.
 
-- [ ] **Céu do Escritório 3D.** Gradiente animado atrás da janela. A PALETA já acompanha a
-      hora real (`lib/office-city.ts`: céu, prédios e janelinhas mudam por fase); o que falta
-      é o céu deixar de ser uma cor chapada e virar gradiente — e, aí sim, animado.
 - [ ] **Faixa do Dashboard.** Header de ~180px em `/app` com gradiente lento; a paleta
       enriquece conforme o nível/XP sobe.
 - [ ] **Login / Signup.** Referência escolhida: `inspirações/better-auth-6.webp` — fundo quase

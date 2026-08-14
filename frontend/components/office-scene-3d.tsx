@@ -251,6 +251,16 @@ function CartoonOffice({
     room.traverse((o) => { if ((o as Mesh).isMesh && o.name.startsWith("Monitor_Tela")) out.push(o as Mesh) })
     return out
   }, [room])
+  // Nuvens da janela: guardadas com o x de origem, porque a animação as arrasta
+  // a partir dele (somar deslocamento sobre a posição atual acumularia erro e
+  // elas iriam embora com o tempo).
+  const nuvens = useMemo(() => {
+    const out: { mesh: Mesh; x0: number }[] = []
+    room.traverse((o) => {
+      if ((o as Mesh).isMesh && o.name.startsWith("Janela_Nuvem_")) out.push({ mesh: o as Mesh, x0: o.position.x })
+    })
+    return out
+  }, [room])
   // Os dois cotovelos: girá-los é o boneco digitando (ver lib/office-typing).
   const cotovelos = useMemo(() => {
     const out: { pivo: Group; lado: 1 | -1 }[] = []
@@ -268,6 +278,15 @@ function CartoonOffice({
     const comemorando = festa < 1
     const glow = comemorando ? 2.6 : working ? 2.2 : 1.0 + Math.sin(t * 1.5) * 0.12
     for (const tela of telas) (tela.material as MeshStandardMaterial).emissiveIntensity = glow
+    // Nuvens atravessando a janela, cada uma no seu ritmo. Bem devagar: o que
+    // se quer é a sensação de que lá fora o tempo passa, não movimento na
+    // periferia de quem está tentando trabalhar.
+    for (let i = 0; i < nuvens.length; i++) {
+      const { mesh, x0 } = nuvens[i]
+      const periodo = 90 + i * 34
+      const volta = ((t / periodo + i * 0.37) % 1) * 2 - 1 // -1 → 1, e recomeça
+      mesh.position.x = x0 + volta * 0.9
+    }
     // Comemorando, as mãos saem do teclado: quem pula não digita.
     digitandoRef.current = typingRamp(digitandoRef.current, !!working && !comemorando, delta)
     const intensidade = digitandoRef.current

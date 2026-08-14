@@ -714,3 +714,65 @@ describe("itens novos da loja", () => {
     expect(tela.max.z - tela.min.z).toBeGreaterThan(0.15)
   })
 })
+
+describe("céu da janela em degradê", () => {
+  it("o céu tem cor POR VÉRTICE, não uma cor chapada", () => {
+    const g = buildEscritorio({ extras: { janela: true } })
+    const ceu = malha(g, "Janela_Ceu") as Mesh
+    const cor = ceu.geometry.getAttribute("color")
+    expect(cor).toBeTruthy()
+    expect((ceu.material as unknown as { vertexColors: boolean }).vertexColors).toBe(true)
+  })
+
+  it("escurece para cima: topo e base têm cores diferentes", () => {
+    const g = buildEscritorio({ extras: { janela: true }, fase: "day" })
+    const ceu = malha(g, "Janela_Ceu") as Mesh
+    const pos = ceu.geometry.getAttribute("position")
+    const cor = ceu.geometry.getAttribute("color")
+    let zMin = Infinity, zMax = -Infinity, iMin = 0, iMax = 0
+    for (let i = 0; i < pos.count; i++) {
+      const z = pos.getZ(i)
+      if (z < zMin) { zMin = z; iMin = i }
+      if (z > zMax) { zMax = z; iMax = i }
+    }
+    const base = [cor.getX(iMin), cor.getY(iMin), cor.getZ(iMin)]
+    const topo = [cor.getX(iMax), cor.getY(iMax), cor.getZ(iMax)]
+    expect(topo).not.toEqual(base)
+    // De dia o alto do céu é mais escuro que o horizonte
+    const soma = (c: number[]) => c[0] + c[1] + c[2]
+    expect(soma(topo)).toBeLessThan(soma(base))
+  })
+
+  it("as nuvens acompanham a hora: bem mais discretas à noite", () => {
+    const opacidade = (fase: "day" | "night") => {
+      const g = buildEscritorio({ extras: { janela: true }, fase })
+      const nomes = pecas(g, "Janela_Nuvem_")
+      expect(nomes.length).toBeGreaterThan(0) // nuvem à noite existe, só é sutil
+      return ((malha(g, nomes[0]) as Mesh).material as unknown as { opacity: number }).opacity
+    }
+    expect(opacidade("night")).toBeLessThan(opacidade("day") / 2)
+  })
+
+  it("as nuvens são translúcidas e cabem no vão da janela", () => {
+    const g = buildEscritorio({ extras: { janela: true }, fase: "day" })
+    const vao = caixaMundo(g, "Janela_Vidro")
+    for (const n of pecas(g, "Janela_Nuvem_")) {
+      const mat = (malha(g, n) as Mesh).material as unknown as { transparent: boolean; opacity: number }
+      expect(mat.transparent).toBe(true)
+      expect(mat.opacity).toBeLessThan(1)
+      expect(caixaMundo(g, n).max.z).toBeLessThanOrEqual(vao.max.z + 1e-6)
+    }
+  })
+})
+
+describe("céu: a cor vem do degradê, não do material", () => {
+  it("o material do céu é branco — senão a cor entra duas vezes", () => {
+    // vertexColors MULTIPLICA cor do vértice pela do material. Com pal.ceu nos
+    // dois, o céu escurecia ao quadrado (foi o que aconteceu na primeira versão).
+    const g = buildEscritorio({ extras: { janela: true }, fase: "day" })
+    const mat = (malha(g, "Janela_Ceu") as Mesh).material as unknown as { color: { r: number; g: number; b: number } }
+    expect(mat.color.r).toBe(1)
+    expect(mat.color.g).toBe(1)
+    expect(mat.color.b).toBe(1)
+  })
+})

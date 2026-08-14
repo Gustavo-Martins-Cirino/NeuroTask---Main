@@ -9,6 +9,7 @@
 
 import {
   BoxGeometry,
+  BufferAttribute,
   CatmullRomCurve3,
   Color,
   CylinderGeometry,
@@ -100,6 +101,26 @@ function segmento(name: string, a: V3, b: V3, raio: number, material: Material):
   m.castShadow = true
   m.receiveShadow = true
   return m
+}
+
+// Pinta um degradê VERTICAL na malha usando cor por vértice: quem estiver no
+// topo da caixa recebe `topo`, quem estiver na base recebe `base`, e o resto
+// interpola sozinho na rasterização. Bem mais barato que um shader próprio, e o
+// material segue reagindo à luz da sala como qualquer outro.
+export function pintarDegrade(mesh: Mesh, topo: V3, base: V3) {
+  const geo = mesh.geometry
+  const pos = geo.attributes.position
+  geo.computeBoundingBox()
+  const bb = geo.boundingBox!
+  const alt = bb.max.z - bb.min.z || 1
+  const cores = new Float32Array(pos.count * 3)
+  for (let i = 0; i < pos.count; i++) {
+    const t = (pos.getZ(i) - bb.min.z) / alt // 0 na base, 1 no topo
+    cores[i * 3] = base[0] + (topo[0] - base[0]) * t
+    cores[i * 3 + 1] = base[1] + (topo[1] - base[1]) * t
+    cores[i * 3 + 2] = base[2] + (topo[2] - base[2]) * t
+  }
+  geo.setAttribute("color", new BufferAttribute(cores, 3))
 }
 
 function sph(name: string, raio: number, pos: V3, material: Material, esc?: V3): Mesh {
@@ -625,8 +646,34 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     const mCaix = tmat([0.24, 0.26, 0.3], 0, "metal")
     const mPeit = tmat([0.93, 0.92, 0.89], 0, "parede")
 
-    // Céu ao fundo do vão
-    g.add(box("Janela_Ceu", [LARG, 0.012, ALT], [cx, face - 0.008, cz], mCeu))
+    // Céu ao fundo do vão, em DEGRADÊ: escuro em cima, claro no horizonte. Cor
+    // chapada lê como papel de parede; o degradê é o que dá distância. Feito com
+    // cor por vértice (o material da cena continua o mesmo, e a luz da sala
+    // continua valendo) em vez de shader próprio.
+    const ceuMesh = box("Janela_Ceu", [LARG, 0.012, ALT], [cx, face - 0.008, cz], mCeu)
+    pintarDegrade(ceuMesh, pal.ceuTopo, pal.ceu)
+    mCeu.vertexColors = true
+    // A cor do vértice MULTIPLICA a do material: deixando pal.ceu nos dois, o
+    // céu escurecia duas vezes. Branco aqui, e quem manda na cor é o degradê.
+    // O emissivo segue sendo pal.ceu — é ele que acende o céu à noite.
+    mCeu.color.setRGB(1, 1, 1)
+    g.add(ceuMesh)
+
+    // Nuvens: faixas largas e translúcidas que a cena arrasta devagar (o nome
+    // Janela_Nuvem_* é o que office-scene-3d procura para animar). A opacidade
+    // vem da hora — à noite elas continuam lá, só bem mais discretas.
+    if (pal.nuvemOpacidade > 0.05) {
+      const mNuvem = tmat(pal.nuvem, 0, "tecido")
+      mNuvem.transparent = true
+      mNuvem.opacity = pal.nuvemOpacidade
+      const faixas: [number, number, number][] = [
+        [0.34, 0.16, 0.62], [-0.2, 0.3, 0.45], [0.1, 0.44, 0.3],
+      ]
+      faixas.forEach(([oz, alt, larg], i) => {
+        g.add(box(`Janela_Nuvem_${i}`, [LARG * larg, 0.008, ALT * 0.06 * (1 + alt)],
+          [cx, face - 0.014, cz + ALT * oz], mNuvem))
+      })
+    }
 
     const base = cz - ALT / 2 + 0.02
 
