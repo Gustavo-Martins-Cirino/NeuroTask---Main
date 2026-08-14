@@ -122,8 +122,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **three.js — sem dependência nova**
 
-- [ ] **Bloom seletivo no Escritório.** Pós-processamento para o neon e a tela do PC brilharem
-      de verdade. É o que mais aproxima a cena de um visual profissional.
 - [ ] **InstancedMesh** quando o catálogo da loja crescer: centenas de objetos em 1 draw call.
 - [ ] **Shader material customizado**: fazer o código da tela ROLAR (hoje ele existe, mas é
       estático — barras em `linhasDeCodigo`, geometria, não textura) e chuva escorrendo no

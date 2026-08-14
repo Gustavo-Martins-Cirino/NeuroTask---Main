@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { ContactShadows, Environment, Lightformer, OrthographicCamera, useGLTF } from "@react-three/drei"
 import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type Material, type MeshStandardMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
 import { fitOrthoCamera, CAMERA_POS } from "@/lib/office-camera"
+import { OfficeBloom, marcarQuemAcende } from "@/components/office-bloom"
 import { resolveOfficeBg } from "@/lib/office-bg"
 import {
   CELEBRATION_MS, buildConfetti, confettiAt, confettiOpacity, jumpHeight, bodyWiggle,
@@ -232,6 +233,8 @@ function CartoonOffice({
         },
         cadeira: cadeiraTipoDe(equipped),
       })
+      // Quem tem emissivo forte entra na camada do bloom (neon, telas, LEDs).
+      marcarQuemAcende(r)
       return r
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -331,7 +334,7 @@ function FitCamera({ contentRef, dep }: { contentRef: React.RefObject<Group | nu
 }
 
 function Scene({
-  working, onAvatarClick, phase, avatar, equipped, nivel, celebrateNonce,
+  working, onAvatarClick, phase, avatar, equipped, nivel, celebrateNonce, bloom,
 }: {
   working?: boolean
   onAvatarClick: () => void
@@ -340,6 +343,7 @@ function Scene({
   equipped?: Set<string>
   nivel?: number
   celebrateNonce?: number
+  bloom?: boolean
 }) {
   const L = LIGHT[phase]
   const contentRef = useRef<Group>(null)
@@ -407,6 +411,11 @@ function Scene({
           logo sob os móveis (contato) — assenta tudo no chão sem virar borrão. */}
       <ContactShadows position={[0, 0.02, -4 * (0.9 + recuoDaSala(nivel))]} opacity={0.28} scale={22} blur={3.0} far={9} />
       <ContactShadows position={[0, 0.03, -4 * (0.9 + recuoDaSala(nivel))]} opacity={0.35} scale={12} blur={1.4} far={5} />
+
+      {/* Bloom seletivo — dois renders por quadro, então só onde compensa: numa
+          tela grande. Em tela pequena a cena já é minúscula, o brilho não se
+          veria e o custo cairia justo em quem tem menos GPU. */}
+      {bloom && <OfficeBloom />}
     </>
   )
 }
@@ -430,6 +439,17 @@ export function OfficeScene3D({
   // estourado antes da checagem. A cena só entra por dynamic(ssr:false), então
   // aqui é sempre cliente — o typeof é só cinto de segurança.
   const [webgl] = useState(() => (typeof window === "undefined" ? true : temWebGL()))
+  // Bloom custa DOIS renders por quadro. Em tela pequena a cena já é minúscula
+  // (o halo mal se veria) e o custo cairia justamente em quem tem menos GPU —
+  // então ali ele não entra. É a regra de "efeito pesado" do roadmap.
+  const [bloom, setBloom] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)")
+    const ler = () => setBloom(mq.matches)
+    ler()
+    mq.addEventListener("change", ler)
+    return () => mq.removeEventListener("change", ler)
+  }, [])
   useEffect(() => {
     const tick = () => setPhase(faseDaHora(new Date().getHours()))
     tick()
@@ -485,6 +505,7 @@ export function OfficeScene3D({
           equipped={equipped}
           nivel={nivel}
           celebrateNonce={celebrateNonce}
+          bloom={bloom}
         />
       </Canvas>
       {/* Vinheta suave: escurece só os cantos, focando o olhar no centro. */}
