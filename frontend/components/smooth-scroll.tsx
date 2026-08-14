@@ -4,6 +4,7 @@ import { ReactLenis, useLenis } from "lenis/react"
 import "lenis/dist/lenis.css"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
+import gsap from "gsap"
 
 // Onde o Lenis NÃO deve mandar: dentro de diálogo, popover, menu ou de qualquer
 // área que já rola sozinha. Sem isso a roda do mouse sobre um modal rolaria a
@@ -54,6 +55,33 @@ function PausaComDialogo() {
   return null
 }
 
+// Um requestAnimationFrame só. O Lenis abria o dele (autoRaf) e o GSAP tem o
+// seu; dois loops medindo o tempo por conta própria saem de fase, e é aí que o
+// scroll "treme" enquanto uma animação roda. Com o ticker do GSAP puxando o
+// Lenis, os dois leem o mesmo instante.
+function TickerUnico() {
+  const lenis = useLenis()
+
+  useEffect(() => {
+    if (!lenis) return
+
+    // O ticker entrega o tempo em segundos; o Lenis quer milissegundos.
+    const tick = (tempo: number) => lenis.raf(tempo * 1000)
+
+    gsap.ticker.add(tick)
+    // Sem isso o GSAP "engole" um travamento longo (aba em segundo plano, GC)
+    // e o scroll fica atrasado em relação ao dedo. Recomendação do próprio Lenis.
+    gsap.ticker.lagSmoothing(0)
+
+    return () => {
+      gsap.ticker.remove(tick)
+      gsap.ticker.lagSmoothing(500, 33)
+    }
+  }, [lenis])
+
+  return null
+}
+
 // Troca de rota volta ao topo na hora — sem isso a página nova entra já rolada,
 // ou desce animando enquanto o PageTransition ainda está aparecendo.
 function TopoAoNavegar() {
@@ -76,6 +104,8 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     <ReactLenis
       root
       options={{
+        // Quem chama o raf é o TickerUnico abaixo.
+        autoRaf: false,
         lerp: 0.12,
         wheelMultiplier: 1,
         touchMultiplier: 1.6,
@@ -84,6 +114,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
         prevent: (node) => !!(node as Element).closest?.(NATIVO),
       }}
     >
+      <TickerUnico />
       <PausaComDialogo />
       <TopoAoNavegar />
       {children}

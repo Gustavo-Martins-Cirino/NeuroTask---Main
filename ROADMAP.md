@@ -129,10 +129,16 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 **GSAP — pontual**
 
 > O pacote já está instalado (`gsap` 3.15, todos os plugins livres). SplitText e MotionPath
-> já estão em uso — `components/split-greeting.tsx` e `components/coin-flight.tsx`.
+> já estão em uso — `components/split-greeting.tsx` e `components/coin-flight.tsx`. O
+> `gsap.ticker` já puxa o Lenis (`TickerUnico` em `components/smooth-scroll.tsx`,
+> `autoRaf: false` + `lagSmoothing(0)`).
 
-- [ ] **`gsap.ticker` como loop único**, amarrando Lenis + R3F + animações num só
-      `requestAnimationFrame` em vez de vários.
+- [ ] **Trazer o R3F para o mesmo ticker.** Falta a metade 3D do loop único: hoje o
+      `<Canvas>` do Escritório e o do ShaderGradient abrem cada um o seu
+      `requestAnimationFrame`. Exigiria `frameloop="never"` + `advance()` manual, e é
+      justamente onde o custo de errar é alto — se o ticker não chamar, a sala 3D
+      simplesmente congela, e não dá para conferir isso lendo o código. Fica para quando
+      houver como ver a cena rodando de verdade.
 
 ### A pasta `frontend/components/inspirações/`
 
