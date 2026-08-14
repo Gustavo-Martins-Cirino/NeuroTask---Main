@@ -119,8 +119,6 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > Instalar `@shadergradient/react` + peers (`three-stdlib`, `camera-controls`). `three` e
 > `@react-three/fiber` já estão no projeto.
 
-- [ ] **Faixa do Dashboard.** Header de ~180px em `/app` com gradiente lento; a paleta
-      enriquece conforme o nível/XP sobe.
 - [ ] **Login / Signup.** Referência escolhida: `inspirações/better-auth-6.webp` — fundo quase
       preto, textura de ruído sutil e um brilho azul difuso **sangrando das bordas**, com o
       card de auth contido no centro. Não é gradiente berrante atrás do formulário. Ver também

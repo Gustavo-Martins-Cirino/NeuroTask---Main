@@ -13,6 +13,8 @@ import { motion, animate } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { formatTime, formatClock } from "@/lib/time-format"
+import { DashboardBanner } from "@/components/dashboard-banner"
+import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
 
 function localDateKey() {
   const d = new Date()
@@ -67,7 +69,17 @@ export default function DashboardPage() {
   const [todayBlocks, setTodayBlocks] = useState<{ id: string; title: string; start_time: string; end_time: string }[]>([])
   const [todayTasks, setTodayTasks] = useState<{ id: string; title: string; priority: string }[]>([])
   const [insights, setInsights] = useState<ActivityInsight[]>([])
+  // Nível: é ele que escolhe a paleta da faixa. Reage ao XP_UPDATED_EVENT para
+  // a cor mudar assim que sobe de nível, sem esperar um F5.
+  const [nivel, setNivel] = useState(1)
   const supabase = createClient()
+
+  useEffect(() => {
+    const ler = () => fetchGamification().then((g) => setNivel(g.level))
+    ler()
+    window.addEventListener(XP_UPDATED_EVENT, ler)
+    return () => window.removeEventListener(XP_UPDATED_EVENT, ler)
+  }, [])
 
   useEffect(() => {
     fetchActivityInsights().then(setInsights)
@@ -178,17 +190,18 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="space-y-2"
           >
-            <p className="text-sm capitalize text-muted-foreground">{today}</p>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-              {greeting()}{userName && `, ${userName}`}
-            </h2>
-            <p className="text-muted-foreground">
-              {stats.pendingTasks > 0
-                ? `Você tem ${stats.pendingTasks} ${stats.pendingTasks === 1 ? "tarefa pendente" : "tarefas pendentes"}. ${completionRate}% concluído.`
-                : "Tudo em dia. Que tal planejar algo novo?"}
-            </p>
+            <DashboardBanner nivel={nivel}>
+              <p className="text-sm capitalize text-white/70">{today}</p>
+              <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
+                {greeting()}{userName && `, ${userName}`}
+              </h2>
+              <p className="text-white/80">
+                {stats.pendingTasks > 0
+                  ? `Você tem ${stats.pendingTasks} ${stats.pendingTasks === 1 ? "tarefa pendente" : "tarefas pendentes"}. ${completionRate}% concluído.`
+                  : "Tudo em dia. Que tal planejar algo novo?"}
+              </p>
+            </DashboardBanner>
           </motion.div>
 
           <GettingStarted />
