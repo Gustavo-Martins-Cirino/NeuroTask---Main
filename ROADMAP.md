@@ -113,12 +113,9 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 > O Lenis já está montado (`components/smooth-scroll.tsx`, envolvendo o `AppShell`). Efeito
 > novo que precise rolar a página deve usar o `useLenis()` dele, não `window.scrollTo`.
-
-**ShaderGradient — o carro-chefe visual**
-
-> Instalar `@shadergradient/react` + peers (`three-stdlib`, `camera-controls`). `three` e
-> `@react-three/fiber` já estão no projeto.
-
+>
+> O ShaderGradient já está instalado e em uso (fundo do Entrar/Criar conta e os ambientes
+> animados do Modo Foco, em `components/focus-gradient.tsx`). Gradiente novo entra por lá.
 
 **three.js — sem dependência nova**
 
