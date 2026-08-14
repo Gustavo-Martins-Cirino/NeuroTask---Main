@@ -123,9 +123,9 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 **three.js — sem dependência nova**
 
 - [ ] **InstancedMesh** quando o catálogo da loja crescer: centenas de objetos em 1 draw call.
-- [ ] **Shader material customizado**: fazer o código da tela ROLAR (hoje ele existe, mas é
-      estático — barras em `linhasDeCodigo`, geometria, não textura) e chuva escorrendo no
-      vidro da janela.
+- [ ] **Chuva escorrendo no vidro da janela** (shader material customizado). O código da
+      tela já rola — feito movendo as barras, não com shader: são poucas dezenas de malhas e
+      assim a conta de wrap virou função pura testável (`lib/office-code-scroll`).
 - [ ] **WebGPU + TSL** (`three/webgpu`) — já está no core, mas é migração grande. Só depois
       que o resto desta seção estiver estável.
 

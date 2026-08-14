@@ -18,6 +18,7 @@ import {
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { faseDaHora, type FaseDoDia } from "@/lib/office-city"
 import { typingTap, typingRamp } from "@/lib/office-typing"
+import { rolagemDoCodigo, deslocamentoEm } from "@/lib/office-code-scroll"
 import type { AvatarConfig } from "@/lib/avatar"
 
 // Cena 3D (React-Three-Fiber) do Escritório. Câmera ortográfica isométrica,
@@ -257,6 +258,16 @@ function CartoonOffice({
   // Nuvens da janela: guardadas com o x de origem, porque a animação as arrasta
   // a partir dele (somar deslocamento sobre a posição atual acumularia erro e
   // elas iriam embora com o tempo).
+  // Barras do código na tela: guardam de onde saíram e a altura da tela, que é
+  // o que a rolagem precisa para dar a volta (ver lib/office-code-scroll).
+  const barrasDeCodigo = useMemo(() => {
+    const out: { mesh: Mesh; base: number; alt: number; eixo: "y" | "z" }[] = []
+    room.traverse((o) => {
+      const r = (o as Mesh).userData?.rolagem as { base: number; alt: number; eixo: "y" | "z" } | undefined
+      if (r) out.push({ mesh: o as Mesh, ...r })
+    })
+    return out
+  }, [room])
   const nuvens = useMemo(() => {
     const out: { mesh: Mesh; x0: number }[] = []
     room.traverse((o) => {
@@ -284,6 +295,14 @@ function CartoonOffice({
     // do original — com o bloom nos LEDs em volta, ela não precisa gritar.
     const glow = comemorando ? 1.9 : working ? 1.6 : 0.85 + Math.sin(t * 1.5) * 0.1
     for (const tela of telas) (tela.material as MeshStandardMaterial).emissiveIntensity = glow
+    // O código rola: devagar quando a sala está parada, bem mais rápido quando
+    // há trabalho em andamento. É o mesmo sinal do brilho e das mãos no teclado.
+    if (barrasDeCodigo.length > 0) {
+      const d = deslocamentoEm(t, !!working)
+      for (const b of barrasDeCodigo) {
+        b.mesh.position[b.eixo] = rolagemDoCodigo(b.base, b.alt, d)
+      }
+    }
     // Nuvens atravessando a janela, cada uma no seu ritmo. Bem devagar: o que
     // se quer é a sensação de que lá fora o tempo passa, não movimento na
     // periferia de quem está tentando trabalhar.

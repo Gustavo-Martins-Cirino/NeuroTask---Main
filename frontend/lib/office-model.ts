@@ -193,7 +193,11 @@ function codigoNaTela(
     const pos: V3 = plano === "xz"
       ? [base[0] + ou, base[1], base[2] + ov]
       : [base[0] + ou, base[1] + ov, base[2]]
-    parent.add(box(`Monitor_Codigo${sufixo}_${k}`, dims, pos, mats[l.cor]))
+    const barra = box(`Monitor_Codigo${sufixo}_${k}`, dims, pos, mats[l.cor])
+    // O que a cena precisa para ROLAR isto: a posição de origem, a altura da
+    // tela (para dar a volta) e em que eixo o "vertical" cai neste monitor.
+    barra.userData.rolagem = { base: ov, alt, eixo: plano === "xz" ? "z" : "y" }
+    parent.add(barra)
   })
 }
 
