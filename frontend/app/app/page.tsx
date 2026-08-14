@@ -2,6 +2,8 @@
 
 import { Header } from "@/components/header"
 import { GettingStarted } from "@/components/getting-started"
+import { SplitGreeting } from "@/components/split-greeting"
+import { saudacaoPorHora } from "@/lib/saudacao"
 import { Calendar, CheckSquare, Bot, ArrowRight, Clock, Target, ListTodo, LayoutDashboard, Bell, Brain } from "lucide-react"
 import { fetchActivityInsights, type ActivityInsight } from "@/lib/activity-log"
 import Link from "next/link"
@@ -65,6 +67,7 @@ export default function DashboardPage() {
     todayBlocks: 0,
   })
   const [userName, setUserName] = useState("")
+  const [perfilPronto, setPerfilPronto] = useState(false)
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [todayBlocks, setTodayBlocks] = useState<{ id: string; title: string; start_time: string; end_time: string }[]>([])
   const [todayTasks, setTodayTasks] = useState<{ id: string; title: string; priority: string }[]>([])
@@ -87,9 +90,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserName(user.user_metadata?.name || user.email?.split("@")[0] || "")
+      // finally: se a busca do usuário falhar, a saudação ainda precisa sair do
+      // invisível — senão o dashboard abre sem cabeçalho nenhum.
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setUserName(user.user_metadata?.name || user.email?.split("@")[0] || "")
+        }
+      } finally {
+        setPerfilPronto(true)
       }
 
       const today = new Date()
@@ -143,13 +152,6 @@ export default function DashboardPage() {
     fetchData()
   }, [supabase])
 
-  const greeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return "Bom dia"
-    if (hour < 18) return "Boa tarde"
-    return "Boa noite"
-  }
-
   const today = new Date().toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "numeric",
@@ -201,9 +203,11 @@ export default function DashboardPage() {
                 Nível {nivel} · {faixaDoNivel(nivel).nome}
               </span>
             </div>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-              {greeting()}{userName && `, ${userName}`}
-            </h2>
+            <SplitGreeting
+              texto={`${saudacaoPorHora(new Date().getHours())}${userName ? `, ${userName}` : ""}`}
+              pronto={perfilPronto}
+              className="text-3xl font-bold tracking-tight text-foreground md:text-4xl"
+            />
             <p className="text-muted-foreground">
               {stats.pendingTasks > 0
                 ? `Você tem ${stats.pendingTasks} ${stats.pendingTasks === 1 ? "tarefa pendente" : "tarefas pendentes"}. ${completionRate}% concluído.`
