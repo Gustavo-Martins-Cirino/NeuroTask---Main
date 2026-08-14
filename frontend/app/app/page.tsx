@@ -13,7 +13,7 @@ import { motion, animate } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { formatTime, formatClock } from "@/lib/time-format"
-import { DashboardBanner } from "@/components/dashboard-banner"
+import { faixaDoNivel } from "@/lib/nivel-faixa"
 import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
 
 function localDateKey() {
@@ -190,18 +190,25 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
+            className="space-y-2"
           >
-            <DashboardBanner nivel={nivel}>
-              <p className="text-sm capitalize text-white/70">{today}</p>
-              <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
-                {greeting()}{userName && `, ${userName}`}
-              </h2>
-              <p className="text-white/80">
-                {stats.pendingTasks > 0
-                  ? `Você tem ${stats.pendingTasks} ${stats.pendingTasks === 1 ? "tarefa pendente" : "tarefas pendentes"}. ${completionRate}% concluído.`
-                  : "Tudo em dia. Que tal planejar algo novo?"}
-              </p>
-            </DashboardBanner>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <p className="text-sm capitalize text-muted-foreground">{today}</p>
+              {/* Diferenciação por nível em área pequena: o ponto colorido é o
+                  único acento, o resto vem dos tokens do tema. */}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: faixaDoNivel(nivel).cor }} />
+                Nível {nivel} · {faixaDoNivel(nivel).nome}
+              </span>
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              {greeting()}{userName && `, ${userName}`}
+            </h2>
+            <p className="text-muted-foreground">
+              {stats.pendingTasks > 0
+                ? `Você tem ${stats.pendingTasks} ${stats.pendingTasks === 1 ? "tarefa pendente" : "tarefas pendentes"}. ${completionRate}% concluído.`
+                : "Tudo em dia. Que tal planejar algo novo?"}
+            </p>
           </motion.div>
 
           <GettingStarted />
