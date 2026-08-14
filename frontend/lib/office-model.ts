@@ -132,6 +132,21 @@ function sph(name: string, raio: number, pos: V3, material: Material, esc?: V3):
   return m
 }
 
+/**
+ * Marca uma peça para NÃO entrar no bloom, mesmo tendo emissivo.
+ *
+ * É o caso da tela do monitor. Os LEDs passam por `mled`, que corta a cor a 8%
+ * para a luz vir só da emissão — já a tela precisa de cor clara de base, senão o
+ * código escrito nela não se lê. No passe de bloom entra a cor RENDERIZADA, e
+ * uma superfície grande e clara vira um borrão branco por mais que se baixe o
+ * emissivo (foi exatamente o que aconteceu). Ela continua acesa na cena; só não
+ * espalha halo.
+ */
+export function semBloom<T extends Mesh>(m: T): T {
+  m.userData.semBloom = true
+  return m
+}
+
 // Um monitor = grupo (bezel + tela) num sub-Group, pra girar em bloco (toe-in
 // do setup duplo) mantendo a tela colada no bezel. A tela leva "Monitor_Tela"
 // no nome — é por ela que a cena acha o brilho ao "trabalhar".
@@ -198,7 +213,9 @@ function monitorUnit(sufixo: string, centro: V3, yaw: number, w: number, h: numb
   const grp = new Group()
   grp.name = `Monitor${sufixo}`
   grp.add(box(`Monitor_Bezel${sufixo}`, [w, 0.035, h], [0, 0.012, 0], mBezel))
-  grp.add(box(`Monitor_Tela${sufixo}`, [w - 0.08, 0.012, h - 0.06], [0, -0.006, 0], mGlow))
+  const tela = box(`Monitor_Tela${sufixo}`, [w - 0.08, 0.012, h - 0.06], [0, -0.006, 0], mGlow)
+  semBloom(tela)
+  grp.add(tela)
   // A tela era uma chapa lisa: o setup mais caro da loja mostrava um retângulo
   // e nada mais. As barras ficam 2,5 mm à frente do vidro (1 cm na escala 4).
   codigoNaTela(grp, sufixo, w - 0.1, h - 0.08, [0, -0.0145, 0], "xz", mCodigo)
@@ -233,7 +250,7 @@ function buildMonitores(g: Group, dy: number, setup: EscritorioExtras["setup"], 
     // dentro da mesa. A tela vai na face de dentro (voltada para quem digita).
     tampa.rotation.x = D(72)
     tampa.add(box("Notebook_Carcaca", [0.42, 0.28, 0.014], [0, 0.15, 0], mPC))
-    tampa.add(box("Monitor_Tela_Note", [0.38, 0.24, 0.006], [0, 0.15, 0.011], mGlow))
+    tampa.add(semBloom(box("Monitor_Tela_Note", [0.38, 0.24, 0.006], [0, 0.15, 0.011], mGlow)))
     codigoNaTela(tampa, "_Note", 0.36, 0.22, [0, 0.15, 0.0165], "xy", mCodigo)
     g.add(tampa)
   } else {

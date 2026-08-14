@@ -24,11 +24,14 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js"
 export const CAMADA_BLOOM = 1
 
 /** Marca as malhas que devem brilhar. Critério: material com emissivo de
- *  verdade — assim item novo que acenda entra sozinho, sem lista de nomes. */
+ *  verdade — assim item novo que acenda entra sozinho, sem lista de nomes.
+ *  Quem pede exceção usa `semBloom` no modelo (a tela do monitor: precisa de cor
+ *  clara para o código ser legível, e no bloom viraria um borrão). */
 export function marcarQuemAcende(root: { traverse: (cb: (o: unknown) => void) => void }) {
   root.traverse((o) => {
     const m = o as Mesh
     if (!m.isMesh || !m.material || Array.isArray(m.material)) return
+    if (m.userData?.semBloom) return
     const mat = m.material as { emissive?: { r: number; g: number; b: number }; emissiveIntensity?: number }
     const e = mat.emissive
     if (e && (mat.emissiveIntensity ?? 0) > 0.5 && e.r + e.g + e.b > 0.05) m.layers.enable(CAMADA_BLOOM)

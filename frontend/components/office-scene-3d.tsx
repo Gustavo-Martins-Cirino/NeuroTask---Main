@@ -279,11 +279,10 @@ function CartoonOffice({
     const t = state.clock.elapsedTime
     const festa = progressoDaFesta(festaRef)
     const comemorando = festa < 1
-    // Bem mais baixo que antes: a tela é a única peça acesa com cor CLARA de
-    // base (os LEDs têm a cor reduzida em mled), então no bloom ela estourava e
-    // virava um borrão branco enquanto os LEDs ficavam no ponto. Aqui o valor
-    // cobre as duas coisas — brilho na cena e quanto ela espalha.
-    const glow = comemorando ? 1.15 : working ? 0.95 : 0.5 + Math.sin(t * 1.5) * 0.06
+    // A tela acende na cena sem espalhar halo: ela está fora do bloom (semBloom
+    // no modelo), então o valor aqui é só o brilho dela mesma. Um pouco abaixo
+    // do original — com o bloom nos LEDs em volta, ela não precisa gritar.
+    const glow = comemorando ? 1.9 : working ? 1.6 : 0.85 + Math.sin(t * 1.5) * 0.1
     for (const tela of telas) (tela.material as MeshStandardMaterial).emissiveIntensity = glow
     // Nuvens atravessando a janela, cada uma no seu ritmo. Bem devagar: o que
     // se quer é a sensação de que lá fora o tempo passa, não movimento na
