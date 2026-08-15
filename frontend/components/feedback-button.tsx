@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { MessageSquarePlus, Loader2, Bug, Lightbulb, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
+import { colunaFaltante, envioSemColuna, explicaErro, MAX_TENTATIVAS } from "@/lib/feedback"
 
 // Botão de feedback dentro do app (Fase 5 — fechar o ciclo). Grava junto a ROTA
 // atual e o COMMIT (via /api/version) pra dar pra reproduzir o que a pessoa viu.
@@ -19,23 +20,6 @@ const KINDS = [
 ] as const
 
 type Kind = (typeof KINDS)[number]["value"]
-
-// O erro do Postgres vem pelo código, não pelo texto: a mensagem de violação de
-// RLS cita o nome da tabela ("...for table \"feedback\""), então casar por
-// substring fazia RLS e cache virarem "a tabela não existe" — e mandava rodar de
-// novo um SQL que já estava rodado.
-function explicaErro(err: { code?: string; message: string }): string {
-  switch (err.code) {
-    case "42P01":
-      return "A tabela de feedback ainda não existe. Rode supabase/feedback.sql no Supabase."
-    case "PGRST205":
-      return "A tabela existe, mas a API do Supabase ainda não a enxerga (cache do schema). Espere alguns segundos e tente de novo."
-    case "42501":
-      return "Sem permissão para gravar (RLS). Confira se você está logado e se a policy de insert do feedback.sql foi criada."
-    default:
-      return err.message
-  }
-}
 
 export function FeedbackButton() {
   const [open, setOpen] = useState(false)
@@ -61,21 +45,43 @@ export function FeedbackButton() {
       /* sem versão — segue mesmo assim */
     }
 
-    const { error: err } = await supabase.from("feedback").insert({
+    let envio: Record<string, unknown> = {
       user_id: user?.id ?? null,
       message: msg,
       kind,
       route: typeof window !== "undefined" ? window.location.pathname : null,
       commit,
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 300) : null,
-    })
+    }
+
+    // Se a tabela estiver com uma coluna a menos (SQL rodado numa versão
+    // anterior), o insert inteiro falha e a pessoa perde o que escreveu por
+    // causa de um METADADO. Aqui o metadado é descartado e a mensagem passa —
+    // com um aviso no console para o SQL ainda ser corrigido.
+    let err: { code?: string; message?: string } | null = null
+    const perdidas: string[] = []
+    for (let i = 0; i < MAX_TENTATIVAS; i++) {
+      const r = await supabase.from("feedback").insert(envio)
+      err = r.error
+      if (!err) break
+      const coluna = colunaFaltante(err)
+      const menor = coluna ? envioSemColuna(envio, coluna) : null
+      if (!menor) break
+      console.warn(`feedback: a tabela não tem a coluna "${coluna}" — enviando sem ela. Rode supabase/feedback.sql.`)
+      perdidas.push(coluna!)
+      envio = menor
+    }
 
     setLoading(false)
     if (err) {
       setError(explicaErro(err))
       return
     }
-    toast.success("Valeu pelo feedback! 🙏", { description: "Faz muita diferença pra melhorar o app." })
+    toast.success("Valeu pelo feedback! 🙏", {
+      description: perdidas.length
+        ? "Chegou aqui. (Sem o contexto da versão — rode supabase/feedback.sql.)"
+        : "Faz muita diferença pra melhorar o app.",
+    })
     setMessage("")
     setKind("geral")
     setOpen(false)

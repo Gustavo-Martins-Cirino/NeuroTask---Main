@@ -150,10 +150,14 @@ friends.sql → social_v2.sql → friends_agenda.sql → friends_v3.sql
 push.sql → push_cron.sql
 ```
 
-**6. Registro de erros** — falhas do navegador capturadas por `/api/errors`
+**6. Registro de erros e feedback** — sem dependências, mas sem eles o `/admin` fica cego
 ```
-error_log.sql
+error_log.sql · feedback.sql
 ```
+`error_log.sql` guarda as falhas do navegador capturadas por `/api/errors`; `feedback.sql`,
+o que chega pelo botão de feedback do app. Se o envio de feedback falhar com
+`Could not find the 'commit' column of 'feedback'`, é este arquivo faltando ou rodado numa
+versão anterior — reexecutar resolve (ele acrescenta as colunas que faltam sem apagar nada).
 
 **7. Integrações externas** (só se for usá-las)
 ```
