@@ -53,6 +53,9 @@ frontend/
 │   ├── avatar-editor.tsx     # Editor de avatar (cabelo/pele/roupa/fones)
 │   ├── friends-section.tsx   # Seção de amigos (usada em /app/friends)
 │   ├── page-transition.tsx   # Transições de página (AnimatePresence)
+│   ├── split-greeting.tsx    # Saudação do dashboard letra a letra (GSAP SplitText)
+│   ├── coin-flight.tsx       # Moeda voando até o contador de XP (GSAP MotionPath)
+│   ├── smooth-scroll.tsx     # Lenis + o ticker único que também puxa as animações
 │   ├── rich-text-editor.tsx  # Editor das notas
 │   ├── date-picker.tsx
 │   ├── task-card.tsx
@@ -73,6 +76,9 @@ frontend/
 │   ├── time-format.ts        # 12h/24h — puro; o I/O mora em hooks/use-time-format
 │   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
 │   ├── office-city.ts        # Fase do dia + paleta da vista da janela (puro)
+│   ├── office-rain.ts        # Chuva no vidro: gotas + leitura do mixer (puro)
+│   ├── saudacao.ts           # Cumprimento pela hora + ritmo das letras (puro)
+│   ├── coin-flight.ts        # Curva da moeda até o contador de XP (puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()
 └── styles/global.css
@@ -112,7 +118,9 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
 - Dock lateral retrátil: colapsado 72px, expandido 232px, spring transition (stiffness 400, damping 35).
 - Active pill animado com `layoutId="dock-active-pill"` no Dock.
 - Padding principal: `pl-24` no `app-shell.tsx` para não sobrepor o dock colapsado.
-- Framer Motion já instalado — usar para todas as animações de UI.
+- Framer Motion já instalado — usar para todas as animações de UI. O GSAP só entra onde
+  o FM não alcança (SplitText, MotionPath, o ticker único); migrar o que já funciona seria
+  retrabalho sem ganho.
 - Fonte: Geist (sans) + Geist Mono.
 
 ## Funcionalidades da IA (Neuro IA)
@@ -161,3 +169,4 @@ pnpm dev     # ou npm run dev
 - Sem comentários desnecessários no código
 - Módulo determinístico novo em `lib/` nasce com `lib/<nome>.test.ts` (Vitest, `pnpm test`)
 - Framer Motion: `motion.*` components, `AnimatePresence` para enter/exit, `layoutId` para shared layout animations
+- Efeito pesado é opt-in ou desligável, respeita `prefers-reduced-motion` e tem fallback estático

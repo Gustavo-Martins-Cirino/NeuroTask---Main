@@ -41,13 +41,20 @@ Antes do primeiro login, rode os SQLs em [supabase/](supabase/) — ver
 
 `pnpm test` (Vitest) cobre os módulos **determinísticos** de `lib/` — os que decidem
 datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `avatar-accessories`,
-`backward-plan`, `calendar-feed`, `calendar-warnings`, `gamification` (anti-farm), `ics`,
-`routine-insights`, `task-recurrence`, `telegram-commands` e `time-format`. É onde a lógica sutil regride sem
+`backward-plan`, `calendar-feed`, `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
+`gamification` (anti-farm), `ics`, `nivel-faixa`, `routine-insights`, `saudacao`,
+`task-recurrence`, `telegram-commands` e `time-format`. É onde a lógica sutil regride sem
 ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de
 Supabase, e não é ali que mora o risco.
 
+A **animação** também tem parte testável, quando a conta sai do olho e vira número:
+`coin-flight` (a curva da moeda que voa até o contador de XP — o arco nunca mergulha por
+baixo do header) e, no Escritório, `office-code-scroll` e `office-rain` (a gota nunca escapa
+do vão do vidro).
+
 O Escritório 3D tem um bloco à parte (`office-bg`, `office-camera`, `office-celebration`,
-`office-city`, `office-snapshot`, `office-typing` e `office-model`). O `office-model` é de um tipo
+`office-city`, `office-code-scroll`, `office-rain`, `office-snapshot`, `office-typing` e
+`office-model`). O `office-model` é de um tipo
 diferente: ele **mede a geometria** da cena — se a mão do boneco pousa no teclado, se o
 antebraço passa por cima da mesa. É o olho que falta, já que ninguém consegue ver um
 render num teste. Rodam em Node puro: construir malhas do three.js não exige WebGL.
