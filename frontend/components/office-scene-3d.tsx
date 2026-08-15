@@ -19,6 +19,8 @@ import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { faseDaHora, type FaseDoDia } from "@/lib/office-city"
 import { typingTap, typingRamp } from "@/lib/office-typing"
 import { rolagemDoCodigo, deslocamentoEm } from "@/lib/office-code-scroll"
+import { segmentoDaGota, chuvaLigadaNoMix, type Gota } from "@/lib/office-rain"
+import { MIXER_STORAGE_KEY, MIXER_CHANGED_EVENT } from "@/hooks/use-sound-mixer"
 import type { AvatarConfig } from "@/lib/avatar"
 
 // Cena 3D (React-Three-Fiber) do Escritório. Câmera ortográfica isométrica,
@@ -202,6 +204,32 @@ function Confete({ startRef, recuo = 0 }: { startRef: React.RefObject<number>; r
   )
 }
 
+// Chove na janela quando o som de Chuva está ligado no mixer. Não há previsão
+// do tempo no app, e inventar chuva seria decorar com dado falso — então o
+// gatilho é o que o usuário já escolheu ouvir.
+function useChuvaLigada() {
+  const [chovendo, setChovendo] = useState(false)
+
+  useEffect(() => {
+    const ler = () => {
+      try {
+        setChovendo(chuvaLigadaNoMix(localStorage.getItem(MIXER_STORAGE_KEY)))
+      } catch {
+        setChovendo(false) // localStorage bloqueado (modo privado, iframe)
+      }
+    }
+    ler()
+    window.addEventListener(MIXER_CHANGED_EVENT, ler)
+    window.addEventListener("storage", ler) // mixer mexido em outra aba
+    return () => {
+      window.removeEventListener(MIXER_CHANGED_EVENT, ler)
+      window.removeEventListener("storage", ler)
+    }
+  }, [])
+
+  return chovendo
+}
+
 // Cena cartoon NATIVA (sala + personagem em código, a partir dos scripts
 // Blender build_escritorio_base / build_personagem_base). Toon-shaded. O
 // monitor brilha mais quando "trabalhando" e o boneco respira (useFrame).
@@ -275,6 +303,22 @@ function CartoonOffice({
     })
     return out
   }, [room])
+  // Gotas no vidro: guardam a própria fase/velocidade e o vão em que correm
+  // (ver lib/office-rain). Sem janela comprada, a lista vem vazia.
+  const gotas = useMemo(() => {
+    const out: { mesh: Mesh; gota: Gota; topoZ: number; altura: number }[] = []
+    room.traverse((o) => {
+      const c = (o as Mesh).userData?.chuva as { gota: Gota; topoZ: number; altura: number } | undefined
+      if (c) out.push({ mesh: o as Mesh, ...c })
+    })
+    return out
+  }, [room])
+  const chovendo = useChuvaLigada()
+  // Ligar/desligar é troca de visibilidade, não reconstrução da sala: rebuildar
+  // o modelo a cada clique no mixer piscaria a cena inteira.
+  useEffect(() => {
+    for (const { mesh } of gotas) mesh.visible = chovendo
+  }, [gotas, chovendo])
   // Os dois cotovelos: girá-los é o boneco digitando (ver lib/office-typing).
   const cotovelos = useMemo(() => {
     const out: { pivo: Group; lado: 1 | -1 }[] = []
@@ -311,6 +355,16 @@ function CartoonOffice({
       const periodo = 90 + i * 34
       const volta = ((t / periodo + i * 0.37) % 1) * 2 - 1 // -1 → 1, e recomeça
       mesh.position.x = x0 + volta * 0.9
+    }
+    // Chuva escorrendo no vidro. Só conta quando está chovendo — com o mixer
+    // desligado as gotas estão invisíveis e mexer nelas seria trabalho jogado
+    // fora a 60 quadros por segundo.
+    if (chovendo) {
+      for (const { mesh, gota, topoZ, altura } of gotas) {
+        const { centroZ, escalaZ } = segmentoDaGota(gota, t, topoZ, altura)
+        mesh.position.z = centroZ
+        mesh.scale.z = escalaZ
+      }
     }
     // Comemorando, as mãos saem do teclado: quem pula não digita.
     digitandoRef.current = typingRamp(digitandoRef.current, !!working && !comemorando, delta)

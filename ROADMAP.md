@@ -119,10 +119,12 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **three.js — sem dependência nova**
 
+> Duas coisas que pareciam pedir shader saíram sem ele, movendo malhas: o código que rola
+> na tela (`lib/office-code-scroll`) e a chuva no vidro da janela (`lib/office-rain`). São
+> poucas dezenas de malhas, e assim a conta vira função pura testável — um shader seria mais
+> bonito e completamente invisível para os testes. Shader novo só se o custo aparecer.
+
 - [ ] **InstancedMesh** quando o catálogo da loja crescer: centenas de objetos em 1 draw call.
-- [ ] **Chuva escorrendo no vidro da janela** (shader material customizado). O código da
-      tela já rola — feito movendo as barras, não com shader: são poucas dezenas de malhas e
-      assim a conta de wrap virou função pura testável (`lib/office-code-scroll`).
 - [ ] **WebGPU + TSL** (`three/webgpu`) — já está no core, mas é migração grande. Só depois
       que o resto desta seção estiver estável.
 

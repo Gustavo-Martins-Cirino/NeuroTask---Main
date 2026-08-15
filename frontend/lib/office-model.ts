@@ -24,6 +24,7 @@ import {
 } from "three"
 import type { AvatarAccessories } from "./avatar-accessories"
 import { PALETA_CIDADE, type FaseDoDia } from "./office-city"
+import { criarGotas, GOTAS_PADRAO, type Gota } from "./office-rain"
 
 type V3 = [number, number, number]
 
@@ -740,6 +741,31 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     g.add(box("Janela_Travessa_V", [0.035, 0.045, ALT], [cx, face - 0.06, cz], mCaix))
     g.add(box("Janela_Travessa_H", [LARG, 0.045, 0.035], [cx, face - 0.06, cz], mCaix))
     g.add(box("Janela_Peitoril", [LARG + 0.18, 0.13, 0.045], [cx, face - 0.09, cz - ALT / 2 - 0.06], mPeit))
+
+    // Chuva escorrendo NO vidro: entre o vidro (face-0.05) e o caixilho
+    // (face-0.06), para o risco passar por cima da vista e por baixo da moldura.
+    // Nascem invisíveis — quem liga é a cena, quando o som de chuva está no ar.
+    const mGota = tmat([0.86, 0.93, 1], 0.15, "vidro")
+    mGota.transparent = true
+    mGota.opacity = 0.5
+    const topoVidro = cz + ALT / 2
+    criarGotas(GOTAS_PADRAO, LARG, ALT).forEach((gota, i) => {
+      const risco = box(
+        `Janela_Gota_${i}`,
+        [gota.largura, 0.006, gota.comprimento],
+        [cx + gota.x, face - 0.055, topoVidro],
+        mGota
+      )
+      risco.visible = false
+      risco.castShadow = false
+      risco.receiveShadow = false
+      risco.userData.chuva = { gota, topoZ: topoVidro, altura: ALT } satisfies {
+        gota: Gota
+        topoZ: number
+        altura: number
+      }
+      g.add(risco)
+    })
   }
 
   if (extras.tapete) {

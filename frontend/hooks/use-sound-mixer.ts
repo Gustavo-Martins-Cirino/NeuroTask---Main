@@ -20,7 +20,14 @@ export interface MixerTrackState {
 
 const FADE = 0.3 // segundos (fade in/out ao ligar/desligar)
 const CROSSFADE = 2.5 // segundos de sobreposição entre repetições de música
-const STORAGE_KEY = "neurotask-sound-mixer"
+
+export const MIXER_STORAGE_KEY = "neurotask-sound-mixer"
+const STORAGE_KEY = MIXER_STORAGE_KEY
+
+// Quem quiser reagir ao mix (a janela do Escritório chove quando o som de chuva
+// está ligado) escuta isto: o evento `storage` do navegador só dispara em OUTRA
+// aba, e o mixer e a sala 3D vivem na mesma.
+export const MIXER_CHANGED_EVENT = "neurotask:mixer-changed"
 
 // Loop nativo (ambiente/ruído): {kind:"loop"}. Música com crossfade: {kind:"music"}.
 type Controller =
@@ -103,6 +110,7 @@ export function useSoundMixer(configs: MixerTrackConfig[]) {
       tracks: Object.fromEntries(Object.entries(tracks).map(([k, v]) => [k, { volume: v.volume, active: v.active }])),
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    window.dispatchEvent(new Event(MIXER_CHANGED_EVENT))
   }, [tracks, masterVolume])
 
   const ensureCtx = useCallback(() => {
