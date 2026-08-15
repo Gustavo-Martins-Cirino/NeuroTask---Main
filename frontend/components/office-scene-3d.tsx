@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { ContactShadows, Environment, Lightformer, OrthographicCamera, useGLTF } from "@react-three/drei"
-import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type Material, type MeshStandardMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
+import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type DirectionalLight, type Material, type MeshStandardMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
 import { fitOrthoCamera, CAMERA_POS } from "@/lib/office-camera"
 import { OfficeBloom, marcarQuemAcende } from "@/components/office-bloom"
 import { resolveOfficeBg } from "@/lib/office-bg"
@@ -409,6 +409,49 @@ function FitCamera({ contentRef, dep }: { contentRef: React.RefObject<Group | nu
   return null
 }
 
+/**
+ * Sombra sob demanda.
+ *
+ * O mapa de sombra é um RENDER INTEIRO da cena, a 2048², e o three.js o refaz a
+ * cada quadro por padrão — para uma sala que está parada. Era o quadro mais caro
+ * do Escritório sem nada em troca: móvel, parede e planta projetam exatamente a
+ * mesma sombra no quadro seguinte.
+ *
+ * Então ele só é refeito quando a cena muda de verdade (item equipado, nível,
+ * hora do dia) e enquanto a sala comemora — que é a única hora em que alguém
+ * sai do lugar o bastante para a sombra mudar. Respirar e digitar mexem menos
+ * de um pixel de sombra: congelar ali é invisível.
+ */
+function SombraSobDemanda({
+  luzRef, festaRef, chave,
+}: {
+  luzRef: React.RefObject<DirectionalLight | null>
+  festaRef: React.RefObject<number>
+  chave: string
+}) {
+  // Alguns quadros, não um: no quadro em que a sala é trocada a malha nova pode
+  // ainda não ter entrado no grafo, e a sombra sairia da sala antiga.
+  const restantes = useRef(0)
+
+  useEffect(() => {
+    const luz = luzRef.current
+    if (!luz) return
+    luz.shadow.autoUpdate = false
+    restantes.current = 3
+  }, [chave, luzRef])
+
+  useFrame(() => {
+    const luz = luzRef.current
+    if (!luz) return
+    const comemorando = progressoDaFesta(festaRef) < 1
+    if (!comemorando && restantes.current <= 0) return
+    luz.shadow.needsUpdate = true
+    if (restantes.current > 0) restantes.current--
+  })
+
+  return null
+}
+
 function Scene({
   working, onAvatarClick, phase, avatar, equipped, nivel, celebrateNonce, bloom,
 }: {
@@ -423,6 +466,9 @@ function Scene({
 }) {
   const L = LIGHT[phase]
   const contentRef = useRef<Group>(null)
+  const luzRef = useRef<DirectionalLight>(null)
+  // Tudo que faz a sala mudar de forma — e portanto de sombra.
+  const chaveDaCena = [phase, nivel ?? 1, [...(equipped ?? [])].sort().join("|")].join("·")
   // Início da comemoração (performance.now); 0 = sala parada. Vive num ref
   // porque quem lê é o useFrame, não o render.
   const festaRef = useRef(0)
@@ -445,6 +491,7 @@ function Scene({
           Intensidades menores que na era toon: o environment já preenche. */}
       <hemisphereLight args={["#fff1e0", "#9a7b5a", L.hemiI * 0.55]} />
       <directionalLight
+        ref={luzRef}
         color={L.key}
         intensity={L.keyI * 0.85}
         position={[9, 16, 11]}
@@ -476,6 +523,7 @@ function Scene({
         />
       </group>
       <FitCamera contentRef={contentRef} dep={String(nivel ?? 1)} />
+      <SombraSobDemanda luzRef={luzRef} festaRef={festaRef} chave={chaveDaCena} />
       {/* Fora do contentRef de propósito: o confete não pode entrar na conta do
           auto-fit, senão a sala encolheria para caber num papelzinho no teto. */}
       <group rotation={[-Math.PI / 2, 0, 0]} scale={4}>
@@ -507,10 +555,36 @@ function temWebGL() {
   }
 }
 
+/**
+ * Renderizar só o que está à vista. A página do Escritório é comprida — a loja
+ * inteira vem abaixo da sala — e o Canvas continuava desenhando a 60 fps para
+ * ninguém enquanto a pessoa rolava escolhendo item. Aqui o loop simplesmente
+ * para quando a sala sai da tela e volta quando ela reaparece.
+ */
+function useNaTela<T extends HTMLElement>(ref: React.RefObject<T | null>) {
+  const [naTela, setNaTela] = useState(true)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === "undefined") return
+    const obs = new IntersectionObserver(([e]) => setNaTela(e.isIntersecting), {
+      // Uma folga: a sala volta a animar um pouco antes de aparecer, para não
+      // entrar na tela congelada e "acordar" na frente de quem está olhando.
+      rootMargin: "200px",
+    })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [ref])
+
+  return naTela
+}
+
 export function OfficeScene3D({
   working = false, onAvatarClick = () => {}, avatar, equipped, nivel, bgColor, celebrateNonce, className,
 }: OfficeScene3DProps) {
   const [phase, setPhase] = useState<Phase>("day")
+  const caixaRef = useRef<HTMLDivElement>(null)
+  const naTela = useNaTela(caixaRef)
   // Síncrono no PRIMEIRO render: num useEffect o <Canvas> já teria montado e
   // estourado antes da checagem. A cena só entra por dynamic(ssr:false), então
   // aqui é sempre cliente — o typeof é só cinto de segurança.
@@ -559,9 +633,10 @@ export function OfficeScene3D({
   }
 
   return (
-    <div className={className} style={{ position: "relative", background: bgStyle }}>
+    <div ref={caixaRef} className={className} style={{ position: "relative", background: bgStyle }}>
       <Canvas
         shadows="soft"
+        frameloop={naTela ? "always" : "never"}
         dpr={[1, 2]}
         // preserveDrawingBuffer: mantém o buffer pra dar pra "tirar foto" da sala
         // (snapshot compartilhável) com canvas.toBlob a qualquer momento.
