@@ -8,7 +8,6 @@ import {
   ATRITO_POR_QUADRO,
   AMPLITUDE_DA_RESPIRACAO,
   GIRO_PARADO,
-  GIRO_PENSANDO,
 } from "./neuro-sphere"
 
 function raioDe(pos: Float32Array, i: number): number {
@@ -157,14 +156,12 @@ describe("respiracao", () => {
 })
 
 describe("velocidadeDoGiro", () => {
-  it("acelera enquanto a Neuro pensa", () => {
-    expect(velocidadeDoGiro(false, false)).toBe(GIRO_PARADO)
-    expect(velocidadeDoGiro(true, false)).toBe(GIRO_PENSANDO)
-    expect(GIRO_PENSANDO).toBeGreaterThan(GIRO_PARADO)
+  it("gira devagar em repouso", () => {
+    expect(velocidadeDoGiro(false)).toBe(GIRO_PARADO)
+    expect(GIRO_PARADO).toBeGreaterThan(0)
   })
 
-  it("movimento reduzido para a esfera, pensando ou não", () => {
-    expect(velocidadeDoGiro(false, true)).toBe(0)
-    expect(velocidadeDoGiro(true, true)).toBe(0)
+  it("movimento reduzido para a esfera de vez", () => {
+    expect(velocidadeDoGiro(true)).toBe(0)
   })
 })

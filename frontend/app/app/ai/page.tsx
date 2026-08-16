@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { Bot, Send, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -15,6 +16,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+
+// R3F usa WebGL: só no cliente, e sob demanda — quem abre o chat com conversa
+// já em andamento nunca vê o estado vazio e não deve pagar o bundle do three.
+const NeuroSphere = dynamic(
+  () => import("@/components/neuro-sphere").then((m) => m.NeuroSphere),
+  { ssr: false, loading: () => <div className="h-40 w-40 sm:h-48 sm:w-48" /> }
+)
 
 interface ChatMessage {
   role: "user" | "assistant"
@@ -410,9 +418,16 @@ export default function AiPage() {
               animate={{ opacity: 1, y: 0 }}
               className="flex h-full flex-col items-center justify-center gap-6 text-center"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                <Sparkles className="h-8 w-8 text-primary" />
-              </div>
+              <NeuroSphere
+                className="h-40 w-40 sm:h-48 sm:w-48"
+                fallback={
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                      <Sparkles className="h-8 w-8 text-primary" />
+                    </div>
+                  </div>
+                }
+              />
               <div className="space-y-1">
                 <h2 className="text-2xl font-bold">Olá! Sou a Neuro IA</h2>
                 <p className="text-muted-foreground">

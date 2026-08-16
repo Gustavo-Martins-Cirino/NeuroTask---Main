@@ -81,13 +81,14 @@ export function respiracao(tempo: number, amplitude = AMPLITUDE_DA_RESPIRACAO): 
 }
 
 /**
- * A esfera acelera enquanto a Neuro pensa — é o único sinal de "estou
- * trabalhando" que sobra quando a resposta demora e não há texto ainda.
+ * Giro de repouso. Devagar de propósito: a esfera é presença, não animação de
+ * carregamento — quem sinaliza "estou pensando" é o spinner da bolha vazia.
+ *
+ * Movimento reduzido zera o giro. Fica aqui, e não no componente, porque é a
+ * regra do projeto para efeito pesado e vale ter um teste cobrando.
  */
 export const GIRO_PARADO = 0.16
-export const GIRO_PENSANDO = 0.72
 
-export function velocidadeDoGiro(pensando: boolean, reduzido: boolean): number {
-  if (reduzido) return 0
-  return pensando ? GIRO_PENSANDO : GIRO_PARADO
+export function velocidadeDoGiro(reduzido: boolean): number {
+  return reduzido ? 0 : GIRO_PARADO
 }
