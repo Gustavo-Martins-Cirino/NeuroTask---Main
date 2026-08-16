@@ -56,6 +56,7 @@ frontend/
 │   ├── split-greeting.tsx    # Saudação do dashboard letra a letra (GSAP SplitText)
 │   ├── coin-flight.tsx       # Moeda voando até o contador de XP (GSAP MotionPath)
 │   ├── smooth-scroll.tsx     # Lenis + o ticker único que também puxa as animações
+│   │                         # (o Canvas do Escritório entra nele por TickerDoGsap)
 │   ├── rich-text-editor.tsx  # Editor das notas
 │   ├── date-picker.tsx
 │   ├── task-card.tsx
@@ -79,6 +80,7 @@ frontend/
 │   ├── office-rain.ts        # Chuva no vidro: gotas + leitura do mixer (puro)
 │   ├── saudacao.ts           # Cumprimento pela hora + ritmo das letras (puro)
 │   ├── coin-flight.ts        # Curva da moeda até o contador de XP (puro)
+│   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()
 └── styles/global.css
@@ -121,6 +123,10 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
 - Framer Motion já instalado — usar para todas as animações de UI. O GSAP só entra onde
   o FM não alcança (SplitText, MotionPath, o ticker único); migrar o que já funciona seria
   retrabalho sem ganho.
+- **Um relógio só**: `gsap.ticker` puxa o Lenis e o `<Canvas>` do Escritório
+  (`frameloop="never"` + `advance()`). Canvas novo que entre nisso passa o tempo por
+  `lib/frame-clock.ts` — o `advance()` quer **segundos de cena**, não o instante do rAF —
+  e leva vigia junto: sem alguém chamando `advance()`, a cena não fica lenta, congela.
 - Fonte: Geist (sans) + Geist Mono.
 
 ## Funcionalidades da IA (Neuro IA)

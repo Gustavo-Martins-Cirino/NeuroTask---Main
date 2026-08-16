@@ -133,14 +133,31 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > O pacote já está instalado (`gsap` 3.15, todos os plugins livres). SplitText e MotionPath
 > já estão em uso — `components/split-greeting.tsx` e `components/coin-flight.tsx`. O
 > `gsap.ticker` já puxa o Lenis (`TickerUnico` em `components/smooth-scroll.tsx`,
-> `autoRaf: false` + `lagSmoothing(0)`).
+> `autoRaf: false` + `lagSmoothing(0)`) **e a sala 3D** (`TickerDoGsap` em
+> `components/office-scene-3d.tsx`: `frameloop="never"` + `advance()`, com o tempo passando
+> por `lib/frame-clock.ts`).
+>
+> **Duas coisas para lembrar antes de pôr outro canvas no ticker.** O `advance()` em
+> `frameloop="never"` recebe **segundos de cena**, não o instante do rAF — o R3F faz
+> `delta = t - clock.elapsedTime`. E `setFrameloop` **zera** `clock.elapsedTime`, então quem
+> alterna o frameloop reinicia a animação junto.
 
-- [ ] **Trazer o R3F para o mesmo ticker.** Falta a metade 3D do loop único: hoje o
-      `<Canvas>` do Escritório e o do ShaderGradient abrem cada um o seu
-      `requestAnimationFrame`. Exigiria `frameloop="never"` + `advance()` manual, e é
-      justamente onde o custo de errar é alto — se o ticker não chamar, a sala 3D
-      simplesmente congela, e não dá para conferir isso lendo o código. Fica para quando
-      houver como ver a cena rodando de verdade.
+- [ ] **Ver a sala rodando no ticker, no olho.** O que dá para conferir daqui já foi
+      (334 testes, `tsc`, `next build`), mas ninguém viu a cena andando — que é a razão de
+      este item ter ficado parado tanto tempo. No deploy, olhar três coisas no Escritório:
+      o beagle pulando, o código descendo no monitor e as mãos no teclado. Se estiverem
+      paradas, o vigia do `TickerDoGsap` falhou junto e o caso é de issue, não de ajuste
+      fino — porque o vigia existe justamente para devolver o Canvas ao loop nativo do R3F
+      quando os quadros param de chegar.
+- [ ] **O canvas do ShaderGradient continua no loop dele — e é bloqueio do pacote.**
+      `ShaderGradientCanvas` não repassa `frameloop`, e forçar por dentro com
+      `setFrameloop("never")` vira cabo de guerra: o `configure()` do R3F roda no layout
+      effect **a cada render** e reverte para `"always"` (`if (state.frameloop !== frameloop)`),
+      e cada ida e volta zera o `clock.elapsedTime` — ou seja, o gradiente reiniciaria do
+      começo a cada re-render do Modo Foco. Saídas reais: PR upstream repassando a prop, ou
+      vendorizar o componente. **Ganho pequeno de propósito**: o Modo Foco é overlay e já
+      para o Lenis (`PausaComDialogo`), então ali não há scroll para sair de fase — era o
+      motivo do ticker único. Só vale se o pacote resolver de graça.
 
 ### A pasta `frontend/components/inspirações/`
 

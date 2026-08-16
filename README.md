@@ -49,8 +49,9 @@ Supabase, e não é ali que mora o risco.
 
 A **animação** também tem parte testável, quando a conta sai do olho e vira número:
 `coin-flight` (a curva da moeda que voa até o contador de XP — o arco nunca mergulha por
-baixo do header) e, no Escritório, `office-code-scroll` e `office-rain` (a gota nunca escapa
-do vão do vidro).
+baixo do header), `frame-clock` (o tempo que a cena 3D recebe do ticker do GSAP: acumulado
+do zero e limitado, para que voltar de aba em segundo plano não faça a sala saltar) e, no
+Escritório, `office-code-scroll` e `office-rain` (a gota nunca escapa do vão do vidro).
 
 O Escritório 3D tem um bloco à parte (`office-bg`, `office-camera`, `office-celebration`,
 `office-city`, `office-code-scroll`, `office-rain`, `office-snapshot`, `office-typing` e
