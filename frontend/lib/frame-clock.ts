@@ -29,8 +29,14 @@ export interface RelogioQuadro {
   ultimo?: number
 }
 
-export function relogioNovo(): RelogioQuadro {
-  return { tempo: 0 }
+/**
+ * @param tempoInicial de onde continuar — o `clock.elapsedTime` que a cena já
+ * marca. Começar do zero com o relógio do R3F adiante entregaria delta NEGATIVO
+ * no primeiro quadro, e um delta negativo não deixa a cena lenta: joga toda
+ * animação que integra por delta para trás.
+ */
+export function relogioNovo(tempoInicial = 0): RelogioQuadro {
+  return { tempo: Number.isFinite(tempoInicial) && tempoInicial > 0 ? tempoInicial : 0 }
 }
 
 /**

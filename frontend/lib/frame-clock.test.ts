@@ -80,6 +80,24 @@ describe("proximoQuadro", () => {
     expect(r2.tempo).toBe(DELTA_MAX_S)
   })
 
+  it("continua de onde a cena já estava, sem entregar delta negativo", () => {
+    // O relógio do R3F pode já ter andado quando o ticker assume. Nascer em
+    // zero faria o primeiro advance() valer `0 - elapsedTime`: delta negativo,
+    // que joga para trás toda animação que integra por delta.
+    let r = relogioNovo(42)
+    expect(r.tempo).toBe(42)
+    r = proximoQuadro(r, 1000)
+    expect(r.tempo).toBe(42)
+    r = proximoQuadro(r, 1000 + 1 / 60)
+    expect(r.tempo).toBeGreaterThan(42)
+  })
+
+  it("ponto de partida inválido cai no zero", () => {
+    for (const t of [NaN, Infinity, -5, -0.1]) {
+      expect(relogioNovo(t).tempo).toBe(0)
+    }
+  })
+
   it("não altera o relógio recebido", () => {
     const r = proximoQuadro(relogioNovo(), 1)
     const copia = { ...r }
