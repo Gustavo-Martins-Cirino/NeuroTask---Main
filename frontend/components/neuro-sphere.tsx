@@ -16,10 +16,10 @@ import {
 // respira e abre onde o cursor passa. Acelera enquanto a resposta não chega —
 // é o único sinal de "estou trabalhando" que sobra antes do primeiro texto.
 //
-// Referência visual em inspirações/NeuroIA.txt (Particle Sphere, do Originkit),
-// reescrita nos padrões daqui: o original abre o próprio requestAnimationFrame e
-// fala com o WebGLRenderer na mão. Esta roda dentro do R3F e no mesmo ticker do
-// resto do app. As contas que são decisão nossa moram em lib/neuro-sphere.ts.
+// Referência visual: o "Particle Sphere" do Originkit, reescrito nos padrões
+// daqui — o original abre o próprio requestAnimationFrame e fala com o
+// WebGLRenderer na mão. Este roda dentro do R3F e no mesmo ticker do resto do
+// app. As contas que são decisão nossa moram em lib/neuro-sphere.ts.
 
 const QUANTIDADE = 1400
 const RAIO = 1

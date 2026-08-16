@@ -49,6 +49,8 @@ frontend/
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
 │   ├── robot-mascot.tsx      # Robozinho SVG animado (mascote da Neuro IA no modo voz)
 │   ├── office-scene-3d.tsx   # Cena 3D do Escritório (R3F) — sala/itens/avatar por nível
+│   ├── neuro-sphere.tsx      # Esfera de partículas da Neuro IA (estado vazio do chat)
+│   ├── r3f-ticker.tsx        # TickerDoGsap: põe um <Canvas> no ticker único (+ vigia)
 │   ├── avatar-figure.tsx     # Bonequinho paper-doll (preview do editor) + acessórios da loja
 │   ├── avatar-editor.tsx     # Editor de avatar (cabelo/pele/roupa/fones)
 │   ├── friends-section.tsx   # Seção de amigos (usada em /app/friends)
@@ -81,6 +83,7 @@ frontend/
 │   ├── saudacao.ts           # Cumprimento pela hora + ritmo das letras (puro)
 │   ├── coin-flight.ts        # Curva da moeda até o contador de XP (puro)
 │   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
+│   ├── neuro-sphere.ts       # Esfera da Neuro: pontos, repulsão e retorno (puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()
 └── styles/global.css
@@ -123,10 +126,12 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
 - Framer Motion já instalado — usar para todas as animações de UI. O GSAP só entra onde
   o FM não alcança (SplitText, MotionPath, o ticker único); migrar o que já funciona seria
   retrabalho sem ganho.
-- **Um relógio só**: `gsap.ticker` puxa o Lenis e o `<Canvas>` do Escritório
-  (`frameloop="never"` + `advance()`). Canvas novo que entre nisso passa o tempo por
-  `lib/frame-clock.ts` — o `advance()` quer **segundos de cena**, não o instante do rAF —
-  e leva vigia junto: sem alguém chamando `advance()`, a cena não fica lenta, congela.
+- **Um relógio só**: `gsap.ticker` puxa o Lenis e os `<Canvas>` do app (Escritório e
+  esfera da Neuro). Canvas novo entra por `<TickerDoGsap>` (`components/r3f-ticker.tsx`)
+  com `frameloop="never"` — nunca reescrevendo a inscrição no ticker à mão, porque o
+  vigia que vem junto é a metade que importa: sem alguém chamando `advance()`, a cena
+  não fica lenta, congela. O tempo passa por `lib/frame-clock.ts` (o `advance()` quer
+  **segundos de cena**, não o instante do rAF).
 - Fonte: Geist (sans) + Geist Mono.
 
 ## Funcionalidades da IA (Neuro IA)

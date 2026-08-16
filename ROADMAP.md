@@ -142,13 +142,14 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > `delta = t - clock.elapsedTime`. E `setFrameloop` **zera** `clock.elapsedTime`, então quem
 > alterna o frameloop reinicia a animação junto.
 
-- [ ] **Ver a sala rodando no ticker, no olho.** O que dá para conferir daqui já foi
-      (334 testes, `tsc`, `next build`), mas ninguém viu a cena andando — que é a razão de
-      este item ter ficado parado tanto tempo. No deploy, olhar três coisas no Escritório:
-      o beagle pulando, o código descendo no monitor e as mãos no teclado. Se estiverem
-      paradas, o vigia do `TickerDoGsap` falhou junto e o caso é de issue, não de ajuste
-      fino — porque o vigia existe justamente para devolver o Canvas ao loop nativo do R3F
-      quando os quadros param de chegar.
+- [ ] **Ver as duas cenas rodando no ticker, no olho.** O que dá para conferir daqui já foi
+      (355 testes, `tsc`, `next build`), mas ninguém viu nada andando — que é a razão de
+      este item ter ficado parado tanto tempo. No deploy: no **Escritório**, o beagle
+      pulando, o código descendo no monitor e as mãos no teclado; na **Neuro IA** (chat sem
+      conversa começada), a esfera girando devagar e abrindo onde o mouse passa. Se
+      estiverem paradas, o vigia do `TickerDoGsap` falhou junto e o caso é de issue, não de
+      ajuste fino — porque o vigia existe justamente para devolver o Canvas ao loop nativo
+      do R3F quando os quadros param de chegar.
 - [ ] **O canvas do ShaderGradient continua no loop dele — e é bloqueio do pacote.**
       `ShaderGradientCanvas` não repassa `frameloop`, e forçar por dentro com
       `setFrameloop("never")` vira cabo de guerra: o `configure()` do R3F roda no layout
@@ -177,6 +178,19 @@ Além das referências de auth já citadas, valem nota: `Captura de tela 2026-08
 (mesh gradient pastel com uma barra "Ask anything" flutuando — ideia para o chat da Neuro IA)
 e `skiper.tsx` / `time.tsx` (números animados com `NumberFlow` — ideia para o timer do Modo
 Foco e para os contadores de XP).
+
+O "Particle Sphere" do Originkit **já virou código**: é a esfera do estado vazio da Neuro IA
+(`components/neuro-sphere.tsx` + `lib/neuro-sphere.ts`). Serviu de exemplo do que a regra
+acima quer dizer — o original abre o próprio `requestAnimationFrame` e fala com o
+`WebGLRenderer` na mão, e a versão daqui roda dentro do R3F, no ticker único. Do original
+sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
+
+- [ ] **Tirar a chave do `NeuroIA.txt` antes de versionar o arquivo.** O trecho que o
+      Gustavo baixou vem com uma `ORIGINKIT_API_KEY` viva no cabeçalho, e o repositório é
+      público — por isso ele segue fora do git, solto em `frontend/inspirações/` (uma pasta
+      a mais: as referências moram em `frontend/components/inspirações/`). Para guardar:
+      apagar a chave, mover para a pasta certa. E revogar a chave no Originkit de qualquer
+      jeito, já que ela circulou em texto puro.
 
 ### Calendário aberto pra fora
 

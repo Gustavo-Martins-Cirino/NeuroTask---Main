@@ -3,10 +3,10 @@
 // empurra e com que rapidez ela volta ao lugar. A conta de raio/projeção fica
 // com o three (Ray), que já sabe fazê-la — reimplementar seria copiar sem ganho.
 //
-// Referência visual: frontend/inspirações/NeuroIA.txt (Particle Sphere, do
-// Originkit). Reescrito, não copiado: o original abre o próprio
-// requestAnimationFrame e fala com o WebGLRenderer na mão. Aqui a esfera roda
-// dentro do R3F, no mesmo ticker do resto do app (ver lib/frame-clock.ts).
+// Referência visual: o "Particle Sphere" do Originkit. Reescrito, não copiado —
+// o original abre o próprio requestAnimationFrame e fala com o WebGLRenderer na
+// mão, que é o oposto do que o resto do app faz. Aqui a esfera roda dentro do
+// R3F e no mesmo ticker de todo mundo (ver lib/frame-clock.ts).
 
 export interface Vetor3 {
   x: number
