@@ -64,6 +64,54 @@
   }
 }
 
+/* ---- Fundo em malha ------------------------------------------------------
+   O fundo pastel da Neuro IA (referência: inspirações/…202826.png).
+
+   Três manchas de cor que derivam devagar, em vez de uma imagem parada. Cada
+   uma é um `radial-gradient` com borda macia — nada de `filter: blur`, que numa
+   camada do tamanho da tela custa caro e some com a bateria do celular.
+
+   O movimento é só `transform`, que a GPU compõe sem repintar nada. É a mesma
+   escolha da borda viva: efeito de fundo não pode disputar quadro com a cena 3D
+   da esfera, que roda na MESMA página. */
+@keyframes malha-deriva-a {
+  50% {
+    transform: translate3d(7%, -5%, 0) scale(1.12);
+  }
+}
+@keyframes malha-deriva-b {
+  50% {
+    transform: translate3d(-6%, 6%, 0) scale(1.08);
+  }
+}
+@keyframes malha-deriva-c {
+  50% {
+    transform: translate3d(5%, 7%, 0) scale(1.15);
+  }
+}
+
+.fundo-malha {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fundo-malha span {
+  position: absolute;
+  border-radius: 9999px;
+  /* A parada em 70% deixa a borda dissolver sozinha: sem isso a mancha vira um
+     círculo com contorno visível. */
+  background: radial-gradient(circle at center, var(--cor) 0%, transparent 70%);
+  animation: var(--anim) var(--tempo) ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fundo-malha span {
+    animation: none;
+  }
+}
+
 :root {
   /* NeuroTask Light Theme - Clean, Professional */
   --background: oklch(0.985 0.002 260);
@@ -81,6 +129,11 @@
      dele, sem o componente precisar saber em que tema está. */
   --iniciais-fundo: 0.93 0.045;
   --iniciais-texto: 0.45 0.16;
+  /* Manchas do fundo em malha da Neuro IA (ver .fundo-malha). No claro elas
+     aparecem de verdade — é o que a referência mostra. */
+  --malha-a: oklch(0.87 0.075 290);
+  --malha-b: oklch(0.88 0.065 250);
+  --malha-c: oklch(0.9 0.05 345);
   --secondary: oklch(0.96 0.005 260);
   --secondary-foreground: oklch(0.25 0.015 260);
   --muted: oklch(0.96 0.005 260);
@@ -132,6 +185,12 @@
   /* No escuro o par se inverte: fundo fundo e texto claro (ver :root). */
   --iniciais-fundo: 0.3 0.06;
   --iniciais-texto: 0.86 0.13;
+  /* A mesma malha, contida: no escuro a cor pastel viraria névoa por cima do
+     texto. A referência …202901 (quase branca) é a prova de que a ideia
+     sobrevive sem a cor forte — aqui ela vira só uma insinuação. */
+  --malha-a: oklch(0.34 0.055 290);
+  --malha-b: oklch(0.31 0.05 250);
+  --malha-c: oklch(0.28 0.04 345);
   --secondary: oklch(0.22 0.015 260);
   --secondary-foreground: oklch(0.95 0.005 260);
   --muted: oklch(0.22 0.015 260);
