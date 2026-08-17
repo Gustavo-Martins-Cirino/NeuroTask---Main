@@ -172,12 +172,10 @@ que o Gustavo gostou. Nada ali é importado pelo app.
   projeto (Tailwind + shadcn/ui + framer-motion + tokens oklch). Nunca copiar e colar: os
   arquivos vêm de outros design systems.
 - Quando um print virar decisão de design, anotar a referência no item correspondente deste
-  roadmap — como está feito no item de Login/Signup acima.
+  roadmap — como está na seção "Das inspirações para o app", logo abaixo.
 
-Além das referências de auth já citadas, valem nota: `Captura de tela 2026-08-10 202826.png`
-(mesh gradient pastel com uma barra "Ask anything" flutuando — ideia para o chat da Neuro IA)
-e `skiper.tsx` / `time.tsx` (números animados com `NumberFlow` — ideia para o timer do Modo
-Foco e para os contadores de XP).
+O que cada arquivo virou (ou não) está na seção seguinte. Nada foi descartado: o que não
+tem item ainda continua sendo referência solta, esperando a tela certa.
 
 O "Particle Sphere" do Originkit **já virou código**: é a esfera do estado vazio da Neuro IA
 (`components/neuro-sphere.tsx` + `lib/neuro-sphere.ts`). Serviu de exemplo do que a regra
@@ -191,6 +189,127 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
       a mais: as referências moram em `frontend/components/inspirações/`). Para guardar:
       apagar a chave, mover para a pasta certa. E revogar a chave no Originkit de qualquer
       jeito, já que ela circulou em texto puro.
+
+### Das inspirações para o app
+
+> Rodada de **16/08/2026**: o Gustavo passou print por print dizendo o que cada um seria e
+> por quê. Aqui está o que ficou decidido.
+>
+> **A régua, que ele repetiu três vezes**: o site já está bom. Nada aqui é reforma — é
+> detalhe que soma. Quando um item brigar com "minimalista", ganha o minimalista.
+
+#### Entrar e criar conta — `better-auth-6.webp`
+
+A tela já agrada (fundo animado, brilho sangrando das bordas). Falta o que a referência
+mostra abaixo do botão: uma pilha de provedores.
+
+- [ ] **Entrar com Google, GitHub e Apple.** No Supabase cada um é um provider a habilitar
+      no painel (Authentication → Providers) mais uma chamada de `signInWithOAuth`; o
+      `app/auth/callback/route.ts` que já existe atende os três sem mudar uma linha.
+      **Custo escondido**: o Apple exige conta paga de Apple Developer (99 USD/ano). Google
+      e GitHub são de graça — então a ordem natural é Google → GitHub → Apple (ou Apple
+      nunca, e ninguém sente falta).
+- [ ] **Selo "Last Used".** Na referência, um marcador no método usado da última vez. É
+      `localStorage` puro, sem banco e sem migração: guardar qual provedor entrou por último
+      e marcar o botão. É o detalhe que faz a tela parecer que lembra de você — barato e
+      desproporcionalmente bom.
+
+#### Dashboard — `Captura de tela 2026-08-07 213605.png`
+
+Gráfico de linha com degradê no traço (laranja → verde), tooltips fixados em pontos
+escolhidos e abas trocando a métrica.
+
+- [ ] **Uma seção de métricas discreta** — e a palavra é *discreta*. O dashboard agrada hoje
+      **por ser minimalista**, e encher de número é o jeito mais rápido de estragá-lo. O
+      caminho é uma seção que se abre (fechada por padrão), não um painel sempre aberto.
+      Os dados já existem (`tasks`, `user_stats`, `activity_log`); o trabalho de verdade é
+      escolher **poucas** perguntas que valem resposta — concluídas por dia, constância na
+      semana, hora em que a pessoa rende mais. Três, não dez.
+
+#### Avatar por iniciais — `Captura de tela 2026-08-07 213710.png`
+
+Círculos pastel com as iniciais e cor variando por pessoa: Gustavo Cirino → **GC**, Carlos
+Augusto → **CA**. Primeira letra do primeiro e do último nome.
+
+- [ ] **Iniciais como avatar padrão, com a cor derivada do nome** — mesmo nome, sempre a
+      mesma cor (hash do nome, nunca sorteio: cor que muda a cada carregamento é bug aos
+      olhos de quem usa).
+      **Resolver antes de codar**: o commit `e419015` tirou justamente a inicial da lista de
+      Amigos para pôr o bonequinho. Isto não pode desfazer aquilo. O lugar das iniciais é
+      onde **não existe** avatar montado — conta nova, header, quem nunca abriu o editor —
+      com o bonequinho continuando a mandar onde já foi montado.
+
+#### Cor e camada visual — `214017.png` e `214418.png`
+
+Dois efeitos de fundo, e os dois pedem o mesmo cuidado: fundo que compete com o conteúdo
+vira ruído.
+
+- [ ] **Degradê radial que respira** (`214017`): arcos de cor subindo do rodapé, centro
+      escuro, animação lenta. Alvo: a Neuro IA. O ShaderGradient que já está instalado
+      (`components/focus-gradient.tsx`) provavelmente chega lá sem pacote novo.
+- [ ] **Borda que brilha e gira** (`214418`, estilo Apple Intelligence): o quadro inteiro
+      contornado por um degradê em movimento. Na imagem parece parada porque é print — o
+      efeito **é** o movimento. Dá para fazer em CSS puro (`@property` + `conic-gradient`
+      animado), sem canvas e sem GPU: é a versão barata de um efeito caro.
+
+#### Neuro IA — `202826.png` e `202901.png`
+
+As duas referências mais completas do lote, e as duas da mesma tela.
+
+- [ ] **Barra "Ask anything" flutuando no meio**, em vez de ancorada no rodapé. Muda o peso
+      da tela: a conversa começa no centro, não numa caixa de formulário. Conversa a favor
+      da esfera que acabou de entrar ali.
+- [ ] **Conversa ao vivo vira só o símbolo**: o botão preto redondo com a onda sonora, ao
+      lado do microfone. Hoje ocupa mais espaço do que precisa.
+- [ ] **Fundo pastel em malha** (`202826`) — o Gustavo achou que combina com o modo claro. A
+      `202901` é a mesma tela quase branca, e serve de prova de que a ideia sobrevive sem a
+      cor: bom sinal para o modo escuro, que é onde ela poderia desandar.
+
+#### Idioma e região — `202645.png` e `202658.png`
+
+Uma bandeirinha do Brasil com uma seta, no canto; ao clicar, um painel que abre com a lista
+de países e busca.
+
+- [ ] **Seletor de região com bandeira — só Brasil e Estados Unidos.** O painel da referência
+      tem o mundo inteiro e campo de busca; o nosso tem dois itens e não precisa de nenhum
+      dos dois. Fica a animação de abrir, que é o que vale ali.
+- [ ] **A região manda no formato de hora.** É a parte que já está meio pronta:
+      `lib/time-format.ts` e `hooks/use-time-format` já decidem 12h/24h, hoje por um botão em
+      Configurações. A bandeira vira esse botão, com um nome que a pessoa entende — "Brasil",
+      não "24h".
+- [ ] **Traduzir o app é outro item, e é grande.** A bandeira sugere idioma, mas o app
+      inteiro está em português cravado no meio do JSX. Trocar de verdade quer dizer extrair
+      cada string para um dicionário — trabalho de dias, não de tarde. Enquanto isso não
+      acontecer, o seletor tem de dizer o que faz de fato: **região e formato**, nunca
+      "idioma", senão promete o que não entrega.
+
+#### Os arquivos de código da pasta
+
+Varridos um a um (nome mais o que o código importa). Onde cada um encaixaria:
+
+| Arquivo | O que é | Onde encaixa |
+|---|---|---|
+| `feedback.jsx` | `MorphSurface` — o botão vira o formulário, sem diálogo | O botão de feedback. É o encaixe mais direto da pasta inteira |
+| `prompts.jsx` | `PromptLibrary` — biblioteca com criar, listar e estado vazio | Neuro IA: os `QUICK_PROMPTS` fixos viram salvos e editáveis |
+| `notas-cores.jsx` | Painel flutuante de cor e imagem | Cor da nota, em Notas |
+| `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | Cor de fundo do Escritório e a paleta de `lib/reminders.ts` |
+| `transição-dinâmica.jsx` | `DynamicIsland` | O relógio flutuante do Modo Foco minimizado |
+| `lendo-tutorial.jsx` | `EdgeBlur` — a borda desfoca conforme rola | Listas longas: tarefas, notas, o chat |
+| `tutorial.jsx` · `tutorial2.jsx` | Onboarding em passos | O "primeiro contato" da Fase 5, que hoje é só verificação |
+| `skiper.tsx` · `time.tsx` | `NumberFlow`, números animados (os dois arquivos são o mesmo) | Timer do Modo Foco e contadores de XP |
+| `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
+| `inspiração-seção-tarefas.jsx` | `GradientButtonGroup` | Os filtros e abas de Tarefas |
+| `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |
+| `youtube-button.jsx` | `FamilyButton` — flutuante que expande | Ações rápidas do dashboard |
+| `votacao2-feedback.tsx` | `PollWidget` — enquete de uma pergunta | Perguntar ao usuário-teste sem ele ter de escrever |
+| `votacao-feedback.jsx` | Grade de ícones de serviços (Google, GitHub, Notion…) | Serve de referência de ícone para o login social acima |
+| `convite.jsx` | Painel estilo central de controle | Convite de compromisso, em Amigos |
+| `popover.jsx` | Popover com corpo, botões e fechar | Genérico — base para os de cima, não item próprio |
+| `dashboard.jsx` | `GridBeam` — feixes correndo num grid | Fundo do dashboard, se a seção de métricas pedir |
+| `carrosel.jsx` · `pricing.tsx` | Carrossel de logos e tabela de planos | **Não encaixam**: app pessoal, sem clientes e sem planos |
+
+Nenhum é pré-requisito de nada, e nenhum vale sozinho. O critério para tirar um da lista é
+**a tela ficar melhor** — não o componente ser bonito na pasta.
 
 ### Calendário aberto pra fora
 
