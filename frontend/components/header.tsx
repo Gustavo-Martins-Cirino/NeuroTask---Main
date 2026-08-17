@@ -30,16 +30,21 @@ export function Header({ title, icon, children }: HeaderProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const supabase = createClient()
-  const [user, setUser] = useState<{ email?: string; name?: string } | null>(null)
+  const [user, setUser] = useState<{ email?: string; name?: string; foto?: string | null } | null>(null)
   const [gamification, setGamification] = useState<Gamification>(() => computeGamification(0))
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        // Entrar por Google/GitHub traz nome e FOTO no user_metadata. Cada
+        // provedor usa um nome de campo, daí a cadeia — o Google manda
+        // `avatar_url` e `picture`, o GitHub manda `avatar_url`.
+        const meta = user.user_metadata ?? {}
         setUser({
           email: user.email,
-          name: user.user_metadata?.name || user.email?.split("@")[0],
+          name: meta.full_name || meta.name || user.email?.split("@")[0],
+          foto: meta.avatar_url || meta.picture || null,
         })
       }
     }
@@ -112,16 +117,19 @@ export function Header({ title, icon, children }: HeaderProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-xl">
+            {/* size="icon" + p-0: sem isso o botão herda o `px-4` do tamanho
+                padrão, sobra 8px de área interna e o avatar entra espremido —
+                era o que deixava as iniciais ovais. */}
+            <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-xl p-0">
               {/* Era um <AvatarImage src="/avatar.png">, arquivo que nunca
                   existiu: dava 404 a cada carregamento e caía num fallback de
                   uma letra só, igual para metade das pessoas. */}
-              <AvatarIniciais nome={user?.name} className="h-9 w-9 text-xs" title={user?.name || "Avatar"} />
+              <AvatarIniciais nome={user?.name} foto={user?.foto} className="h-9 w-9 text-xs" title={user?.name || "Avatar"} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">
             <div className="flex items-center gap-2 p-2">
-              <AvatarIniciais nome={user?.name} className="h-8 w-8 text-xs" />
+              <AvatarIniciais nome={user?.name} foto={user?.foto} className="h-8 w-8 text-xs" />
               <div className="flex flex-col">
                 <p className="text-sm font-medium">{user?.name || "Usuário"}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>

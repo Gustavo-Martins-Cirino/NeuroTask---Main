@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { iniciaisDoNome, matizDoNome } from "@/lib/iniciais"
 
@@ -14,20 +15,50 @@ import { iniciaisDoNome, matizDoNome } from "@/lib/iniciais"
 
 export function AvatarIniciais({
   nome,
+  foto,
   className,
   title,
 }: {
   nome: string | null | undefined
+  /** Foto de perfil, quando existe (ex.: a da conta Google). Ganha das iniciais. */
+  foto?: string | null
   className?: string
   title?: string
 }) {
   const iniciais = iniciaisDoNome(nome)
   const matiz = matizDoNome(nome)
+  // Link de foto quebra: conta antiga, URL expirada, provedor fora do ar. Sem
+  // isto sobraria o retângulo de imagem quebrada, que é pior que as iniciais.
+  const [fotoFalhou, setFotoFalhou] = useState(false)
+
+  // `shrink-0` e `aspect-square` não são detalhe: este avatar vive dentro de
+  // botões que têm padding próprio, e como item de flex ele era ESPREMIDO na
+  // largura enquanto mantinha a altura — virava uma elipse.
+  const base = "shrink-0 aspect-square overflow-hidden rounded-full"
+
+  if (foto && !fotoFalhou) {
+    return (
+      // <img> e não next/image de propósito: a foto vem de domínio de terceiro
+      // (lh3.googleusercontent.com e afins) e o next/image exigiria cadastrar
+      // cada domínio em next.config — um provedor novo quebraria a foto.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={foto}
+        alt={title ?? ""}
+        title={title}
+        onError={() => setFotoFalhou(true)}
+        // Alguns provedores devolvem 403 quando o referrer vai junto.
+        referrerPolicy="no-referrer"
+        className={cn(base, "object-cover", className)}
+      />
+    )
+  }
 
   return (
     <span
       className={cn(
-        "flex select-none items-center justify-center rounded-full font-semibold leading-none",
+        base,
+        "flex select-none items-center justify-center font-semibold leading-none",
         className
       )}
       style={{
