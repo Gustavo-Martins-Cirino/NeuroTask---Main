@@ -31,7 +31,7 @@ import {
 } from "@/lib/invites"
 import { InviteDialog } from "@/components/invite-dialog"
 import { normalizeAvatar } from "@/lib/avatar"
-import { AvatarFigure } from "@/components/avatar-figure"
+import { AvatarRetrato } from "@/components/avatar-figure"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { formatTime, type TimeFormat } from "@/lib/time-format"
@@ -49,10 +49,10 @@ function Initial({ name }: { name: string }) {
   )
 }
 
-// Retrato do amigo: o mesmo bonequinho do editor, enquadrado da cabeça aos
-// ombros (o corpo inteiro num círculo de 32px não se enxergaria). Cai na
-// inicial quando não há avatar — amizade ainda pendente, ou o friends_v4.sql
-// não rodou. É o fallback que mantém a lista de pé nos dois casos.
+// Retrato do amigo: o mesmo bonequinho do editor, no enquadramento de
+// AvatarRetrato. Cai na inicial quando não há avatar — amizade ainda pendente,
+// ou o friends_v4.sql não rodou. É o fallback que mantém a lista de pé nos dois
+// casos.
 function FriendAvatar({
   name,
   avatar,
@@ -65,9 +65,7 @@ function FriendAvatar({
   if (!avatar) return <Initial name={name} />
   return (
     <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-      <svg viewBox="-18 -58 38 38" className="h-full w-full" aria-hidden>
-        <AvatarFigure config={normalizeAvatar(avatar)} accessories={acessoriosEquipados(accessories)} />
-      </svg>
+      <AvatarRetrato config={normalizeAvatar(avatar)} accessories={acessoriosEquipados(accessories)} />
     </span>
   )
 }

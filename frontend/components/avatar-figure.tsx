@@ -1,5 +1,6 @@
 import { type AvatarConfig } from "@/lib/avatar"
 import { type AvatarAccessories } from "@/lib/avatar-accessories"
+import { cn } from "@/lib/utils"
 
 // Bonequinho 2D (paper-doll) sentado DE COSTAS (¾ traseiro), olhando para
 // a mesa/monitores da cena isométrica (direção frente = cima-esquerda na
@@ -277,5 +278,30 @@ export function AvatarFigure({
         </g>
       )}
     </g>
+  )
+}
+
+// Enquadramento cabeça-aos-ombros. Os números não são arbitrários: a cabeça tem
+// raio 10 em torno de (1,-40) e os ombros ficam em -27, então a janela vai de
+// -58 (sobra para a coroa, que sobe até -55) a -20. O corpo inteiro num círculo
+// de 32px não se enxergaria — vira um borrão com uma bolinha em cima.
+const RETRATO_VIEWBOX = "-18 -58 38 38"
+
+// O retrato circular do bonequinho, para listas e para o header. Existe como
+// componente porque o enquadramento acima é fácil de copiar errado, e um
+// viewBox de menos já corta a cabeça.
+export function AvatarRetrato({
+  config,
+  accessories,
+  className,
+}: {
+  config: AvatarConfig
+  accessories?: AvatarAccessories
+  className?: string
+}) {
+  return (
+    <svg viewBox={RETRATO_VIEWBOX} className={cn("h-full w-full", className)} aria-hidden>
+      <AvatarFigure config={config} accessories={accessories} />
+    </svg>
   )
 }

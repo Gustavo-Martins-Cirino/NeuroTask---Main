@@ -15,6 +15,7 @@ import { AvatarIniciais } from "@/components/avatar-iniciais"
 import { XpBar } from "@/components/xp-bar"
 import { FeedbackButton } from "@/components/feedback-button"
 import { createClient } from "@/lib/supabase/client"
+import { fetchRetrato, AVATAR_UPDATED_EVENT, type Retrato } from "@/lib/avatar"
 import { fetchGamification, computeGamification, XP_UPDATED_EVENT, type Gamification, type XpUpdateDetail } from "@/lib/gamification"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -31,6 +32,7 @@ export function Header({ title, icon, children }: HeaderProps) {
   const router = useRouter()
   const supabase = createClient()
   const [user, setUser] = useState<{ email?: string; name?: string; foto?: string | null } | null>(null)
+  const [boneco, setBoneco] = useState<Retrato | null>(null)
   const [gamification, setGamification] = useState<Gamification>(() => computeGamification(0))
 
   useEffect(() => {
@@ -50,6 +52,19 @@ export function Header({ title, icon, children }: HeaderProps) {
     }
     getUser()
   }, [supabase.auth])
+
+  useEffect(() => {
+    // Sem `catch`, um banco sem o coins_shop.sql (a tabela user_items) derrubaria
+    // o header inteiro por causa do retrato — que é o detalhe menos importante
+    // dele. Falhou, ficam as iniciais.
+    const carregar = () => fetchRetrato().then(setBoneco).catch(() => setBoneco(null))
+    carregar()
+
+    // O editor de avatar mora no Escritório, e o header não é remontado enquanto
+    // se fica na página — sem isto, o boneco novo só apareceria ao navegar.
+    window.addEventListener(AVATAR_UPDATED_EVENT, carregar)
+    return () => window.removeEventListener(AVATAR_UPDATED_EVENT, carregar)
+  }, [])
 
   useEffect(() => {
     fetchGamification().then(setGamification)
@@ -124,12 +139,12 @@ export function Header({ title, icon, children }: HeaderProps) {
               {/* Era um <AvatarImage src="/avatar.png">, arquivo que nunca
                   existiu: dava 404 a cada carregamento e caía num fallback de
                   uma letra só, igual para metade das pessoas. */}
-              <AvatarIniciais nome={user?.name} foto={user?.foto} className="h-9 w-9 text-xs" title={user?.name || "Avatar"} />
+              <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} className="h-9 w-9 text-xs" title={user?.name || "Avatar"} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">
             <div className="flex items-center gap-2 p-2">
-              <AvatarIniciais nome={user?.name} foto={user?.foto} className="h-8 w-8 text-xs" />
+              <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} className="h-8 w-8 text-xs" />
               <div className="flex flex-col">
                 <p className="text-sm font-medium">{user?.name || "Usuário"}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>

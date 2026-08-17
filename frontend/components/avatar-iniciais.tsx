@@ -3,25 +3,35 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { iniciaisDoNome, matizDoNome } from "@/lib/iniciais"
+import { AvatarRetrato } from "@/components/avatar-figure"
+import { type Retrato } from "@/lib/avatar"
 
-// O círculo com as iniciais, para quem ainda não montou o bonequinho.
+// O retrato da pessoa no header, em três degraus — do mais específico ao mais
+// genérico: a foto da conta, o bonequinho montado no editor, as iniciais.
 // Referência: components/inspirações/Captura de tela 2026-08-07 213710.png.
 //
-// A cor sai do nome (lib/iniciais.ts decide a matiz) e o claro/escuro sai do
-// CSS: `--iniciais-fundo` e `--iniciais-texto` em globals.css guardam o par
-// luminosidade/croma de cada tema, e aqui só entra a matiz. Assim a mesma
-// pessoa tem a mesma cor nos dois temas, cada um com o contraste dele — sem o
-// componente precisar saber em que tema está.
+// A foto ganha do bonequinho porque é um rosto de verdade, e porque quem entrou
+// por Google/GitHub já reconhece aquela imagem de outros apps. O bonequinho
+// ganha das iniciais porque foi escolhido a dedo, peça por peça.
+//
+// A cor das iniciais sai do nome (lib/iniciais.ts decide a matiz) e o
+// claro/escuro sai do CSS: `--iniciais-fundo` e `--iniciais-texto` em
+// globals.css guardam o par luminosidade/croma de cada tema, e aqui só entra a
+// matiz. Assim a mesma pessoa tem a mesma cor nos dois temas, cada um com o
+// contraste dele — sem o componente precisar saber em que tema está.
 
 export function AvatarIniciais({
   nome,
   foto,
+  boneco,
   className,
   title,
 }: {
   nome: string | null | undefined
-  /** Foto de perfil, quando existe (ex.: a da conta Google). Ganha das iniciais. */
+  /** Foto de perfil, quando existe (ex.: a da conta Google). Ganha de todo o resto. */
   foto?: string | null
+  /** O bonequinho do editor, quando a pessoa montou um. Ganha das iniciais. */
+  boneco?: Retrato | null
   className?: string
   title?: string
 }) {
@@ -51,6 +61,18 @@ export function AvatarIniciais({
         referrerPolicy="no-referrer"
         className={cn(base, "object-cover", className)}
       />
+    )
+  }
+
+  if (boneco) {
+    return (
+      <span
+        className={cn(base, "flex items-center justify-center bg-primary/10", className)}
+        title={title}
+        aria-hidden={title ? undefined : true}
+      >
+        <AvatarRetrato config={boneco.config} accessories={boneco.accessories} />
+      </span>
     )
   }
 

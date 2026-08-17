@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import { acessoriosEquipados, type AvatarAccessories } from "@/lib/avatar-accessories"
 
 // Avatar editável do Escritório (paper-doll 2D). A configuração mora em
 // user_stats.avatar (jsonb) e aparece para amigos via friend_office
@@ -72,9 +73,37 @@ export async function fetchAvatar(): Promise<AvatarConfig> {
   return normalizeAvatar(data?.avatar)
 }
 
+/** O header vive fora do Escritório e reage a isto para não mostrar o avatar velho. */
+export const AVATAR_UPDATED_EVENT = "neurotask:avatar-updated"
+
 export async function saveAvatar(cfg: AvatarConfig): Promise<void> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
   await supabase.from("user_stats").upsert({ user_id: user.id, avatar: cfg }, { onConflict: "user_id" })
+  window.dispatchEvent(new CustomEvent(AVATAR_UPDATED_EVENT))
+}
+
+/** O bonequinho pronto para desenhar, com o que estiver equipado na loja. */
+export interface Retrato {
+  config: AvatarConfig
+  accessories: AvatarAccessories
+}
+
+// `null` quer dizer "nunca montou um", e é por isso que esta função existe ao
+// lado de fetchAvatar: aquela devolve o DEFAULT_AVATAR quando a coluna está
+// vazia, que é o certo para o editor (ele precisa de algo para editar) e o
+// errado para o header — sem a diferença, todo mundo ganharia o mesmo boneco
+// genérico no lugar das próprias iniciais.
+export async function fetchRetrato(): Promise<Retrato | null> {
+  const supabase = createClient()
+  const [{ data: stats }, { data: items }] = await Promise.all([
+    supabase.from("user_stats").select("avatar").maybeSingle(),
+    supabase.from("user_items").select("item_id").eq("equipped", true),
+  ])
+  if (!stats?.avatar) return null
+  return {
+    config: normalizeAvatar(stats.avatar),
+    accessories: acessoriosEquipados(items?.map((i) => i.item_id as string)),
+  }
 }
