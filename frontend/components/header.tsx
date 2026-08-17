@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AvatarIniciais } from "@/components/avatar-iniciais"
 import { XpBar } from "@/components/xp-bar"
 import { FeedbackButton } from "@/components/feedback-button"
 import { createClient } from "@/lib/supabase/client"
@@ -113,21 +113,15 @@ export function Header({ title, icon, children }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-xl">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src="/avatar.png" alt={user?.name || "Avatar"} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {user?.name?.charAt(0).toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
+              {/* Era um <AvatarImage src="/avatar.png">, arquivo que nunca
+                  existiu: dava 404 a cada carregamento e caía num fallback de
+                  uma letra só, igual para metade das pessoas. */}
+              <AvatarIniciais nome={user?.name} className="h-9 w-9 text-xs" title={user?.name || "Avatar"} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">
             <div className="flex items-center gap-2 p-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  {user?.name?.charAt(0).toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarIniciais nome={user?.name} className="h-8 w-8 text-xs" />
               <div className="flex flex-col">
                 <p className="text-sm font-medium">{user?.name || "Usuário"}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>

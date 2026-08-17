@@ -13,6 +13,13 @@
   --popover-foreground: oklch(0.145 0.015 260);
   --primary: oklch(0.55 0.22 265);
   --primary-foreground: oklch(0.985 0 0);
+  /* Avatar de iniciais: luminosidade e croma do par fundo/texto. A MATIZ vem do
+     nome da pessoa (lib/iniciais.ts) e é completada em linha pelo componente —
+     por isso não há cor inteira aqui, só os dois primeiros valores do oklch().
+     Assim a mesma pessoa mantém a cor nos dois temas, cada um com o contraste
+     dele, sem o componente precisar saber em que tema está. */
+  --iniciais-fundo: 0.93 0.045;
+  --iniciais-texto: 0.45 0.16;
   --secondary: oklch(0.96 0.005 260);
   --secondary-foreground: oklch(0.25 0.015 260);
   --muted: oklch(0.96 0.005 260);
@@ -61,6 +68,9 @@
   --popover-foreground: oklch(0.95 0.005 260);
   --primary: oklch(0.65 0.22 265);
   --primary-foreground: oklch(0.13 0 0);
+  /* No escuro o par se inverte: fundo fundo e texto claro (ver :root). */
+  --iniciais-fundo: 0.3 0.06;
+  --iniciais-texto: 0.86 0.13;
   --secondary: oklch(0.22 0.015 260);
   --secondary-foreground: oklch(0.95 0.005 260);
   --muted: oklch(0.22 0.015 260);
