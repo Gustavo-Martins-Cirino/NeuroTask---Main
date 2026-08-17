@@ -44,7 +44,8 @@ datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `ava
 `backward-plan`, `calendar-feed`, `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
 `gamification` (anti-farm), `ics`, `iniciais` (nome → iniciais e cor do avatar),
-`nivel-faixa`, `routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands` e
+`nivel-faixa`, `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
+`routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands` e
 `time-format`. É onde a lógica sutil regride sem
 ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de
 Supabase, e não é ali que mora o risco.

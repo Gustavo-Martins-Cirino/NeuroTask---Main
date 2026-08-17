@@ -53,7 +53,9 @@ frontend/
 │   ├── borda-viva.tsx        # Contorno que gira e acende enquanto a IA responde (CSS)
 │   ├── fundo-malha.tsx       # Fundo pastel que deriva, na Neuro IA (CSS, sem canvas)
 │   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
-│   ├── avatar-iniciais.tsx   # Círculo com as iniciais (quem não montou o bonequinho)
+│   ├── avatar-iniciais.tsx   # Retrato do header: foto da conta → bonequinho → iniciais
+│   ├── seletor-regiao.tsx    # Região (Brasil/EUA) com bandeira e painel que abre
+│   ├── bandeira.tsx          # As duas bandeiras em SVG (emoji não renderiza no Windows)
 │   ├── r3f-ticker.tsx        # TickerDoGsap: põe um <Canvas> no ticker único (+ vigia)
 │   ├── avatar-figure.tsx     # Bonequinho paper-doll (preview do editor) + acessórios da loja
 │   ├── avatar-editor.tsx     # Editor de avatar (cabelo/pele/roupa/fones)
@@ -81,6 +83,7 @@ frontend/
 │   ├── admin.ts              # Agregações do painel do dono (puro, sem Supabase)
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
 │   ├── time-format.ts        # 12h/24h — puro; o I/O mora em hooks/use-time-format
+│   ├── regiao.ts             # Brasil/EUA → formato de hora (puro; derivado, sem storage próprio)
 │   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
 │   ├── office-city.ts        # Fase do dia + paleta da vista da janela (puro)
 │   ├── office-rain.ts        # Chuva no vidro: gotas + leitura do mixer (puro)

@@ -14,8 +14,7 @@ import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Cl
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
 import { generateTelegramCode, fetchTelegramLinks, unlinkTelegram, type TelegramLink } from "@/lib/telegram"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
-import { useTimeFormat, setTimeFormat } from "@/hooks/use-time-format"
-import type { TimeFormat } from "@/lib/time-format"
+import { SeletorRegiao } from "@/components/seletor-regiao"
 import { toast } from "sonner"
 import {
   fetchRoutine, saveRoutine, DEFAULT_ROUTINE, type RoutineProfile,
@@ -27,11 +26,6 @@ const themeOptions = [
   { value: "light", label: "Claro", icon: Sun },
   { value: "dark", label: "Escuro", icon: Moon },
   { value: "system", label: "Sistema", icon: Monitor },
-]
-
-const timeFormatOptions: { value: TimeFormat; label: string; sample: string }[] = [
-  { value: "24h", label: "24 horas", sample: "14:30" },
-  { value: "12h", label: "AM / PM", sample: "2:30 PM" },
 ]
 
 function RoutineField({
@@ -106,7 +100,6 @@ export default function SettingsPage() {
   const supabase = createClient()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
-  const timeFormat = useTimeFormat()
   const [mounted, setMounted] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -315,7 +308,7 @@ export default function SettingsPage() {
             </div>
           </Section>
 
-          <Section icon={<Palette className="h-5 w-5" />} title="Aparência" description="Tema e formato das horas">
+          <Section icon={<Palette className="h-5 w-5" />} title="Aparência" description="Tema e região">
             {mounted && (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-2">
@@ -338,25 +331,11 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2 border-t border-border/40 pt-4">
-                  <p className="text-sm font-medium">Formato das horas</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {timeFormatOptions.map((opt) => {
-                      const active = timeFormat === opt.value
-                      return (
-                        <button
-                          key={opt.value}
-                          onClick={() => setTimeFormat(opt.value)}
-                          className={cn(
-                            "flex flex-col items-center gap-1 rounded-xl border p-3 transition-colors",
-                            active ? "border-primary bg-primary/5 text-primary" : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
-                          )}
-                        >
-                          <span className="text-sm font-semibold tabular-nums">{opt.sample}</span>
-                          <span className="text-xs">{opt.label}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <p className="text-sm font-medium">Região</p>
+                  <p className="text-xs text-muted-foreground">
+                    Decide como as horas aparecem no app. O idioma continua em português.
+                  </p>
+                  <SeletorRegiao />
                 </div>
               </div>
             )}

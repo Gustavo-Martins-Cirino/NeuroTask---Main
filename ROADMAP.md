@@ -228,15 +228,11 @@ escolhidos e abas trocando a métrica.
 
 #### Avatar por iniciais — `Captura de tela 2026-08-07 213710.png`
 
-> **Entregue** em `lib/iniciais.ts` + `components/avatar-iniciais.tsx`, no header. Gustavo
-> Cirino → **GC**, com a cor saindo do nome por hash. A lista de Amigos segue com o
-> bonequinho, como o commit `e419015` decidiu — as iniciais só ocupam o vazio.
-
-- [ ] **O header podia mostrar o bonequinho de quem já montou um.** O item encolheu: o
-      header já mostra a **foto** de quem entrou por Google/GitHub, e as iniciais para o
-      resto. O que falta é só o avatar montado no editor, que tem precedência sobre as
-      iniciais e perde para a foto. Custa uma consulta a mais no header (`user_stats.avatar`)
-      — daí não ter entrado junto.
+> **Entregue, e fechado.** O retrato do header tem três degraus, do mais específico ao mais
+> genérico: a foto da conta Google/GitHub, o bonequinho montado no editor
+> (`lib/avatar.ts` → `fetchRetrato`), as iniciais (`lib/iniciais.ts`). Gustavo Cirino →
+> **GC**, com a cor saindo do nome por hash. O enquadramento cabeça-aos-ombros virou
+> `AvatarRetrato` em `components/avatar-figure.tsx`, compartilhado com a lista de Amigos.
 
 #### Cor e camada visual — `214017.png` e `214418.png`
 
@@ -274,21 +270,24 @@ vira ruído.
 
 #### Idioma e região — `202645.png` e `202658.png`
 
-Uma bandeirinha do Brasil com uma seta, no canto; ao clicar, um painel que abre com a lista
-de países e busca.
+> **Entregue** em Configurações → Aparência: `components/seletor-regiao.tsx` +
+> `lib/regiao.ts`, com as bandeiras desenhadas em `components/bandeira.tsx`. Da referência
+> ficou a animação de abrir; o mundo inteiro e o campo de busca saíram, porque com dois
+> itens buscar dá mais trabalho do que ler os dois. O botão diz "Brasil", não "24 horas".
+>
+> Duas decisões que valem para quem mexer nisso: a região **não tem armazenamento
+> próprio** — ela é derivada do formato de hora que já estava no localStorage, porque com
+> um mapa 1-para-1 guardar as duas coisas só criaria a chance de discordarem. E as
+> bandeiras são SVG, não emoji: o Windows não tem glifo para bandeira e 🇧🇷 vira o texto
+> "BR", o oposto do que a referência queria.
 
-- [ ] **Seletor de região com bandeira — só Brasil e Estados Unidos.** O painel da referência
-      tem o mundo inteiro e campo de busca; o nosso tem dois itens e não precisa de nenhum
-      dos dois. Fica a animação de abrir, que é o que vale ali.
-- [ ] **A região manda no formato de hora.** É a parte que já está meio pronta:
-      `lib/time-format.ts` e `hooks/use-time-format` já decidem 12h/24h, hoje por um botão em
-      Configurações. A bandeira vira esse botão, com um nome que a pessoa entende — "Brasil",
-      não "24h".
 - [ ] **Traduzir o app é outro item, e é grande.** A bandeira sugere idioma, mas o app
       inteiro está em português cravado no meio do JSX. Trocar de verdade quer dizer extrair
       cada string para um dicionário — trabalho de dias, não de tarde. Enquanto isso não
-      acontecer, o seletor tem de dizer o que faz de fato: **região e formato**, nunca
-      "idioma", senão promete o que não entrega.
+      acontecer, o seletor diz o que faz de fato: **região e formato**, nunca "idioma".
+      Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar
+      24h como o Brasil, a derivação acima deixa de servir e a região passa a ser o dado
+      guardado, com o formato saindo dela.
 
 #### Os arquivos de código da pasta
 
