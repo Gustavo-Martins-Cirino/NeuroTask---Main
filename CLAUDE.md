@@ -51,6 +51,7 @@ frontend/
 │   ├── office-scene-3d.tsx   # Cena 3D do Escritório (R3F) — sala/itens/avatar por nível
 │   ├── neuro-sphere.tsx      # Esfera de partículas da Neuro IA (estado vazio do chat)
 │   ├── borda-viva.tsx        # Contorno que gira e acende enquanto a IA responde (CSS)
+│   ├── fundo-malha.tsx       # Fundo pastel que deriva, na Neuro IA (CSS, sem canvas)
 │   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
 │   ├── avatar-iniciais.tsx   # Círculo com as iniciais (quem não montou o bonequinho)
 │   ├── r3f-ticker.tsx        # TickerDoGsap: põe um <Canvas> no ticker único (+ vigia)
@@ -137,6 +138,10 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   vigia que vem junto é a metade que importa: sem alguém chamando `advance()`, a cena
   não fica lenta, congela. O tempo passa por `lib/frame-clock.ts` (o `advance()` quer
   **segundos de cena**, não o instante do rAF).
+- **Efeito de fundo prefere CSS a canvas.** A Neuro IA tem borda animada (`@property` +
+  `conic-gradient`) e malha pastel em CSS puro; o único WebGL da página é a esfera. O
+  motivo não é economia: o `<Canvas>` do ShaderGradient é o que **não** entra no ticker
+  único, e abriria um segundo `requestAnimationFrame` concorrendo com a cena 3D.
 - Fonte: Geist (sans) + Geist Mono.
 
 ## Funcionalidades da IA (Neuro IA)

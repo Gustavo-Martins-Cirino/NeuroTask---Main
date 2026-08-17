@@ -254,16 +254,20 @@ vira ruído.
 
 #### Neuro IA — `202826.png` e `202901.png`
 
-As duas referências mais completas do lote, e as duas da mesma tela.
+> **A tela está fechada.** Esfera de partículas, borda que acende, barra em pílula centrada
+> e fundo em malha pastel. A decisão que amarrou tudo saiu de comparar as duas imagens: na
+> `202826` o campo está vazio e o botão redondo é a onda sonora; na `202901` há texto e o
+> mesmo botão é a seta de enviar. **Um botão, dois papéis** — e por isso a conversa ao vivo
+> saiu do header.
+>
+> Três efeitos foram para CSS em vez de canvas (borda, malha, e a esfera é o único WebGL da
+> página). Não foi economia: o canvas do ShaderGradient é justamente o que **não** entra no
+> ticker único, e abriria um segundo `requestAnimationFrame` concorrendo com a esfera.
 
-- [ ] **Barra "Ask anything" flutuando no meio**, em vez de ancorada no rodapé. Muda o peso
-      da tela: a conversa começa no centro, não numa caixa de formulário. Conversa a favor
-      da esfera que acabou de entrar ali.
-- [ ] **Conversa ao vivo vira só o símbolo**: o botão preto redondo com a onda sonora, ao
-      lado do microfone. Hoje ocupa mais espaço do que precisa.
-- [ ] **Fundo pastel em malha** (`202826`) — o Gustavo achou que combina com o modo claro. A
-      `202901` é a mesma tela quase branca, e serve de prova de que a ideia sobrevive sem a
-      cor: bom sinal para o modo escuro, que é onde ela poderia desandar.
+- [ ] **Ver a tela da Neuro IA no olho, clara e escura.** É o item que sobra de tudo isto e
+      não dá para fazer daqui. No claro a malha deve aparecer de verdade; no escuro, ser só
+      uma insinuação — se virar névoa por cima do texto, o ajuste é `--malha-*` no `.dark`
+      de `globals.css`, e é só trocar número.
 
 #### Idioma e região — `202645.png` e `202658.png`
 
