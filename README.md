@@ -158,9 +158,21 @@ push.sql → push_cron.sql
 error_log.sql · feedback.sql
 ```
 `error_log.sql` guarda as falhas do navegador capturadas por `/api/errors`; `feedback.sql`,
-o que chega pelo botão de feedback do app. Se o envio de feedback falhar com
-`Could not find the 'commit' column of 'feedback'`, é este arquivo faltando ou rodado numa
-versão anterior — reexecutar resolve (ele acrescenta as colunas que faltam sem apagar nada).
+o que chega pelo botão de feedback do app.
+
+Os dois jeitos de o envio falhar têm a **mesma** solução — reexecutar
+`supabase/feedback.sql`, que conserta sem apagar mensagem nenhuma:
+
+| O que aparece | O que é |
+|---|---|
+| `Could not find the 'commit' column of 'feedback'` | a tabela nasceu numa versão anterior e está sem colunas; o arquivo acrescenta o que falta |
+| `violates check constraint "feedback_kind_check"` | sobrou um CHECK antigo no `kind`, com uma lista de valores diferente da que o app usa hoje (`bug`/`ideia`/`geral`); o arquivo derruba o velho e recria o certo |
+
+O segundo caso não vem deste repositório: nenhuma versão do `feedback.sql` criou esse
+CHECK. Ele fica em bancos cuja tabela `feedback` foi criada à mão antes — e como
+`create table if not exists` não mexe em tabela existente, ele sobrevivia a toda
+reexecução. Agora o arquivo o derruba pela **definição**, não pelo nome, porque tabela
+feita à mão pode ter batizado o constraint de outro jeito.
 
 **7. Integrações externas** (só se for usá-las)
 ```

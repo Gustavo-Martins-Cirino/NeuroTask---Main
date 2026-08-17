@@ -82,6 +82,19 @@ describe("explicaErro", () => {
     expect(explicaErro({ code: "PGRST205", message: "..." })).toMatch(/cache/i)
   })
 
+  it("CHECK do kind vira instrução, não o texto cru do Postgres", () => {
+    // O que a pessoa via: 'new row for relation "feedback" violates check
+    // constraint "feedback_kind_check"' — verdadeiro e inútil.
+    const t = explicaErro({
+      code: "23514",
+      message: 'new row for relation "feedback" violates check constraint "feedback_kind_check"',
+    })
+    expect(t).toMatch(/feedback\.sql/)
+    expect(t).not.toMatch(/violates check constraint/)
+    // Descascar coluna não salva este caso: o kind é essencial.
+    expect(colunaFaltante({ code: "23514", message: "..." })).toBeNull()
+  })
+
   it("erro desconhecido mostra a mensagem crua, e sem mensagem não mostra 'undefined'", () => {
     expect(explicaErro({ code: "XX000", message: "falha exótica" })).toBe("falha exótica")
     expect(explicaErro({})).not.toMatch(/undefined/)

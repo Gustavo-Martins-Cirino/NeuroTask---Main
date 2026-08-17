@@ -27,6 +27,48 @@ alter table public.feedback add column if not exists commit     text;
 alter table public.feedback add column if not exists user_agent text;
 alter table public.feedback add column if not exists created_at timestamptz not null default now();
 
+-- O CHECK do `kind` que sobra de versões antigas.
+--
+-- Sintoma: "new row for relation "feedback" violates check constraint
+-- "feedback_kind_check"" na hora de enviar.
+--
+-- Este arquivo nunca criou esse CHECK — ele vem de uma tabela feita antes, com
+-- uma lista de valores diferente da que o app manda hoje ('bug', 'ideia',
+-- 'geral'). E, de novo, o `create table if not exists` lá em cima NÃO mexe em
+-- tabela que já existe: o constraint velho sobrevive a toda reexecução e segue
+-- recusando a mensagem.
+--
+-- Ele é derrubado pela DEFINIÇÃO, não pelo nome. Tabela nascida à mão pode ter
+-- batizado o constraint de outro jeito, e um `drop constraint if exists` com o
+-- nome errado passa em silêncio sem consertar nada — que é o pior desfecho para
+-- um arquivo que existe justamente para ser rodado de novo.
+do $$
+declare c record;
+begin
+  for c in
+    select con.conname
+      from pg_constraint con
+      join pg_class     rel on rel.oid = con.conrelid
+      join pg_namespace nsp on nsp.oid = rel.relnamespace
+     where nsp.nspname = 'public'
+       and rel.relname = 'feedback'
+       and con.contype = 'c'
+       and pg_get_constraintdef(con.oid) ilike '%kind%'
+  loop
+    execute format('alter table public.feedback drop constraint %I', c.conname);
+  end loop;
+end $$;
+
+-- Linha antiga com valor fora da lista travaria a recriação (o Postgres valida
+-- o que já está gravado). Vai para 'geral', o "Outro" do app: o feedback
+-- continua lá, só perde a etiqueta.
+update public.feedback
+   set kind = 'geral'
+ where kind is null or kind not in ('bug', 'ideia', 'geral');
+
+alter table public.feedback
+  add constraint feedback_kind_check check (kind in ('bug', 'ideia', 'geral'));
+
 alter table public.feedback enable row level security;
 
 -- Cada um insere só o próprio feedback. NÃO há policy de SELECT de propósito:

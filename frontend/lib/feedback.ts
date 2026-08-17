@@ -58,6 +58,10 @@ export function explicaErro(err: ErroDoPostgrest): string {
       return "A tabela de feedback está sem uma coluna que o app usa. Rode supabase/feedback.sql de novo — ele acrescenta o que falta sem apagar nada."
     case "42501":
       return "Sem permissão para gravar (RLS). Confira se você está logado e se a policy de insert do feedback.sql foi criada."
+    // Descascar coluna não resolve este: o `kind` é essencial, e a mensagem crua
+    // do Postgres ("violates check constraint") não diz a ninguém o que fazer.
+    case "23514":
+      return "O banco está recusando o tipo do feedback — é um CHECK antigo na coluna kind, de uma versão anterior da tabela. Rode supabase/feedback.sql de novo: ele derruba o constraint velho e recria o certo. Sua mensagem continua aqui."
     default:
       return err.message ?? "Não deu para enviar agora. Tente de novo em instantes."
   }
