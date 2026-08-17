@@ -53,7 +53,8 @@ frontend/
 │   ├── borda-viva.tsx        # Contorno que gira e acende enquanto a IA responde (CSS)
 │   ├── fundo-malha.tsx       # Fundo pastel que deriva, na Neuro IA (CSS, sem canvas)
 │   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
-│   ├── avatar-iniciais.tsx   # Retrato do header: foto da conta → bonequinho → iniciais
+│   ├── avatar-iniciais.tsx   # Retrato: foto enviada → foto da conta → bonequinho → iniciais
+│   ├── foto-perfil-campo.tsx # Enviar/remover a foto (Configurações → Perfil)
 │   ├── seletor-regiao.tsx    # Região (Brasil/EUA) com bandeira e painel que abre
 │   ├── bandeira.tsx          # As duas bandeiras em SVG (emoji não renderiza no Windows)
 │   ├── r3f-ticker.tsx        # TickerDoGsap: põe um <Canvas> no ticker único (+ vigia)
@@ -84,6 +85,8 @@ frontend/
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
 │   ├── time-format.ts        # 12h/24h — puro; o I/O mora em hooks/use-time-format
 │   ├── regiao.ts             # Brasil/EUA → formato de hora (puro; derivado, sem storage próprio)
+│   ├── foto-perfil.ts        # Recorte quadrado, limites e caminho da foto (puro)
+│   ├── avatar.ts             # I/O do retrato: bonequinho + envio/remoção da foto
 │   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
 │   ├── office-city.ts        # Fase do dia + paleta da vista da janela (puro)
 │   ├── office-rain.ts        # Chuva no vidro: gotas + leitura do mixer (puro)
@@ -98,7 +101,7 @@ frontend/
 └── styles/global.css
 
 supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
-  32 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
+  33 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
 
 ## Rotas existentes

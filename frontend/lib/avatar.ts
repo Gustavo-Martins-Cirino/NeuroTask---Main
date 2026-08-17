@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/client"
 import { acessoriosEquipados, type AvatarAccessories } from "@/lib/avatar-accessories"
+import {
+  recorteQuadrado, caminhoDaFoto, urlComCarimbo, LADO_FOTO, QUALIDADE_JPEG,
+} from "@/lib/foto-perfil"
 
 // Avatar editável do Escritório (paper-doll 2D). A configuração mora em
 // user_stats.avatar (jsonb) e aparece para amigos via friend_office
@@ -73,15 +76,19 @@ export async function fetchAvatar(): Promise<AvatarConfig> {
   return normalizeAvatar(data?.avatar)
 }
 
-/** O header vive fora do Escritório e reage a isto para não mostrar o avatar velho. */
-export const AVATAR_UPDATED_EVENT = "neurotask:avatar-updated"
+// O retrato do header muda em duas telas que não são o header: o editor de
+// avatar (Escritório) e a foto de perfil (Configurações). Um evento só para as
+// duas — o header não sabe nem precisa saber qual dos degraus mudou.
+export const RETRATO_UPDATED_EVENT = "neurotask:retrato-updated"
+
+const avisaRetratoMudou = () => window.dispatchEvent(new CustomEvent(RETRATO_UPDATED_EVENT))
 
 export async function saveAvatar(cfg: AvatarConfig): Promise<void> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
   await supabase.from("user_stats").upsert({ user_id: user.id, avatar: cfg }, { onConflict: "user_id" })
-  window.dispatchEvent(new CustomEvent(AVATAR_UPDATED_EVENT))
+  avisaRetratoMudou()
 }
 
 /** O bonequinho pronto para desenhar, com o que estiver equipado na loja. */
@@ -106,4 +113,84 @@ export async function fetchRetrato(): Promise<Retrato | null> {
     config: normalizeAvatar(stats.avatar),
     accessories: acessoriosEquipados(items?.map((i) => i.item_id as string)),
   }
+}
+
+// ---------------------------------------------------------------------------
+// Foto de perfil — o degrau de cima do retrato. As contas ficam em
+// lib/foto-perfil.ts; aqui mora o que toca o navegador e o Supabase.
+// ---------------------------------------------------------------------------
+
+const BUCKET_FOTOS = "avatars"
+
+// O arquivo escolhido vira um JPEG quadrado de 256px ANTES de sair do
+// navegador. Não é só economia de banda: subir o original deixaria a decisão do
+// enquadramento para o CSS, e `object-cover` num círculo corta pelo centro do
+// arquivo — o mesmo centro, mas de uma imagem que pode ter 4000px de altura de
+// paisagem em volta do rosto. Recortando aqui, o que se vê é o que foi salvo.
+async function paraJpegQuadrado(arquivo: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(arquivo)
+  try {
+    const { sx, sy, lado } = recorteQuadrado(bitmap.width, bitmap.height)
+    const canvas = document.createElement("canvas")
+    canvas.width = LADO_FOTO
+    canvas.height = LADO_FOTO
+    const ctx = canvas.getContext("2d")
+    if (!ctx) throw new Error("Este navegador não conseguiu preparar a imagem.")
+    ctx.drawImage(bitmap, sx, sy, lado, lado, 0, 0, LADO_FOTO, LADO_FOTO)
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", QUALIDADE_JPEG)
+    )
+    if (!blob) throw new Error("Não foi possível converter a imagem.")
+    return blob
+  } finally {
+    // Sem isto a imagem decodificada fica na memória até o coletor passar — e
+    // uma foto de celular decodificada são dezenas de MB.
+    bitmap.close()
+  }
+}
+
+/** Sobe a foto e devolve a URL já carimbada, pronta para exibir. */
+export async function enviarFotoPerfil(arquivo: File): Promise<string> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Faça login novamente para trocar a foto.")
+
+  const jpeg = await paraJpegQuadrado(arquivo)
+  const caminho = caminhoDaFoto(user.id)
+
+  const { error: erroUpload } = await supabase.storage
+    .from(BUCKET_FOTOS)
+    .upload(caminho, jpeg, { contentType: "image/jpeg", upsert: true })
+  if (erroUpload) throw erroUpload
+
+  const { data } = supabase.storage.from(BUCKET_FOTOS).getPublicUrl(caminho)
+  // O carimbo é gravado junto do endereço, e não posto na hora de exibir: o
+  // header lê o user_metadata e não teria como saber de que upload a URL veio.
+  const url = urlComCarimbo(data.publicUrl, Date.now())
+
+  // Chave própria, e não `avatar_url`: o Supabase mescla os dados do provedor no
+  // user_metadata a cada login social, e gravar em `avatar_url` faria o próximo
+  // "entrar com Google" apagar a foto escolhida aqui.
+  const { error: erroMeta } = await supabase.auth.updateUser({ data: { foto_perfil: url } })
+  if (erroMeta) throw erroMeta
+
+  avisaRetratoMudou()
+  return url
+}
+
+export async function removerFotoPerfil(): Promise<void> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  // A ordem importa: limpar o endereço primeiro. Se a remoção do arquivo falhar,
+  // sobra um JPEG órfão de 30 KB no bucket — invisível e inofensivo. Na ordem
+  // inversa, uma falha deixaria o app apontando para um arquivo que não existe
+  // mais, e aí a tela mostra imagem quebrada.
+  const { error } = await supabase.auth.updateUser({ data: { foto_perfil: null } })
+  if (error) throw error
+  await supabase.storage.from(BUCKET_FOTOS).remove([caminhoDaFoto(user.id)])
+
+  avisaRetratoMudou()
 }

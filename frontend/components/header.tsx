@@ -15,7 +15,7 @@ import { AvatarIniciais } from "@/components/avatar-iniciais"
 import { XpBar } from "@/components/xp-bar"
 import { FeedbackButton } from "@/components/feedback-button"
 import { createClient } from "@/lib/supabase/client"
-import { fetchRetrato, AVATAR_UPDATED_EVENT, type Retrato } from "@/lib/avatar"
+import { fetchRetrato, RETRATO_UPDATED_EVENT, type Retrato } from "@/lib/avatar"
 import { fetchGamification, computeGamification, XP_UPDATED_EVENT, type Gamification, type XpUpdateDetail } from "@/lib/gamification"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -36,35 +36,41 @@ export function Header({ title, icon, children }: HeaderProps) {
   const [gamification, setGamification] = useState<Gamification>(() => computeGamification(0))
 
   useEffect(() => {
-    const getUser = async () => {
+    const lerUsuario = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        // Entrar por Google/GitHub traz nome e FOTO no user_metadata. Cada
-        // provedor usa um nome de campo, daí a cadeia — o Google manda
-        // `avatar_url` e `picture`, o GitHub manda `avatar_url`.
+        // A foto enviada em Configurações vem primeiro: ela foi escolhida a
+        // dedo, e a do provedor veio junto com o login sem ninguém pedir.
+        // Depois dela, a do provedor — cada um usa um nome de campo, daí a
+        // cadeia: o Google manda `avatar_url` e `picture`, o GitHub manda
+        // `avatar_url`.
         const meta = user.user_metadata ?? {}
         setUser({
           email: user.email,
           name: meta.full_name || meta.name || user.email?.split("@")[0],
-          foto: meta.avatar_url || meta.picture || null,
+          foto: meta.foto_perfil || meta.avatar_url || meta.picture || null,
         })
       }
     }
-    getUser()
-  }, [supabase.auth])
 
-  useEffect(() => {
     // Sem `catch`, um banco sem o coins_shop.sql (a tabela user_items) derrubaria
     // o header inteiro por causa do retrato — que é o detalhe menos importante
     // dele. Falhou, ficam as iniciais.
-    const carregar = () => fetchRetrato().then(setBoneco).catch(() => setBoneco(null))
-    carregar()
+    const lerBoneco = () => fetchRetrato().then(setBoneco).catch(() => setBoneco(null))
 
-    // O editor de avatar mora no Escritório, e o header não é remontado enquanto
-    // se fica na página — sem isto, o boneco novo só apareceria ao navegar.
-    window.addEventListener(AVATAR_UPDATED_EVENT, carregar)
-    return () => window.removeEventListener(AVATAR_UPDATED_EVENT, carregar)
-  }, [])
+    // As duas telas que mudam o retrato ficam longe daqui — o editor de avatar
+    // no Escritório e a foto de perfil em Configurações — e o header não é
+    // remontado enquanto se fica nelas. Recarrega os dois degraus junto: o
+    // evento não diz qual mudou, e nem precisa.
+    const recarregar = () => {
+      lerUsuario()
+      lerBoneco()
+    }
+    recarregar()
+
+    window.addEventListener(RETRATO_UPDATED_EVENT, recarregar)
+    return () => window.removeEventListener(RETRATO_UPDATED_EVENT, recarregar)
+  }, [supabase.auth])
 
   useEffect(() => {
     fetchGamification().then(setGamification)

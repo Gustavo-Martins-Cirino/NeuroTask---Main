@@ -228,11 +228,16 @@ escolhidos e abas trocando a métrica.
 
 #### Avatar por iniciais — `Captura de tela 2026-08-07 213710.png`
 
-> **Entregue, e fechado.** O retrato do header tem três degraus, do mais específico ao mais
-> genérico: a foto da conta Google/GitHub, o bonequinho montado no editor
-> (`lib/avatar.ts` → `fetchRetrato`), as iniciais (`lib/iniciais.ts`). Gustavo Cirino →
-> **GC**, com a cor saindo do nome por hash. O enquadramento cabeça-aos-ombros virou
-> `AvatarRetrato` em `components/avatar-figure.tsx`, compartilhado com a lista de Amigos.
+> **Entregue, e fechado.** O retrato do header tem quatro degraus, do mais específico ao
+> mais genérico: a foto enviada em Configurações → Perfil, a foto da conta Google/GitHub, o
+> bonequinho montado no editor (`lib/avatar.ts` → `fetchRetrato`), as iniciais
+> (`lib/iniciais.ts`). Gustavo Cirino → **GC**, com a cor saindo do nome por hash. O
+> enquadramento cabeça-aos-ombros virou `AvatarRetrato` em `components/avatar-figure.tsx`,
+> compartilhado com a lista de Amigos.
+>
+> A foto enviada mora no bucket `avatars` do Storage (`supabase/foto_perfil.sql`) e o
+> endereço dela no `user_metadata`, em chave própria — nunca em `avatar_url`, que o
+> Supabase reescreve a cada login social.
 
 #### Cor e camada visual — `214017.png` e `214418.png`
 

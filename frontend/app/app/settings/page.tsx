@@ -15,6 +15,7 @@ import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/pus
 import { generateTelegramCode, fetchTelegramLinks, unlinkTelegram, type TelegramLink } from "@/lib/telegram"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
 import { SeletorRegiao } from "@/components/seletor-regiao"
+import { FotoPerfilCampo } from "@/components/foto-perfil-campo"
 import { toast } from "sonner"
 import {
   fetchRoutine, saveRoutine, DEFAULT_ROUTINE, type RoutineProfile,
@@ -278,8 +279,9 @@ export default function SettingsPage() {
 
       <div className="flex-1 px-4 py-8 md:px-6">
         <div className="mx-auto w-full max-w-2xl space-y-5">
-          <Section icon={<User className="h-5 w-5" />} title="Perfil" description="Seu nome e email">
+          <Section icon={<User className="h-5 w-5" />} title="Perfil" description="Sua foto, nome e email">
             <div className="space-y-4">
+              <FotoPerfilCampo nome={name || initialName} />
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Nome</label>
                 <input

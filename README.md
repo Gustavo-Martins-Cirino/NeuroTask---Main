@@ -43,6 +43,7 @@ Antes do primeiro login, rode os SQLs em [supabase/](supabase/) — ver
 datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `avatar-accessories`,
 `backward-plan`, `calendar-feed`, `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
+`foto-perfil` (o recorte quadrado central, o que se aceita e o carimbo anti-cache),
 `gamification` (anti-farm), `ics`, `iniciais` (nome → iniciais e cor do avatar),
 `nivel-faixa`, `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
 `routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands` e
@@ -179,7 +180,20 @@ mostrar a inicial no lugar do boneco.
 push.sql → push_cron.sql
 ```
 
-**6. Registro de erros e feedback** — sem dependências, mas sem eles o `/admin` fica cego
+**6. Foto de perfil** — o bucket de Storage. Sem dependências
+```
+foto_perfil.sql
+```
+Cria o bucket `avatars` (público, 1 MB, só `image/jpeg`) e as políticas que amarram cada
+arquivo ao dono pela primeira pasta do caminho (`<uid>/perfil.jpg`). Sem ele, Configurações
+→ Perfil aceita escolher a imagem e falha no envio; o resto do app segue igual.
+
+O endereço da foto **não** vira coluna: vai para o `user_metadata` do usuário, no mesmo
+lugar em que o nome já mora, numa chave própria (`foto_perfil`). Não em `avatar_url`,
+porque o Supabase mescla os dados do provedor no `user_metadata` a cada login social — ali
+o próximo "entrar com Google" apagaria a foto escolhida.
+
+**7. Registro de erros e feedback** — sem dependências, mas sem eles o `/admin` fica cego
 ```
 error_log.sql · feedback.sql
 ```
@@ -200,7 +214,7 @@ CHECK. Ele fica em bancos cuja tabela `feedback` foi criada à mão antes — e 
 reexecução. Agora o arquivo o derruba pela **definição**, não pelo nome, porque tabela
 feita à mão pode ter batizado o constraint de outro jeito.
 
-**7. Integrações externas** (só se for usá-las)
+**8. Integrações externas** (só se for usá-las)
 ```
 telegram.sql · calendar_feed.sql
 ```
