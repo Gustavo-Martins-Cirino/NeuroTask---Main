@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
-import { Bot, Send, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
+import { Bot, ArrowUp, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -316,6 +316,8 @@ export default function AiPage() {
   }
 
   const isEmpty = messages.length === 0
+  // Decide o papel do botão redondo: seta de enviar ou onda da conversa ao vivo.
+  const temTexto = input.trim().length > 0
 
   const newConversation = () => {
     const c = newConvo()
@@ -362,14 +364,9 @@ export default function AiPage() {
       {/* Acende enquanto a resposta chega — é o sinal que sobra quando o texto
           ainda não começou a aparecer. */}
       <BordaViva ativa={loading || transcribing} />
+      {/* A conversa ao vivo saiu daqui: virou o botão redondo da barra de
+          digitação, como na referência (inspirações/…202826.png). */}
       <Header title="Neuro IA" icon={<Bot className="h-4 w-4" />}>
-        <button
-          onClick={() => { unlockSpeech(); setVoiceOpen(true) }}
-          className="ml-2 flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          <AudioLines className="h-3.5 w-3.5" />
-          Conversar
-        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
@@ -414,8 +411,21 @@ export default function AiPage() {
 
       <VoiceConversation open={voiceOpen} onClose={() => setVoiceOpen(false)} />
 
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-4">
-        <div ref={scrollRef} className="scrollbar-thin flex-1 overflow-y-auto py-6">
+      {/* Sem conversa começada, a barra sobe e o grupo inteiro (esfera, saudação,
+          sugestões e barra) fica centrado — a conversa começa no meio da tela,
+          não numa caixa presa no rodapé. A barra NÃO muda de lugar no DOM: só a
+          distribuição do flex muda, senão o campo perderia o foco na hora em que
+          a primeira mensagem sai. */}
+      <div
+        className={cn(
+          "mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-4",
+          isEmpty && "justify-center"
+        )}
+      >
+        <div
+          ref={scrollRef}
+          className={cn("scrollbar-thin overflow-y-auto", isEmpty ? "py-4" : "flex-1 py-6")}
+        >
           {isEmpty ? (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -492,8 +502,20 @@ export default function AiPage() {
             e.preventDefault()
             send(input)
           }}
-          className="flex items-end gap-2 rounded-2xl border border-border/50 bg-card/50 p-2 backdrop-blur-sm"
+          className="flex items-end gap-1 rounded-[26px] border border-border/50 bg-card/60 p-1.5 shadow-lg shadow-black/5 backdrop-blur-sm"
         >
+          {/* O "+" da referência: aqui ele começa uma conversa nova, que é a
+              ação que já existia escondida no menu do canto. */}
+          <button
+            type="button"
+            onClick={newConversation}
+            title="Nova conversa"
+            aria-label="Nova conversa"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -503,9 +525,9 @@ export default function AiPage() {
                 send(input)
               }
             }}
-            placeholder="Pergunte qualquer coisa sobre seu dia..."
+            placeholder="Pergunte qualquer coisa…"
             rows={1}
-            className="max-h-32 flex-1 resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
+            className="max-h-32 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
           />
           {/* Microfone (gravar voz → transcrever → enviar) */}
           <button
@@ -514,7 +536,7 @@ export default function AiPage() {
             disabled={loading || transcribing}
             aria-label={recording ? "Parar gravação" : "Gravar áudio"}
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors disabled:opacity-40",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40",
               recording ? "bg-red-500 text-white" : "text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
           >
@@ -530,12 +552,26 @@ export default function AiPage() {
             )}
           </button>
 
+          {/* O botão redondo escuro da referência, com DOIS papéis. As duas
+              imagens (…202826 e …202901) mostram a mesma barra: com o campo
+              vazio ele é a onda sonora da conversa ao vivo; com texto escrito,
+              a seta de enviar. Um botão só, porque nunca se quer os dois ao
+              mesmo tempo — e assim a conversa ao vivo deixa de ocupar o header. */}
           <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
+            type={temTexto ? "submit" : "button"}
+            onClick={temTexto ? undefined : () => { unlockSpeech(); setVoiceOpen(true) }}
+            disabled={loading}
+            title={temTexto ? "Enviar" : "Conversar por voz"}
+            aria-label={temTexto ? "Enviar" : "Conversar por voz"}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-opacity hover:opacity-90 disabled:opacity-40"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : temTexto ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <AudioLines className="h-4 w-4" />
+            )}
           </button>
         </form>
         {(recording || transcribing) && (
