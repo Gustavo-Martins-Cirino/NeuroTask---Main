@@ -42,8 +42,10 @@ Antes do primeiro login, rode os SQLs em [supabase/](supabase/) — ver
 `pnpm test` (Vitest) cobre os módulos **determinísticos** de `lib/` — os que decidem
 datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `avatar-accessories`,
 `backward-plan`, `calendar-feed`, `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
-`gamification` (anti-farm), `ics`, `nivel-faixa`, `routine-insights`, `saudacao`,
-`task-recurrence`, `telegram-commands` e `time-format`. É onde a lógica sutil regride sem
+`auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
+`gamification` (anti-farm), `ics`, `iniciais` (nome → iniciais e cor do avatar),
+`nivel-faixa`, `routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands` e
+`time-format`. É onde a lógica sutil regride sem
 ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de
 Supabase, e não é ali que mora o risco.
 

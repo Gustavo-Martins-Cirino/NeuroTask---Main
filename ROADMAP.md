@@ -200,19 +200,17 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 
 #### Entrar e criar conta — `better-auth-6.webp`
 
-A tela já agrada (fundo animado, brilho sangrando das bordas). Falta o que a referência
-mostra abaixo do botão: uma pilha de provedores.
+> **O código está pronto** (`components/social-login.tsx` + `lib/auth-metodos.ts`): os
+> botões, as marcas em SVG e o selo "último acesso". O que falta não é código.
 
-- [ ] **Entrar com Google, GitHub e Apple.** No Supabase cada um é um provider a habilitar
-      no painel (Authentication → Providers) mais uma chamada de `signInWithOAuth`; o
-      `app/auth/callback/route.ts` que já existe atende os três sem mudar uma linha.
-      **Custo escondido**: o Apple exige conta paga de Apple Developer (99 USD/ano). Google
-      e GitHub são de graça — então a ordem natural é Google → GitHub → Apple (ou Apple
-      nunca, e ninguém sente falta).
-- [ ] **Selo "Last Used".** Na referência, um marcador no método usado da última vez. É
-      `localStorage` puro, sem banco e sem migração: guardar qual provedor entrou por último
-      e marcar o botão. É o detalhe que faz a tela parecer que lembra de você — barato e
-      desproporcionalmente bom.
+- [ ] **Habilitar os provedores no Supabase e ligar a env.** Nesta ordem, que é fácil
+      inverter: primeiro Authentication → Providers no painel (Client ID/Secret + a callback
+      URL que ele mostra), **depois** `NEXT_PUBLIC_OAUTH_PROVIDERS="google,github"` na
+      Vercel. Ao contrário, o botão aparece antes de funcionar — e é por isso que a env
+      existe: sem ela o código não tem como adivinhar o que está configurado do outro lado.
+      Enquanto a env estiver vazia, a tela é exatamente a de hoje.
+      **Custo escondido**: o Apple exige conta paga de Apple Developer (99 USD/ano); Google
+      e GitHub são de graça.
 
 #### Dashboard — `Captura de tela 2026-08-07 213605.png`
 
@@ -228,16 +226,14 @@ escolhidos e abas trocando a métrica.
 
 #### Avatar por iniciais — `Captura de tela 2026-08-07 213710.png`
 
-Círculos pastel com as iniciais e cor variando por pessoa: Gustavo Cirino → **GC**, Carlos
-Augusto → **CA**. Primeira letra do primeiro e do último nome.
+> **Entregue** em `lib/iniciais.ts` + `components/avatar-iniciais.tsx`, no header. Gustavo
+> Cirino → **GC**, com a cor saindo do nome por hash. A lista de Amigos segue com o
+> bonequinho, como o commit `e419015` decidiu — as iniciais só ocupam o vazio.
 
-- [ ] **Iniciais como avatar padrão, com a cor derivada do nome** — mesmo nome, sempre a
-      mesma cor (hash do nome, nunca sorteio: cor que muda a cada carregamento é bug aos
-      olhos de quem usa).
-      **Resolver antes de codar**: o commit `e419015` tirou justamente a inicial da lista de
-      Amigos para pôr o bonequinho. Isto não pode desfazer aquilo. O lugar das iniciais é
-      onde **não existe** avatar montado — conta nova, header, quem nunca abriu o editor —
-      com o bonequinho continuando a mandar onde já foi montado.
+- [ ] **O header podia mostrar o bonequinho de quem já montou um.** Hoje mostra as iniciais
+      para todo mundo, o que é um degrau acima do que havia (um `/avatar.png` que nunca
+      existiu, dando 404 a cada carregamento) mas ainda ignora o avatar montado. Custa uma
+      consulta a mais no header — daí não ter entrado junto.
 
 #### Cor e camada visual — `214017.png` e `214418.png`
 
@@ -247,10 +243,14 @@ vira ruído.
 - [ ] **Degradê radial que respira** (`214017`): arcos de cor subindo do rodapé, centro
       escuro, animação lenta. Alvo: a Neuro IA. O ShaderGradient que já está instalado
       (`components/focus-gradient.tsx`) provavelmente chega lá sem pacote novo.
-- [ ] **Borda que brilha e gira** (`214418`, estilo Apple Intelligence): o quadro inteiro
-      contornado por um degradê em movimento. Na imagem parece parada porque é print — o
-      efeito **é** o movimento. Dá para fazer em CSS puro (`@property` + `conic-gradient`
-      animado), sem canvas e sem GPU: é a versão barata de um efeito caro.
+> A **borda que gira** (`214418`) está entregue: `components/borda-viva.tsx`, na Neuro IA.
+> Em CSS puro — o `@property` dá tipo ao ângulo, e é isso que torna a `conic-gradient`
+> animável sem canvas e sem JS por quadro. Quase invisível em repouso, acende enquanto a
+> resposta chega.
+
+- [ ] **A mesma borda no Modo Foco**, se fizer sentido. Lá o estado que ela sinalizaria
+      seria a sessão correndo — vale só se não competir com os ambientes animados, que já
+      são o efeito principal daquela tela.
 
 #### Neuro IA — `202826.png` e `202901.png`
 

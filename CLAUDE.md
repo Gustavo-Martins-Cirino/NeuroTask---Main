@@ -50,6 +50,9 @@ frontend/
 │   ├── robot-mascot.tsx      # Robozinho SVG animado (mascote da Neuro IA no modo voz)
 │   ├── office-scene-3d.tsx   # Cena 3D do Escritório (R3F) — sala/itens/avatar por nível
 │   ├── neuro-sphere.tsx      # Esfera de partículas da Neuro IA (estado vazio do chat)
+│   ├── borda-viva.tsx        # Contorno que gira e acende enquanto a IA responde (CSS)
+│   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
+│   ├── avatar-iniciais.tsx   # Círculo com as iniciais (quem não montou o bonequinho)
 │   ├── r3f-ticker.tsx        # TickerDoGsap: põe um <Canvas> no ticker único (+ vigia)
 │   ├── avatar-figure.tsx     # Bonequinho paper-doll (preview do editor) + acessórios da loja
 │   ├── avatar-editor.tsx     # Editor de avatar (cabelo/pele/roupa/fones)
@@ -84,6 +87,8 @@ frontend/
 │   ├── coin-flight.ts        # Curva da moeda até o contador de XP (puro)
 │   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
 │   ├── neuro-sphere.ts       # Esfera da Neuro: pontos, repulsão e retorno (puro)
+│   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
+│   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()
 └── styles/global.css
