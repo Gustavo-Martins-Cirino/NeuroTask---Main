@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { VoiceConversation, unlockSpeech } from "@/components/voice-conversation"
+import { BordaViva } from "@/components/borda-viva"
 import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
 import {
   DropdownMenu,
@@ -358,6 +359,9 @@ export default function AiPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Acende enquanto a resposta chega — é o sinal que sobra quando o texto
+          ainda não começou a aparecer. */}
+      <BordaViva ativa={loading || transcribing} />
       <Header title="Neuro IA" icon={<Bot className="h-4 w-4" />}>
         <button
           onClick={() => { unlockSpeech(); setVoiceOpen(true) }}

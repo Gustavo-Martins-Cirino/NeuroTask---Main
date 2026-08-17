@@ -3,6 +3,67 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---- Borda viva ----------------------------------------------------------
+   O contorno que gira em volta da tela (referência:
+   inspirações/Captura de tela 2026-08-07 214418.png). Na imagem parece parado
+   porque é print — o efeito É o movimento.
+
+   Um ângulo não pode ser animado direto numa `conic-gradient`: o navegador não
+   sabe interpolar o texto de um gradiente. Registrando o ângulo com @property
+   ele vira um valor com TIPO, e aí a animação passa a ser interpolável — é o
+   que faz isto rodar em CSS puro, sem canvas e sem JS por quadro. */
+@property --borda-giro {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes borda-girar {
+  to {
+    --borda-giro: 360deg;
+  }
+}
+
+.borda-viva {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  padding: var(--borda-espessura, 2px);
+  background: conic-gradient(
+    from var(--borda-giro),
+    oklch(0.7 0.2 265),
+    oklch(0.75 0.18 200),
+    oklch(0.78 0.18 30),
+    oklch(0.7 0.22 330),
+    oklch(0.7 0.2 265)
+  );
+  /* Duas máscaras e a de dentro é subtraída: sobra só o anel da borda. Sem
+     isto o gradiente cobriria a tela inteira e engoliria o conteúdo. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: borda-girar var(--borda-duracao, 14s) linear infinite;
+}
+
+/* O brilho que sangra para dentro: a mesma volta, mais grossa e desfocada. */
+.borda-viva-brilho {
+  --borda-espessura: 12px;
+  filter: blur(18px);
+  z-index: 39;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .borda-viva {
+    animation: none;
+  }
+}
+
 :root {
   /* NeuroTask Light Theme - Clean, Professional */
   --background: oklch(0.985 0.002 260);
