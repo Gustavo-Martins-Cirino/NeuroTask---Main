@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sparkles, Loader2 } from "lucide-react"
+import { SocialLogin, SeloUltimoUso, useUltimoMetodo } from "@/components/social-login"
+import { lembrarMetodo } from "@/lib/auth-metodos"
 import type { AuthError } from "@supabase/supabase-js"
 
 function translateLoginError(error: AuthError): string {
@@ -35,6 +37,7 @@ export default function LoginPage() {
   const [resent, setResent] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  const ultimoMetodo = useUltimoMetodo()
 
   const handleResend = async () => {
     setResent(true)
@@ -64,6 +67,9 @@ export default function LoginPage() {
       return
     }
 
+    // Aqui dá para guardar DEPOIS de dar certo — diferente do OAuth, que leva a
+    // pessoa para fora da página antes de haver resposta.
+    lembrarMetodo("senha")
     router.push("/app")
     router.refresh()
   }
@@ -139,10 +145,17 @@ export default function LoginPage() {
                 Entrando...
               </>
             ) : (
-              "Entrar"
+              <>
+                Entrar
+                {ultimoMetodo === "senha" && (
+                  <SeloUltimoUso className="ml-2 bg-primary-foreground/20 text-primary-foreground/90" />
+                )}
+              </>
             )}
           </Button>
         </form>
+
+        <SocialLogin modo="entrar" mostrarSelo />
 
         <p className="text-center text-sm text-muted-foreground">
           Não tem uma conta?{" "}

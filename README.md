@@ -110,6 +110,25 @@ O `GROQ_API_KEY` também serve à transcrição de áudio (Whisper) do botão de
 |---|---|
 | `OWNER_EMAIL` | Seu e-mail. Libera `/admin` (feedbacks, usuários, erros, uso) e o painel de erros em Configurações. **Sem ela `/admin` responde 404 para todo mundo, inclusive você** |
 
+### Entrar com Google / GitHub / Apple (opcional)
+
+| Variável | Para quê |
+|---|---|
+| `NEXT_PUBLIC_OAUTH_PROVIDERS` | Quais botões sociais aparecem em `/login` e `/signup`. Lista separada por vírgula: `google`, `github`, `apple`. **Vazia ou ausente = nenhum botão**, que é o padrão |
+
+A ordem dos passos importa, e é fácil errar:
+
+1. **Primeiro** habilite o provedor no Supabase (Authentication → Providers), com o
+   Client ID/Secret dele e a *callback URL* que o painel mostra.
+2. **Depois** liste o provedor em `NEXT_PUBLIC_OAUTH_PROVIDERS`.
+
+Invertendo, o botão aparece antes de funcionar — e falhar na tela de entrada é o jeito
+mais rápido de perder um usuário-teste. Por isso a env existe: sem ela o código não
+adivinha o que está configurado do outro lado.
+
+O `app/auth/callback/route.ts` já trata o retorno (fluxo PKCE) e não precisa de mudança.
+O Apple exige conta paga de Apple Developer (99 USD/ano); Google e GitHub são de graça.
+
 ### Integrações (opcionais)
 
 | Variável | Para quê |

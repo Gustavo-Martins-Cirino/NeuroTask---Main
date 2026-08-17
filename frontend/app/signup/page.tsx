@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sparkles, Loader2, CheckCircle } from "lucide-react"
+import { SocialLogin } from "@/components/social-login"
 import type { AuthError } from "@supabase/supabase-js"
 
 function translateSignupError(error: AuthError): string {
@@ -203,6 +204,8 @@ export default function SignupPage() {
             )}
           </Button>
         </form>
+
+        <SocialLogin modo="criar" />
 
         <p className="text-center text-sm text-muted-foreground">
           Já tem uma conta?{" "}
