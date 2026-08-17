@@ -133,9 +133,11 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > O pacote já está instalado (`gsap` 3.15, todos os plugins livres). SplitText e MotionPath
 > já estão em uso — `components/split-greeting.tsx` e `components/coin-flight.tsx`. O
 > `gsap.ticker` já puxa o Lenis (`TickerUnico` em `components/smooth-scroll.tsx`,
-> `autoRaf: false` + `lagSmoothing(0)`) **e a sala 3D** (`TickerDoGsap` em
-> `components/office-scene-3d.tsx`: `frameloop="never"` + `advance()`, com o tempo passando
-> por `lib/frame-clock.ts`).
+> `autoRaf: false` + `lagSmoothing(0)`) **e os `<Canvas>` do app** (`TickerDoGsap` em
+> `components/r3f-ticker.tsx`: `frameloop="never"` + `advance()`, com o tempo passando
+> por `lib/frame-clock.ts`). Ele saiu do Escritório e virou peça quando a esfera da Neuro
+> IA precisou do mesmo tratamento — canvas novo entra por lá, nunca reescrevendo a
+> inscrição no ticker à mão.
 >
 > **Duas coisas para lembrar antes de pôr outro canvas no ticker.** O `advance()` em
 > `frameloop="never"` recebe **segundos de cena**, não o instante do rAF — o R3F faz
@@ -230,10 +232,11 @@ escolhidos e abas trocando a métrica.
 > Cirino → **GC**, com a cor saindo do nome por hash. A lista de Amigos segue com o
 > bonequinho, como o commit `e419015` decidiu — as iniciais só ocupam o vazio.
 
-- [ ] **O header podia mostrar o bonequinho de quem já montou um.** Hoje mostra as iniciais
-      para todo mundo, o que é um degrau acima do que havia (um `/avatar.png` que nunca
-      existiu, dando 404 a cada carregamento) mas ainda ignora o avatar montado. Custa uma
-      consulta a mais no header — daí não ter entrado junto.
+- [ ] **O header podia mostrar o bonequinho de quem já montou um.** O item encolheu: o
+      header já mostra a **foto** de quem entrou por Google/GitHub, e as iniciais para o
+      resto. O que falta é só o avatar montado no editor, que tem precedência sobre as
+      iniciais e perde para a foto. Custa uma consulta a mais no header (`user_stats.avatar`)
+      — daí não ter entrado junto.
 
 #### Cor e camada visual — `214017.png` e `214418.png`
 

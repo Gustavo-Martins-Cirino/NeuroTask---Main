@@ -95,7 +95,7 @@ frontend/
 └── styles/global.css
 
 supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
-  29 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
+  32 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
 
 ## Rotas existentes

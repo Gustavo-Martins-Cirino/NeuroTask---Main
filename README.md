@@ -166,8 +166,12 @@ routine_profile.sql · routine_activities.sql · activity_log.sql
 
 **4. Social** — cada um depende do anterior
 ```
-friends.sql → social_v2.sql → friends_agenda.sql → friends_v3.sql
+friends.sql → social_v2.sql → friends_agenda.sql → friends_v3.sql → friends_v4.sql
 ```
+`friends_v4.sql` é o que faz a lista de amigos desenhar o bonequinho de cada um: a RPC
+`my_friends` passa a devolver avatar e acessórios de todo mundo de uma vez, em vez de a
+tela fazer N chamadas a `friend_office`. Sem ele a lista ainda funciona — só volta a
+mostrar a inicial no lugar do boneco.
 
 **5. Push** — ⚠️ em `push_cron.sql`, substitua `COLE_AQUI_O_CRON_SECRET` pelo seu `CRON_SECRET` antes de rodar
 ```
@@ -200,6 +204,15 @@ feita à mão pode ter batizado o constraint de outro jeito.
 telegram.sql · calendar_feed.sql
 ```
 `calendar_feed.sql` liga o feed assinável (Configurações → "Assinar no Google/Outlook"). Sem dependências.
+
+**Faxina (opcional, e só se você quiser)**
+```
+remove_extension_screen_time.sql
+```
+Apaga as tabelas da extensão de tempo de tela, que foi abandonada. Nada no app depende
+delas — quem está começando do zero nunca as criou, e quem tem um banco antigo pode
+deixá-las lá sem prejuízo nenhum. É o único script destrutivo da pasta; está separado dos
+outros justamente por isso.
 
 ### Ver os erros que aconteceram
 
