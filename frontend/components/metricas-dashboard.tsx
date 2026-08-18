@@ -172,6 +172,14 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
             fill={ACENTO} stroke="var(--card)" strokeWidth="2"
           />
 
+          {/* Alvos invisíveis por dia: dão o valor a quem para o cursor e a quem
+              usa leitor de tela, sem custar um pixel de tela. */}
+          {pontos.map((p, i) => (
+            <circle key={p.chave} cx={xDe(i)} cy={yDe(p.total)} r={Math.max(8, passo / 2)} fill="transparent">
+              <title>{`${p.rotulo}: ${p.total} ${p.total === 1 ? "tarefa" : "tarefas"}`}</title>
+            </circle>
+          ))}
+
           {/* Rótulo direto só nas pontas do eixo — o resto sai na dica. */}
           <text x={MARGEM_LINHA} y={ALTURA_PLOT + 15} className="fill-muted-foreground text-[10px]">
             {pontos[0].rotulo}
@@ -237,7 +245,11 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
                   fill="transparent"
                   onPointerEnter={() => setAtivo(i)}
                   onPointerLeave={() => setAtivo(null)}
-                />
+                >
+                  {/* O valor não fica preso na dica que segue o mouse: quem usa
+                      leitor de tela — ou só parou o cursor — chega nele por aqui. */}
+                  <title>{`${c.rotulo}: ${c.descricao}`}</title>
+                </rect>
                 {altura > 0 && (
                   <rect
                     x={centro - espessura / 2}
@@ -280,30 +292,12 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
 // A seção
 // ---------------------------------------------------------------------------
 
-function Tabela({ linhas }: { linhas: [string, string][] }) {
-  return (
-    <div className="max-h-52 overflow-y-auto rounded-lg border border-border/40">
-      <table className="w-full text-left text-xs">
-        <tbody className="divide-y divide-border/30">
-          {linhas.map(([a, b]) => (
-            <tr key={a}>
-              <td className="px-3 py-1.5 text-muted-foreground">{a}</td>
-              <td className="px-3 py-1.5 text-right tabular-nums">{b}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
 export function MetricasDashboard() {
   const supabase = createClient()
   const formato = useTimeFormat()
   const semMovimento = useReducedMotion()
   const [aberta, setAberta] = useState(false)
   const [aba, setAba] = useState<Aba>("dias")
-  const [tabela, setTabela] = useState(false)
   const [datas, setDatas] = useState<Date[] | null>(null)
 
   // Só busca quando abre: fechada por padrão, a seção não deve custar uma
@@ -369,13 +363,6 @@ export function MetricasDashboard() {
       : "Ainda não dá para ver um horário preferido."
   }
 
-  const linhasDaTabela: [string, string][] =
-    aba === "dias"
-      ? porDia.map((p) => [p.rotulo, String(p.total)])
-      : aba === "semana"
-        ? porSemana.map((p) => [p.rotulo, `${p.diasComAlgo} de ${p.diasContados}`])
-        : porHora.map((p) => [rotuloDeHora(p.hora, doze), String(p.total)])
-
   return (
     <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm">
       <button
@@ -433,21 +420,10 @@ export function MetricasDashboard() {
                     <GraficoColunas colunas={colunasSemana} rotulosDoEixo={(i) => colunasSemana[i].rotulo} />
                   )}
                   {aba === "hora" && (
-                    // De 24 rótulos cabem uns 6 sem colidir; a dica e a tabela
-                    // carregam o resto.
+                    // De 24 rótulos cabem uns 6 sem colidir; a dica carrega o resto.
                     <GraficoColunas colunas={colunasHora} rotulosDoEixo={(i) => (i % 4 === 0 ? `${i}h` : null)} />
                   )}
 
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => setTabela((v) => !v)}
-                      className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                    >
-                      {tabela ? "Esconder os números" : "Ver os números"}
-                    </button>
-                    {/* A dica do gráfico nunca é o único caminho até o valor. */}
-                    {tabela && <Tabela linhas={linhasDaTabela} />}
-                  </div>
                 </>
               )}
             </div>
