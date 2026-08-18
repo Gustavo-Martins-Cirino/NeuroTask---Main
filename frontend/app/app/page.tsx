@@ -2,6 +2,7 @@
 
 import { Header } from "@/components/header"
 import { GettingStarted } from "@/components/getting-started"
+import { MetricasDashboard } from "@/components/metricas-dashboard"
 import { SplitGreeting } from "@/components/split-greeting"
 import { saudacaoPorHora } from "@/lib/saudacao"
 import { Calendar, CheckSquare, Bot, ArrowRight, Clock, Target, ListTodo, LayoutDashboard, Bell, Brain } from "lucide-react"
@@ -325,6 +326,16 @@ export default function DashboardPage() {
                 </ul>
               )}
             </div>
+          </motion.div>
+
+          {/* Seus números — fechada por padrão, de propósito: o dashboard agrada
+              por ser minimalista, e um painel sempre aberto acabaria com isso. */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.07 }}
+          >
+            <MetricasDashboard />
           </motion.div>
 
           {/* Autoconhecimento — tempos reais vs. planejados (dos check-ins) */}

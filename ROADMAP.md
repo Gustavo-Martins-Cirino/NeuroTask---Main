@@ -216,15 +216,28 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 
 #### Dashboard — `Captura de tela 2026-08-07 213605.png`
 
-Gráfico de linha com degradê no traço (laranja → verde), tooltips fixados em pontos
-escolhidos e abas trocando a métrica.
+> **Entregue** como "Seus números", **fechada por padrão** —
+> `components/metricas-dashboard.tsx` + `lib/dashboard-metricas.ts`. As três perguntas que
+> o item pedia, uma por aba: concluídas por dia (linha, 14 dias), constância na semana
+> (colunas, 4 semanas) e melhor hora (colunas, 24h). Tudo sai de UMA consulta —
+> `tasks.completed_at` dos últimos 28 dias — feita só quando a seção abre.
+>
+> **O degradê laranja → verde da referência não veio, e é decisão, não esquecimento**:
+> duas matizes para MAGNITUDE inventam uma polaridade que o dado não tem. O que ficou foi
+> a área esmaecendo numa matiz só. Nas colunas vale o padrão de ênfase — o dia (ou a hora)
+> que responde a pergunta acende, o resto recua —, e não um tom por altura, que repetiria
+> com a cor o que a altura já diz.
+>
+> Duas coisas foram medidas em vez de olhadas: o cinza de apoio está a **0.7** de
+> opacidade porque a 0.3 a cor já misturada com o fundo dava 1,54:1, abaixo do piso de
+> 3:1 de uma marca com dado; e a linha ganhou margem nas pontas porque a bolinha do
+> último ponto saía metade para fora do SVG.
 
-- [ ] **Uma seção de métricas discreta** — e a palavra é *discreta*. O dashboard agrada hoje
-      **por ser minimalista**, e encher de número é o jeito mais rápido de estragá-lo. O
-      caminho é uma seção que se abre (fechada por padrão), não um painel sempre aberto.
-      Os dados já existem (`tasks`, `user_stats`, `activity_log`); o trabalho de verdade é
-      escolher **poucas** perguntas que valem resposta — concluídas por dia, constância na
-      semana, hora em que a pessoa rende mais. Três, não dez.
+- [ ] **Um segundo olhar nos números, com dados de verdade.** Os gráficos foram conferidos
+      em captura, com dados fabricados — o que pega geometria e colisão de rótulo, mas não
+      responde se as três perguntas são as **certas**. Com algumas semanas de uso real:
+      "melhor hora" diz algo que você não sabia? "constância" muda o que você faz? A que
+      não mudar nada sai, e não vira quatro.
 
 #### Avatar por iniciais — `Captura de tela 2026-08-07 213710.png`
 

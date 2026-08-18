@@ -55,6 +55,7 @@ frontend/
 │   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
 │   ├── avatar-iniciais.tsx   # Retrato: foto enviada → foto da conta → bonequinho → iniciais
 │   ├── foto-perfil-campo.tsx # Enviar/remover a foto (Configurações → Perfil)
+│   ├── metricas-dashboard.tsx# "Seus números" — 3 abas, SVG à mão, fechada por padrão
 │   ├── seletor-regiao.tsx    # Região (Brasil/EUA) com bandeira e painel que abre
 │   ├── bandeira.tsx          # As duas bandeiras em SVG (emoji não renderiza no Windows)
 │   ├── r3f-ticker.tsx        # TickerDoGsap: põe um <Canvas> no ticker único (+ vigia)
@@ -86,6 +87,7 @@ frontend/
 │   ├── time-format.ts        # 12h/24h — puro; o I/O mora em hooks/use-time-format
 │   ├── regiao.ts             # Brasil/EUA → formato de hora (puro; derivado, sem storage próprio)
 │   ├── foto-perfil.ts        # Recorte quadrado, limites e caminho da foto (puro)
+│   ├── dashboard-metricas.ts # As 3 perguntas de "Seus números" (puro; dia/semana/hora locais)
 │   ├── avatar.ts             # I/O do retrato: bonequinho + envio/remoção da foto
 │   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
 │   ├── office-city.ts        # Fase do dia + paleta da vista da janela (puro)
