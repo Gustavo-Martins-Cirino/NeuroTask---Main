@@ -323,7 +323,6 @@ Varridos um a um (nome mais o que o código importa). Onde cada um encaixaria:
 | `transição-dinâmica.jsx` | `DynamicIsland` | O relógio flutuante do Modo Foco minimizado |
 | `lendo-tutorial.jsx` | `EdgeBlur` — a borda desfoca conforme rola | Listas longas: tarefas, notas, o chat |
 | `tutorial.jsx` · `tutorial2.jsx` | Onboarding em passos | O "primeiro contato" da Fase 5, que hoje é só verificação |
-| `skiper.tsx` · `time.tsx` | `NumberFlow`, números animados (os dois arquivos são o mesmo) | Timer do Modo Foco e contadores de XP |
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
 | `inspiração-seção-tarefas.jsx` | `GradientButtonGroup` | Os filtros e abas de Tarefas |
 | `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |
