@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AvatarIniciais } from "@/components/avatar-iniciais"
+import { parseAvatarModo, type AvatarModo } from "@/lib/avatar-modo"
 import { XpBar } from "@/components/xp-bar"
 import { FeedbackButton } from "@/components/feedback-button"
 import { createClient } from "@/lib/supabase/client"
@@ -31,7 +32,7 @@ export function Header({ title, icon, children }: HeaderProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const supabase = createClient()
-  const [user, setUser] = useState<{ email?: string; name?: string; foto?: string | null } | null>(null)
+  const [user, setUser] = useState<{ email?: string; name?: string; foto?: string | null; modo?: AvatarModo } | null>(null)
   const [boneco, setBoneco] = useState<Retrato | null>(null)
   const [gamification, setGamification] = useState<Gamification>(() => computeGamification(0))
 
@@ -49,6 +50,7 @@ export function Header({ title, icon, children }: HeaderProps) {
           email: user.email,
           name: meta.full_name || meta.name || user.email?.split("@")[0],
           foto: meta.foto_perfil || meta.avatar_url || meta.picture || null,
+          modo: parseAvatarModo(meta.avatar_modo),
         })
       }
     }
@@ -145,12 +147,12 @@ export function Header({ title, icon, children }: HeaderProps) {
               {/* Era um <AvatarImage src="/avatar.png">, arquivo que nunca
                   existiu: dava 404 a cada carregamento e caía num fallback de
                   uma letra só, igual para metade das pessoas. */}
-              <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} className="h-9 w-9 text-xs" title={user?.name || "Avatar"} />
+              <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} modo={user?.modo} className="h-9 w-9 text-xs" title={user?.name || "Avatar"} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">
             <div className="flex items-center gap-2 p-2">
-              <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} className="h-8 w-8 text-xs" />
+              <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} modo={user?.modo} className="h-8 w-8 text-xs" />
               <div className="flex flex-col">
                 <p className="text-sm font-medium">{user?.name || "Usuário"}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>

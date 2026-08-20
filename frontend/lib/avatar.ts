@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import { type AvatarModo } from "@/lib/avatar-modo"
 import { acessoriosEquipados, type AvatarAccessories } from "@/lib/avatar-accessories"
 import {
   recorteQuadrado, caminhoDaFoto, urlComCarimbo, LADO_FOTO, QUALIDADE_JPEG,
@@ -192,5 +193,20 @@ export async function removerFotoPerfil(): Promise<void> {
   if (error) throw error
   await supabase.storage.from(BUCKET_FOTOS).remove([caminhoDaFoto(user.id)])
 
+  avisaRetratoMudou()
+}
+
+/**
+ * Grava qual retrato a pessoa escolheu usar.
+ *
+ * Vai no user_metadata, junto de `foto_perfil`: é o mesmo dado (como eu apareço)
+ * e o header já lê dali, então a escolha chega junto com a foto numa consulta
+ * só. Chave própria pelo mesmo motivo da foto — o login social mescla os dados
+ * do provedor no metadata, e uma chave conhecida dele seria sobrescrita.
+ */
+export async function salvarAvatarModo(modo: AvatarModo): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.auth.updateUser({ data: { avatar_modo: modo } })
+  if (error) throw error
   avisaRetratoMudou()
 }
