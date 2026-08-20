@@ -258,9 +258,11 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 Dois efeitos de fundo, e os dois pedem o mesmo cuidado: fundo que compete com o conteúdo
 vira ruído.
 
-- [ ] **Degradê radial que respira** (`214017`): arcos de cor subindo do rodapé, centro
-      escuro, animação lenta. Alvo: a Neuro IA. O ShaderGradient que já está instalado
-      (`components/focus-gradient.tsx`) provavelmente chega lá sem pacote novo.
+> O **degradê radial que respira** (`214017`) está entregue: `components/fundo-arcos.tsx`,
+> na Neuro IA. Aparece só no tema ESCURO — a referência é uma tela preta com a cor vindo
+> de baixo, e no claro brigaria com a malha pastel que já é o fundo dali. Em CSS, não com
+> o ShaderGradient, pelo mesmo motivo da malha: a página já tem o canvas da esfera, e o do
+> shader é o que não entra no ticker único.
 > A **borda que gira** (`214418`) está entregue: `components/borda-viva.tsx`, na Neuro IA.
 > Em CSS puro — o `@property` dá tipo ao ângulo, e é isso que torna a `conic-gradient`
 > animável sem canvas e sem JS por quadro. Quase invisível em repouso, acende enquanto a

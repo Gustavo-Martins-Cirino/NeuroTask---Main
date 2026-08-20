@@ -112,6 +112,46 @@
   }
 }
 
+/* Arcos que sobem do rodapé — a cor nasce embaixo e o miolo fica escuro, que é
+   onde o texto vive. Ver components/fundo-arcos.tsx. */
+.fundo-arcos {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Invisível no tema claro: lá quem faz o fundo é a malha pastel. */
+  opacity: 0;
+}
+
+.dark .fundo-arcos {
+  opacity: 1;
+}
+
+.fundo-arcos span {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  /* Empurrado para baixo: o que se vê é a CALOTA do arco, não a elipse inteira. */
+  transform: translate(-50%, 42%);
+  border-radius: 50%;
+  /* A parada antes de 70% dissolve a borda sozinha — sem ela o arco vira uma
+     elipse de contorno visível, e o efeito se perde. */
+  background: radial-gradient(ellipse at center, var(--cor) 0%, transparent 68%);
+  animation: arco-respira var(--tempo) ease-in-out var(--atraso) infinite alternate;
+  will-change: transform, opacity;
+}
+
+/* Respiração: sobe e desce alguns por cento, com a opacidade acompanhando. Os
+   três em tempos diferentes — é o descompasso que evita o loop óbvio. */
+@keyframes arco-respira {
+  from { transform: translate(-50%, 46%) scale(1); opacity: 0.78; }
+  to   { transform: translate(-50%, 38%) scale(1.07); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fundo-arcos span { animation: none; }
+}
+
 :root {
   /* NeuroTask Light Theme - Clean, Professional */
   --background: oklch(0.985 0.002 260);
@@ -188,6 +228,12 @@
   /* A mesma malha, contida: no escuro a cor pastel viraria névoa por cima do
      texto. A referência …202901 (quase branca) é a prova de que a ideia
      sobrevive sem a cor forte — aqui ela vira só uma insinuação. */
+  /* Arcos do rodapé da Neuro IA (ver .fundo-arcos). Existem só aqui: no claro
+     a camada fica invisível, porque a referência é uma tela preta com a cor
+     vindo de baixo. Croma alto de propósito — é a cor que dá o efeito. */
+  --arco-a: oklch(0.62 0.19 35);
+  --arco-b: oklch(0.58 0.21 355);
+  --arco-c: oklch(0.6 0.19 265);
   --malha-a: oklch(0.34 0.055 290);
   --malha-b: oklch(0.31 0.05 250);
   --malha-c: oklch(0.28 0.04 345);
