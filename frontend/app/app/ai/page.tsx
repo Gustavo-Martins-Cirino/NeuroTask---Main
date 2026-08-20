@@ -12,6 +12,7 @@ import { BordaViva } from "@/components/borda-viva"
 import { FundoMalha } from "@/components/fundo-malha"
 import { FundoArcos } from "@/components/fundo-arcos"
 import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
+import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,6 +86,7 @@ export default function AiPage() {
   const [activeId, setActiveId] = useState<string>("")
   const bootedRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const mascaraRolagem = useMascaraRolagem(scrollRef)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const monitorCtxRef = useRef<AudioContext | null>(null)
@@ -430,6 +432,7 @@ export default function AiPage() {
       >
         <div
           ref={scrollRef}
+          style={isEmpty ? undefined : mascaraRolagem}
           className={cn("scrollbar-thin overflow-y-auto", isEmpty ? "py-4" : "flex-1 py-6")}
         >
           {isEmpty ? (

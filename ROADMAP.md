@@ -314,6 +314,13 @@ vira ruído.
 
 Varridos um a um (nome mais o que o código importa). Onde cada um encaixaria:
 
+O `lendo-tutorial.jsx` (`EdgeBlur`) saiu da tabela porque o **mecanismo já
+existe**: `hooks/use-mascara-rolagem.ts` + `lib/mascara-rolagem.ts` (puro,
+testado) desvanecem as bordas de uma área que rola — leitura minimalista do
+efeito, uma máscara CSS aditiva, sem mexer no layout. **Aplicado no chat da
+Neuro IA.** Falta só, se valer, estender a mesma linha às outras listas longas
+(notas, tarefas): é um `style={useMascaraRolagem(ref)}` no container de scroll.
+
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
 | `feedback.jsx` | `MorphSurface` — o botão vira o formulário, sem diálogo | O botão de feedback. É o encaixe mais direto da pasta inteira |
@@ -321,7 +328,6 @@ Varridos um a um (nome mais o que o código importa). Onde cada um encaixaria:
 | `notas-cores.jsx` | Painel flutuante de cor e imagem | Cor da nota, em Notas |
 | `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | Cor de fundo do Escritório e a paleta de `lib/reminders.ts` |
 | `transição-dinâmica.jsx` | `DynamicIsland` | O relógio flutuante do Modo Foco minimizado |
-| `lendo-tutorial.jsx` | `EdgeBlur` — a borda desfoca conforme rola | Listas longas: tarefas, notas, o chat |
 | `tutorial.jsx` · `tutorial2.jsx` | Onboarding em passos | O "primeiro contato" da Fase 5, que hoje é só verificação |
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
 | `inspiração-seção-tarefas.jsx` | `GradientButtonGroup` | Os filtros e abas de Tarefas |
