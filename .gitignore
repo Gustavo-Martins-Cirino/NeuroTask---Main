@@ -22,3 +22,9 @@ node_modules
 /backend/
 __pycache__/
 *.pyc
+
+# Downloads de referência que chegam com credencial no cabeçalho. O repositório
+# é público: um `git add -A` distraído publicaria a chave para sempre (reescrever
+# o histórico depois não apaga o que já foi clonado). As referências VERSIONADAS
+# moram em frontend/components/inspirações/ — esta pasta aqui é a de rascunho.
+/frontend/inspirações/
