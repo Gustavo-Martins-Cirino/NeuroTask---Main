@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ALVO_DA_MOEDA } from "@/lib/coin-flight"
+import { NumeroRolante } from "@/components/numero-rolante"
 
 interface XpBarProps {
   level?: number
@@ -29,7 +30,7 @@ export function XpBar({
           {...{ [ALVO_DA_MOEDA]: "" }}
           className="flex h-6 min-w-6 items-center justify-center rounded-full bg-primary/15 px-1.5 text-xs font-bold text-primary"
         >
-          {level}
+          <NumeroRolante valor={level} />
         </div>
         <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
           Lvl {level}
@@ -46,7 +47,7 @@ export function XpBar({
           />
         </div>
         <span className="hidden text-xs tabular-nums text-muted-foreground md:inline">
-          {currentXp}/{xpForNextLevel} XP
+          <NumeroRolante valor={currentXp} />/{xpForNextLevel} XP
         </span>
       </div>
     </div>
