@@ -9,6 +9,7 @@ import { awardXp, taskXpAmount } from "@/lib/gamification"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { SoundMixer } from "@/components/sound-mixer"
 import { YouTubePlayer } from "@/components/youtube-player"
+import { NumeroRolante } from "@/components/numero-rolante"
 import type { Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -297,9 +298,9 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               </div>
             ) : (
               <div className="my-6 flex items-center gap-4 font-bold tabular-nums" style={{ fontSize: "clamp(5rem, 17vw, 13rem)", lineHeight: 1 }}>
-                <span>{mm}</span>
+                <NumeroRolante valor={mm} />
                 <span className="opacity-40">:</span>
-                <span>{ss}</span>
+                <NumeroRolante valor={ss} />
               </div>
             )}
 
