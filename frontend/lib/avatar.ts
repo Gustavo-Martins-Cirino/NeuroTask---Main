@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/client"
 import { type AvatarModo } from "@/lib/avatar-modo"
 import { acessoriosEquipados, type AvatarAccessories } from "@/lib/avatar-accessories"
 import {
-  recorteQuadrado, caminhoDaFoto, urlComCarimbo, LADO_FOTO, QUALIDADE_JPEG,
+  recorteQuadrado, caminhoDaFoto, urlComCarimbo, explicaErroUpload, LADO_FOTO, QUALIDADE_JPEG,
 } from "@/lib/foto-perfil"
 
 // Avatar editável do Escritório (paper-doll 2D). A configuração mora em
@@ -163,7 +163,12 @@ export async function enviarFotoPerfil(arquivo: File): Promise<string> {
   const { error: erroUpload } = await supabase.storage
     .from(BUCKET_FOTOS)
     .upload(caminho, jpeg, { contentType: "image/jpeg", upsert: true })
-  if (erroUpload) throw erroUpload
+  if (erroUpload) {
+    // O original em inglês fica no console para depurar; a pessoa recebe a
+    // versão que diz o que fazer (quase sempre: rodar o foto_perfil.sql).
+    console.error("Falha ao subir a foto de perfil:", erroUpload)
+    throw new Error(explicaErroUpload(erroUpload))
+  }
 
   const { data } = supabase.storage.from(BUCKET_FOTOS).getPublicUrl(caminho)
   // O carimbo é gravado junto do endereço, e não posto na hora de exibir: o

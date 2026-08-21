@@ -4,6 +4,7 @@ import {
   erroDoArquivo,
   caminhoDaFoto,
   urlComCarimbo,
+  explicaErroUpload,
   TAMANHO_MAXIMO_BYTES,
 } from "./foto-perfil"
 
@@ -72,6 +73,41 @@ describe("caminhoDaFoto", () => {
 
   it("é sempre o mesmo caminho, para trocar sobrescrever em vez de acumular", () => {
     expect(caminhoDaFoto("abc")).toBe(caminhoDaFoto("abc"))
+  })
+})
+
+describe("explicaErroUpload", () => {
+  it("bucket ausente é o caso mais comum: manda rodar o SQL", () => {
+    const msg = explicaErroUpload({ message: "Bucket not found", statusCode: "404" })
+    expect(msg).toMatch(/foto_perfil\.sql/)
+    expect(msg).not.toMatch(/bucket not found/i)
+  })
+
+  it("falta de política (RLS/403) também aponta o SQL", () => {
+    expect(explicaErroUpload({ message: "new row violates row-level security policy" }))
+      .toMatch(/foto_perfil\.sql/)
+    expect(explicaErroUpload({ message: "Unauthorized", status: 403 }))
+      .toMatch(/foto_perfil\.sql/)
+  })
+
+  it("arquivo grande demais fala do limite do bucket", () => {
+    expect(explicaErroUpload({ message: "The object exceeded the maximum allowed size" }))
+      .toMatch(/grande demais/)
+  })
+
+  it("mime recusado explica o formato", () => {
+    expect(explicaErroUpload({ message: "mime type image/png is not allowed" }))
+      .toMatch(/formato/)
+  })
+
+  it("erro desconhecido preserva a mensagem original", () => {
+    expect(explicaErroUpload({ message: "algo estranho aconteceu" }))
+      .toBe("algo estranho aconteceu")
+  })
+
+  it("sem mensagem nenhuma, cai num texto genérico", () => {
+    expect(explicaErroUpload(null)).toMatch(/tente de novo/i)
+    expect(explicaErroUpload({})).toMatch(/tente de novo/i)
   })
 })
 

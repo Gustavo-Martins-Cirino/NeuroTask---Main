@@ -35,6 +35,37 @@ export function recorteQuadrado(largura: number, altura: number): Recorte {
   }
 }
 
+// O erro que o Storage devolve no upload é cru e em inglês ("Bucket not
+// found"), e cai direto no toast — a pessoa lê um jargão e não sabe o que fazer.
+// Como no feedback.ts, aqui ele vira uma frase que diz O QUE fazer. O caso que
+// mais aparece é o SQL nunca ter sido rodado: sem o bucket, o upload falha logo
+// na primeira foto.
+export interface ErroDeUpload {
+  message?: string
+  statusCode?: string | number
+  status?: number
+  error?: string
+}
+
+export function explicaErroUpload(err: ErroDeUpload | null | undefined): string {
+  const texto = `${err?.message ?? ""} ${err?.error ?? ""}`.toLowerCase()
+  const status = String(err?.statusCode ?? err?.status ?? "")
+
+  if (texto.includes("bucket")) {
+    return "O espaço das fotos ainda não existe no Supabase. Rode supabase/foto_perfil.sql no SQL Editor — ele cria o bucket e libera o acesso."
+  }
+  if (texto.includes("row-level security") || texto.includes("violates") || texto.includes("unauthorized") || status === "403") {
+    return "Sem permissão para gravar a foto. Rode supabase/foto_perfil.sql no Supabase — ele cria as políticas de acesso ao bucket."
+  }
+  if (texto.includes("exceeded") || texto.includes("maximum allowed size") || texto.includes("too large") || status === "413") {
+    return "A imagem ficou grande demais para o bucket. Confira o file_size_limit em supabase/foto_perfil.sql."
+  }
+  if (texto.includes("mime") || texto.includes("not allowed") || texto.includes("invalid_mime")) {
+    return "O formato da imagem não é aceito pelo bucket. Rode supabase/foto_perfil.sql, que permite JPEG."
+  }
+  return err?.message || "Não deu para enviar a foto agora. Tente de novo em instantes."
+}
+
 /** O que o arquivo escolhido tem de errado, em português, ou `null` se está bom. */
 export function erroDoArquivo(arquivo: { type: string; size: number }): string | null {
   if (!arquivo.type.startsWith("image/")) return "Escolha um arquivo de imagem."
