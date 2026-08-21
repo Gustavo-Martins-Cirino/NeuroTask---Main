@@ -31,6 +31,17 @@ export const OFFICE_BG_OPTIONS: OfficeBgOption[] = [
   { id: "#1b1b20", label: "Grafite", swatch: "#1b1b20" },
 ]
 
+// Cor livre: um hex que não é nenhum dos presets acima (nem o "auto"). É o que
+// o seletor personalizado usa para saber se está ativo e mostrar a cor atual.
+const IDS_PRESET = new Set(OFFICE_BG_OPTIONS.map((o) => o.id))
+
+export function ehFundoPersonalizado(bg: OfficeBg): boolean {
+  return !IDS_PRESET.has(bg)
+}
+
+/** Cor inicial do seletor personalizado enquanto ainda se usa um preset. */
+export const COR_PERSONALIZADA_PADRAO = "#8aa0c8"
+
 export function parseOfficeBg(v: string | null): OfficeBg {
   if (v === "auto") return "auto"
   if (v && /^#[0-9a-fA-F]{6}$/.test(v)) return v

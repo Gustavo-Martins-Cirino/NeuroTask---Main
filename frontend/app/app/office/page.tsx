@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil, Palette, Camera } from "lucide-react"
 import { useOfficeBg, setOfficeBg } from "@/hooks/use-office-bg"
-import { OFFICE_BG_OPTIONS, resolveOfficeBg } from "@/lib/office-bg"
+import { OFFICE_BG_OPTIONS, resolveOfficeBg, ehFundoPersonalizado, COR_PERSONALIZADA_PADRAO } from "@/lib/office-bg"
 import { composeSnapshot, shareOrDownload, snapshotFilename } from "@/lib/office-snapshot"
 import { useOfficeCelebration } from "@/hooks/use-office-celebration"
 
@@ -253,6 +253,35 @@ export default function OfficePage() {
                       style={{ background: o.swatch }}
                     />
                   ))}
+                  {/* Cor livre: abre o seletor do sistema. O modelo já aceita
+                      qualquer hex, então isto é só descobrir a última porta. Em
+                      repouso mostra um arco-íris ("escolha a sua"); com uma cor
+                      escolhida, mostra a própria cor e acende como os presets. */}
+                  {(() => {
+                    const custom = ehFundoPersonalizado(officeBg)
+                    return (
+                      <label
+                        title="Cor personalizada"
+                        aria-label="Fundo: cor personalizada"
+                        className={cn(
+                          "relative h-5 w-5 cursor-pointer rounded-full border transition-transform hover:scale-110",
+                          custom ? "border-primary ring-2 ring-primary/40" : "border-border/60"
+                        )}
+                        style={{
+                          background: custom
+                            ? officeBg
+                            : "conic-gradient(from 0deg, #f87171, #fbbf24, #34d399, #60a5fa, #a78bfa, #f87171)",
+                        }}
+                      >
+                        <input
+                          type="color"
+                          value={custom ? officeBg : COR_PERSONALIZADA_PADRAO}
+                          onChange={(e) => setOfficeBg(e.target.value)}
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                        />
+                      </label>
+                    )
+                  })()}
                 </div>
               </div>
               <button

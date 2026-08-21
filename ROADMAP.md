@@ -337,12 +337,21 @@ cheia, então o expandir seria enfeite), o pill ganhou o que faltava de útil: a
 base da ilha. A ilha ficou mais informativa sem crescer nem mudar de forma —
 outra vez o minimalista ganhando do efeito.
 
+O `color-picker.jsx` continua na tabela, mas **metade dele já foi**: a cor de
+fundo do Escritório agora tem um **9º swatch de cor livre** que abre o seletor
+do sistema (`<input type="color">`). Não precisou de paleta gerada nem de
+componente novo — o `lib/office-bg.ts` já saneava e aceitava qualquer hex, então
+só faltava a última porta na UI; `ehFundoPersonalizado` (puro, testado) diz
+quando o swatch próprio está ativo. O que sobra do item é o outro destino: a
+paleta de `lib/reminders.ts`, se um dia valer trocar as cores fixas de lembrete
+por escolha livre.
+
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
 | `feedback.jsx` | `MorphSurface` — o botão vira o formulário, sem diálogo | O botão de feedback. É o encaixe mais direto da pasta inteira |
 | `prompts.jsx` | `PromptLibrary` — biblioteca com criar, listar e estado vazio | Neuro IA: os `QUICK_PROMPTS` fixos viram salvos e editáveis |
 | `notas-cores.jsx` | Painel flutuante de cor e imagem | Cor da nota, em Notas |
-| `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | Cor de fundo do Escritório e a paleta de `lib/reminders.ts` |
+| `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | A paleta de `lib/reminders.ts` (a cor de fundo do Escritório já saiu — ver nota) |
 | `tutorial.jsx` · `tutorial2.jsx` | Onboarding em passos | O "primeiro contato" da Fase 5, que hoje é só verificação |
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
 | `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |
