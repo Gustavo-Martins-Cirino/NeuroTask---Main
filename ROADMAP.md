@@ -39,6 +39,10 @@ repositório:
       do código diz que aguenta (as consultas usam `maybeSingle`, os `.single()` são todos de
       `insert`), mas ninguém abriu. Vale conferir junto: navegador sem WebGL (o fallback existe
       em `office-scene-3d.tsx`, nunca foi visto rodando) e a tela de um celular real.
+      Agora a conta nova é recebida por um **guia de boas-vindas** (`components/onboarding.tsx`,
+      montado no AppShell) — quatro passos com a tese, aparece uma vez por conta. Ele orienta,
+      mas **não substitui esta verificação**: continua faltando abrir de fato as telas vazias e
+      ver se o guia cai bem num celular real.
 
 **Critério de pronto**: alguém que nunca viu o app abre, entende o que fazer sem você do
 lado, e volta no dia seguinte sozinho.
@@ -346,13 +350,22 @@ quando o swatch próprio está ativo. O que sobra do item é o outro destino: a
 paleta de `lib/reminders.ts`, se um dia valer trocar as cores fixas de lembrete
 por escolha livre.
 
+O `tutorial.jsx` · `tutorial2.jsx` (onboarding em passos) saiu da tabela: virou
+o **guia de boas-vindas** de `components/onboarding.tsx` (dados/regras puros em
+`lib/onboarding.ts`, testados). Da referência ficou o formato — passos com
+bolinhas de progresso —, mas **sem o quiz de papel/objetivo**: aquilo é de SaaS
+qualificando lead, e num app pessoal seria só fricção antes de usar. Ficou de
+fora **de propósito** o tour interativo que destaca elementos reais da tela
+(coach-marks): é bem mais código e mais frágil a cada mudança de layout, e o
+guia curto já cumpre o "entender o que fazer sem alguém do lado". Se o feedback
+do primeiro contato pedir, o tour vira item próprio.
+
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
 | `feedback.jsx` | `MorphSurface` — o botão vira o formulário, sem diálogo | O botão de feedback. É o encaixe mais direto da pasta inteira |
 | `prompts.jsx` | `PromptLibrary` — biblioteca com criar, listar e estado vazio | Neuro IA: os `QUICK_PROMPTS` fixos viram salvos e editáveis |
 | `notas-cores.jsx` | Painel flutuante de cor e imagem | Cor da nota, em Notas |
 | `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | A paleta de `lib/reminders.ts` (a cor de fundo do Escritório já saiu — ver nota) |
-| `tutorial.jsx` · `tutorial2.jsx` | Onboarding em passos | O "primeiro contato" da Fase 5, que hoje é só verificação |
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
 | `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |
 | `youtube-button.jsx` | `FamilyButton` — flutuante que expande | Ações rápidas do dashboard |
