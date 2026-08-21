@@ -294,7 +294,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             {amb.clock ? (
               <div className="my-4 flex flex-col items-center gap-2">
                 <AnalogClock stroke="#ffffff" />
-                <div className="text-4xl font-bold tabular-nums opacity-80">{mm}:{ss}</div>
+                <div className="text-4xl font-bold tabular-nums opacity-80"><NumeroRolante valor={`${mm}:${ss}`} /></div>
               </div>
             ) : (
               <div className="my-6 flex items-center gap-4 font-bold tabular-nums" style={{ fontSize: "clamp(5rem, 17vw, 13rem)", lineHeight: 1 }}>
@@ -425,7 +425,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
             </span>
             <div className="text-left">
-              <p className="text-lg font-bold leading-none tabular-nums text-foreground">{mm}:{ss}</p>
+              <p className="text-lg font-bold leading-none tabular-nums text-foreground"><NumeroRolante valor={`${mm}:${ss}`} /></p>
               {focusTask && <p className="mt-0.5 max-w-[140px] truncate text-xs text-muted-foreground">{focusTask.title}</p>}
             </div>
             <Maximize2 className="h-4 w-4 shrink-0 text-muted-foreground" />
