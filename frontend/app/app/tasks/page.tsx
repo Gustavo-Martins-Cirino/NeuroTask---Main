@@ -462,11 +462,20 @@ export default function TasksPage() {
                       key={s.key}
                       onClick={() => setScope(s.key)}
                       className={cn(
-                        "rounded-full px-3 py-1 text-sm font-medium transition-colors",
-                        scope === s.key ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                        "relative rounded-full px-3 py-1 text-sm font-medium transition-colors",
+                        scope === s.key ? "text-background" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      {s.label} <span className="tabular-nums opacity-60">{s.count}</span>
+                      {scope === s.key && (
+                        <motion.span
+                          layoutId="tasks-scope-pill"
+                          className="absolute inset-0 rounded-full bg-foreground"
+                          transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                        />
+                      )}
+                      <span className="relative z-10">
+                        {s.label} <span className="tabular-nums opacity-60">{s.count}</span>
+                      </span>
                     </button>
                   ))}
                 </div>

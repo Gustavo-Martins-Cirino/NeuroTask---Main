@@ -323,6 +323,13 @@ janela inteira, não tem container interno para mascarar — pôr o efeito ali s
 mascarar a `main` do app, outra coisa. Item encerrado; quem quiser o efeito numa
 lista nova é só `style={useMascaraRolagem(ref)}` no container de scroll.
 
+O `inspiração-seção-tarefas.jsx` (`GradientButtonGroup`) também saiu: as abas de
+escopo de Tarefas (Hoje / Próximos / Todas) ganharam a **pílula ativa que
+desliza** entre as opções — o MESMO `layoutId` que o Dock já usa, e não botões
+com degradê. Foi decisão de gosto explícita: o degradê brigaria com o
+minimalista; o indicador que escorrega é o vocabulário de animação que o app já
+fala. A tela ficou melhor sem trazer uma linguagem nova só para ela.
+
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
 | `feedback.jsx` | `MorphSurface` — o botão vira o formulário, sem diálogo | O botão de feedback. É o encaixe mais direto da pasta inteira |
@@ -332,7 +339,6 @@ lista nova é só `style={useMascaraRolagem(ref)}` no container de scroll.
 | `transição-dinâmica.jsx` | `DynamicIsland` | O relógio flutuante do Modo Foco minimizado |
 | `tutorial.jsx` · `tutorial2.jsx` | Onboarding em passos | O "primeiro contato" da Fase 5, que hoje é só verificação |
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
-| `inspiração-seção-tarefas.jsx` | `GradientButtonGroup` | Os filtros e abas de Tarefas |
 | `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |
 | `youtube-button.jsx` | `FamilyButton` — flutuante que expande | Ações rápidas do dashboard |
 | `votacao2-feedback.tsx` | `PollWidget` — enquete de uma pergunta | Perguntar ao usuário-teste sem ele ter de escrever |
