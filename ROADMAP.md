@@ -189,13 +189,15 @@ acima quer dizer — o original abre o próprio `requestAnimationFrame` e fala c
 `WebGLRenderer` na mão, e a versão daqui roda dentro do R3F, no ticker único. Do original
 sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 
-- [ ] **Revogar a `ORIGINKIT_API_KEY` no Originkit.** É a parte que só o Gustavo pode
-      fazer. A chave já saiu do `NeuroIA.txt` (o valor virou marcador) e a pasta de rascunho
-      `frontend/inspirações/` entrou no `.gitignore`, então um `git add -A` distraído não a
-      publica — o histórico do git nunca teve o valor, só a menção ao nome da variável.
-      Ainda assim ela circulou em texto puro num arquivo baixado: **revogar é o que
-      encerra o assunto**. Depois disso, dá para mover o arquivo para
-      `frontend/components/inspirações/` e versioná-lo com o resto das referências.
+> A `ORIGINKIT_API_KEY` que vinha no `NeuroIA.txt` está **resolvida**: gerar uma chave nova
+> no Originkit revoga a anterior, e foi o que se fez. O valor saiu do arquivo, a pasta de
+> rascunho `frontend/inspirações/` entrou no `.gitignore`, e a chave em uso vive no
+> `frontend/.env.local` — que o git ignora desde sempre. O histórico nunca teve o valor,
+> só a menção ao nome da variável. A chave é do CLI (`npx originkit add ...`); o app não a
+> usa em runtime, então ela não entra no `.env.example` nem na Vercel.
+>
+> Falta só, se valer a pena: mover o `NeuroIA.txt` para `frontend/components/inspirações/`
+> e versioná-lo com o resto das referências.
 
 ### Das inspirações para o app
 
