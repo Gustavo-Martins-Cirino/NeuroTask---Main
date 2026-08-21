@@ -418,7 +418,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             exit={{ opacity: 0, scale: 0.9, y: 12 }}
             onClick={() => setMinimized(false)}
             aria-label="Restaurar modo foco"
-            className="fixed bottom-20 right-4 z-[110] flex items-center gap-3 rounded-2xl border border-border/50 bg-card/90 px-4 py-3 shadow-lg backdrop-blur-xl transition-transform hover:scale-[1.03] md:bottom-6 md:right-6"
+            className="fixed bottom-20 right-4 z-[110] flex items-center gap-3 overflow-hidden rounded-2xl border border-border/50 bg-card/90 px-4 py-3 shadow-lg backdrop-blur-xl transition-transform hover:scale-[1.03] md:bottom-6 md:right-6"
           >
             <span className="relative flex h-2.5 w-2.5 shrink-0">
               {running && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />}
@@ -429,6 +429,17 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               {focusTask && <p className="mt-0.5 max-w-[140px] truncate text-xs text-muted-foreground">{focusTask.title}</p>}
             </div>
             <Maximize2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+            {/* O progresso da sessão que a tela cheia mostra não some ao
+                minimizar: vira uma linha fina na base da ilha. */}
+            {duration > 0 && (
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-primary/15">
+                <motion.span
+                  className="block h-full bg-primary"
+                  animate={{ width: `${progress}%` }}
+                  transition={{ ease: "linear", duration: 0.4 }}
+                />
+              </span>
+            )}
           </motion.button>
         )}
       </AnimatePresence>
