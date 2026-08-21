@@ -330,13 +330,19 @@ com degradê. Foi decisão de gosto explícita: o degradê brigaria com o
 minimalista; o indicador que escorrega é o vocabulário de animação que o app já
 fala. A tela ficou melhor sem trazer uma linguagem nova só para ela.
 
+O `transição-dinâmica.jsx` (`DynamicIsland`) mirava o relógio flutuante do Foco
+minimizado. Em vez de trazer o morph-que-expande (o clique já restaura a tela
+cheia, então o expandir seria enfeite), o pill ganhou o que faltava de útil: a
+**barra de progresso da sessão** que some ao minimizar virou uma linha fina na
+base da ilha. A ilha ficou mais informativa sem crescer nem mudar de forma —
+outra vez o minimalista ganhando do efeito.
+
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
 | `feedback.jsx` | `MorphSurface` — o botão vira o formulário, sem diálogo | O botão de feedback. É o encaixe mais direto da pasta inteira |
 | `prompts.jsx` | `PromptLibrary` — biblioteca com criar, listar e estado vazio | Neuro IA: os `QUICK_PROMPTS` fixos viram salvos e editáveis |
 | `notas-cores.jsx` | Painel flutuante de cor e imagem | Cor da nota, em Notas |
 | `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | Cor de fundo do Escritório e a paleta de `lib/reminders.ts` |
-| `transição-dinâmica.jsx` | `DynamicIsland` | O relógio flutuante do Modo Foco minimizado |
 | `tutorial.jsx` · `tutorial2.jsx` | Onboarding em passos | O "primeiro contato" da Fase 5, que hoje é só verificação |
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
 | `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |
