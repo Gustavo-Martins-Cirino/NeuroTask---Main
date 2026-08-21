@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react"
 import { Header } from "@/components/header"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
+import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
 import { RichTextEditor } from "@/components/rich-text-editor"
 import type { Note } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -22,6 +23,8 @@ export default function NotesPage() {
   const [loading, setLoading] = useState(true)
   const [saveState, setSaveState] = useState<SaveState>("idle")
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const listaRef = useRef<HTMLDivElement>(null)
+  const mascaraLista = useMascaraRolagem(listaRef)
   const supabase = createClient()
 
   const active = notes.find((n) => n.id === activeId) ?? null
@@ -110,7 +113,7 @@ export default function NotesPage() {
             Nova nota
           </button>
 
-          <div className="scrollbar-thin max-h-48 flex-1 space-y-1 overflow-y-auto md:max-h-none">
+          <div ref={listaRef} style={mascaraLista} className="scrollbar-thin max-h-48 flex-1 space-y-1 overflow-y-auto md:max-h-none">
             {loading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

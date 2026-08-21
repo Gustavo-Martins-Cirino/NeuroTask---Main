@@ -314,12 +314,14 @@ vira ruído.
 
 Varridos um a um (nome mais o que o código importa). Onde cada um encaixaria:
 
-O `lendo-tutorial.jsx` (`EdgeBlur`) saiu da tabela porque o **mecanismo já
-existe**: `hooks/use-mascara-rolagem.ts` + `lib/mascara-rolagem.ts` (puro,
-testado) desvanecem as bordas de uma área que rola — leitura minimalista do
-efeito, uma máscara CSS aditiva, sem mexer no layout. **Aplicado no chat da
-Neuro IA.** Falta só, se valer, estender a mesma linha às outras listas longas
-(notas, tarefas): é um `style={useMascaraRolagem(ref)}` no container de scroll.
+O `lendo-tutorial.jsx` (`EdgeBlur`) saiu da tabela: `hooks/use-mascara-rolagem.ts`
++ `lib/mascara-rolagem.ts` (puro, testado) desvanecem as bordas de uma área que
+rola — leitura minimalista do efeito, uma máscara CSS aditiva, sem mexer no
+layout. **Aplicado no chat da Neuro IA e na lista de notas** (que só rola no
+mobile). As **tarefas ficaram de fora de propósito**: aquela página rola a
+janela inteira, não tem container interno para mascarar — pôr o efeito ali seria
+mascarar a `main` do app, outra coisa. Item encerrado; quem quiser o efeito numa
+lista nova é só `style={useMascaraRolagem(ref)}` no container de scroll.
 
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
