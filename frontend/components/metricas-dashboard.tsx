@@ -363,6 +363,26 @@ export function MetricasDashboard() {
       : "Ainda não dá para ver um horário preferido."
   }
 
+  // A altura abrindo já existia; o que faltava era o CONTEÚDO entrar. Sem isto
+  // o painel cresce e os três blocos aparecem prontos de uma vez, o que faz o
+  // movimento parecer um corte. Em cascata, o olho acompanha: abas, manchete,
+  // gráfico.
+  //
+  // Só na ENTRADA. Escalonar a saída também faria fechar parecer lento — quem
+  // fecha já decidiu, e quer o espaço de volta.
+  const cascata = {
+    oculto: {},
+    visivel: { transition: { staggerChildren: semMovimento ? 0 : 0.055, delayChildren: semMovimento ? 0 : 0.04 } },
+  }
+  const peca = {
+    oculto: semMovimento ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 },
+    visivel: {
+      opacity: 1,
+      y: 0,
+      transition: semMovimento ? { duration: 0 } : { type: "spring" as const, stiffness: 420, damping: 32 },
+    },
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm">
       <button
@@ -374,7 +394,10 @@ export function MetricasDashboard() {
         <span className="flex-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Seus números
         </span>
-        <motion.span animate={{ rotate: aberta ? 180 : 0 }} transition={{ duration: semMovimento ? 0 : 0.2 }}>
+        <motion.span
+          animate={{ rotate: aberta ? 180 : 0, y: aberta ? 1 : 0 }}
+          transition={semMovimento ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 30 }}
+        >
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </motion.span>
       </button>
@@ -388,8 +411,13 @@ export function MetricasDashboard() {
             transition={semMovimento ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 34 }}
             className="overflow-hidden"
           >
-            <div className="space-y-4 px-5 pb-5">
-              <div className="flex flex-wrap gap-1.5">
+            <motion.div
+              variants={cascata}
+              initial="oculto"
+              animate="visivel"
+              className="space-y-4 px-5 pb-5"
+            >
+              <motion.div variants={peca} className="flex flex-wrap gap-1.5">
                 {ABAS.map((a) => (
                   <button
                     key={a.id}
@@ -409,12 +437,12 @@ export function MetricasDashboard() {
                     <span className="relative">{a.rotulo}</span>
                   </button>
                 ))}
-              </div>
+              </motion.div>
 
-              <p className="text-sm text-foreground">{manchete()}</p>
+              <motion.p variants={peca} className="text-sm text-foreground">{manchete()}</motion.p>
 
               {!vazio && datas !== null && (
-                <>
+                <motion.div variants={peca}>
                   {aba === "dias" && <GraficoLinha pontos={porDia} />}
                   {aba === "semana" && (
                     <GraficoColunas colunas={colunasSemana} rotulosDoEixo={(i) => colunasSemana[i].rotulo} />
@@ -424,9 +452,9 @@ export function MetricasDashboard() {
                     <GraficoColunas colunas={colunasHora} rotulosDoEixo={(i) => (i % 4 === 0 ? `${i}h` : null)} />
                   )}
 
-                </>
+                </motion.div>
               )}
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
