@@ -10,7 +10,6 @@ import { createClient } from "@/lib/supabase/client"
 import { VoiceConversation, unlockSpeech } from "@/components/voice-conversation"
 import { BordaViva } from "@/components/borda-viva"
 import { FundoMalha } from "@/components/fundo-malha"
-import { FundoArcos } from "@/components/fundo-arcos"
 import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
 import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
 import {
@@ -368,7 +367,6 @@ export default function AiPage() {
     // atrás do fundo do body e não apareceria nunca.
     <div className="relative isolate flex min-h-screen flex-col">
       <FundoMalha className="-z-10" />
-      <FundoArcos className="-z-10" />
       {/* Acende enquanto a resposta chega — é o sinal que sobra quando o texto
           ainda não começou a aparecer. */}
       <BordaViva ativa={loading || transcribing} />

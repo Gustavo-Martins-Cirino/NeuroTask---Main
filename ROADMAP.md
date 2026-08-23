@@ -263,11 +263,18 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 Dois efeitos de fundo, e os dois pedem o mesmo cuidado: fundo que compete com o conteúdo
 vira ruído.
 
-> O **degradê radial que respira** (`214017`) está entregue: `components/fundo-arcos.tsx`,
-> na Neuro IA. Aparece só no tema ESCURO — a referência é uma tela preta com a cor vindo
-> de baixo, e no claro brigaria com a malha pastel que já é o fundo dali. Em CSS, não com
-> o ShaderGradient, pelo mesmo motivo da malha: a página já tem o canvas da esfera, e o do
-> shader é o que não entra no ticker único.
+> O **degradê radial que respira** (`214017`) foi tentado na Neuro IA e **revertido a
+> pedido**. Vale registrar por que, para não voltar por engano:
+>
+> - O cabeçalho é translúcido em TODAS as telas (`bg-background/70` + `backdrop-blur`).
+>   Cor de fundo atrás dele faz a barra do topo — nome, nível, XP — ficar de um tom que
+>   nenhuma outra tela tem, e a página inteira parece de outro app.
+> - Mesmo depois de baixar o efeito até somar só +2,5 de luminância no rodapé, a conclusão
+>   do Gustavo foi que a tela da Neuro IA fica melhor como sempre foi: preta, igual ao
+>   resto. A malha pastel e a borda viva já dão o que ela precisa de vida.
+>
+> Se um dia voltar: a cor não pode passar por trás do cabeçalho, e o alvo é somar poucos
+> pontos de luminância — a primeira versão somava +42, quase o triplo do fundo do site.
 > A **borda que gira** (`214418`) está entregue: `components/borda-viva.tsx`, na Neuro IA.
 > Em CSS puro — o `@property` dá tipo ao ângulo, e é isso que torna a `conic-gradient`
 > animável sem canvas e sem JS por quadro. Quase invisível em repouso, acende enquanto a

@@ -92,11 +92,7 @@
 
 .fundo-malha {
   position: fixed;
-  /* Começa ABAIXO do header (h-16 = 4rem). O header é translúcido
-     (bg-background/70 + backdrop-blur) como no resto do site — se a cor passar
-     por baixo dele, ele deixa de ser o escuro sólido de todas as outras telas e
-     a página inteira parece de outro app. O fundo é do CHAT, não da moldura. */
-  inset: 4rem 0 0 0;
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
@@ -114,55 +110,6 @@
   .fundo-malha span {
     animation: none;
   }
-}
-
-/* Arcos que sobem do rodapé — a cor nasce embaixo e o miolo fica escuro, que é
-   onde o texto vive. Ver components/fundo-arcos.tsx. */
-.fundo-arcos {
-  position: fixed;
-  /* Mesma razão da malha: nada de cor por trás do header. */
-  inset: 4rem 0 0 0;
-  overflow: hidden;
-  pointer-events: none;
-  /* Invisível no tema claro: lá quem faz o fundo é a malha pastel. */
-  opacity: 0;
-}
-
-.dark .fundo-arcos {
-  opacity: 1;
-}
-
-.fundo-arcos span {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  /* Empurrado para baixo: o que se vê é a CALOTA do arco, não a elipse inteira. */
-  transform: translate(-50%, 42%);
-  border-radius: 50%;
-  /* A parada antes de 70% dissolve a borda sozinha — sem ela o arco vira uma
-     elipse de contorno visível, e o efeito se perde. */
-  background: radial-gradient(ellipse at center, var(--cor) 0%, transparent 68%);
-  animation: arco-respira var(--tempo) ease-in-out var(--atraso) infinite alternate;
-  will-change: transform, opacity;
-}
-
-/* Respiração: sobe e desce alguns por cento, com a opacidade acompanhando. Os
-   três em tempos diferentes — é o descompasso que evita o loop óbvio. */
-/* Mais baixos e mais fracos que antes: o fundo do chat é o escuro do site, e a
-   cor entra como DETALHE no rodapé — não como um wash subindo pela tela. */
-/* Calibrado medindo a luminância do rodapé, não no olho: o fundo do site ali
-   dá 24,5 (0–255), e estes valores somam +3 a +4. É o bastante para a cor se
-   notar e pouco para a tela continuar sendo o escuro de sempre.
-   Para referência, a primeira versão somava +42 — quase o triplo do fundo, que
-   foi o que fez a página parecer de outro app. Três elipses grandes sobrepostas
-   somam bem mais do que a opacidade de cada uma sugere. */
-@keyframes arco-respira {
-  from { transform: translate(-50%, 74%) scale(1); opacity: 0.11; }
-  to   { transform: translate(-50%, 71%) scale(1.03); opacity: 0.17; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fundo-arcos span { animation: none; }
 }
 
 :root {
@@ -241,16 +188,6 @@
   /* A mesma malha, contida: no escuro a cor pastel viraria névoa por cima do
      texto. A referência …202901 (quase branca) é a prova de que a ideia
      sobrevive sem a cor forte — aqui ela vira só uma insinuação. */
-  /* Arcos do rodapé da Neuro IA (ver .fundo-arcos). Existem só aqui: no claro
-     a camada fica invisível, porque a referência é uma tela preta com a cor
-     vindo de baixo.
-
-     Croma BAIXO de propósito. A primeira versão usava 0,19–0,21 e o resultado
-     brigava com o resto do app, que é sóbrio e azulado — virava outra página.
-     Aqui a cor é um respiro no rodapé, não o assunto da tela. */
-  --arco-a: oklch(0.42 0.062 35);
-  --arco-b: oklch(0.4 0.07 340);
-  --arco-c: oklch(0.42 0.065 265);
   --malha-a: oklch(0.34 0.055 290);
   --malha-b: oklch(0.31 0.05 250);
   --malha-c: oklch(0.28 0.04 345);
