@@ -144,8 +144,8 @@
 /* Respiração: sobe e desce alguns por cento, com a opacidade acompanhando. Os
    três em tempos diferentes — é o descompasso que evita o loop óbvio. */
 @keyframes arco-respira {
-  from { transform: translate(-50%, 46%) scale(1); opacity: 0.78; }
-  to   { transform: translate(-50%, 38%) scale(1.07); opacity: 1; }
+  from { transform: translate(-50%, 46%) scale(1); opacity: 0.5; }
+  to   { transform: translate(-50%, 38%) scale(1.06); opacity: 0.68; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -230,10 +230,14 @@
      sobrevive sem a cor forte — aqui ela vira só uma insinuação. */
   /* Arcos do rodapé da Neuro IA (ver .fundo-arcos). Existem só aqui: no claro
      a camada fica invisível, porque a referência é uma tela preta com a cor
-     vindo de baixo. Croma alto de propósito — é a cor que dá o efeito. */
-  --arco-a: oklch(0.62 0.19 35);
-  --arco-b: oklch(0.58 0.21 355);
-  --arco-c: oklch(0.6 0.19 265);
+     vindo de baixo.
+
+     Croma BAIXO de propósito. A primeira versão usava 0,19–0,21 e o resultado
+     brigava com o resto do app, que é sóbrio e azulado — virava outra página.
+     Aqui a cor é um respiro no rodapé, não o assunto da tela. */
+  --arco-a: oklch(0.42 0.062 35);
+  --arco-b: oklch(0.4 0.07 340);
+  --arco-c: oklch(0.42 0.065 265);
   --malha-a: oklch(0.34 0.055 290);
   --malha-b: oklch(0.31 0.05 250);
   --malha-c: oklch(0.28 0.04 345);
