@@ -135,19 +135,22 @@ export default function AiPage() {
         }
       } catch { /* ignora */ }
     }
-    if (list.length > 0) {
-      const active = [...list].sort((a, b) => b.updatedAt - a.updatedAt)[0]
-      setConvos(list)
-      setActiveId(active.id)
-      setMessages(active.messages)
-      // Sem conteúdo real (placeholder vazio / conversa nova) → refaz o briefing
-      if (!active.messages.some((m) => m.content.trim())) runBriefing()
-    } else {
-      const c = newConvo()
-      setConvos([c])
-      setActiveId(c.id)
-      runBriefing()
-    }
+    // Abrir a Neuro IA começa uma conversa NOVA, sempre. Antes ela restaurava a
+    // última, e quem voltava no dia seguinte caía no meio de um assunto
+    // encerrado — com o briefing de ontem no topo. As anteriores continuam
+    // inteiras, ali no menu "Conversas".
+    const comConteudo = list.filter((c) => c.messages.some((m) => m.content.trim()))
+    // Conversa aberta e abandonada sem escrever nada não deve encher a lista:
+    // as vazias de visitas anteriores saem aqui (e do storage, logo abaixo).
+    if (comConteudo.length !== list.length) saveConvos(comConteudo)
+
+    const nova = newConvo()
+    setConvos([nova, ...comConteudo])
+    setActiveId(nova.id)
+    setMessages([])
+    // A nova ainda não vai para o storage: ela só é gravada quando ganhar a
+    // primeira mensagem de verdade (ver o efeito de sincronização abaixo).
+    runBriefing()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
