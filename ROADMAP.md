@@ -275,16 +275,27 @@ vira ruído.
 >
 > Se um dia voltar: a cor não pode passar por trás do cabeçalho, e o alvo é somar poucos
 > pontos de luminância — a primeira versão somava +42, quase o triplo do fundo do site.
-> A **borda que gira** (`components/borda-viva.tsx`) e a **malha pastel**
-> (`components/fundo-malha.tsx`) estão montadas na Neuro IA, agora em versão discreta —
-> o fundo da tela é o mesmo preto de todas as outras, e os efeitos entram por cima dele.
+> A **borda que gira** (`components/borda-viva.tsx`) e o **grão do fundo**
+> (`components/fundo-grao.tsx`) estão montados na Neuro IA, em versão discreta — o fundo
+> da tela é o mesmo preto de todas as outras, e os efeitos entram por cima dele.
 >
-> **Os dois números que importam** (luminância média, 0–255): o fundo do site marca 7,1.
-> A malha em opacidade cheia somava +19,3 — quase quatro vezes o fundo, e era isso que
-> fazia a tela deixar de ser preta. Hoje ela soma ~+3 (opacidade 0,14) e começa ABAIXO do
-> cabeçalho: ele é translúcido em todas as telas, então cor por trás dele muda o tom da
-> barra do topo e a página parece de outro app. A borda em repouso caiu de 0,25 para 0,08,
-> e o halo de 12px só existe quando ela acende.
+> **A malha pastel saiu (23/08)** e virou grão. O Gustavo viu a versão discreta e disse
+> que "parece mais uma mancha". O problema dela nunca foi a intensidade, era a FORMA:
+> três borrões grandes: fortes, a tela deixava de ser preta; fracos, não liam como efeito,
+> liam como sujeira. Não havia ponto bom no meio. Grão não tem forma, então não mancha em
+> intensidade alguma.
+>
+> **Os números que importam** (luminância, 0–255): o fundo do site marca 7,1. A malha cheia
+> somava +19,3 (quase quatro vezes o fundo) e a discreta +2,7 — espalhados por igual. O
+> grão sobe a MÉDIA em só +4,6, mas os pontinhos acesos batem 18, quase o dobro do fundo:
+> é o ponto que o olho lê como textura, não a média. Por não ter forma ele cobre a página
+> inteira, cabeçalho incluído — parar em 4rem deixaria uma emenda horizontal na tela.
+> A borda em repouso caiu de 0,25 para 0,08, e o halo de 12px só existe quando ela acende.
+>
+> **Abrir a Neuro IA começa uma conversa nova.** Antes ela restaurava a última, e quem
+> voltava no dia seguinte caía no meio de um assunto encerrado. As anteriores continuam
+> inteiras no menu "Conversas"; as abertas e abandonadas sem nenhuma mensagem são
+> descartadas na abertura, para a lista não encher de conversa vazia.
 >
 > Calibrar isso NO OLHO não funciona: por três ajustes seguidos eu conferi pelo dev server,
 > que servia CSS velho e devolvia sempre o mesmo número. O jeito confiável é medir com o

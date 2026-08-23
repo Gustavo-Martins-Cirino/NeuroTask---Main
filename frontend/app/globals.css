@@ -64,61 +64,49 @@
   }
 }
 
-/* ---- Fundo em malha ------------------------------------------------------
-   O fundo pastel da Neuro IA (referência: inspirações/…202826.png).
+/* ---- Grão do fundo -------------------------------------------------------
+   A textura do fundo da Neuro IA (referência: inspirações/better-auth-6.webp).
 
-   Três manchas de cor que derivam devagar, em vez de uma imagem parada. Cada
-   uma é um `radial-gradient` com borda macia — nada de `filter: blur`, que numa
-   camada do tamanho da tela custa caro e some com a bateria do celular.
+   Veio no lugar de uma malha pastel — três manchas de cor que derivavam devagar.
+   O problema dela não era a intensidade, era a FORMA: forte, a tela deixava de
+   ser preta; fraca, as manchas não liam como efeito, liam como sujeira na tela.
+   Não existia ponto bom entre os dois, e foi por isso que ela saiu.
 
-   O movimento é só `transform`, que a GPU compõe sem repintar nada. É a mesma
-   escolha da borda viva: efeito de fundo não pode disputar quadro com a cena 3D
-   da esfera, que roda na MESMA página. */
-@keyframes malha-deriva-a {
-  50% {
-    transform: translate3d(7%, -5%, 0) scale(1.12);
-  }
-}
-@keyframes malha-deriva-b {
-  50% {
-    transform: translate3d(-6%, 6%, 0) scale(1.08);
-  }
-}
-@keyframes malha-deriva-c {
-  50% {
-    transform: translate3d(5%, 7%, 0) scale(1.15);
-  }
-}
+   O grão não tem forma nenhuma, então não tem como manchar em intensidade
+   alguma. A cor vem por baixo: um degradê atravessa a tela e só aparece DENTRO
+   dos grãos, recortado pela máscara. É a paleta presente como textura, sem
+   nenhum contorno que o olho consiga fechar.
 
-.fundo-malha {
+   Camada parada, sem animação: efeito de fundo não pode disputar quadro com a
+   cena 3D da esfera, que roda na MESMA página. */
+.fundo-grao {
   position: fixed;
-  /* Começa ABAIXO do cabeçalho (h-16 = 4rem). Ele é translúcido em todas as
-     telas do app, então cor por trás dele muda o tom da barra do topo — nome,
-     nível, XP — e a Neuro IA vira a única página com estética própria. Foi isso
-     que derrubou as tentativas anteriores, não a intensidade. */
-  inset: 4rem 0 0 0;
-  overflow: hidden;
+  /* Cobre a página inteira, cabeçalho incluído. Parar em 4rem (abaixo da barra
+     do topo) deixaria uma emenda horizontal visível bem na largura da tela —
+     grão de um lado, preto liso do outro. */
+  inset: 0;
   pointer-events: none;
-  /* Calibrado por medição, não no olho: o fundo do site marca 7,1 de luminância
-     (0–255) e a malha cheia somava +19,3 — quase quatro vezes o fundo, o que
-     fazia a tela deixar de ser preta. Aqui soma ~+3: dá textura, e o fundo
-     continua sendo o preto de todas as outras telas. */
-  opacity: 0.14;
-}
-
-.fundo-malha span {
-  position: absolute;
-  border-radius: 9999px;
-  /* A parada em 70% deixa a borda dissolver sozinha: sem isso a mancha vira um
-     círculo com contorno visível. */
-  background: radial-gradient(circle at center, var(--cor) 0%, transparent 70%);
-  animation: var(--anim) var(--tempo) ease-in-out infinite alternate;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fundo-malha span {
-    animation: none;
-  }
+  background-image: linear-gradient(
+    135deg,
+    var(--grao-a) 0%,
+    var(--grao-b) 55%,
+    var(--grao-c) 100%
+  );
+  /* feTurbulence gera o ruído no próprio navegador: sem arquivo, sem requisição.
+     Entra como MÁSCARA (o canal alfa varia pixel a pixel), não como imagem —
+     é o que recorta o degradê em grãos em vez de cobri-lo. */
+  --grao-textura: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/><feComponentTransfer><feFuncA type='gamma' exponent='3.2'/></feComponentTransfer></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  -webkit-mask-image: var(--grao-textura);
+  mask-image: var(--grao-textura);
+  -webkit-mask-size: 160px 160px;
+  mask-size: 160px 160px;
+  /* Calibrado por medição, não no olho (luminância 0–255): o fundo do site
+     marca 7,1 e aqui a MÉDIA sobe só 4,6 — o preto continua sendo o preto das
+     outras telas. O que se vê não é a média, é o pontinho: os grãos acesos
+     batem 18, quase o dobro do fundo. Era exatamente isso que faltava na malha
+     antiga, que somava um valor parecido mas espalhado por igual — média sem
+     ponto algum é o que o olho lê como mancha. */
+  opacity: 0.3;
 }
 
 :root {
@@ -138,11 +126,11 @@
      dele, sem o componente precisar saber em que tema está. */
   --iniciais-fundo: 0.93 0.045;
   --iniciais-texto: 0.45 0.16;
-  /* Manchas do fundo em malha da Neuro IA (ver .fundo-malha). No claro elas
-     aparecem de verdade — é o que a referência mostra. */
-  --malha-a: oklch(0.87 0.075 290);
-  --malha-b: oklch(0.88 0.065 250);
-  --malha-c: oklch(0.9 0.05 345);
+  /* Tinta do grão do fundo da Neuro IA (ver .fundo-grao). No claro ela aparece
+     de verdade — é o que a referência mostra. */
+  --grao-a: oklch(0.87 0.075 290);
+  --grao-b: oklch(0.88 0.065 250);
+  --grao-c: oklch(0.9 0.05 345);
   --secondary: oklch(0.96 0.005 260);
   --secondary-foreground: oklch(0.25 0.015 260);
   --muted: oklch(0.96 0.005 260);
@@ -194,12 +182,13 @@
   /* No escuro o par se inverte: fundo fundo e texto claro (ver :root). */
   --iniciais-fundo: 0.3 0.06;
   --iniciais-texto: 0.86 0.13;
-  /* A mesma malha, contida: no escuro a cor pastel viraria névoa por cima do
-     texto. A referência …202901 (quase branca) é a prova de que a ideia
-     sobrevive sem a cor forte — aqui ela vira só uma insinuação. */
-  --malha-a: oklch(0.34 0.055 290);
-  --malha-b: oklch(0.31 0.05 250);
-  --malha-c: oklch(0.28 0.04 345);
+  /* A mesma tinta, contida: no escuro a cor pastel viraria névoa por cima do
+     texto. Aqui ela é mais clara que no tema claro DE PROPÓSITO — o grão é
+     esparso (ver o gamma da máscara), então o que se vê é o pontinho aceso, não
+     a média da camada. Cor escura em grão esparso simplesmente some. */
+  --grao-a: oklch(0.62 0.07 290);
+  --grao-b: oklch(0.58 0.06 250);
+  --grao-c: oklch(0.55 0.05 345);
   --secondary: oklch(0.22 0.015 260);
   --secondary-foreground: oklch(0.95 0.005 260);
   --muted: oklch(0.22 0.015 260);

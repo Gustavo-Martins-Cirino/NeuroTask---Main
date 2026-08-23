@@ -51,7 +51,7 @@ frontend/
 │   ├── office-scene-3d.tsx   # Cena 3D do Escritório (R3F) — sala/itens/avatar por nível
 │   ├── neuro-sphere.tsx      # Esfera de partículas da Neuro IA (estado vazio do chat)
 │   ├── borda-viva.tsx        # Contorno que gira e acende enquanto a IA responde (CSS)
-│   ├── fundo-malha.tsx       # Fundo pastel que deriva, na Neuro IA (CSS, sem canvas)
+│   ├── fundo-grao.tsx        # Grão do fundo da Neuro IA (CSS+SVG, sem canvas)
 │   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
 │   ├── avatar-iniciais.tsx   # Retrato: foto enviada → foto da conta → bonequinho → iniciais
 │   ├── foto-perfil-campo.tsx # Enviar/remover a foto (Configurações → Perfil)
