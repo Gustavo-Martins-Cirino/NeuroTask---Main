@@ -276,17 +276,22 @@ vira ruído.
 > Se um dia voltar: a cor não pode passar por trás do cabeçalho, e o alvo é somar poucos
 > pontos de luminância — a primeira versão somava +42, quase o triplo do fundo do site.
 > A **borda que gira** (`components/borda-viva.tsx`) e a **malha pastel**
-> (`components/fundo-malha.tsx`) existem e funcionam, mas estão **desmontadas** — a Neuro IA
-> usa hoje o mesmo fundo de todas as outras telas, por decisão do Gustavo.
+> (`components/fundo-malha.tsx`) estão montadas na Neuro IA, agora em versão discreta —
+> o fundo da tela é o mesmo preto de todas as outras, e os efeitos entram por cima dele.
 >
-> Ficam guardadas, com o CSS delas em `globals.css`: religar é montar os dois componentes
-> de volta em `app/app/ai/page.tsx` (a malha pede o `isolate` no container, senão o `-z-10`
-> cai atrás do body). O efeito de arcos que foi revertido está no commit `b4b5900`.
+> **Os dois números que importam** (luminância média, 0–255): o fundo do site marca 7,1.
+> A malha em opacidade cheia somava +19,3 — quase quatro vezes o fundo, e era isso que
+> fazia a tela deixar de ser preta. Hoje ela soma ~+3 (opacidade 0,14) e começa ABAIXO do
+> cabeçalho: ele é translúcido em todas as telas, então cor por trás dele muda o tom da
+> barra do topo e a página parece de outro app. A borda em repouso caiu de 0,25 para 0,08,
+> e o halo de 12px só existe quando ela acende.
 >
-> **O que aprendemos e vale antes de religar qualquer um**: o cabeçalho é translúcido em
-> TODAS as telas (`bg-background/70` + `backdrop-blur`), então cor no fundo muda o tom da
-> barra do topo — nome, nível, XP — e a página inteira passa a parecer de outro app. Foi
-> isso, e não a intensidade do efeito, que derrubou as três tentativas.
+> Calibrar isso NO OLHO não funciona: por três ajustes seguidos eu conferi pelo dev server,
+> que servia CSS velho e devolvia sempre o mesmo número. O jeito confiável é medir com o
+> `globals.css` lido direto do arquivo.
+>
+> O efeito de **arcos** subindo do rodapé (`214017`) foi tentado e revertido; está no
+> commit `b4b5900` se um dia fizer sentido.
 
 - [ ] **A mesma borda no Modo Foco**, se fizer sentido. Lá o estado que ela sinalizaria
       seria a sessão correndo — vale só se não competir com os ambientes animados, que já

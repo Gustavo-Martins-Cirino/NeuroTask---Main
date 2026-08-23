@@ -23,16 +23,22 @@ export function BordaViva({
   className?: string
 }) {
   // Aceso: mais forte e girando quase três vezes mais rápido.
+  //
+  // Em repouso é quase nada (0,08). Em 0,25, com qualquer cor no fundo, o
+  // contorno virava uma MOLDURA em volta da tela — e o ponto dele é o oposto:
+  // quem não está esperando resposta não deve reparar que existe.
   const estilo = ativa
     ? { opacity: 0.9, ["--borda-duracao" as string]: "5s" }
-    : { opacity: 0.25, ["--borda-duracao" as string]: "14s" }
+    : { opacity: 0.08, ["--borda-duracao" as string]: "14s" }
 
   return (
     <>
+      {/* O halo de 12px com blur é o que engrossa a borda. Serve ao momento em
+          que ela ACENDE; em repouso não tem função e some por completo. */}
       <div
         aria-hidden
         className={cn("borda-viva borda-viva-brilho transition-opacity duration-700", className)}
-        style={estilo}
+        style={{ ...estilo, opacity: ativa ? 0.9 : 0 }}
       />
       <div
         aria-hidden

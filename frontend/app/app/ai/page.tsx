@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { VoiceConversation, unlockSpeech } from "@/components/voice-conversation"
+import { BordaViva } from "@/components/borda-viva"
+import { FundoMalha } from "@/components/fundo-malha"
 import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
 import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
 import {
@@ -361,16 +363,21 @@ export default function AiPage() {
   }
 
   return (
-    // Sem efeito de fundo: esta tela usa o mesmo fundo de todas as outras.
+    // O fundo desta tela é o MESMO preto de todas as outras — isso não muda. Os
+    // efeitos entram por cima dele, discretos:
     //
-    // A malha pastel e a borda que gira continuam no repositório, prontas
-    // (components/fundo-malha.tsx e components/borda-viva.tsx, com o CSS em
-    // globals.css) — é só montá-las de volta aqui. Estão desligadas porque, com
-    // elas, a Neuro IA virava a única tela com estética própria: o cabeçalho é
-    // translúcido em todo o app, então qualquer cor no fundo muda o tom da
-    // barra do topo e a página passa a parecer de outro lugar. Ver o roadmap,
-    // que guarda o histórico dessa decisão.
-    <div className="relative flex min-h-screen flex-col">
+    // · a malha pastel, calibrada por medição para somar ~3 pontos de
+    //   luminância (o fundo do site marca 7) e começar abaixo do cabeçalho;
+    // · a borda viva, quase invisível em repouso, que acende quando a resposta
+    //   está chegando.
+    //
+    // `isolate` cria o contexto de empilhamento: sem ele o -z-10 da malha cairia
+    // atrás do fundo do body e não apareceria nunca.
+    <div className="relative isolate flex min-h-screen flex-col">
+      <FundoMalha className="-z-10" />
+      {/* Acende enquanto a resposta chega — é o sinal que sobra quando o texto
+          ainda não começou a aparecer. */}
+      <BordaViva ativa={loading || transcribing} />
       {/* A conversa ao vivo saiu daqui: virou o botão redondo da barra de
           digitação, como na referência (inspirações/…202826.png). */}
       <Header title="Neuro IA" icon={<Bot className="h-4 w-4" />}>

@@ -92,9 +92,18 @@
 
 .fundo-malha {
   position: fixed;
-  inset: 0;
+  /* Começa ABAIXO do cabeçalho (h-16 = 4rem). Ele é translúcido em todas as
+     telas do app, então cor por trás dele muda o tom da barra do topo — nome,
+     nível, XP — e a Neuro IA vira a única página com estética própria. Foi isso
+     que derrubou as tentativas anteriores, não a intensidade. */
+  inset: 4rem 0 0 0;
   overflow: hidden;
   pointer-events: none;
+  /* Calibrado por medição, não no olho: o fundo do site marca 7,1 de luminância
+     (0–255) e a malha cheia somava +19,3 — quase quatro vezes o fundo, o que
+     fazia a tela deixar de ser preta. Aqui soma ~+3: dá textura, e o fundo
+     continua sendo o preto de todas as outras telas. */
+  opacity: 0.14;
 }
 
 .fundo-malha span {
