@@ -275,11 +275,14 @@ vira ruído.
 >
 > Se um dia voltar: a cor não pode passar por trás do cabeçalho, e o alvo é somar poucos
 > pontos de luminância — a primeira versão somava +42, quase o triplo do fundo do site.
-> A **borda que gira** (`components/borda-viva.tsx`) e o **grão do fundo**
-> (`components/fundo-grao.tsx`) estão montados na Neuro IA, em versão discreta — o fundo
-> da tela é o mesmo preto de todas as outras, e os efeitos entram por cima dele.
+> **Encerrado (23/08): a tela da Neuro IA fica preta e lisa, sem efeito nenhum.** Foram
+> duas rodadas de tentativa — malha pastel, depois grão — e as duas terminaram no mesmo
+> lugar. O código dos dois efeitos continua no repositório, desmontado e pronto
+> (`components/fundo-grao.tsx`, `components/borda-viva.tsx`, CSS em `globals.css`): é só
+> montar de volta em `app/app/ai/page.tsx`. Antes de tentar uma terceira vez, ler os
+> números abaixo — eles dizem o que já foi descartado e por quê.
 >
-> **A malha pastel saiu (23/08)** e virou grão. O Gustavo viu a versão discreta e disse
+> **A malha pastel saiu (23/08)** e virou grão, que também saiu. O Gustavo viu a malha discreta e disse
 > que "parece mais uma mancha". O problema dela nunca foi a intensidade, era a FORMA:
 > três borrões grandes: fortes, a tela deixava de ser preta; fracos, não liam como efeito,
 > liam como sujeira. Não havia ponto bom no meio. Grão não tem forma, então não mancha em
@@ -288,8 +291,10 @@ vira ruído.
 > **Os números que importam** (luminância, 0–255): o fundo do site marca 7,1. A malha cheia
 > somava +19,3 (quase quatro vezes o fundo) e a discreta +2,7 — espalhados por igual. O
 > grão sobe a MÉDIA em só +4,6, mas os pontinhos acesos batem 18, quase o dobro do fundo:
-> é o ponto que o olho lê como textura, não a média. Por não ter forma ele cobre a página
-> inteira, cabeçalho incluído — parar em 4rem deixaria uma emenda horizontal na tela.
+> é o ponto que o olho lê como textura, não a média. Por não ter forma ele cobria a página
+> inteira, cabeçalho incluído — parar em 4rem deixaria uma emenda horizontal na tela. Ainda
+> assim o Gustavo preferiu a tela lisa: o problema não era achar a calibragem certa, era
+> que esta tela não pede efeito de fundo nenhum.
 > A borda em repouso caiu de 0,25 para 0,08, e o halo de 12px só existe quando ela acende.
 >
 > **Abrir a Neuro IA começa uma conversa nova.** Antes ela restaurava a última, e quem
