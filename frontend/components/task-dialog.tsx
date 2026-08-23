@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
 import { DatePicker } from "@/components/date-picker"
+import { TimeSelect } from "@/components/time-select"
 import { RECURRENCE_OPTIONS } from "@/lib/task-recurrence"
 import type { Task, TaskPriority } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -361,12 +362,14 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                   {/* Horário */}
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Horário</span>
-                    <input
-                      type="time"
-                      value={meetingTime}
-                      onChange={(e) => setMeetingTime(e.target.value)}
-                      className="h-8 rounded-lg border border-border/50 bg-transparent px-2 text-sm outline-none transition-colors focus:border-primary/40"
-                    />
+                    <div className="w-36">
+                      <TimeSelect
+                        label="Horário do compromisso"
+                        value={meetingTime}
+                        onChange={setMeetingTime}
+                        vazioRotulo="Escolher"
+                      />
+                    </div>
                     {meetingTime && (
                       <button type="button" onClick={() => setMeetingTime("")} className="text-xs text-muted-foreground hover:text-foreground">
                         limpar

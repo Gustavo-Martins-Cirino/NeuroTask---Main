@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/date-picker"
+import { TimeSelect } from "@/components/time-select"
 import { sendMeetingInvite } from "@/lib/invites"
 import { suggestCommonFreeSlots, type FreeSlot } from "@/lib/friends"
 import { toast } from "sonner"
@@ -129,19 +130,13 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Das</span>
-            <input
-              type="time"
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-              className="h-9 rounded-lg border border-border/50 bg-transparent px-2 text-sm outline-none transition-colors focus:border-primary/40"
-            />
+            <div className="w-32">
+              <TimeSelect label="Início" value={start} onChange={setStart} />
+            </div>
             <span className="text-xs text-muted-foreground">às</span>
-            <input
-              type="time"
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-              className="h-9 rounded-lg border border-border/50 bg-transparent px-2 text-sm outline-none transition-colors focus:border-primary/40"
-            />
+            <div className="w-32">
+              <TimeSelect label="Fim" value={end} onChange={setEnd} />
+            </div>
           </div>
 
           {friend?.can_schedule && (

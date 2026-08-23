@@ -61,11 +61,10 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       `push_subscriptions` (o dispositivo sabe o próprio fuso), `lib/push.ts` enviando na
       inscrição, e o dispatcher agrupando por offset em vez de calcular um horário só.
       Não confundir com o formato 12h/24h, que é outra coisa e já está resolvido.
-- [ ] **Seletores nativos de hora seguem o SO, não o app.** O wheel do `time-block-dialog` já
-      respeita a preferência 12h/24h (mostra 12,1..11 + AM/PM; o valor guardado segue sempre
-      24h). Sobram os `<input type="time">` de `task-dialog` e `invite-dialog`, que exibem AM/PM
-      conforme o locale do SISTEMA, não a preferência do app — dá pra viver com isso (o navegador
-      não deixa forçar o formato do input nativo sem trocá-lo por um custom).
+> **Seletores de hora**: resolvido. O wheel virou `components/time-select.tsx` e os três
+> diálogos (bloco de tempo, tarefa, convite) usam o mesmo — a preferência 12h/24h vale para
+> LER e para DIGITAR. O risco que segurava este item (mexer no que vai pro banco) não se
+> materializou: entrada e saída continuam "HH:mm" em 24h, igual ao input nativo.
 
 ### Escritório 3D — do desenho para o ambiente
 
