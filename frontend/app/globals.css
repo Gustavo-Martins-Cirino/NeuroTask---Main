@@ -119,6 +119,65 @@
   }
 }
 
+/* ---- Onda sonora ---------------------------------------------------------
+   A luz que respira no rodapé da conversa ao vivo (referência: a mancha que o
+   Claude acende embaixo enquanto fala).
+
+   Três manchas com tempos que não se dividem (3,1s / 2,3s / 1,7s): elas se
+   cruzam em lugares diferentes a cada volta, então a luz muda de FORMA. Com
+   tempos múltiplos as três subiriam juntas e o efeito viraria um pulso só,
+   piscando no mesmo compasso — que é o que acontece quando isso é feito com
+   uma animação única.
+
+   O movimento é `transform`, que a GPU compõe sem repintar. Em silêncio a
+   animação PARA de vez, não fica rodando invisível atrás da opacidade 0. */
+.onda-sonora {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 46vh;
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 500ms ease;
+  /* A luz morre para cima. Sem isso o topo das manchas corta reto e o rodapé
+     ganha um contorno de caixa. */
+  -webkit-mask-image: linear-gradient(to top, #000 22%, transparent 94%);
+  mask-image: linear-gradient(to top, #000 22%, transparent 94%);
+}
+
+.onda-sonora span {
+  position: absolute;
+  bottom: -24%;
+  left: 50%;
+  width: var(--tam);
+  height: var(--tam);
+  border-radius: 9999px;
+  /* A parada em 64% dissolve a borda sozinha: sem ela a mancha vira um círculo
+     com contorno visível. */
+  background: radial-gradient(circle at center, var(--onda-cor) 0%, transparent 64%);
+  filter: blur(24px);
+  animation: onda-respira var(--tempo) ease-in-out infinite alternate;
+}
+
+.onda-sonora[data-ativa="false"] span {
+  animation-play-state: paused;
+}
+
+@keyframes onda-respira {
+  from {
+    transform: translate(calc(-50% + var(--x)), 12%) scale(0.78);
+  }
+  to {
+    transform: translate(calc(-50% - var(--x)), -6%) scale(1.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onda-sonora span {
+    animation: none;
+  }
+}
+
 /* ---- Grão do fundo -------------------------------------------------------
    A textura do fundo da Neuro IA (referência: inspirações/better-auth-6.webp).
 
@@ -182,6 +241,10 @@
   /* Claridade da paleta da borda da conversa ao vivo. No tema claro ela é mais
      escura DE PROPÓSITO: cor clara sobre fundo branco vira borrão sem cor. */
   --bc-l: 0.6;
+  /* Cores da onda sonora: azul é a vez de quem usa, verde é a vez da Neuro.
+     No tema claro elas são mais escuras — cor clara sobre branco não aparece. */
+  --onda-azul: oklch(0.58 0.17 250 / 0.3);
+  --onda-verde: oklch(0.58 0.14 158 / 0.28);
   --iniciais-fundo: 0.93 0.045;
   --iniciais-texto: 0.45 0.16;
   /* Tinta do grão do fundo da Neuro IA (ver .fundo-grao). No claro ela aparece
@@ -239,6 +302,8 @@
   --primary-foreground: oklch(0.13 0 0);
   /* No escuro o par se inverte: fundo fundo e texto claro (ver :root). */
   --bc-l: 0.68;
+  --onda-azul: oklch(0.66 0.19 250 / 0.34);
+  --onda-verde: oklch(0.7 0.16 158 / 0.3);
   --iniciais-fundo: 0.3 0.06;
   --iniciais-texto: 0.86 0.13;
   /* A mesma tinta, contida: no escuro a cor pastel viraria névoa por cima do

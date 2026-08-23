@@ -51,7 +51,8 @@ frontend/
 │   ├── office-scene-3d.tsx   # Cena 3D do Escritório (R3F) — sala/itens/avatar por nível
 │   ├── neuro-sphere.tsx      # Esfera de partículas da Neuro IA (estado vazio do chat)
 │   ├── borda-viva.tsx        # Contorno que gira e acende enquanto a IA responde (CSS)
-│   ├── borda-conversa.tsx    # Borda colorida da conversa ao vivo (tela cheia, sem dock)
+│   ├── borda-conversa.tsx    # Borda colorida da conversa ao vivo — DESMONTADA (ver ROADMAP)
+│   ├── onda-sonora.tsx       # Luz que respira no rodapé da conversa ao vivo (azul/verde)
 │   ├── fundo-grao.tsx        # Grão do fundo da Neuro IA (CSS+SVG, sem canvas)
 │   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
 │   ├── avatar-iniciais.tsx   # Retrato: foto enviada → foto da conta → bonequinho → iniciais
@@ -98,6 +99,7 @@ frontend/
 │   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
 │   ├── neuro-sphere.ts       # Esfera da Neuro: pontos, repulsão e retorno (puro)
 │   ├── transcricao-viva.ts   # Resposta aparecendo no ritmo da fala, na conversa ao vivo (puro)
+│   ├── onda-sonora.ts        # De quem é a vez de falar → cor da onda (puro)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
@@ -161,13 +163,16 @@ Gemini ou Anthropic (streaming, sem ferramentas). Chave: `GROQ_API_KEY` etc.
 
 - **Ferramentas** (tool-calling estilo OpenAI): criar/listar/editar/excluir tarefas, blocos de
   tempo e notas — a IA age de verdade no app.
+- **A Neuro nunca fala primeiro**: abrir a tela (ou o modo voz) não dispara panorama nenhum —
+  a conversa começa vazia e quem puxa assunto é a pessoa.
 - **Confirmação antes de agir**: a IA propõe e pergunta "posso confirmar?" antes de criar/editar/excluir.
   Não transforma desabafo em tarefa. Horário ambíguo → pergunta manhã/noite.
 - **Tarefa com horário** vira também um bloco no calendário (auto). Detecta **conflito/proximidade** de horários.
 - **Modo voz** (`mode: "voice"`): respostas curtas/faláveis. Usado por `voice-conversation.tsx`
-  (STT+TTS do navegador via Web Speech API, barge-in). Tela cheia sem dock, com a borda de luz
-  em volta e a conversa transcrita — a resposta vai aparecendo escrita no ritmo da fala.
-  Só funciona bem em Chrome/Edge.
+  (STT+TTS do navegador via Web Speech API, barge-in). Tela cheia sem dock, visual igual ao
+  resto do site, com a conversa transcrita — a resposta vai aparecendo escrita no ritmo da
+  fala. A única diferença visual é a onda de luz no rodapé: azul na vez de quem usa, verde
+  na vez da Neuro. Só funciona bem em Chrome/Edge.
 - `app/api/ai/transcribe/route.ts`: transcrição de áudio (Groq Whisper) para o botão de microfone.
 
 ## Modo Foco

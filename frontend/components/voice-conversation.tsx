@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
-import { BordaConversa } from "@/components/borda-conversa"
-import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
+import { OndaSonora } from "@/components/onda-sonora"
+import { estadoDaOnda } from "@/lib/onda-sonora"
 
 type Status = "idle" | "listening" | "thinking" | "speaking"
 interface Msg { role: "user" | "assistant"; content: string }
@@ -419,37 +419,9 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
       onUtterance(t)
     }
 
-    async function doBriefing() {
-      const cached = getCachedBriefing()
-      if (cached) {
-        setMessages([{ role: "assistant", content: cached }])
-        speak(cached)
-        return
-      }
-      setPhase("thinking")
-      try {
-        const res = await fetch("/api/ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: [], mode: "briefing", now: new Date().toLocaleString("pt-BR"), tz: new Date().getTimezoneOffset() }),
-        })
-        const reply = (await res.text()).trim()
-        if (disposed) return
-        if (handleRateLimit(reply)) return
-        if (reply) {
-          setCachedBriefing(reply)
-          setMessages([{ role: "assistant", content: reply }])
-          speak(reply)
-        } else {
-          goIdle()
-        }
-      } catch {
-        if (!disposed) goIdle()
-      }
-    }
-    retryRef.current = () => { setResting(false); doBriefing() }
-
-    doBriefing()
+    // Sem briefing automático: a Neuro não fala primeiro. Aqui "tentar de novo"
+    // é só sair do descanso — quem começa a conversa é quem segurar o microfone.
+    retryRef.current = () => setResting(false)
 
     return () => {
       disposed = true
@@ -524,10 +496,10 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
           // Modo Foco, e é o que a borda colorida em volta vem confirmar.
           className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-background"
         >
-          <BordaConversa />
+          {/* A onda fica no fundo do empilhamento; o conteúdo sobe por cima
+              dela, senão a luz passaria por cima do X e do texto. */}
+          <OndaSonora estado={estadoDaOnda(status, holding)} />
 
-          {/* A borda fica no fundo do empilhamento; o conteúdo sobe por cima
-              dela, senão o halo desfocado passaria por cima do X. */}
           <button onClick={onClose} aria-label="Encerrar conversa" className="absolute right-6 top-6 z-10 rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
             <X className="h-6 w-6" />
           </button>

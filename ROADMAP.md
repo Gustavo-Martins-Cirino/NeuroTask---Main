@@ -275,6 +275,30 @@ vira ruído.
 >
 > Se um dia voltar: a cor não pode passar por trás do cabeçalho, e o alvo é somar poucos
 > pontos de luminância — a primeira versão somava +42, quase o triplo do fundo do site.
+> **A borda saiu de vez (23/08, terceira rodada).** O Gustavo viu a versão com as manchas de
+> luz e decidiu que a conversa ao vivo fica igual ao resto do site — sem efeito, sem moldura.
+> É a terceira tentativa de efeito de fundo/borda a terminar no mesmo lugar, e agora está
+> claro que não é questão de calibragem: nenhuma tela da Neuro IA quer moldura. O
+> `components/borda-conversa.tsx` fica no repositório, desmontado.
+>
+> **No lugar dela entrou a onda sonora**, inspirada na mancha que o Claude acende embaixo
+> enquanto fala. Ela ganha onde a borda perdia: não é enfeite em volta da tela, é informação
+> no meio dela — áudio não deixa rastro, então sem nada se mexendo não dá para saber se a
+> Neuro está falando, se travou ou se o microfone pegou. **Azul é a vez de quem usa, verde é
+> a vez dela** (`lib/onda-sonora.ts`; o microfone segurado vence a fala da Neuro, que é o
+> barge-in). Três manchas com tempos que não se dividem (3,1s / 2,3s / 1,7s), para a luz
+> mudar de forma em vez de pulsar no mesmo compasso.
+>
+> A luz é procedural, não vem do áudio real: ler a amplitude exigiria passar a voz por um
+> AudioContext, e nó de análise no meio da reprodução é onde mobile costuma emudecer o som.
+> Não vale arriscar a voz por fidelidade num enfeite.
+>
+> **A Neuro não fala primeiro (23/08).** Sumiu o briefing automático das duas telas: abrir
+> não dispara panorama nenhum. Antes a tela inicial bonita durava meio segundo até chegar um
+> "bom dia, aqui está o seu dia" que ninguém pediu — sempre igual, e gastando limite de IA em
+> quem só queria escrever uma pergunta. `lib/briefing-cache.ts` saiu junto; o `mode:
+> "briefing"` continua na rota `app/api/ai`, pronto para quando o panorama voltar por pedido.
+>
 > **A borda colorida achou o lugar dela: a conversa ao vivo (23/08).** Referência do
 > Gustavo: a borda do skiper-ui, contorno colorido acompanhando a tela toda com o miolo
 > preto. Ali ela funciona justamente pelo que a derrubava no chat: a conversa ao vivo

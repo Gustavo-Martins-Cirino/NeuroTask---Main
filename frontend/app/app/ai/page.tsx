@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { Bot, ArrowUp, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { VoiceConversation, unlockSpeech } from "@/components/voice-conversation"
-import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
 import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
 import {
   DropdownMenu,
@@ -89,26 +88,6 @@ export default function AiPage() {
   const monitorCtxRef = useRef<AudioContext | null>(null)
   const rafRef = useRef<number | null>(null)
 
-  const runBriefing = useCallback(() => {
-    const cached = getCachedBriefing()
-    if (cached) { setMessages([{ role: "assistant", content: cached }]); return }
-    setLoading(true)
-    setMessages([{ role: "assistant", content: "" }])
-    fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [], mode: "briefing", now: new Date().toLocaleString("pt-BR"), tz: new Date().getTimezoneOffset() }),
-    })
-      .then((r) => r.text())
-      .then((t) => {
-        const raw = t.trim()
-        setCachedBriefing(raw)
-        setMessages([{ role: "assistant", content: prettyReply(raw) || "Olá! Como posso ajudar você hoje?" }])
-      })
-      .catch(() => setMessages([{ role: "assistant", content: "Olá! Como posso ajudar você hoje?" }]))
-      .finally(() => setLoading(false))
-  }, [])
-
   // Carrega anotações do dia + conversas (migra o formato antigo de conversa única)
   useEffect(() => {
     const supabase = createClient()
@@ -148,7 +127,11 @@ export default function AiPage() {
     setMessages([])
     // A nova ainda não vai para o storage: ela só é gravada quando ganhar a
     // primeira mensagem de verdade (ver o efeito de sincronização abaixo).
-    runBriefing()
+    //
+    // E ela nasce VAZIA: quem abre vê o estado inicial da Neuro e escreve o que
+    // quiser. Antes chegava aqui um panorama do dia sem ninguém ter pedido — a
+    // IA falando primeiro, sempre a mesma coisa, e a tela bonita de começo
+    // durava meio segundo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -328,7 +311,6 @@ export default function AiPage() {
     setConvos((prev) => pruneConvos([c, ...prev]))
     setActiveId(c.id)
     setMessages([])
-    runBriefing()
   }
   const switchConvo = (id: string) => {
     if (id === activeId) return
@@ -356,7 +338,6 @@ export default function AiPage() {
         next.push(c)
         setActiveId(c.id)
         setMessages([])
-        runBriefing()
       }
     }
     setConvos(next)
