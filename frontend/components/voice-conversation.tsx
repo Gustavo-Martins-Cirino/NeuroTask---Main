@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
-import { RobotMascot } from "@/components/robot-mascot"
 import { BordaConversa } from "@/components/borda-conversa"
 import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
+import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 
 type Status = "idle" | "listening" | "thinking" | "speaking"
 interface Msg { role: "user" | "assistant"; content: string }
@@ -469,6 +469,45 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     : "Segure o microfone para falar"
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")
+
+  // ---- A resposta aparecendo enquanto ela fala ----
+  //
+  // A rota devolve o texto INTEIRO e só depois ele é falado em pedaços. Escrever
+  // tudo de uma vez deixaria a resposta lida antes de a voz começar, e aí a
+  // leitura corre na frente da fala. Por isso a revelação anda pelo relógio, no
+  // ritmo aproximado da voz (lib/transcricao-viva.ts).
+  const ultimaFala = messages.length > 0 && messages[messages.length - 1].role === "assistant"
+    ? messages[messages.length - 1].content
+    : null
+  const [revelado, setRevelado] = useState(0)
+  const rolagemRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!ultimaFala) return
+    setRevelado(0)
+    const inicio = Date.now()
+    // 80ms, não um quadro: a conta é por tempo decorrido, então o passo só
+    // decide de quanto em quanto a tela é redesenhada. A 60fps seriam 60
+    // renderizações por segundo para revelar uma palavra.
+    const id = setInterval(() => {
+      const n = charsRevelados(Date.now() - inicio)
+      setRevelado(n)
+      if (n >= ultimaFala.length) clearInterval(id)
+    }, 80)
+    return () => clearInterval(id)
+  }, [ultimaFala])
+
+  // A voz acabou (ou nem começou, se o TTS falhou) → o texto não pode ficar pela
+  // metade esperando um relógio que já não corresponde a nada.
+  useEffect(() => {
+    if (status === "idle" && !holding) setRevelado(Number.MAX_SAFE_INTEGER)
+  }, [status, holding])
+
+  useEffect(() => {
+    const el = rolagemRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [messages, revelado, interim])
+
   const needsConfirm =
     !resting && !holding && status === "idle" && !!lastAssistant &&
     /(posso confirmar|confirmar\?|confirma\?)/i.test(lastAssistant.content)
@@ -503,29 +542,41 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
           ) : error ? (
             <div className="relative z-10 max-w-sm px-6 text-center"><p className="text-muted-foreground">{error}</p></div>
           ) : (
-            <div className="relative z-10 flex w-full max-w-lg flex-col items-center px-6">
-              <RobotMascot status={resting ? "resting" : holding ? "listening" : status} />
+            <div className="relative z-10 flex w-full max-w-2xl flex-col items-center px-6">
+              {/* A conversa inteira, transcrita. O robozinho saiu daqui: com a
+                  fala escrita dá para conferir o que ela entendeu e reler o que
+                  passou, que é o que falta quando a resposta só existe em áudio. */}
+              <div
+                ref={rolagemRef}
+                className="flex h-[52vh] w-full flex-col gap-5 overflow-y-auto scrollbar-thin px-1"
+              >
+                {messages.map((m, i) => {
+                  const ultima = i === messages.length - 1 && m.role === "assistant"
+                  const texto = ultima ? fecharMarcacao(fatiar(m.content, revelado)) : m.content
+                  if (!texto) return null
+                  return m.role === "assistant" ? (
+                    <div key={i} className="text-foreground">
+                      <RichText text={texto} />
+                    </div>
+                  ) : (
+                    <p key={i} className="self-end rounded-2xl bg-secondary/60 px-3.5 py-2 text-sm text-muted-foreground">
+                      {m.content}
+                    </p>
+                  )
+                })}
 
-              <p className="mt-1 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                {/* O que está sendo dito agora, saindo escrito conforme sai da boca. */}
+                {holding && interim && (
+                  <p className="self-end rounded-2xl bg-secondary/40 px-3.5 py-2 text-sm text-muted-foreground/70">
+                    {interim}
+                  </p>
+                )}
+              </div>
+
+              <p className="mt-4 flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 {status === "thinking" && !resting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {statusLabel}
               </p>
-
-              {/* Área de mensagem com altura fixa — mantém o botão do microfone no mesmo lugar */}
-              <div className="mt-3 flex h-[30vh] w-full flex-col items-center overflow-y-auto scrollbar-thin">
-                {holding ? (
-                  <p className="text-center text-lg text-foreground">{interim}</p>
-                ) : lastAssistant ? (
-                  <motion.div
-                    key={lastAssistant.content}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="w-full rounded-2xl border border-border/40 bg-card/50 p-4 text-foreground"
-                  >
-                    <RichText text={lastAssistant.content} />
-                  </motion.div>
-                ) : null}
-              </div>
 
               {resting ? (
                 <div className="mt-6 flex flex-col items-center gap-3">
@@ -607,7 +658,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
 
 function cnMic(holding: boolean, disabled: boolean): string {
   // Botão estático (não muda de tamanho/posição — o usuário segura ele)
-  const base = "relative mt-6 flex h-20 w-20 touch-none select-none items-center justify-center rounded-full text-white shadow-lg transition-colors"
+  const base = "relative mt-4 flex h-20 w-20 touch-none select-none items-center justify-center rounded-full text-white shadow-lg transition-colors"
   if (disabled) return base + " bg-muted text-muted-foreground opacity-50"
   if (holding) return base + " bg-red-500"
   return base + " bg-primary hover:opacity-90"

@@ -282,11 +282,29 @@ vira ruído.
 > algum, a borda é o que avisa que você entrou em outro lugar. O fundo do overlay virou
 > OPACO (era `bg-background/95`, deixava o dock aparecendo por trás) e só sobra o X.
 >
-> A leitura do Gustavo sobre o efeito estava certa e virou a regra: "não se mexe, fica
-> trocando de cor, tipo um RGB". A volta é lenta (16s) e tem poucas cores — sem detalhe
-> para o olho seguir, o anel girando não lê como giro, lê como as cores trocando de lugar
-> entre as bordas. A paleta não passa por verde nem amarelo: vai do laranja ao azul pelo
-> magenta e pelo violeta, que é o roxo do próprio app.
+> **A primeira versão da borda errou, e o diagnóstico do Gustavo é a lição:** "parece uma
+> imagem retangular fixa", "não passa movimento". O anel girava, mas era UNIFORME — mesma
+> espessura e mesmo brilho na volta inteira. Anel uniforme girando não tem detalhe para o
+> olho seguir, então não lê como giro: lê como moldura. O que faltava não era velocidade,
+> era variação.
+>
+> A correção foi pôr BURACOS no gradiente: entre uma cor e a seguinte ele passa por alfa
+> zero, então não é um anel, são manchas de luz separadas por escuro. Resolve as duas
+> queixas de uma vez — mancha que passa é movimento, e como o brilho não fecha o retângulo,
+> some a leitura de moldura. Some também o fio nítido de 2px, que era metade da culpa.
+> Duas camadas em sentidos e tempos diferentes (22s e 34s) desencontram os ciclos: onde as
+> manchas se cruzam o brilho soma, e o encontro nunca cai duas vezes no mesmo canto.
+>
+> A paleta não passa por verde nem amarelo: vai do laranja ao azul pelo magenta e pelo
+> violeta, que é o roxo do próprio app. No tema claro ela é mais escura (`--bc-l`), porque
+> cor clara sobre branco vira borrão sem cor.
+>
+> **A conversa ao vivo virou transcrição (23/08).** O robozinho saiu — o que ele ocupava
+> agora é a conversa escrita, os dois lados, rolando. A resposta não aparece de uma vez: a
+> rota devolve o texto inteiro e só depois ele é falado, então escrever tudo junto deixaria
+> a leitura correndo na frente da voz. Ela é revelada pelo relógio, a 16 caracteres por
+> segundo (`lib/transcricao-viva.ts`), sempre parando em palavra inteira, e completa na
+> hora se a fala terminar antes. O `robot-mascot.tsx` continua no repositório, desmontado.
 >
 > A mecânica do anel (as duas máscaras que deixam só a moldura) virou `.borda-anel`,
 > compartilhada com a borda viva. Cada variante põe só a sua paleta e o seu tempo.

@@ -47,7 +47,7 @@ frontend/
 │   ├── sound-mixer.tsx       # Mixer: seções Sons/Músicas/Foco (ver public/sounds/README.md)
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
-│   ├── robot-mascot.tsx      # Robozinho SVG animado (mascote da Neuro IA no modo voz)
+│   ├── robot-mascot.tsx      # Robozinho SVG animado — DESMONTADO (a conversa ao vivo virou transcrição)
 │   ├── office-scene-3d.tsx   # Cena 3D do Escritório (R3F) — sala/itens/avatar por nível
 │   ├── neuro-sphere.tsx      # Esfera de partículas da Neuro IA (estado vazio do chat)
 │   ├── borda-viva.tsx        # Contorno que gira e acende enquanto a IA responde (CSS)
@@ -97,6 +97,7 @@ frontend/
 │   ├── coin-flight.ts        # Curva da moeda até o contador de XP (puro)
 │   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
 │   ├── neuro-sphere.ts       # Esfera da Neuro: pontos, repulsão e retorno (puro)
+│   ├── transcricao-viva.ts   # Resposta aparecendo no ritmo da fala, na conversa ao vivo (puro)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
@@ -164,7 +165,9 @@ Gemini ou Anthropic (streaming, sem ferramentas). Chave: `GROQ_API_KEY` etc.
   Não transforma desabafo em tarefa. Horário ambíguo → pergunta manhã/noite.
 - **Tarefa com horário** vira também um bloco no calendário (auto). Detecta **conflito/proximidade** de horários.
 - **Modo voz** (`mode: "voice"`): respostas curtas/faláveis. Usado por `voice-conversation.tsx`
-  (STT+TTS do navegador via Web Speech API, barge-in, mascote coruja). Só funciona bem em Chrome/Edge.
+  (STT+TTS do navegador via Web Speech API, barge-in). Tela cheia sem dock, com a borda de luz
+  em volta e a conversa transcrita — a resposta vai aparecendo escrita no ritmo da fala.
+  Só funciona bem em Chrome/Edge.
 - `app/api/ai/transcribe/route.ts`: transcrição de áudio (Groq Whisper) para o botão de microfone.
 
 ## Modo Foco

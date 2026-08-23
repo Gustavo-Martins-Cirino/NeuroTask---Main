@@ -69,31 +69,49 @@
 }
 
 /* A borda da conversa ao vivo (referência: a borda do skiper-ui que o Gustavo
-   mandou). Mora dentro da tela cheia da conversa, então o z-index é local: fica atrás do
-   conteúdo, que sobe com `relative z-10`.
+   mandou). Mora dentro da tela cheia da conversa, então o z-index é local: fica
+   atrás do conteúdo, que sobe com `relative z-10`.
 
-   O Gustavo descreveu o efeito como "não se mexe, fica trocando de cor, tipo um
-   RGB". É exatamente a leitura certa, e é por isso que aqui a volta é LENTA e
-   tem poucas cores: sem um detalhe para o olho seguir, o anel girando não lê
-   como giro — lê como as cores trocando de lugar entre as bordas.
+   A primeira versão errou e o Gustavo apontou por quê: "parece uma imagem
+   retangular fixa", "não passa movimento". O anel girava, mas era UNIFORME —
+   mesma espessura e mesmo brilho em toda a volta. Um anel uniforme girando não
+   tem detalhe nenhum para o olho seguir, então não lê como giro: lê como
+   moldura. O que faltava não era velocidade, era variação.
 
-   A paleta não passa por verde nem amarelo, como na referência. Ela vai do
-   laranja ao azul pelo lado do magenta e do violeta — que é o roxo do próprio
-   app, então o efeito continua sendo da casa. O magenta aparece duas vezes de
-   propósito: é o que fecha a volta pelo caminho certo, sem o gradiente cortar
-   pelo verde para emendar a última cor na primeira. */
+   Daí a mudança que importa: o gradiente agora tem BURACOS. Entre uma cor e a
+   seguinte ele passa por alfa zero, então a volta não é um anel — são três
+   manchas de luz separadas por escuro. Isso resolve as duas queixas de uma vez:
+   mancha que passa é movimento, e como o brilho não fecha o retângulo, some a
+   leitura de moldura. As pontas se acendem e apagam conforme a luz chega.
+
+   Duas camadas em sentidos e tempos diferentes (22s e 34s) desencontram os
+   ciclos: onde as manchas se cruzam o brilho soma, e esse encontro não repete no
+   mesmo lugar. É o que dá a sensação de coisa viva em vez de laço curto.
+
+   A paleta não passa por verde nem amarelo, como na referência: vai do laranja
+   ao azul pelo magenta e pelo violeta — que é o roxo do próprio app. */
 .borda-conversa {
   z-index: 0;
+  /* Canto arredondado tira o resto do ar de moldura: o brilho contorna a tela
+     em vez de encostar em quina de 90°. */
+  border-radius: 34px;
   background: conic-gradient(
     from var(--borda-giro),
-    oklch(0.72 0.2 25),
-    oklch(0.62 0.21 330),
-    oklch(0.62 0.22 275),
-    oklch(0.64 0.19 248),
-    oklch(0.62 0.21 330),
-    oklch(0.72 0.2 25)
+    oklch(var(--bc-l) 0.2 25 / 0.95) 0deg,
+    oklch(var(--bc-l) 0.21 355 / 0) 62deg,
+    oklch(var(--bc-l) 0.21 320 / 0.9) 124deg,
+    oklch(var(--bc-l) 0.22 288 / 0) 186deg,
+    oklch(var(--bc-l) 0.2 250 / 0.95) 250deg,
+    oklch(var(--bc-l) 0.21 320 / 0) 312deg,
+    oklch(var(--bc-l) 0.2 25 / 0.95) 360deg
   );
 }
+
+/* A volta ao contrário, para os dois ciclos se desencontrarem. */
+.borda-conversa-inversa {
+  animation-direction: reverse;
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   .borda-anel {
@@ -161,6 +179,9 @@
      por isso não há cor inteira aqui, só os dois primeiros valores do oklch().
      Assim a mesma pessoa mantém a cor nos dois temas, cada um com o contraste
      dele, sem o componente precisar saber em que tema está. */
+  /* Claridade da paleta da borda da conversa ao vivo. No tema claro ela é mais
+     escura DE PROPÓSITO: cor clara sobre fundo branco vira borrão sem cor. */
+  --bc-l: 0.6;
   --iniciais-fundo: 0.93 0.045;
   --iniciais-texto: 0.45 0.16;
   /* Tinta do grão do fundo da Neuro IA (ver .fundo-grao). No claro ela aparece
@@ -217,6 +238,7 @@
   --primary: oklch(0.65 0.22 265);
   --primary-foreground: oklch(0.13 0 0);
   /* No escuro o par se inverte: fundo fundo e texto claro (ver :root). */
+  --bc-l: 0.68;
   --iniciais-fundo: 0.3 0.06;
   --iniciais-texto: 0.86 0.13;
   /* A mesma tinta, contida: no escuro a cor pastel viraria névoa por cima do
