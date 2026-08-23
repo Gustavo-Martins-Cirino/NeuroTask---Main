@@ -275,10 +275,18 @@ vira ruído.
 >
 > Se um dia voltar: a cor não pode passar por trás do cabeçalho, e o alvo é somar poucos
 > pontos de luminância — a primeira versão somava +42, quase o triplo do fundo do site.
-> A **borda que gira** (`214418`) está entregue: `components/borda-viva.tsx`, na Neuro IA.
-> Em CSS puro — o `@property` dá tipo ao ângulo, e é isso que torna a `conic-gradient`
-> animável sem canvas e sem JS por quadro. Quase invisível em repouso, acende enquanto a
-> resposta chega.
+> A **borda que gira** (`components/borda-viva.tsx`) e a **malha pastel**
+> (`components/fundo-malha.tsx`) existem e funcionam, mas estão **desmontadas** — a Neuro IA
+> usa hoje o mesmo fundo de todas as outras telas, por decisão do Gustavo.
+>
+> Ficam guardadas, com o CSS delas em `globals.css`: religar é montar os dois componentes
+> de volta em `app/app/ai/page.tsx` (a malha pede o `isolate` no container, senão o `-z-10`
+> cai atrás do body). O efeito de arcos que foi revertido está no commit `b4b5900`.
+>
+> **O que aprendemos e vale antes de religar qualquer um**: o cabeçalho é translúcido em
+> TODAS as telas (`bg-background/70` + `backdrop-blur`), então cor no fundo muda o tom da
+> barra do topo — nome, nível, XP — e a página inteira passa a parecer de outro app. Foi
+> isso, e não a intensidade do efeito, que derrubou as três tentativas.
 
 - [ ] **A mesma borda no Modo Foco**, se fizer sentido. Lá o estado que ela sinalizaria
       seria a sessão correndo — vale só se não competir com os ambientes animados, que já
