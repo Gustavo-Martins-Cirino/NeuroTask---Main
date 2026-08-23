@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils"
 // sinalizar. Em repouso fica quase invisível, que é o ponto: quem não está
 // esperando resposta nenhuma não deve reparar nele.
 //
-// Tudo em CSS (ver .borda-viva em globals.css): zero JS por quadro, e o
+// Tudo em CSS (a mecânica do anel é a .borda-anel, compartilhada com a borda
+// da conversa ao vivo): zero JS por quadro, e o
 // prefers-reduced-motion congela o giro sem apagar o contorno.
 
 export function BordaViva({
@@ -37,12 +38,12 @@ export function BordaViva({
           que ela ACENDE; em repouso não tem função e some por completo. */}
       <div
         aria-hidden
-        className={cn("borda-viva borda-viva-brilho transition-opacity duration-700", className)}
+        className={cn("borda-anel borda-anel-brilho borda-viva borda-viva-brilho transition-opacity duration-700", className)}
         style={{ ...estilo, opacity: ativa ? 0.9 : 0 }}
       />
       <div
         aria-hidden
-        className={cn("borda-viva transition-opacity duration-700", className)}
+        className={cn("borda-anel borda-viva transition-opacity duration-700", className)}
         style={estilo}
       />
     </>

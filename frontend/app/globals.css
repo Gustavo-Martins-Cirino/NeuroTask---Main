@@ -24,22 +24,17 @@
   }
 }
 
-.borda-viva {
+/* A mecânica das duas bordas, que é a mesma: um retângulo do tamanho da tela
+   pintado com o gradiente, e DUAS máscaras — a de dentro é subtraída da de
+   fora, então sobra só o anel. Sem isso o gradiente cobriria a tela inteira e
+   engoliria o conteúdo.
+
+   A espessura é o `padding`: é ele que abre a distância entre as duas máscaras. */
+.borda-anel {
   position: fixed;
   inset: 0;
-  z-index: 40;
   pointer-events: none;
   padding: var(--borda-espessura, 2px);
-  background: conic-gradient(
-    from var(--borda-giro),
-    oklch(0.7 0.2 265),
-    oklch(0.75 0.18 200),
-    oklch(0.78 0.18 30),
-    oklch(0.7 0.22 330),
-    oklch(0.7 0.2 265)
-  );
-  /* Duas máscaras e a de dentro é subtraída: sobra só o anel da borda. Sem
-     isto o gradiente cobriria a tela inteira e engoliria o conteúdo. */
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -52,14 +47,56 @@
 }
 
 /* O brilho que sangra para dentro: a mesma volta, mais grossa e desfocada. */
-.borda-viva-brilho {
+.borda-anel-brilho {
   --borda-espessura: 12px;
-  filter: blur(18px);
+  filter: blur(var(--borda-desfoque, 18px));
+}
+
+.borda-viva {
+  z-index: 40;
+  background: conic-gradient(
+    from var(--borda-giro),
+    oklch(0.7 0.2 265),
+    oklch(0.75 0.18 200),
+    oklch(0.78 0.18 30),
+    oklch(0.7 0.22 330),
+    oklch(0.7 0.2 265)
+  );
+}
+
+.borda-viva-brilho {
   z-index: 39;
 }
 
+/* A borda da conversa ao vivo (referência: a borda do skiper-ui que o Gustavo
+   mandou). Mora dentro da tela cheia da conversa, então o z-index é local: fica atrás do
+   conteúdo, que sobe com `relative z-10`.
+
+   O Gustavo descreveu o efeito como "não se mexe, fica trocando de cor, tipo um
+   RGB". É exatamente a leitura certa, e é por isso que aqui a volta é LENTA e
+   tem poucas cores: sem um detalhe para o olho seguir, o anel girando não lê
+   como giro — lê como as cores trocando de lugar entre as bordas.
+
+   A paleta não passa por verde nem amarelo, como na referência. Ela vai do
+   laranja ao azul pelo lado do magenta e do violeta — que é o roxo do próprio
+   app, então o efeito continua sendo da casa. O magenta aparece duas vezes de
+   propósito: é o que fecha a volta pelo caminho certo, sem o gradiente cortar
+   pelo verde para emendar a última cor na primeira. */
+.borda-conversa {
+  z-index: 0;
+  background: conic-gradient(
+    from var(--borda-giro),
+    oklch(0.72 0.2 25),
+    oklch(0.62 0.21 330),
+    oklch(0.62 0.22 275),
+    oklch(0.64 0.19 248),
+    oklch(0.62 0.21 330),
+    oklch(0.72 0.2 25)
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .borda-viva {
+  .borda-anel {
     animation: none;
   }
 }

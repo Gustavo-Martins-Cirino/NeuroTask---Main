@@ -275,6 +275,22 @@ vira ruído.
 >
 > Se um dia voltar: a cor não pode passar por trás do cabeçalho, e o alvo é somar poucos
 > pontos de luminância — a primeira versão somava +42, quase o triplo do fundo do site.
+> **A borda colorida achou o lugar dela: a conversa ao vivo (23/08).** Referência do
+> Gustavo: a borda do skiper-ui, contorno colorido acompanhando a tela toda com o miolo
+> preto. Ali ela funciona justamente pelo que a derrubava no chat: a conversa ao vivo
+> ocupa a tela inteira e o dock some, então nada em volta para ela destoar — e sem menu
+> algum, a borda é o que avisa que você entrou em outro lugar. O fundo do overlay virou
+> OPACO (era `bg-background/95`, deixava o dock aparecendo por trás) e só sobra o X.
+>
+> A leitura do Gustavo sobre o efeito estava certa e virou a regra: "não se mexe, fica
+> trocando de cor, tipo um RGB". A volta é lenta (16s) e tem poucas cores — sem detalhe
+> para o olho seguir, o anel girando não lê como giro, lê como as cores trocando de lugar
+> entre as bordas. A paleta não passa por verde nem amarelo: vai do laranja ao azul pelo
+> magenta e pelo violeta, que é o roxo do próprio app.
+>
+> A mecânica do anel (as duas máscaras que deixam só a moldura) virou `.borda-anel`,
+> compartilhada com a borda viva. Cada variante põe só a sua paleta e o seu tempo.
+>
 > **Encerrado (23/08): a tela da Neuro IA fica preta e lisa, sem efeito nenhum.** Foram
 > duas rodadas de tentativa — malha pastel, depois grão — e as duas terminaram no mesmo
 > lugar. O código dos dois efeitos continua no repositório, desmontado e pronto

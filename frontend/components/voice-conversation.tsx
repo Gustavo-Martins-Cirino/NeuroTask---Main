@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { RobotMascot } from "@/components/robot-mascot"
+import { BordaConversa } from "@/components/borda-conversa"
 import { getCachedBriefing, setCachedBriefing } from "@/lib/briefing-cache"
 
 type Status = "idle" | "listening" | "thinking" | "speaking"
@@ -479,23 +480,30 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-background/95 backdrop-blur-xl"
+          // Fundo OPACO, não translúcido: aqui o dock precisa sumir de verdade.
+          // Sem menu em volta, sobra a conversa e o X — é o mesmo raciocínio do
+          // Modo Foco, e é o que a borda colorida em volta vem confirmar.
+          className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-background"
         >
-          <button onClick={onClose} aria-label="Encerrar conversa" className="absolute right-6 top-6 rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+          <BordaConversa />
+
+          {/* A borda fica no fundo do empilhamento; o conteúdo sobe por cima
+              dela, senão o halo desfocado passaria por cima do X. */}
+          <button onClick={onClose} aria-label="Encerrar conversa" className="absolute right-6 top-6 z-10 rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
             <X className="h-6 w-6" />
           </button>
 
           {!supported ? (
-            <div className="max-w-sm px-6 text-center">
+            <div className="relative z-10 max-w-sm px-6 text-center">
               <Mic className="mx-auto h-10 w-10 text-muted-foreground/50" />
               <p className="mt-4 text-muted-foreground">
                 Seu navegador não suporta reconhecimento de voz ao vivo. Use o <strong>Chrome</strong> ou <strong>Edge</strong>.
               </p>
             </div>
           ) : error ? (
-            <div className="max-w-sm px-6 text-center"><p className="text-muted-foreground">{error}</p></div>
+            <div className="relative z-10 max-w-sm px-6 text-center"><p className="text-muted-foreground">{error}</p></div>
           ) : (
-            <div className="flex w-full max-w-lg flex-col items-center px-6">
+            <div className="relative z-10 flex w-full max-w-lg flex-col items-center px-6">
               <RobotMascot status={resting ? "resting" : holding ? "listening" : status} />
 
               <p className="mt-1 flex items-center gap-2 text-sm font-medium text-muted-foreground">
