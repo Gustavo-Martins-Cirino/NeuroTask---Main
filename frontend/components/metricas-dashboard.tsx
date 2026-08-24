@@ -49,16 +49,26 @@ const APOIO = "var(--muted-foreground)"
 // perde: contra o acento, a separação até sobe (ΔE 21,5 e 21,9).
 const OPACIDADE_APOIO = 0.7
 
-// Abrir e fechar em TWEEN, não em mola. Mola em `height: "auto"` passa da
-// altura final e volta — num painel inteiro isso não lê como abrir, lê como
-// solavanco. O resto do site (Tarefas, Calendário, Foco) colapsa em tween, e é
-// essa a linguagem que vale aqui.
+// **A ALTURA e o CONTEÚDO se movem por regras diferentes, e essa é a decisão.**
+//
+// A altura vai em tween. Mola em `height: "auto"` passa da altura final e volta,
+// e o cartão inteiro balançando não lê como abrir, lê como solavanco — o resto
+// do site (Tarefas, Calendário, Foco) também colapsa em tween.
+//
+// O movimento fica por conta do que está DENTRO, e vem emprestado da entrada do
+// dashboard (`app/app/page.tsx`): cada peça sobe 12px com mola macia, uma depois
+// da outra. É a mesma mola de lá, não uma parecida — a tela abre com esse
+// movimento, e a seção agora abre com ele também.
 //
 // Fechar é mais curto que abrir de propósito: quem abre está sendo apresentado
-// ao conteúdo e o tempo a mais é confortável; quem fecha já decidiu, e quer o
-// espaço de volta.
-const ABRIR = { duration: 0.36, ease: [0.22, 0.61, 0.36, 1] as const }
-const FECHAR = { duration: 0.26, ease: [0.4, 0, 0.2, 1] as const }
+// ao conteúdo e o tempo a mais é confortável; quem fecha já decidiu.
+const ABRIR = { duration: 0.44, ease: [0.22, 0.61, 0.36, 1] as const }
+const FECHAR = { duration: 0.32, ease: [0.4, 0, 0.2, 1] as const }
+
+/** A mola da entrada do dashboard, copiada de lá com os mesmos números. */
+const MOLA_DASHBOARD = { type: "spring" as const, stiffness: 260, damping: 24 }
+/** O intervalo entre as peças, também o do dashboard. */
+const ESCALONAMENTO = 0.07
 
 const ALTURA_PLOT = 132
 const BANDA_EIXO = 22
@@ -374,24 +384,54 @@ export function MetricasDashboard() {
       : "Ainda não dá para ver um horário preferido."
   }
 
-  // A altura abrindo já existia; o que faltava era o CONTEÚDO entrar. Sem isto
-  // o painel cresce e os três blocos aparecem prontos de uma vez, o que faz o
-  // movimento parecer um corte. Em cascata, o olho acompanha: abas, manchete,
-  // gráfico.
+  // A altura do painel. A opacidade sai na frente dela ao fechar, para o
+  // conteúdo desaparecer antes de ser cortado pela borda de baixo.
+  const painel = {
+    oculto: { height: 0, opacity: 0 },
+    visivel: {
+      height: "auto",
+      opacity: 1,
+      transition: semMovimento
+        ? { duration: 0 }
+        : { height: ABRIR, opacity: { ...ABRIR, delay: 0.04 } },
+    },
+    saindo: {
+      height: 0,
+      opacity: 0,
+      transition: semMovimento
+        ? { duration: 0 }
+        : { height: FECHAR, opacity: { duration: 0.17, ease: "linear" as const } },
+    },
+  }
+
+  // A cascata é o movimento da seção, e é a do dashboard: abas, manchete e
+  // gráfico sobem um depois do outro. Sem ela o painel cresce e os três blocos
+  // aparecem prontos de uma vez, o que faz o abrir parecer um corte.
   //
-  // Só na ENTRADA. Escalonar a saída também faria fechar parecer lento — quem
-  // fecha já decidiu, e quer o espaço de volta.
+  // O escalonamento é só na ENTRADA. Na saída as peças recolhem juntas — quem
+  // fecha já decidiu, e três despedidas em fila fariam o fechar arrastar.
   const cascata = {
     oculto: {},
-    visivel: { transition: { staggerChildren: semMovimento ? 0 : 0.055, delayChildren: semMovimento ? 0 : 0.04 } },
+    visivel: {
+      transition: {
+        staggerChildren: semMovimento ? 0 : ESCALONAMENTO,
+        delayChildren: semMovimento ? 0 : 0.06,
+      },
+    },
+    saindo: { transition: { staggerChildren: 0 } },
   }
   const peca = {
-    oculto: semMovimento ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 },
+    oculto: semMovimento ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 },
     visivel: {
       opacity: 1,
       y: 0,
-      transition: semMovimento ? { duration: 0 } : { type: "spring" as const, stiffness: 420, damping: 32 },
+      transition: semMovimento ? { duration: 0 } : MOLA_DASHBOARD,
     },
+    // Recolhe para CIMA, no mesmo sentido em que a borda de baixo está subindo.
+    // Descendo, o conteúdo andaria contra o próprio painel que o encurta.
+    saindo: semMovimento
+      ? { opacity: 0 }
+      : { opacity: 0, y: -8, transition: { duration: 0.18, ease: [0.4, 0, 1, 1] as const } },
   }
 
   return (
@@ -405,47 +445,33 @@ export function MetricasDashboard() {
         <span className="flex-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Seus números
         </span>
-        {/* A seta anda no mesmo tempo do painel: girar rápido enquanto a altura
-            ainda está indo faz a seta chegar antes e a seção parecer atrasada. */}
+        {/* A seta gira na mola do conteúdo, não num tempo próprio: ela é a
+            primeira coisa a se mexer no clique, e é ela que anuncia com que
+            movimento o resto vem. Numa curva diferente, anunciaria errado. */}
         <motion.span
           animate={{ rotate: aberta ? 180 : 0 }}
-          transition={semMovimento ? { duration: 0 } : aberta ? ABRIR : FECHAR}
+          transition={semMovimento ? { duration: 0 } : MOLA_DASHBOARD}
         >
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </motion.span>
       </button>
 
-      {/* O tempo vai DENTRO de `animate` e de `exit`, não num `transition`
-          solto: no fechamento o componente já não tem mais estado aberto para
-          consultar, então um ternário lá fora leria sempre o valor de fechar. */}
+      {/* Três rótulos de variante, e não objetos soltos em `animate`/`exit`: é
+          por rótulo que o framer propaga o estado para dentro. Com objetos, o
+          painel fechava sozinho e as peças de conteúdo ficavam paradas até
+          serem cortadas pela borda. */}
       <AnimatePresence initial={false}>
         {aberta && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{
-              height: "auto",
-              opacity: 1,
-              transition: semMovimento
-                ? { duration: 0 }
-                : { height: ABRIR, opacity: { ...ABRIR, delay: 0.04 } },
-            }}
-            exit={{
-              height: 0,
-              opacity: 0,
-              // A opacidade sai na frente da altura: o conteúdo desaparece antes
-              // de ser cortado pela borda de baixo, e o fechar fica sem guilhotina.
-              transition: semMovimento
-                ? { duration: 0 }
-                : { height: FECHAR, opacity: { duration: 0.17, ease: "linear" as const } },
-            }}
+            variants={painel}
+            initial="oculto"
+            animate="visivel"
+            exit="saindo"
             className="overflow-hidden"
           >
-            <motion.div
-              variants={cascata}
-              initial="oculto"
-              animate="visivel"
-              className="space-y-4 px-5 pb-5 pt-1.5"
-            >
+            {/* Sem `initial`/`animate` próprios de propósito: os rótulos descem
+                do painel, e é isso que faz as peças saírem junto com ele. */}
+            <motion.div variants={cascata} className="space-y-4 px-5 pb-5 pt-1.5">
               <motion.div variants={peca} className="flex flex-wrap gap-1.5">
                 {ABAS.map((a) => (
                   <button
