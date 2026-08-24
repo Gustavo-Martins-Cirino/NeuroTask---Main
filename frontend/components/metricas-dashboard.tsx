@@ -49,6 +49,17 @@ const APOIO = "var(--muted-foreground)"
 // perde: contra o acento, a separação até sobe (ΔE 21,5 e 21,9).
 const OPACIDADE_APOIO = 0.7
 
+// Abrir e fechar em TWEEN, não em mola. Mola em `height: "auto"` passa da
+// altura final e volta — num painel inteiro isso não lê como abrir, lê como
+// solavanco. O resto do site (Tarefas, Calendário, Foco) colapsa em tween, e é
+// essa a linguagem que vale aqui.
+//
+// Fechar é mais curto que abrir de propósito: quem abre está sendo apresentado
+// ao conteúdo e o tempo a mais é confortável; quem fecha já decidiu, e quer o
+// espaço de volta.
+const ABRIR = { duration: 0.36, ease: [0.22, 0.61, 0.36, 1] as const }
+const FECHAR = { duration: 0.26, ease: [0.4, 0, 0.2, 1] as const }
+
 const ALTURA_PLOT = 132
 const BANDA_EIXO = 22
 // O container inclui a banda do eixo de propósito: dimensionar só o plot deixa
@@ -394,28 +405,46 @@ export function MetricasDashboard() {
         <span className="flex-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Seus números
         </span>
+        {/* A seta anda no mesmo tempo do painel: girar rápido enquanto a altura
+            ainda está indo faz a seta chegar antes e a seção parecer atrasada. */}
         <motion.span
-          animate={{ rotate: aberta ? 180 : 0, y: aberta ? 1 : 0 }}
-          transition={semMovimento ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 30 }}
+          animate={{ rotate: aberta ? 180 : 0 }}
+          transition={semMovimento ? { duration: 0 } : aberta ? ABRIR : FECHAR}
         >
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </motion.span>
       </button>
 
+      {/* O tempo vai DENTRO de `animate` e de `exit`, não num `transition`
+          solto: no fechamento o componente já não tem mais estado aberto para
+          consultar, então um ternário lá fora leria sempre o valor de fechar. */}
       <AnimatePresence initial={false}>
         {aberta && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={semMovimento ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 34 }}
+            animate={{
+              height: "auto",
+              opacity: 1,
+              transition: semMovimento
+                ? { duration: 0 }
+                : { height: ABRIR, opacity: { ...ABRIR, delay: 0.04 } },
+            }}
+            exit={{
+              height: 0,
+              opacity: 0,
+              // A opacidade sai na frente da altura: o conteúdo desaparece antes
+              // de ser cortado pela borda de baixo, e o fechar fica sem guilhotina.
+              transition: semMovimento
+                ? { duration: 0 }
+                : { height: FECHAR, opacity: { duration: 0.17, ease: "linear" as const } },
+            }}
             className="overflow-hidden"
           >
             <motion.div
               variants={cascata}
               initial="oculto"
               animate="visivel"
-              className="space-y-4 px-5 pb-5"
+              className="space-y-4 px-5 pb-5 pt-1.5"
             >
               <motion.div variants={peca} className="flex flex-wrap gap-1.5">
                 {ABAS.map((a) => (
