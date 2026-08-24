@@ -9,6 +9,7 @@ import { useTimeFormat } from "@/hooks/use-time-format"
 import {
   concluidasPorDia, constanciaNaSemana, porHoraDoDia,
   diaMaisConstante, horaMaisProdutiva, rotuloDeHora, totalNoPeriodo,
+  sentidoDaTroca,
   type PontoDia, type PontoSemana, type PontoHora,
 } from "@/lib/dashboard-metricas"
 
@@ -70,11 +71,22 @@ const MOLA_DASHBOARD = { type: "spring" as const, stiffness: 260, damping: 24 }
 /** O intervalo entre as peças, também o do dashboard. */
 const ESCALONAMENTO = 0.07
 
+/** O quanto o gráfico anda de lado ao trocar de aba. Curto de propósito: a
+ *  distância que convence de que veio de algum lugar é bem menor do que a que
+ *  parece um carrossel. */
+const DESLOCAMENTO_ABA = 28
+
 const ALTURA_PLOT = 132
 const BANDA_EIXO = 22
 // O container inclui a banda do eixo de propósito: dimensionar só o plot deixa
 // os rótulos de fora e o cartão ganha uma barrinha de rolagem interna.
 const ALTURA_TOTAL = ALTURA_PLOT + BANDA_EIXO
+/** A faixa reservada para a dica, acima do plot — é o `pt-7` dos gráficos. */
+const BANDA_DICA = 28
+/** Altura que a área do gráfico ocupa por inteiro. Reservada na troca de aba:
+ *  com `mode="wait"` o gráfico velho sai antes de o novo entrar, e sem um piso
+ *  o cartão desabaria e voltaria no vão entre um e outro. */
+const ALTURA_AREA = ALTURA_TOTAL + BANDA_DICA
 /** Folga nas pontas da linha: r 4.5 da bolinha + 2px de anel, arredondado. */
 const MARGEM_LINHA = 7
 
@@ -319,6 +331,7 @@ export function MetricasDashboard() {
   const semMovimento = useReducedMotion()
   const [aberta, setAberta] = useState(false)
   const [aba, setAba] = useState<Aba>("dias")
+  const [sentido, setSentido] = useState<1 | -1>(1)
   const [datas, setDatas] = useState<Date[] | null>(null)
 
   // Só busca quando abre: fechada por padrão, a seção não deve custar uma
@@ -434,6 +447,38 @@ export function MetricasDashboard() {
       : { opacity: 0, y: -8, transition: { duration: 0.18, ease: [0.4, 0, 1, 1] as const } },
   }
 
+  // A troca de aba. O conteúdo entra pelo lado do botão que foi clicado, no
+  // mesmo caminho que a pílula ativa acaba de percorrer — a pílula desliza e o
+  // gráfico a segue, em vez de piscar no lugar. O vocabulário é o do guia de
+  // boas-vindas (`components/onboarding.tsx`), que troca de passo assim.
+  //
+  // Entra com a mola do dashboard, sai em tween curto: `mode="wait"` encadeia
+  // os dois, e uma mola na saída somaria o tempo de assentar antes de o novo
+  // sequer começar.
+  const troca = {
+    entra: (s: 1 | -1) =>
+      semMovimento ? { opacity: 0 } : { opacity: 0, x: s * DESLOCAMENTO_ABA },
+    firme: {
+      opacity: 1,
+      x: 0,
+      transition: semMovimento ? { duration: 0 } : MOLA_DASHBOARD,
+    },
+    sai: (s: 1 | -1) =>
+      semMovimento
+        ? { opacity: 0 }
+        : {
+            opacity: 0,
+            x: -s * DESLOCAMENTO_ABA,
+            transition: { duration: 0.14, ease: [0.4, 0, 1, 1] as const },
+          },
+  }
+
+  const trocarAba = (destino: Aba) => {
+    if (destino === aba) return
+    setSentido(sentidoDaTroca(ABAS.findIndex((a) => a.id === aba), ABAS.findIndex((a) => a.id === destino)))
+    setAba(destino)
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm">
       <button
@@ -476,7 +521,7 @@ export function MetricasDashboard() {
                 {ABAS.map((a) => (
                   <button
                     key={a.id}
-                    onClick={() => setAba(a.id)}
+                    onClick={() => trocarAba(a.id)}
                     className={cn(
                       "relative rounded-full px-3 py-1 text-xs font-medium transition-colors",
                       aba === a.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
@@ -494,21 +539,44 @@ export function MetricasDashboard() {
                 ))}
               </motion.div>
 
-              <motion.p variants={peca} className="text-sm text-foreground">{manchete()}</motion.p>
+              {/* A manchete e o gráfico trocam JUNTOS, num bloco só: são a
+                  resposta e a evidência da mesma pergunta, e vê-los partir em
+                  tempos diferentes desmancharia a dupla. O `peca` de fora é a
+                  cascata da abertura; o `troca` de dentro é a troca de aba —
+                  duas animações em camadas, cada uma no seu momento.
 
-              {!vazio && datas !== null && (
-                <motion.div variants={peca}>
-                  {aba === "dias" && <GraficoLinha pontos={porDia} />}
-                  {aba === "semana" && (
-                    <GraficoColunas colunas={colunasSemana} rotulosDoEixo={(i) => colunasSemana[i].rotulo} />
-                  )}
-                  {aba === "hora" && (
-                    // De 24 rótulos cabem uns 6 sem colidir; a dica carrega o resto.
-                    <GraficoColunas colunas={colunasHora} rotulosDoEixo={(i) => (i % 4 === 0 ? `${i}h` : null)} />
-                  )}
+                  Reserva de altura de duas linhas só abaixo do `sm`: no
+                  desktop a manchete sempre cabe numa linha, e no celular ela
+                  passa de uma para duas conforme a aba. Sem o piso, o cartão
+                  encolheria e cresceria de novo a cada troca. */}
+              <motion.div variants={peca}>
+                <AnimatePresence mode="wait" initial={false} custom={sentido}>
+                  <motion.div
+                    key={aba}
+                    custom={sentido}
+                    variants={troca}
+                    initial="entra"
+                    animate="firme"
+                    exit="sai"
+                    className="space-y-4"
+                  >
+                    <p className="min-h-10 text-sm text-foreground sm:min-h-0">{manchete()}</p>
 
-                </motion.div>
-              )}
+                    {!vazio && datas !== null && (
+                      <div style={{ minHeight: ALTURA_AREA }}>
+                        {aba === "dias" && <GraficoLinha pontos={porDia} />}
+                        {aba === "semana" && (
+                          <GraficoColunas colunas={colunasSemana} rotulosDoEixo={(i) => colunasSemana[i].rotulo} />
+                        )}
+                        {aba === "hora" && (
+                          // De 24 rótulos cabem uns 6 sem colidir; a dica carrega o resto.
+                          <GraficoColunas colunas={colunasHora} rotulosDoEixo={(i) => (i % 4 === 0 ? `${i}h` : null)} />
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}

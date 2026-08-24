@@ -151,3 +151,22 @@ export function rotuloDeHora(hora: number, doze: boolean): string {
 export function totalNoPeriodo(pontos: PontoDia[]): number {
   return pontos.reduce((soma, p) => soma + p.total, 0)
 }
+
+// ---------------------------------------------------------------------------
+// A troca de aba
+// ---------------------------------------------------------------------------
+
+/**
+ * Para que lado o gráfico novo entra: `1` da direita, `-1` da esquerda.
+ *
+ * O sentido sai da POSIÇÃO das abas, não da ordem dos cliques — indo de "Por
+ * dia" para "Melhor hora" o conteúdo entra pela direita porque o botão está à
+ * direita, que é o mesmo caminho que a pílula ativa acabou de percorrer. Fixar
+ * um sentido só faria metade das trocas andar contra a pílula.
+ *
+ * Clicar na aba já ativa devolve `1`, e não `0`: não há troca para animar, e
+ * um zero só existiria para virar um caso a mais na chamada.
+ */
+export function sentidoDaTroca(de: number, para: number): 1 | -1 {
+  return para >= de ? 1 : -1
+}

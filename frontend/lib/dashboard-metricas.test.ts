@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest"
 import {
   chaveDoDia, concluidasPorDia, constanciaNaSemana, porHoraDoDia,
   diaMaisConstante, horaMaisProdutiva, rotuloDeHora, totalNoPeriodo,
+  sentidoDaTroca,
   DIAS_DA_SEMANA,
 } from "./dashboard-metricas"
 
@@ -156,5 +157,21 @@ describe("rotuloDeHora", () => {
     expect(rotuloDeHora(12, true)).toBe("12 PM")
     expect(rotuloDeHora(14, true)).toBe("2 PM")
     expect(rotuloDeHora(11, true)).toBe("11 AM")
+  })
+})
+
+describe("sentidoDaTroca", () => {
+  it("aba à direita entra pela direita", () => {
+    expect(sentidoDaTroca(0, 1)).toBe(1)
+    expect(sentidoDaTroca(0, 2)).toBe(1)
+  })
+
+  it("aba à esquerda entra pela esquerda", () => {
+    expect(sentidoDaTroca(2, 0)).toBe(-1)
+    expect(sentidoDaTroca(1, 0)).toBe(-1)
+  })
+
+  it("clicar na aba já ativa não inventa um terceiro caso", () => {
+    expect(sentidoDaTroca(1, 1)).toBe(1)
   })
 })
