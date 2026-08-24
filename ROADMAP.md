@@ -369,7 +369,15 @@ vira ruído.
 
 - [ ] **A mesma borda no Modo Foco**, se fizer sentido. Lá o estado que ela sinalizaria
       seria a sessão correndo — vale só se não competir com os ambientes animados, que já
-      são o efeito principal daquela tela.
+      são o efeito principal daquela tela. **Entrar aqui sabendo do placar**: moldura já foi
+      recusada três vezes seguidas (chat, fundo da Neuro, conversa ao vivo). O Foco é o único
+      lugar onde ela ainda não foi tentada, e é também o único com argumento diferente — a
+      tela já é um overlay dedicado, não uma página do app com dock em volta.
+
+> **Quatro componentes vivem no repositório desmontados**, e é de propósito: `borda-viva.tsx`,
+> `borda-conversa.tsx`, `fundo-grao.tsx` e `robot-mascot.tsx`. Cada um foi montado, visto e
+> recusado; ficam prontos para remontar em uma linha se a decisão mudar. Antes de escrever um
+> efeito novo para a Neuro IA, conferir se ele já não está aí — e ler por que saiu.
 
 #### Neuro IA — `202826.png` e `202901.png`
 
@@ -383,10 +391,12 @@ vira ruído.
 > página). Não foi economia: o canvas do ShaderGradient é justamente o que **não** entra no
 > ticker único, e abriria um segundo `requestAnimationFrame` concorrendo com a esfera.
 
-- [ ] **Ver a tela da Neuro IA no olho, clara e escura.** É o item que sobra de tudo isto e
-      não dá para fazer daqui. No claro a malha deve aparecer de verdade; no escuro, ser só
-      uma insinuação — se virar névoa por cima do texto, o ajuste é `--malha-*` no `.dark`
-      de `globals.css`, e é só trocar número.
+- [ ] **Ver a tela da Neuro IA no olho, clara e escura.** O que este item pedia — conferir a
+      calibragem da malha pastel nos dois temas — deixou de existir: a malha saiu, o grão que
+      a substituiu saiu junto, e a tela ficou lisa (ver a nota "Encerrado (23/08)" acima). O
+      que sobra de conferir é o **tema claro**, que nunca foi aberto: a tela foi desenhada
+      preta, e sem efeito nenhum atrás dela a esfera e a barra em pílula ficam sozinhas sobre
+      branco. Se destoarem, o ajuste é de token no `:root`, não de efeito de volta.
 
 #### Idioma e região — `202645.png` e `202658.png`
 
