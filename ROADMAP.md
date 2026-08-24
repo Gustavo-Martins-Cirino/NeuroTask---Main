@@ -476,9 +476,24 @@ referência veio a ideia, não o código: o original mede e anima na mão, e aqu
 crescimento é o `layoutId` do framer, o MESMO da pílula do Dock. Sem diálogo, Esc
 e clique fora passaram a ser responsabilidade do componente.
 
+O `prompts.jsx` (`PromptLibrary`) saiu da tabela: os quatro atalhos fixos da tela
+vazia da Neuro IA viraram **salvos e editáveis** (`components/atalhos-neuro.tsx`
++ `lib/atalhos-neuro.ts`, puro e testado). Da referência ficou o "salvos e
+editáveis", **não a biblioteca**: o original tem busca, categorias, agrupamento e
+um diálogo de criar — mobília de quem guarda dezenas de prompts. Aqui o teto é
+seis, e buscar entre seis dá mais trabalho do que ler os seis (o mesmo argumento
+que tirou a busca do seletor de região). Sem busca, categoria perde a função, que
+é estreitar lista longa.
+
+Duas decisões de dado, para quem for mexer: eles moram no `user_metadata`, como
+avatar_modo — uma tabela nova custaria SQL à mão, RLS e uma consulta a mais na
+abertura do chat, para guardar menos do que o retrato do avatar. E "nunca mexeu"
+é diferente de "apagou todos": a chave ausente devolve os padrões, a chave vazia
+devolve nada. Sem essa distinção, os cartões renasceriam sozinhos para quem
+acabou de removê-los de propósito.
+
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
-| `prompts.jsx` | `PromptLibrary` — biblioteca com criar, listar e estado vazio | Neuro IA: os `QUICK_PROMPTS` fixos viram salvos e editáveis |
 | `notas-cores.jsx` | Painel flutuante de cor e imagem | Cor da nota, em Notas |
 | `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | A paleta de `lib/reminders.ts` (a cor de fundo do Escritório já saiu — ver nota) |
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |

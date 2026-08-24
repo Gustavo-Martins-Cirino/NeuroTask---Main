@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { VoiceConversation, unlockSpeech } from "@/components/voice-conversation"
+import { AtalhosNeuro } from "@/components/atalhos-neuro"
 import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
 import {
   DropdownMenu,
@@ -28,13 +29,6 @@ interface ChatMessage {
   role: "user" | "assistant"
   content: string
 }
-
-const QUICK_PROMPTS = [
-  "Organize meu dia com base nas minhas anotações",
-  "Quais devem ser minhas 3 prioridades de hoje?",
-  "Sugira blocos de foco para a tarde",
-  "Como melhorar meu foco hoje?",
-]
 
 function localDateKey() {
   const d = new Date()
@@ -449,17 +443,7 @@ export default function AiPage() {
                 </div>
               )}
 
-              <div className="grid w-full max-w-xl gap-2 sm:grid-cols-2">
-                {QUICK_PROMPTS.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => send(p)}
-                    className="rounded-xl border border-border/50 bg-card/50 p-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
+              <AtalhosNeuro aoEscolher={send} />
             </motion.div>
           ) : (
             <div className="space-y-4">
