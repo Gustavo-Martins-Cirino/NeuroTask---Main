@@ -465,9 +465,19 @@ fora **de propósito** o tour interativo que destaca elementos reais da tela
 guia curto já cumpre o "entender o que fazer sem alguém do lado". Se o feedback
 do primeiro contato pedir, o tour vira item próprio.
 
+O `feedback.jsx` (`MorphSurface`) saiu da tabela: o botão de feedback **virou o
+formulário**, sem diálogo. O que o diálogo custava não era estética, era atrito
+— escurecia o app inteiro, tirava de vista a tela que a pessoa ia comentar e
+pedia a decisão de parar o que estava fazendo. Numa fase cujo pior resultado
+possível é *feedback que não chega*, atrito na porta é o defeito mais caro que
+existe. Agora a superfície cresce do próprio ícone, no canto do cabeçalho, e a
+tela continua atrás — visível justamente enquanto se escreve sobre ela. Da
+referência veio a ideia, não o código: o original mede e anima na mão, e aqui o
+crescimento é o `layoutId` do framer, o MESMO da pílula do Dock. Sem diálogo, Esc
+e clique fora passaram a ser responsabilidade do componente.
+
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
-| `feedback.jsx` | `MorphSurface` — o botão vira o formulário, sem diálogo | O botão de feedback. É o encaixe mais direto da pasta inteira |
 | `prompts.jsx` | `PromptLibrary` — biblioteca com criar, listar e estado vazio | Neuro IA: os `QUICK_PROMPTS` fixos viram salvos e editáveis |
 | `notas-cores.jsx` | Painel flutuante de cor e imagem | Cor da nota, em Notas |
 | `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | A paleta de `lib/reminders.ts` (a cor de fundo do Escritório já saiu — ver nota) |
