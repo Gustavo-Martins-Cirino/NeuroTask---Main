@@ -56,8 +56,19 @@ export async function enablePush(): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return "Você precisa estar logado."
 
+    // O fuso vai junto: quem sabe onde este aparelho está é ele mesmo. O
+    // servidor roda em UTC e os lembretes são hora de parede sem fuso, então
+    // sem isto ele teria que chutar o país de todo mundo (ver push_tz.sql).
+    // Reinscrever atualiza o valor — é o que conserta o fuso de quem mudou de
+    // país, já que o upsert casa pelo endpoint.
     const { error } = await supabase.from("push_subscriptions").upsert(
-      { user_id: user.id, endpoint: sub.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth },
+      {
+        user_id: user.id,
+        endpoint: sub.endpoint,
+        p256dh: json.keys.p256dh,
+        auth: json.keys.auth,
+        tz_offset_min: new Date().getTimezoneOffset(),
+      },
       { onConflict: "endpoint" }
     )
     return error?.message ?? null

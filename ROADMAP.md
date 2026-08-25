@@ -53,13 +53,28 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 ### Dívidas conhecidas
 
-- [ ] **Fuso horário por usuário.** O dispatcher de push assume que todo mundo está em
-      UTC−3 (`DEFAULT_TZ_OFFSET_MIN`, padrão 180), porque `reminders` guarda hora de parede
-      sem fuso. Quem estiver fora do Brasil recebe o push na hora errada — o lembrete aparece
-      certo no app, só a notificação toca torta. **Adiado de propósito**: o público da Fase 5
-      é todo brasileiro, então o bug é dormente. Quando valer a pena: coluna de offset em
-      `push_subscriptions` (o dispositivo sabe o próprio fuso), `lib/push.ts` enviando na
-      inscrição, e o dispatcher agrupando por offset em vez de calcular um horário só.
+> **Fuso horário do push: resolvido (25/08).** Era o plano escrito aqui, feito como estava:
+> coluna `tz_offset_min` em `push_subscriptions` (`supabase/push_tz.sql`), `lib/push.ts`
+> mandando `getTimezoneOffset()` na inscrição, e o dispatcher percorrendo um grupo por fuso
+> em vez de um horário só (`lib/push-fusos.ts`). Quem tem aparelho em dois fusos entra nos
+> dois grupos de propósito: o lembrete toca no primeiro em que a parede chegar, e a trava
+> `pushed` — gravada antes do grupo seguinte — impede o segundo. A hora escrita no convite
+> de compromisso passou a ser a de quem recebe, não a do Brasil.
+>
+> **Pedia um passo do Gustavo**: rodar `push_tz.sql`, e desligar/ligar o push em
+> Configurações. O fuso mora na inscrição, então quem já tinha push ligado continua sem ele
+> (e cai no padrão) até se reinscrever.
+>
+> **Um bug de meia-noite saiu junto**, achado ao escrever o teste: a janela de dez minutos
+> era calculada voltando no relógio, então à 00:05 ela virava [23:55, 00:05] — vazia dentro
+> da data de hoje. Todo lembrete marcado nos dez primeiros minutos do dia nunca chegava, em
+> qualquer fuso. Agora a janela para em 00:00.
+
+- [ ] **Fuso no bot do Telegram.** É a mesma dívida na outra ponta: `app/api/telegram/webhook`
+      ainda resolve "amanhã 9h" pelo `DEFAULT_TZ_OFFSET_MIN`. Aqui é mais difícil do que no
+      push, e por isso ficou: o Telegram não conta o fuso de quem manda a mensagem, então o
+      dado teria que vir do app (do último aparelho que ligou push, por exemplo) ou ser
+      perguntado no pareamento.
       Não confundir com o formato 12h/24h, que é outra coisa e já está resolvido.
 > **Seletores de hora**: resolvido. O wheel virou `components/time-select.tsx` e os três
 > diálogos (bloco de tempo, tarefa, convite) usam o mesmo — a preferência 12h/24h vale para

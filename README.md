@@ -142,7 +142,7 @@ O Apple exige conta paga de Apple Developer (99 USD/ano); Google e GitHub são d
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | Token do bot (@BotFather) |
 | `TELEGRAM_WEBHOOK_SECRET` | Valida o header `x-telegram-bot-api-secret-token`. **Sem ele qualquer um forja um update e escreve na conta de outra pessoa** |
-| `DEFAULT_TZ_OFFSET_MIN` | Fuso dos horários locais. Padrão `180` (Brasil, UTC−3) |
+| `DEFAULT_TZ_OFFSET_MIN` | Fuso de reserva: vale para o bot do Telegram e para inscrição de push sem fuso próprio. Padrão `180` (Brasil, UTC−3) |
 | `NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL` | Redirect de cadastro em desenvolvimento |
 
 ## Banco de dados
@@ -180,8 +180,12 @@ mostrar a inicial no lugar do boneco.
 
 **5. Push** — ⚠️ em `push_cron.sql`, substitua `COLE_AQUI_O_CRON_SECRET` pelo seu `CRON_SECRET` antes de rodar
 ```
-push.sql → push_cron.sql
+push.sql → push_tz.sql → push_cron.sql
 ```
+`push_tz.sql` guarda o fuso de cada aparelho. Sem ele, o dispatcher manda a notificação na
+hora do Brasil para todo mundo — o lembrete aparece certo no app, só o push toca torto.
+Quem já tinha push ligado antes precisa **desligar e ligar de novo** em Configurações: o
+fuso é gravado na inscrição, então a inscrição antiga fica sem ele (e cai no padrão).
 
 **6. Foto de perfil** — o bucket de Storage. Sem dependências
 ```

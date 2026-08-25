@@ -1,5 +1,6 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import webpush from "web-push"
+import { FUSO_PADRAO_MIN, agruparPorFuso, paredeEm } from "@/lib/push-fusos"
 
 export const runtime = "nodejs"
 
@@ -8,20 +9,9 @@ export const runtime = "nodejs"
 // blocos que acabaram de terminar. Usa a service role (bypassa RLS) para
 // atender TODOS os usuários; protegido por CRON_SECRET.
 
-// Fuso padrão dos usuários (lembretes guardam data/hora local sem fuso).
+// Fuso de quem ainda não contou o próprio (inscrição anterior ao push_tz.sql).
 // Brasil = UTC-3 → 180. Ajustável por env.
-const TZ_MIN = Number(process.env.DEFAULT_TZ_OFFSET_MIN ?? 180)
-
-function localNowParts() {
-  const loc = new Date(Date.now() - TZ_MIN * 60_000)
-  const dateKey = `${loc.getUTCFullYear()}-${String(loc.getUTCMonth() + 1).padStart(2, "0")}-${String(loc.getUTCDate()).padStart(2, "0")}`
-  const hm = `${String(loc.getUTCHours()).padStart(2, "0")}:${String(loc.getUTCMinutes()).padStart(2, "0")}`
-  const hmAgo = (min: number) => {
-    const d = new Date(loc.getTime() - min * 60_000)
-    return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`
-  }
-  return { dateKey, hm, hmAgo }
-}
+const TZ_PADRAO = Number(process.env.DEFAULT_TZ_OFFSET_MIN ?? FUSO_PADRAO_MIN)
 
 async function handle(req: Request) {
   const url = new URL(req.url)
@@ -63,20 +53,41 @@ async function handle(req: Request) {
     }
   }
 
-  const { dateKey, hm, hmAgo } = localNowParts()
+  // Quem tem push, e em que fuso. Antes daqui o dispatcher assumia que toda
+  // parede era a do Brasil — quem estivesse fora recebia na hora errada.
+  const { data: inscritos } = await db
+    .from("push_subscriptions")
+    .select("user_id, tz_offset_min")
+  const porFuso = agruparPorFuso(inscritos ?? [], TZ_PADRAO)
+  const agora = Date.now()
 
-  // 1) Lembretes de hoje com hora vencida nos últimos 10 min, ainda não enviados
-  const { data: dueReminders } = await db
-    .from("reminders")
-    .select("id, user_id, content, remind_time")
-    .eq("remind_date", dateKey)
-    .eq("pushed", false)
-    .not("remind_time", "is", null)
-    .lte("remind_time", hm)
-    .gte("remind_time", hmAgo(10))
-  for (const r of dueReminders ?? []) {
-    await sendToUser(r.user_id, { title: "🔔 Lembrete", body: r.content, url: "/app" })
-    await db.from("reminders").update({ pushed: true }).eq("id", r.id)
+  // Fuso de cada usuário, para escrever horas nas mensagens. Quem tem aparelhos
+  // em fusos diferentes fica com o primeiro; a hora escrita erra por pouco e só
+  // para quem está viajando com dois aparelhos.
+  const fusoDoUsuario = new Map<string, number>()
+  for (const [fuso, usuarios] of porFuso) {
+    for (const u of usuarios) if (!fusoDoUsuario.has(u)) fusoDoUsuario.set(u, fuso)
+  }
+
+  // 1) Lembretes de hoje com hora vencida nos últimos 10 min, ainda não enviados.
+  //    Um grupo por fuso, em sequência: quem tem aparelho em dois lugares está
+  //    nos dois grupos, e é a trava `pushed` — gravada antes do próximo grupo —
+  //    que garante um push só.
+  for (const [fuso, usuarios] of porFuso) {
+    const parede = paredeEm(agora, fuso)
+    const { data: dueReminders } = await db
+      .from("reminders")
+      .select("id, user_id, content, remind_time")
+      .in("user_id", usuarios)
+      .eq("remind_date", parede.dataChave)
+      .eq("pushed", false)
+      .not("remind_time", "is", null)
+      .lte("remind_time", parede.hm)
+      .gte("remind_time", parede.hmAtras(10))
+    for (const r of dueReminders ?? []) {
+      await sendToUser(r.user_id, { title: "🔔 Lembrete", body: r.content, url: "/app" })
+      await db.from("reminders").update({ pushed: true }).eq("id", r.id)
+    }
   }
 
   // 2) Check-in: blocos que terminaram nos últimos 5 minutos
@@ -112,8 +123,11 @@ async function handle(req: Request) {
     const usernameOf = new Map((senders ?? []).map((s) => [s.user_id, s.username]))
 
     for (const inv of newInvites) {
-      const when = new Date(new Date(inv.starts_at).getTime() - TZ_MIN * 60_000)
-      const hhmm = `${String(when.getUTCHours()).padStart(2, "0")}:${String(when.getUTCMinutes()).padStart(2, "0")}`
+      // A hora do convite é escrita na parede de QUEM RECEBE, não na do Brasil.
+      const { hm: hhmm } = paredeEm(
+        new Date(inv.starts_at).getTime(),
+        fusoDoUsuario.get(inv.to_user) ?? TZ_PADRAO
+      )
       const from = usernameOf.get(inv.from_user)
       await sendToUser(inv.to_user, {
         title: "📅 Novo convite",
