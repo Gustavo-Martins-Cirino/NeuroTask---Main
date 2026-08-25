@@ -94,6 +94,37 @@ const ALTURA_AREA = ALTURA_TOTAL + BANDA_DICA
 /** Folga nas pontas da linha: r 4.5 da bolinha + 2px de anel, arredondado. */
 const MARGEM_LINHA = 7
 
+/**
+ * Diz quando o gráfico já pode sair do zero e crescer até o valor.
+ *
+ * **Por que isto existe em vez de um `initial` no elemento.** O `initial` só
+ * roda na MONTAGEM, e o framer sabe bloquear animação de montagem: quem está
+ * dentro de um `<AnimatePresence initial={false}>` herda `blockInitialAnimation`
+ * pelo contexto de presença — e esse contexto é memoizado SEM o `initial` nas
+ * dependências, então o `false` da primeira renderização fica congelado ali.
+ * O gráfico monta depois, quando os dados chegam do Supabase, e caía justamente
+ * nesse contexto congelado: desenhava-se de uma vez, no estado final.
+ *
+ * Mudança de `animate` não é animação de montagem, e nenhum bloqueio a alcança.
+ * Por isso o alvo vem de um estado que vira no quadro seguinte.
+ *
+ * O `pronto` é a largura já medida: antes dela o `<svg>` nem existe, e virar a
+ * chave antes disso faria as barras montarem já cheias.
+ */
+function useConstrucao(pronto: boolean, semMovimento: boolean | null): boolean {
+  const [construido, setConstruido] = useState(false)
+
+  useEffect(() => {
+    if (!pronto) return
+    // Um quadro de folga: sem ele o estado zerado pode nunca ser pintado, e o
+    // crescimento começaria de um lugar que ninguém viu.
+    const id = requestAnimationFrame(() => setConstruido(true))
+    return () => cancelAnimationFrame(id)
+  }, [pronto])
+
+  return semMovimento ? true : construido
+}
+
 /** Largura real em pixels, para o SVG desenhar 1:1 — sem isso um viewBox fixo
  *  esticado por CSS engorda o traço no desktop e some com ele no celular. */
 function useLargura<T extends HTMLElement>() {
@@ -140,6 +171,7 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
   const [ref, largura] = useLargura<HTMLDivElement>()
   const [ativo, setAtivo] = useState<number | null>(null)
   const semMovimento = useReducedMotion()
+  const construido = useConstrucao(largura > 0, semMovimento)
 
   const maximo = Math.max(1, ...pontos.map((p) => p.total))
   // A margem existe pela PONTA: o último ponto cai no fim do eixo, e sem ela a
@@ -196,8 +228,8 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
           <motion.polygon
             points={area}
             fill="url(#nt-area-dias)"
-            initial={semMovimento ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={false}
+            animate={{ opacity: construido ? 1 : 0 }}
             transition={semMovimento ? { duration: 0 } : { duration: 0.4, delay: DESENHO * 0.4 }}
           />
           {/* O traço se desenha da esquerda para a direita, que é o sentido do
@@ -210,8 +242,8 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
             strokeLinejoin="round"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
-            initial={semMovimento ? false : { pathLength: 0 }}
-            animate={{ pathLength: 1 }}
+            initial={false}
+            animate={{ pathLength: construido ? 1 : 0 }}
             transition={semMovimento ? { duration: 0 } : { duration: DESENHO, ease: "easeInOut" }}
           />
 
@@ -230,8 +262,8 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
           <motion.circle
             cx={xDe(destacado)} cy={yDe(pontos[destacado].total)}
             fill={ACENTO} stroke="var(--card)" strokeWidth="2"
-            initial={semMovimento ? false : { r: 0 }}
-            animate={{ r: 4.5 }}
+            initial={false}
+            animate={{ r: construido ? 4.5 : 0 }}
             transition={semMovimento ? { duration: 0 } : { ...MOLA_DASHBOARD, delay: DESENHO * 0.88 }}
           />
 
@@ -281,6 +313,7 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
   const [ref, largura] = useLargura<HTMLDivElement>()
   const [ativo, setAtivo] = useState<number | null>(null)
   const semMovimento = useReducedMotion()
+  const construido = useConstrucao(largura > 0, semMovimento)
   const passoDaBarra = escalonamentoDasBarras(colunas.length)
 
   const maximo = Math.max(...colunas.map((c) => c.valor), 0.0001)
@@ -328,8 +361,12 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
                     // altura vai a zero. Animar só a altura faria a barra encolher
                     // para cima, pendurada, porque em SVG o `y` é o topo do
                     // retângulo — o oposto de uma coluna brotando do chão.
-                    initial={semMovimento ? false : { y: ALTURA_PLOT, height: 0 }}
-                    animate={{ y: ALTURA_PLOT - altura, height: altura }}
+                    initial={false}
+                    animate={
+                      construido
+                        ? { y: ALTURA_PLOT - altura, height: altura }
+                        : { y: ALTURA_PLOT, height: 0 }
+                    }
                     transition={
                       semMovimento
                         ? { duration: 0 }
@@ -591,7 +628,15 @@ export function MetricasDashboard() {
                   A chave é a ABA: é ela que remonta os gráficos, e é a remontagem
                   que faz a construção rodar de novo a cada troca. */}
               <motion.div variants={peca}>
-                <AnimatePresence mode="wait" initial={false} custom={sentido}>
+                {/* Sem `initial={false}` aqui, e é de propósito. Ele não tinha
+                    mais o que suprimir (a entrada do bloco é um no-op), e em
+                    troca punha `blockInitialAnimation` no contexto de presença
+                    — herdado por TUDO que está dentro, inclusive os gráficos.
+                    Pior: o `PresenceChild` memoiza esse contexto sem o
+                    `initial` nas dependências, então o `false` da primeira
+                    renderização ficava congelado, e o gráfico (que só monta
+                    quando os dados chegam) nascia com a construção proibida. */}
+                <AnimatePresence mode="wait" custom={sentido}>
                   <motion.div
                     key={aba}
                     custom={sentido}
