@@ -9,7 +9,7 @@ import { useTimeFormat } from "@/hooks/use-time-format"
 import {
   concluidasPorDia, constanciaNaSemana, porHoraDoDia,
   diaMaisConstante, horaMaisProdutiva, rotuloDeHora, totalNoPeriodo,
-  sentidoDaTroca,
+  sentidoDaTroca, escalonamentoDasBarras,
   type PontoDia, type PontoSemana, type PontoHora,
 } from "@/lib/dashboard-metricas"
 
@@ -71,10 +71,14 @@ const MOLA_DASHBOARD = { type: "spring" as const, stiffness: 260, damping: 24 }
 /** O intervalo entre as peças, também o do dashboard. */
 const ESCALONAMENTO = 0.07
 
-/** O quanto o gráfico anda de lado ao trocar de aba. Curto de propósito: a
+/** O quanto a manchete anda de lado ao trocar de aba. Curto de propósito: a
  *  distância que convence de que veio de algum lugar é bem menor do que a que
  *  parece um carrossel. */
 const DESLOCAMENTO_ABA = 28
+
+/** Quanto o traço da linha leva para ser desenhado ponta a ponta. A área e a
+ *  bolinha se penduram nesta duração, para os três terminarem juntos. */
+const DESENHO = 0.7
 
 const ALTURA_PLOT = 132
 const BANDA_EIXO = 22
@@ -135,6 +139,7 @@ function Dica({ x, largura, children }: { x: number; largura: number; children: 
 function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
   const [ref, largura] = useLargura<HTMLDivElement>()
   const [ativo, setAtivo] = useState<number | null>(null)
+  const semMovimento = useReducedMotion()
 
   const maximo = Math.max(1, ...pontos.map((p) => p.total))
   // A margem existe pela PONTA: o último ponto cai no fim do eixo, e sem ela a
@@ -146,6 +151,10 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
 
   const linha = pontos.map((p, i) => `${xDe(i)},${yDe(p.total)}`).join(" ")
   const area = `${xDe(0)},${ALTURA_PLOT} ${linha} ${xDe(pontos.length - 1)},${ALTURA_PLOT}`
+  // O MESMO traço, escrito como `path` em vez de `polyline`: o desenho progressivo
+  // do framer é `pathLength`, e o atributo que ele usa por baixo tem suporte
+  // irregular em `polyline`. Em `path` não há dúvida.
+  const caminho = pontos.map((p, i) => `${i === 0 ? "M" : "L"} ${xDe(i)} ${yDe(p.total)}`).join(" ")
 
   const ultimo = pontos.length - 1
   const destacado = ativo ?? ultimo
@@ -181,15 +190,29 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
             stroke="var(--border)" strokeWidth="1"
           />
 
-          <polygon points={area} fill="url(#nt-area-dias)" />
-          <polyline
-            points={linha}
+          {/* A área não tem como ser "desenhada" — uma mancha não tem ponta
+              nem percurso. Ela acende atrás do traço, começando no meio do
+              desenho, para chegar junto sem competir com ele. */}
+          <motion.polygon
+            points={area}
+            fill="url(#nt-area-dias)"
+            initial={semMovimento ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={semMovimento ? { duration: 0 } : { duration: 0.4, delay: DESENHO * 0.4 }}
+          />
+          {/* O traço se desenha da esquerda para a direita, que é o sentido do
+              tempo no eixo: a linha cresce como os dias passaram. */}
+          <motion.path
+            d={caminho}
             fill="none"
             stroke={ACENTO}
             strokeWidth="2"
             strokeLinejoin="round"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
+            initial={semMovimento ? false : { pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={semMovimento ? { duration: 0 } : { duration: DESENHO, ease: "easeInOut" }}
           />
 
           {ativo !== null && (
@@ -199,10 +222,17 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
             />
           )}
 
-          {/* Ponta com anel na cor da superfície, para não se perder sobre a linha. */}
-          <circle
-            cx={xDe(destacado)} cy={yDe(pontos[destacado].total)} r="4.5"
+          {/* Ponta com anel na cor da superfície, para não se perder sobre a
+              linha. Ela nasce depois que o traço chega — é o traço que a
+              deposita ali, e aparecer antes daria a ordem inversa. Cresce pelo
+              raio, e não por `scale`: escala em SVG depende de uma origem de
+              transformação que muda de navegador. */}
+          <motion.circle
+            cx={xDe(destacado)} cy={yDe(pontos[destacado].total)}
             fill={ACENTO} stroke="var(--card)" strokeWidth="2"
+            initial={semMovimento ? false : { r: 0 }}
+            animate={{ r: 4.5 }}
+            transition={semMovimento ? { duration: 0 } : { ...MOLA_DASHBOARD, delay: DESENHO * 0.88 }}
           />
 
           {/* Alvos invisíveis por dia: dão o valor a quem para o cursor e a quem
@@ -250,6 +280,8 @@ interface Coluna {
 function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulosDoEixo: (i: number) => string | null }) {
   const [ref, largura] = useLargura<HTMLDivElement>()
   const [ativo, setAtivo] = useState<number | null>(null)
+  const semMovimento = useReducedMotion()
+  const passoDaBarra = escalonamentoDasBarras(colunas.length)
 
   const maximo = Math.max(...colunas.map((c) => c.valor), 0.0001)
   const faixa = colunas.length > 0 ? largura / colunas.length : 0
@@ -284,16 +316,25 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
                   <title>{`${c.rotulo}: ${c.descricao}`}</title>
                 </rect>
                 {altura > 0 && (
-                  <rect
+                  <motion.rect
                     x={centro - espessura / 2}
-                    y={ALTURA_PLOT - altura}
                     width={espessura}
-                    height={altura}
                     // Ponta arredondada, base quadrada na linha de base.
                     rx={Math.min(4, espessura / 2)}
                     fill={c.destaque ? ACENTO : APOIO}
                     fillOpacity={c.destaque ? 1 : OPACIDADE_APOIO}
                     className="pointer-events-none"
+                    // Cresce a partir da BASE: `y` desce até a linha do eixo e a
+                    // altura vai a zero. Animar só a altura faria a barra encolher
+                    // para cima, pendurada, porque em SVG o `y` é o topo do
+                    // retângulo — o oposto de uma coluna brotando do chão.
+                    initial={semMovimento ? false : { y: ALTURA_PLOT, height: 0 }}
+                    animate={{ y: ALTURA_PLOT - altura, height: altura }}
+                    transition={
+                      semMovimento
+                        ? { duration: 0 }
+                        : { duration: 0.42, ease: [0, 0, 0.2, 1], delay: i * passoDaBarra }
+                    }
                   />
                 )}
                 {rotulo && (
@@ -447,22 +488,19 @@ export function MetricasDashboard() {
       : { opacity: 0, y: -8, transition: { duration: 0.18, ease: [0.4, 0, 1, 1] as const } },
   }
 
-  // A troca de aba. O conteúdo entra pelo lado do botão que foi clicado, no
-  // mesmo caminho que a pílula ativa acaba de percorrer — a pílula desliza e o
-  // gráfico a segue, em vez de piscar no lugar. O vocabulário é o do guia de
-  // boas-vindas (`components/onboarding.tsx`), que troca de passo assim.
+  // A troca de aba, e a assimetria é a decisão: **o velho é varrido, o novo é
+  // construído.**
   //
-  // Entra com a mola do dashboard, sai em tween curto: `mode="wait"` encadeia
-  // os dois, e uma mola na saída somaria o tempo de assentar antes de o novo
-  // sequer começar.
+  // Só a SAÍDA desliza, e para o lado oposto ao do botão clicado — é o caminho
+  // que a pílula ativa acaba de percorrer, então o gráfico velho sai por onde a
+  // pílula veio. A ENTRADA não tem movimento de bloco nenhum: quem entra é o
+  // gráfico se desenhando (a linha traçada, as barras subindo do eixo). Um
+  // deslize por cima disso seria movimento duplo — a barra crescendo enquanto
+  // ela mesma anda de lado —, e o que se perde é justamente o começo da
+  // construção, que é a parte que se quer ver.
   const troca = {
-    entra: (s: 1 | -1) =>
-      semMovimento ? { opacity: 0 } : { opacity: 0, x: s * DESLOCAMENTO_ABA },
-    firme: {
-      opacity: 1,
-      x: 0,
-      transition: semMovimento ? { duration: 0 } : MOLA_DASHBOARD,
-    },
+    entra: { opacity: 1 },
+    firme: { opacity: 1 },
     sai: (s: 1 | -1) =>
       semMovimento
         ? { opacity: 0 }
@@ -548,7 +586,10 @@ export function MetricasDashboard() {
                   Reserva de altura de duas linhas só abaixo do `sm`: no
                   desktop a manchete sempre cabe numa linha, e no celular ela
                   passa de uma para duas conforme a aba. Sem o piso, o cartão
-                  encolheria e cresceria de novo a cada troca. */}
+                  encolheria e cresceria de novo a cada troca.
+
+                  A chave é a ABA: é ela que remonta os gráficos, e é a remontagem
+                  que faz a construção rodar de novo a cada troca. */}
               <motion.div variants={peca}>
                 <AnimatePresence mode="wait" initial={false} custom={sentido}>
                   <motion.div
@@ -560,7 +601,17 @@ export function MetricasDashboard() {
                     exit="sai"
                     className="space-y-4"
                   >
-                    <p className="min-h-10 text-sm text-foreground sm:min-h-0">{manchete()}</p>
+                    {/* A manchete só acende. Ela não tem o que construir — é
+                        uma frase —, e deslizá-la sozinha faria a resposta
+                        chegar por um caminho e a evidência por outro. */}
+                    <motion.p
+                      initial={semMovimento ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: semMovimento ? 0 : 0.28 }}
+                      className="min-h-10 text-sm text-foreground sm:min-h-0"
+                    >
+                      {manchete()}
+                    </motion.p>
 
                     {!vazio && datas !== null && (
                       <div style={{ minHeight: ALTURA_AREA }}>

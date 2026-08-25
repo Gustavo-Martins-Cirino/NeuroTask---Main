@@ -170,3 +170,24 @@ export function totalNoPeriodo(pontos: PontoDia[]): number {
 export function sentidoDaTroca(de: number, para: number): 1 | -1 {
   return para >= de ? 1 : -1
 }
+
+/**
+ * Quanto uma barra espera a mais que a anterior para começar a crescer.
+ *
+ * Não é uma constante porque os dois gráficos de coluna têm contagens muito
+ * diferentes: com um passo fixo, os 7 dias da semana terminariam numa piscada e
+ * as 24 horas levariam quatro vezes mais tempo que eles. O que se mantém igual é
+ * a JANELA — a construção inteira leva o mesmo tanto nos dois, e o passo sai
+ * dividindo essa janela pelas barras que existem.
+ *
+ * O teto existe para o caso de poucas barras: sem ele, duas colunas ficariam com
+ * um terço de segundo entre uma e outra, o que lê como travamento, não como
+ * cascata.
+ */
+export const JANELA_CONSTRUCAO = 0.32
+const PASSO_MAXIMO = 0.06
+
+export function escalonamentoDasBarras(total: number): number {
+  if (!Number.isFinite(total) || total <= 1) return 0
+  return Math.min(PASSO_MAXIMO, JANELA_CONSTRUCAO / (total - 1))
+}

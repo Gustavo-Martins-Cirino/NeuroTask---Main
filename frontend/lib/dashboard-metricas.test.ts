@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import {
   chaveDoDia, concluidasPorDia, constanciaNaSemana, porHoraDoDia,
   diaMaisConstante, horaMaisProdutiva, rotuloDeHora, totalNoPeriodo,
-  sentidoDaTroca,
+  sentidoDaTroca, escalonamentoDasBarras, JANELA_CONSTRUCAO,
   DIAS_DA_SEMANA,
 } from "./dashboard-metricas"
 
@@ -173,5 +173,28 @@ describe("sentidoDaTroca", () => {
 
   it("clicar na aba já ativa não inventa um terceiro caso", () => {
     expect(sentidoDaTroca(1, 1)).toBe(1)
+  })
+})
+
+describe("escalonamentoDasBarras", () => {
+  it("a construção inteira cabe na janela, com muitas ou com poucas barras", () => {
+    for (const total of [7, 24]) {
+      const passo = escalonamentoDasBarras(total)
+      expect(passo * (total - 1)).toBeLessThanOrEqual(JANELA_CONSTRUCAO + 1e-9)
+    }
+  })
+
+  it("mais barras, passo menor — senão as 24 horas levariam o quádruplo dos 7 dias", () => {
+    expect(escalonamentoDasBarras(24)).toBeLessThan(escalonamentoDasBarras(7))
+  })
+
+  it("poucas barras não ganham um vão que lê como travamento", () => {
+    expect(escalonamentoDasBarras(2)).toBeLessThanOrEqual(0.06)
+  })
+
+  it("uma barra só (ou nenhuma) não tem o que escalonar", () => {
+    expect(escalonamentoDasBarras(1)).toBe(0)
+    expect(escalonamentoDasBarras(0)).toBe(0)
+    expect(escalonamentoDasBarras(NaN)).toBe(0)
   })
 })
