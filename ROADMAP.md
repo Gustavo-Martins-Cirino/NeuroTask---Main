@@ -254,6 +254,26 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > 3:1 de uma marca com dado; e a linha ganhou margem nas pontas porque a bolinha do
 > último ponto saía metade para fora do SVG.
 
+> ⚠️ **`prefers-reduced-motion` é a explicação de "não animou" — e provavelmente de mais de
+> uma queixa.** O Gustavo trocava de aba no site e não via desenho nenhum. Reproduzido em
+> build de produção, com o mesmo aninhamento da página real (`PageTransition`, que é um
+> `<AnimatePresence initial={false}>`): anima nos dois casos. O único cenário em que o
+> gráfico salta pronto é o navegador pedindo `prefers-reduced-motion: reduce` — e o
+> componente obedecia apagando a animação.
+>
+> **Isso também explica a borda da conversa ao vivo "fixa nas mesmas cores".** `.borda-anel`
+> tem `animation: none` sob a mesma media query. A queixa foi lida na hora como "anel
+> uniforme não lê como giro", e a paleta foi refeita por causa disso — pode ter sido, o
+> tempo todo, o Windows com "efeitos de animação" desligado. Vale confirmar antes de
+> desfazer qualquer coisa.
+>
+> **O que mudou por causa disso**: com movimento reduzido o gráfico agora ACENDE (0,24s de
+> opacidade, geometria já no lugar final) em vez de aparecer pronto. A media query existe
+> contra movimento que embrulha o estômago, e a recomendação é reduzir, não apagar —
+> apagando, trocar de aba parecia não fazer nada. **Pendente de decisão do Gustavo**: se
+> quiser o desenho mesmo com a preferência ligada, é tirar o `semMovimento` dos gráficos —
+> mas aí o app passa a ignorar uma escolha de acessibilidade do sistema.
+>
 > **A construção do gráfico foi vista rodando (25/08), e num navegador de verdade.** Até
 > aqui ela só tinha sido conferida lendo o código — e o commit que a consertou dizia que ela
 > "nunca chegava a rodar", ou seja, o próprio conserto estava por conferir. Medido com o

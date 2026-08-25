@@ -87,6 +87,16 @@ const DESLOCAMENTO_ABA = 28
  *  perto: a seção fica com um ritmo só, em vez de uma aba destoando. */
 const DESENHO = 0.55
 
+/** Quanto o gráfico leva para ACENDER, quando o sistema pede menos movimento.
+ *
+ *  `prefers-reduced-motion` existe contra movimento que embrulha o estômago —
+ *  parallax, giro, coisa grande atravessando a tela —, e a recomendação é
+ *  REDUZIR, não apagar. Apagando, a troca de aba virava um corte seco: o gráfico
+ *  novo aparecia pronto no lugar do velho e a impressão era de que o clique não
+ *  fez nada. Aceso, nada se move (a geometria já nasce no lugar final) e ainda
+ *  assim dá para ver que uma coisa saiu e outra entrou. */
+const FUNDIDO = 0.24
+
 const ALTURA_PLOT = 132
 const BANDA_EIXO = 22
 // O container inclui a banda do eixo de propósito: dimensionar só o plot deixa
@@ -117,8 +127,15 @@ const MARGEM_LINHA = 7
  *
  * O `pronto` é a largura já medida: antes dela o `<svg>` nem existe, e virar a
  * chave antes disso faria as barras montarem já cheias.
+ *
+ * A chave é a mesma com ou sem `prefers-reduced-motion`, e isso é de propósito:
+ * quem pede menos movimento recebe o gráfico ACESO em vez de construído (ver
+ * `FUNDIDO` abaixo), e para acender também é preciso um quadro no estado
+ * inicial. Enquanto ela dependia da preferência, a troca de aba não tinha
+ * transição alguma para essa pessoa — o gráfico novo simplesmente aparecia
+ * pronto, e trocar de aba parecia não fazer nada.
  */
-function useConstrucao(pronto: boolean, semMovimento: boolean | null): boolean {
+function useConstrucao(pronto: boolean): boolean {
   const [construido, setConstruido] = useState(false)
 
   useEffect(() => {
@@ -129,7 +146,7 @@ function useConstrucao(pronto: boolean, semMovimento: boolean | null): boolean {
     return () => cancelAnimationFrame(id)
   }, [pronto])
 
-  return semMovimento ? true : construido
+  return construido
 }
 
 /** Largura real em pixels, para o SVG desenhar 1:1 — sem isso um viewBox fixo
@@ -178,7 +195,7 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
   const [ref, largura] = useLargura<HTMLDivElement>()
   const [ativo, setAtivo] = useState<number | null>(null)
   const semMovimento = useReducedMotion()
-  const construido = useConstrucao(largura > 0, semMovimento)
+  const construido = useConstrucao(largura > 0)
 
   const maximo = Math.max(1, ...pontos.map((p) => p.total))
   // A margem existe pela PONTA: o último ponto cai no fim do eixo, e sem ela a
@@ -199,7 +216,15 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
   const destacado = ativo ?? ultimo
 
   return (
-    <div ref={ref} className="relative pt-7">
+    <motion.div
+      ref={ref}
+      className="relative pt-7"
+      // Sem `initial`: o dashboard vive dentro de um <AnimatePresence
+      // initial={false}> (o PageTransition), e animação de MONTAGEM não roda
+      // ali. Por isso o acender também se pendura na chave que vira depois.
+      animate={{ opacity: semMovimento && !construido ? 0 : 1 }}
+      transition={{ duration: semMovimento ? FUNDIDO : 0 }}
+    >
       {largura > 0 && (
         <svg
           width={largura}
@@ -298,7 +323,7 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
           <span className="text-muted-foreground"> em {pontos[ativo].rotulo}</span>
         </Dica>
       )}
-    </div>
+    </motion.div>
   )
 }
 
@@ -320,7 +345,7 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
   const [ref, largura] = useLargura<HTMLDivElement>()
   const [ativo, setAtivo] = useState<number | null>(null)
   const semMovimento = useReducedMotion()
-  const construido = useConstrucao(largura > 0, semMovimento)
+  const construido = useConstrucao(largura > 0)
   const passoDaBarra = escalonamentoDasBarras(colunas.length)
 
   const maximo = Math.max(...colunas.map((c) => c.valor), 0.0001)
@@ -332,7 +357,15 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
   const espessura = Math.max(3, Math.min(24, faixa * 0.6))
 
   return (
-    <div ref={ref} className="relative pt-7">
+    <motion.div
+      ref={ref}
+      className="relative pt-7"
+      // Sem `initial`: o dashboard vive dentro de um <AnimatePresence
+      // initial={false}> (o PageTransition), e animação de MONTAGEM não roda
+      // ali. Por isso o acender também se pendura na chave que vira depois.
+      animate={{ opacity: semMovimento && !construido ? 0 : 1 }}
+      transition={{ duration: semMovimento ? FUNDIDO : 0 }}
+    >
       {largura > 0 && (
         <svg width={largura} height={ALTURA_TOTAL} role="img" aria-label="Gráfico de colunas">
           <line x1={0} y1={ALTURA_PLOT} x2={largura} y2={ALTURA_PLOT} stroke="var(--border)" strokeWidth="1" />
@@ -402,7 +435,7 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
           <span className="text-muted-foreground"> · {colunas[ativo].descricao}</span>
         </Dica>
       )}
-    </div>
+    </motion.div>
   )
 }
 
