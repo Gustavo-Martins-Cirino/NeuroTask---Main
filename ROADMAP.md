@@ -254,6 +254,23 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > 3:1 de uma marca com dado; e a linha ganhou margem nas pontas porque a bolinha do
 > último ponto saía metade para fora do SVG.
 
+> **A construção do gráfico foi vista rodando (25/08), e num navegador de verdade.** Até
+> aqui ela só tinha sido conferida lendo o código — e o commit que a consertou dizia que ela
+> "nunca chegava a rodar", ou seja, o próprio conserto estava por conferir. Medido com o
+> componente REAL, os dados forjados por interceptação da consulta e a troca de aba
+> disparada por clique: colunas da semana 8→122px em ~0,42s, as 24 da hora em ~0,58s, e o
+> traço da linha 0→1 ponta a ponta. Funciona nas três abas.
+>
+> **Duas armadilhas de medição, das que fazem concluir o oposto do verdadeiro.** O headless
+> reporta `prefers-reduced-motion: reduce` por padrão, e o componente OBEDECE: a primeira
+> medição mostrou o gráfico pronto de uma vez, e a leitura fácil seria "não anima". É preciso
+> `emulateMediaFeatures` com `no-preference`. E a resposta forjada da consulta precisa dos
+> cabeçalhos de CORS, senão o navegador a bloqueia e o painel fica em "Carregando…" para
+> sempre — parecendo, de novo, um bug no componente.
+>
+> O tempo do traço caiu de 0,7s para 0,55s: era a mais lenta das três abas, e como é a aba de
+> entrada, dava o tempo da seção inteira. Agora as três terminam por perto.
+>
 - [ ] **Um segundo olhar nos números, com dados de verdade.** Os gráficos foram conferidos
       em captura, com dados fabricados — o que pega geometria e colisão de rótulo, mas não
       responde se as três perguntas são as **certas**. Com algumas semanas de uso real:

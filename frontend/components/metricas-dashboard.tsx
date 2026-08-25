@@ -77,8 +77,15 @@ const ESCALONAMENTO = 0.07
 const DESLOCAMENTO_ABA = 28
 
 /** Quanto o traço da linha leva para ser desenhado ponta a ponta. A área e a
- *  bolinha se penduram nesta duração, para os três terminarem juntos. */
-const DESENHO = 0.7
+ *  bolinha se penduram nesta duração, para os três terminarem juntos.
+ *
+ *  Medido nas três abas: as colunas terminam em ~0,42s (semana) e ~0,58s (as 24
+ *  horas, com o escalonamento). A 0,7s a linha era a mais lenta das três, e como
+ *  ela é a aba de entrada, era ela que dava o tempo da seção inteira — com a
+ *  saída da aba anterior por cima, passava de 0,8s do clique até parar. Em 0,55s
+ *  ela ainda se desenha ponta a ponta, e as três abas passam a terminar por
+ *  perto: a seção fica com um ritmo só, em vez de uma aba destoando. */
+const DESENHO = 0.55
 
 const ALTURA_PLOT = 132
 const BANDA_EIXO = 22
