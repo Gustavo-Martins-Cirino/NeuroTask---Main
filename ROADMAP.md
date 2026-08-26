@@ -93,6 +93,67 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > sem isso a compra falha com `ITEM_INEXISTENTE`. Foi o caso do beagle, que mora no
 > `office_3d.sql` enquanto a mensagem mandava rodar o `coins_shop.sql`.
 
+**Rodada de 25/08 — o que o Gustavo apontou vendo a cena no olho**
+
+> A régua que ele deu: *"não precisa ficar perfeito e 100% completo, mas precisa ficar um
+> pouquinho mais completo antes da gente entregar."* Os cinco primeiros são defeito (coisa
+> que está errada na cena); os demais são conteúdo.
+
+- [ ] **Relógio e quadro ocupam o mesmo pedaço de parede.** Conferido no código, não é
+      impressão: o quadro é uma moldura de 0,56 de largura centrada em `x=-0,95`, e o
+      relógio um disco de raio 0,145 em `x=-1,15` — os dois na parede do fundo, sobrepostos
+      de `-1,23` a `-1,00`. Com os dois comprados, um atravessa o outro
+      (`lib/office-model.ts`, blocos `extras.quadro` e `extras.relogio`).
+      **Não basta mover o relógio uma vez**: janela, quadro, neon e relógio disputam a mesma
+      parede, e a próxima decoração de parede recria o problema. O que resolve é as peças de
+      parede saírem de uma lista de vagas, com a vaga marcada como ocupada.
+
+- [ ] **O cabo não encosta na tomada.** As duas curvas terminam em `yParede - 0,05`, cinco
+      centímetros ANTES da face da parede, e a ponta fica solta no ar — é o torto da foto.
+      Termina rente ao espelho da tomada e ganha um plugue (um bloquinho), senão o cabo
+      parece atravessado por ela.
+
+- [ ] **O beagle flutua.** `PetBeagle` em `office-scene-3d.tsx` faz
+      `position.y = |sin(t·2,2)|·0,08` — um pulinho contínuo, sem pata no chão e sem pausa.
+      Cachorro parado respira e vira a cabeça; quando pula, pula uma vez e cai. Trocar o
+      salto perpétuo por respiração (escala mínima no tronco) + a cabeça que ele já vira.
+
+- [ ] **A estante é um bloco marrom, e os livros existem.** `Estante_Corpo` é uma caixa
+      MACIÇA de 0,34 × 0,9 × 1,25, e os 24 livros são posicionados DENTRO dela — ficam
+      literalmente lacrados. Virar a caixa em armação (duas laterais, tampo, base e fundo)
+      abre a frente e mostra o que já está modelado. É o item de melhor retorno da lista:
+      o conteúdo está pronto, falta abrir a caixa.
+
+- [ ] **O emoji do papel de parede é um rolo de papel higiênico** (🧻, `parede-papel` em
+      `lib/shop.ts`). Trocar.
+
+- [ ] **Mais paredes: 5 ou 6, com as elaboradas mais caras.** Pedidos por nome: **tijolinho**
+      e **cimento queimado**. As de hoje são cor chapada (40–70 moedas); as novas têm padrão,
+      então cabem em faixa mais alta. **Regra que já custou um bug**: item novo precisa de
+      linha em `shop_items` (SQL) além do modelo — sem isso a compra falha com
+      `ITEM_INEXISTENTE`.
+
+- [ ] **O piso de madeira não parece madeira** — é marrom forte e liso. Precisa de veio e de
+      régua (tábuas com emenda), não de outra cor. Mais opções de piso junto.
+
+- [ ] **O boneco está achatado, e a cabeça também; o cabelo está ralo.** É o que mais aparece
+      na cena e é o que menos convence hoje.
+
+- [ ] **Mais três chapéus.** Hoje são três (boné, social, coroa).
+
+- [ ] **Seção de móveis na loja**, e outras se fizerem sentido. Hoje `decor` é um saco onde
+      cabe tudo — planta, quadro, relógio, pet, troféu, LED. Móvel é o que muda a PLANTA da
+      sala (mesa, sofá, poltrona, armário), e isso é outra coisa de pendurar enfeite.
+
+- [ ] **Girar a câmera com o mouse ("mãozinha").** Arrastar para a direita gira a vista para
+      a esquerda, como virar um objeto na mão. **O que precisa mudar junto**: a câmera é uma
+      constante (`AZIMUTE` = 15° em `lib/office-camera.ts`) e o enquadramento é calculado
+      por `fitOrthoCamera` para um ângulo só. Com azimute livre, o `fit` passa a rodar por
+      quadro ou a caixa de enquadramento vira a maior de todas as voltas.
+      **Limites conhecidos da planta**: passar de ~90° põe a câmera atrás de uma parede, que
+      então tapa a sala. Ou o arrasto tem trava de ângulo, ou as paredes de trás somem
+      conforme a volta — e aí vira outro item.
+
 **Vida na cena**
 
 - [ ] **Calibrar o realismo com uso real.** A troca pra PBR foi validada em render headless,
@@ -442,6 +503,26 @@ vira ruído.
 > Três efeitos foram para CSS em vez de canvas (borda, malha, e a esfera é o único WebGL da
 > página). Não foi economia: o canvas do ShaderGradient é justamente o que **não** entra no
 > ticker único, e abriria um segundo `requestAnimationFrame` concorrendo com a esfera.
+
+- [ ] **A resposta da Neuro entra sem transição.** Ela aparece de uma vez no lugar onde
+      estava o vazio. Vale a mesma ideia da conversa ao vivo, que já tem isso
+      (`lib/transcricao-viva.ts`): a mensagem chega, não surge.
+
+- [ ] **A esfera da tela vazia está parada demais.** É a bola acima do "Olá! Sou a Neuro IA"
+      (`components/neuro-sphere.tsx`): o Gustavo quer ela se mexendo de um jeito que leia
+      como 3D. Hoje ela só reage ao ponteiro. **O que ela já tem e não se pode perder**: é o
+      único WebGL da página e entra no ticker único por `TickerDoGsap` — movimento novo
+      entra no `useFrame` que já existe, nunca num `requestAnimationFrame` próprio.
+
+- [ ] **A conversa ao vivo abre vazia, e não devia.** Quem está escrevendo com a Neuro sobre
+      um assunto e clica em conversar ao vivo perde a conversa de vista — o modo voz mantém
+      histórico PRÓPRIO (`setMessages([])` ao abrir, em `voice-conversation.tsx`). O pedido é
+      que as mensagens do chat de texto estejam lá, roláveis, enquanto a conversa ao vivo
+      acontece; a transcrição no ritmo da fala continua igual, só deixa de começar do zero.
+      **A parte que precisa de decisão**: hoje são duas listas separadas, e o modo voz manda
+      só as 6 últimas para a rota. Juntar as duas quer dizer escolher se a conversa passa a
+      ser UMA (o que se fala ao vivo volta escrito para o chat quando fechar) ou se a de voz
+      só LÊ a de texto como ponto de partida. A primeira é o que a descrição sugere.
 
 - [ ] **Ver a tela da Neuro IA no olho, clara e escura.** O que este item pedia — conferir a
       calibragem da malha pastel nos dois temas — deixou de existir: a malha saiu, o grão que
