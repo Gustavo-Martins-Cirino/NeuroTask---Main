@@ -839,9 +839,31 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
       tmat([0.15, 0.15, 0.17]), tmat([0.92, 0.89, 0.82]), tmat([0.62, 0.42, 0.22]),
     ]
     const x = -S + 0.26
-    g.add(box("Estante_Corpo", [0.34, 0.9, 1.25], [x, 0.2, 0.625], mMadeira))
+    // ARMAÇÃO, não caixa maciça. Antes o corpo era um bloco sólido de
+    // 0,34 × 0,9 × 1,25 e os livros eram posicionados DENTRO dele: ficavam
+    // lacrados, e da câmera a estante lia como um bloco marrom. Todo o conteúdo
+    // já estava modelado — faltava abrir a frente.
+    //
+    // A frente é o +x, que é de onde a câmera olha (ver lib/office-camera). O
+    // fundo encosta na parede lateral, e as duas laterais, o tampo e a base
+    // fecham o resto: é o que dá silhueta de móvel sem tapar o miolo.
+    const ALT = 1.32
+    const zMeio = ALT / 2
+    const meia = 0.17 // meia-profundidade do corpo, em x
+    g.add(box("Estante_Fundo", [0.02, 0.9, ALT], [x - meia + 0.01, 0.2, zMeio], mMadeira))
+    g.add(box("Estante_Lateral_0", [0.34, 0.02, ALT], [x, 0.2 - 0.44, zMeio], mMadeira))
+    g.add(box("Estante_Lateral_1", [0.34, 0.02, ALT], [x, 0.2 + 0.44, zMeio], mMadeira))
+    g.add(box("Estante_Tampo", [0.34, 0.9, 0.03], [x, 0.2, ALT - 0.015], mMadeira))
+    g.add(box("Estante_Base", [0.34, 0.9, 0.03], [x, 0.2, 0.015], mMadeira))
     const nLivros = 8
-    ;[0.4, 0.72, 1.04].forEach((z, si) => {
+    // Quatro fileiras, e a de baixo é nova: com a frente aberta, o terço
+    // inferior vazio virava um buraco escuro no móvel.
+    //
+    // A altura subiu de 1,25 para 1,32 por medida, não por gosto: o livro mais
+    // alto da fileira de cima termina em 1,256, ou seja, ele ATRAVESSAVA o
+    // antigo topo em 6 mm. Ninguém via porque o bloco maciço era da mesma
+    // madeira; com a frente aberta, apareceria.
+    ;[0.08, 0.4, 0.72, 1.04].forEach((z, si) => {
       g.add(box(`Estante_Prateleira_${si}`, [0.3, 0.86, 0.02], [x, 0.2, z], mTampo))
       // Espessura, altura e profundidade variam por livro (multiplicadores
       // primos entre si pra não repetir padrão de prateleira pra prateleira)

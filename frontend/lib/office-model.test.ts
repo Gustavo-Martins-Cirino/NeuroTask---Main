@@ -487,6 +487,54 @@ describe("itens novos da loja", () => {
     }
   })
 
+  it("estante: a armação não engole os livros — era o que a deixava um bloco marrom", () => {
+    const g = buildEscritorio({ extras: { estante: true } })
+    const livros = pecas(g, "Estante_Livro_")
+    expect(livros.length).toBeGreaterThan(24)
+    const armacao = pecas(g, "Estante_").filter((n) => !n.includes("Livro"))
+    for (const peca of armacao) {
+      const caixa = caixaMundo(g, peca)
+      for (const livro of livros) {
+        expect(caixa.containsBox(caixaMundo(g, livro))).toBe(false)
+      }
+    }
+  })
+
+  it("estante: a frente é aberta — nada da armação fica na frente de um livro", () => {
+    // A câmera olha do +x (ver lib/office-camera), então "na frente" é ter x
+    // MAIOR que o do livro, cruzando com ele em y e z. Era exatamente o que a
+    // caixa maciça fazia com os 32 livros de uma vez.
+    const g = buildEscritorio({ extras: { estante: true } })
+    const armacao = pecas(g, "Estante_").filter((n) => !n.includes("Livro"))
+      .map((n) => caixaMundo(g, n))
+    for (const livro of pecas(g, "Estante_Livro_")) {
+      const l = caixaMundo(g, livro)
+      const tapando = armacao.filter(
+        (a) => a.min.x > l.max.x - 1e-6 &&
+          a.max.y > l.min.y + 1e-6 && a.min.y < l.max.y - 1e-6 &&
+          a.max.z > l.min.z + 1e-6 && a.min.z < l.max.z - 1e-6
+      )
+      expect(tapando.length).toBe(0)
+    }
+  })
+
+  it("estante: nenhum livro fura o tampo — o de cima passava 6mm do topo antigo", () => {
+    const g = buildEscritorio({ extras: { estante: true } })
+    // `buildEscritorio` devolve o grupo em coordenadas da SALA (o mapeamento
+    // para o mundo mora na cena), e ali o eixo de cima é o z.
+    const tampo = caixaMundo(g, "Estante_Tampo")
+    for (const livro of pecas(g, "Estante_Livro_")) {
+      expect(caixaMundo(g, livro).max.z).toBeLessThanOrEqual(tampo.min.z + 1e-6)
+    }
+  })
+
+  it("estante: presa na parede lateral, sem atravessá-la", () => {
+    const g = buildEscritorio({ extras: { estante: true } })
+    for (const n of pecas(g, "Estante_")) {
+      expect(caixaMundo(g, n).min.x).toBeGreaterThanOrEqual(FACE_LATERAL - 1e-6)
+    }
+  })
+
   it("LED RGB: contorna as DUAS paredes e as cores variam ao longo da fita", () => {
     const g = buildEscritorio({ extras: { ledRgb: true } })
     const fundo = pecas(g, "Led_Fundo_")

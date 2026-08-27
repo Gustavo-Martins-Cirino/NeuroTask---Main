@@ -118,11 +118,15 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       Cachorro parado respira e vira a cabeça; quando pula, pula uma vez e cai. Trocar o
       salto perpétuo por respiração (escala mínima no tronco) + a cabeça que ele já vira.
 
-- [ ] **A estante é um bloco marrom, e os livros existem.** `Estante_Corpo` é uma caixa
-      MACIÇA de 0,34 × 0,9 × 1,25, e os 24 livros são posicionados DENTRO dela — ficam
-      literalmente lacrados. Virar a caixa em armação (duas laterais, tampo, base e fundo)
-      abre a frente e mostra o que já está modelado. É o item de melhor retorno da lista:
-      o conteúdo está pronto, falta abrir a caixa.
+> **Estante: resolvida (25/08).** Era o diagnóstico certo — `Estante_Corpo` era uma caixa
+> maciça e os livros estavam posicionados dentro dela, lacrados. Virou armação (fundo, duas
+> laterais, tampo e base), com a frente aberta para o +x, que é de onde a câmera olha.
+> Entrou uma quarta fileira embaixo: com a frente aberta, o terço inferior vazio virava um
+> buraco escuro. **Um bug apareceu ao abrir a caixa**: o livro mais alto de cima terminava
+> em 1,256 e o topo do móvel ficava em 1,25 — ele atravessava o tampo em 6 mm, invisível
+> enquanto tudo era o mesmo marrom. O móvel subiu para 1,32. Três testes novos seguram isso:
+> nenhuma peça da armação pode CONTER um livro, nada pode ficar na frente de um livro, e
+> nenhum livro pode furar o tampo.
 
 - [ ] **O emoji do papel de parede é um rolo de papel higiênico** (🧻, `parede-papel` em
       `lib/shop.ts`). Trocar.
