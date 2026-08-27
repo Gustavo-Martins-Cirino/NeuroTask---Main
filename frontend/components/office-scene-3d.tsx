@@ -13,7 +13,7 @@ import {
 import { useTheme } from "next-themes"
 import {
   buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO,
-  type EscritorioExtras, type PersonagemCores, type PisoTipo,
+  type EscritorioExtras, type ParedeTipo, type PersonagemCores, type PisoTipo,
 } from "@/lib/office-model"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { faseDaHora, type FaseDoDia } from "@/lib/office-city"
@@ -60,6 +60,9 @@ const LIGHT: Record<Phase, { key: string; keyI: number; hemiI: number; lampI: nu
 const WALL_COLORS: Record<string, string> = {
   "parede-azul": "#8fb3d9", "parede-verde": "#9ec6a6", "parede-rosa": "#e5b5c8",
   "parede-cinza": "#8f939a", "parede-preta": "#232329", "parede-papel": "#cfc4b4",
+  "parede-terracota": "#c07a5c", "parede-mostarda": "#d3a94e", "parede-oliva": "#7a8459",
+  // Tijolinho, ripado e cimento NÃO entram aqui: a cor deles vem da textura, e
+  // uma cor por baixo multiplicaria o desenho inteiro (ver texturaDaParede).
 }
 // O piso tem duas metades: a COR (aqui) e o DESENHO (PisoTipo, abaixo). Cor
 // sozinha nunca fez madeira — o antigo "piso de madeira" era um retângulo marrom.
@@ -70,6 +73,12 @@ const FLOOR_COLORS: Record<string, string> = {
   "piso-porcelanato": "#d8d6d1",
   "piso-cimento": "#9b9894",
 }
+const WALL_PATTERNS: Record<string, ParedeTipo> = {
+  "parede-papel": "listrada",
+  "parede-tijolinho": "tijolo",
+  "parede-ripada": "ripada",
+  "parede-cimento": "cimento",
+}
 const FLOOR_PATTERNS: Record<string, PisoTipo> = {
   "piso-madeira": "tabua",
   "piso-madeira-escura": "tabua",
@@ -79,6 +88,11 @@ const CHAIR_COLORS: Record<string, string> = { "cadeira-ergonomica": "#3a4250", 
 function pick(map: Record<string, string>, equipped: Set<string> | undefined): string | undefined {
   if (equipped) for (const id in map) if (equipped.has(id)) return map[id]
   return undefined
+}
+
+function paredeTipoDe(equipped?: Set<string>): ParedeTipo {
+  if (equipped) for (const id in WALL_PATTERNS) if (equipped.has(id)) return WALL_PATTERNS[id]
+  return "lisa"
 }
 
 function pisoTipoDe(equipped?: Set<string>): PisoTipo {
@@ -109,7 +123,6 @@ function extrasDe(equipped?: Set<string>): EscritorioExtras {
       : equipped.has("setup-duplo") ? "duplo"
       : equipped.has("setup-notebook") ? "notebook"
       : undefined,
-    papelParede: equipped.has("parede-papel"),
     relogio: equipped.has("relogio"),
     prateleira: equipped.has("prateleira"),
     ledRgb: equipped.has("led-rgb"),
@@ -290,6 +303,7 @@ function CartoonOffice({
         },
         cadeira: cadeiraTipoDe(equipped),
         piso: pisoTipoDe(equipped),
+        parede: paredeTipoDe(equipped),
       })
       // Quem tem emissivo forte entra na camada do bloom (neon, telas, LEDs).
       marcarQuemAcende(r)

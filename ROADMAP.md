@@ -134,11 +134,24 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > **Emoji do papel de parede: resolvido (25/08).** 🧻 → 📜, e o nome virou "Papel listrado",
 > que é o que o item de fato é.
 
-- [ ] **Mais paredes: 5 ou 6, com as elaboradas mais caras.** Pedidos por nome: **tijolinho**
-      e **cimento queimado**. As de hoje são cor chapada (40–70 moedas); as novas têm padrão,
-      então cabem em faixa mais alta. **Regra que já custou um bug**: item novo precisa de
-      linha em `shop_items` (SQL) além do modelo — sem isso a compra falha com
-      `ITEM_INEXISTENTE`.
+> **Paredes: resolvidas (25/08).** Seis novas — terracota, mostarda e oliva (40, cor) +
+> cimento queimado (110), tijolinho (130) e ripado de madeira (150), que são DESENHO.
+> `supabase/office_v6.sql`.
+>
+> **Padrão de parede virou textura, não malha**, e a conta é o motivo: tijolinho em caixinhas
+> daria ~380 malhas POR parede (16 tijolos × 24 fiadas). Como pixel é um draw call. As
+> texturas nascem em `lib/office-textura.ts`, que devolve o array RGBA cru — sem canvas,
+> porque os testes rodam em `node` e ali não existe `document`; e sendo array, dá para
+> conferir pixel a pixel no teste em vez de no olho.
+>
+> **Três coisas que essa escolha obriga**, todas com teste: a cor do material vira BRANCA
+> (o `map` multiplica a cor, então uma parede bege tingiria o tijolo inteiro), a repetição
+> sai de METROS e não de gosto (um tijolo tem 24 cm; errar isso dá tijolo de meio metro e a
+> cena parece de brinquedo sem ninguém saber apontar por quê), e o lado da textura é potência
+> de dois, senão o three não gera mipmap e a parede cintila de longe.
+>
+> O antigo `extras.papelParede` virou `parede: "listrada"` — um conceito só para o
+> acabamento da parede, em vez de um booleano ao lado de um enum.
 
 > **Piso: resolvido (25/08).** O diagnóstico estava certo — o piso era UMA caixa com uma cor,
 > e cor nenhuma faz madeira. Agora o piso tem duas metades: a cor (que já existia) e o

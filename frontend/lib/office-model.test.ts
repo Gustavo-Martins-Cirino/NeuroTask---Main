@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Box3, DoubleSide, Group, Mesh, Vector3 } from "three"
+import { Box3, DoubleSide, Group, Mesh, MeshStandardMaterial, Vector3 } from "three"
 import { buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO, type EscritorioExtras } from "./office-model"
 import { typingTap, TECLA_AMPLITUDE } from "./office-typing"
 import { CAMERA_POS } from "./office-camera"
@@ -424,7 +424,7 @@ describe("óculos", () => {
 
 describe("papel de parede", () => {
   it("é PADRÃO, não cor: gera listras nas duas paredes", () => {
-    const g = buildEscritorio({ extras: { papelParede: true } })
+    const g = buildEscritorio({ parede: "listrada" })
     expect(pecas(g, "Papel_Listra_Fundo_").length).toBeGreaterThan(5)
     expect(pecas(g, "Papel_Listra_Lateral_").length).toBeGreaterThan(5)
   })
@@ -434,7 +434,7 @@ describe("papel de parede", () => {
   })
 
   it("as listras ficam à frente da parede, não afundadas nela", () => {
-    const g = buildEscritorio({ extras: { papelParede: true } })
+    const g = buildEscritorio({ parede: "listrada" })
     for (const n of pecas(g, "Papel_Listra_Fundo_")) {
       expect(caixaMundo(g, n).max.y).toBeLessThanOrEqual(FACE_FUNDO + 1e-6)
     }
@@ -444,11 +444,59 @@ describe("papel de parede", () => {
   })
 
   it("as listras cobrem a largura da sala, sem transbordar", () => {
-    const g = buildEscritorio({ extras: { papelParede: true } })
+    const g = buildEscritorio({ parede: "listrada" })
     for (const n of pecas(g, "Papel_Listra_Fundo_")) {
       const b = caixaMundo(g, n)
       expect(b.min.x).toBeGreaterThanOrEqual(-2.01)
       expect(b.max.x).toBeLessThanOrEqual(2.01)
+    }
+  })
+})
+
+describe("paredes com desenho", () => {
+  const materialDaParede = (parede: "tijolo" | "ripada" | "cimento" | "lisa") => {
+    const g = buildEscritorio({ parede })
+    return (malha(g, "Parede_Fundo") as Mesh).material as MeshStandardMaterial
+  }
+
+  it("tijolo, ripado e cimento entram como TEXTURA — em caixinha seriam centenas de malhas", () => {
+    for (const tipo of ["tijolo", "ripada", "cimento"] as const) {
+      expect(materialDaParede(tipo).map).not.toBeNull()
+    }
+    expect(materialDaParede("lisa").map).toBeNull()
+  })
+
+  it("com textura a cor do material é BRANCA — `map` multiplica a cor", () => {
+    // Uma parede bege por baixo tingiria o tijolo inteiro de bege.
+    expect(materialDaParede("tijolo").color.getHex()).toBe(0xffffff)
+  })
+
+  it("a cor pedida é ignorada quando há desenho, e respeitada quando não há", () => {
+    const comDesenho = buildEscritorio({ parede: "tijolo", cores: { parede: "#8fb3d9" } })
+    expect(((malha(comDesenho, "Parede_Fundo") as Mesh).material as MeshStandardMaterial).color.getHex()).toBe(0xffffff)
+    const lisa = buildEscritorio({ parede: "lisa", cores: { parede: "#8fb3d9" } })
+    expect(((malha(lisa, "Parede_Fundo") as Mesh).material as MeshStandardMaterial).color.getHex()).not.toBe(0xffffff)
+  })
+
+  it("o tijolo tem o tamanho de um tijolo: a repetição sai de metros, não de gosto", () => {
+    // Azulejo = 2 tijolos (0,5 m) × 2 fiadas (0,2 m); sala padrão = 4 m, parede 2,6 m.
+    const t = materialDaParede("tijolo").map!
+    expect(t.repeat.x).toBeCloseTo(8, 5)
+    expect(t.repeat.y).toBeCloseTo(13, 5)
+  })
+
+  it("o cimento não se repete — manchas largas repetidas mostrariam a grade", () => {
+    const t = materialDaParede("cimento").map!
+    expect(t.repeat.x).toBe(1)
+    expect(t.repeat.y).toBe(1)
+  })
+
+  it("as texturas têm lado potência de dois, senão o three não gera mipmap", () => {
+    const potencia = (n: number) => (n & (n - 1)) === 0
+    for (const tipo of ["tijolo", "ripada", "cimento"] as const) {
+      const t = materialDaParede(tipo).map as unknown as { image: { width: number; height: number } }
+      expect(potencia(t.image.width)).toBe(true)
+      expect(potencia(t.image.height)).toBe(true)
     }
   })
 })

@@ -161,7 +161,7 @@ reminders.sql · task_recurrence.sql · task_order.sql · task_meeting.sql · re
 
 **2. Gamificação e loja** — `gamification.sql` cria o `award_xp` de que o resto depende
 ```
-gamification.sql → xp_anticheat.sql → coins_shop.sql → skins.sql · office_3d.sql · avatar_acessorios.sql · office_v4.sql · office_v5.sql
+gamification.sql → xp_anticheat.sql → coins_shop.sql → skins.sql · office_3d.sql · avatar_acessorios.sql · office_v4.sql · office_v5.sql · office_v6.sql
 ```
 
 **3. Copiloto de rotina**

@@ -13,7 +13,12 @@ import {
   CatmullRomCurve3,
   Color,
   CylinderGeometry,
+  DataTexture,
   DoubleSide,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  RepeatWrapping,
+  SRGBColorSpace,
   Group,
   Mesh,
   MeshStandardMaterial,
@@ -23,6 +28,7 @@ import {
   type Material,
 } from "three"
 import type { AvatarAccessories } from "./avatar-accessories"
+import { texturaCimento, texturaRipado, texturaTijolo, type Cor, type Padrao } from "./office-textura"
 import { PALETA_CIDADE, type FaseDoDia } from "./office-city"
 import { criarGotas, GOTAS_PADRAO, type Gota } from "./office-rain"
 
@@ -424,7 +430,6 @@ export interface EscritorioExtras {
    *  "notebook" troca o desktop inteiro por um laptop. */
   setup?: "duplo" | "ultrawide" | "notebook"
   /** Papel de parede listrado — padrão de verdade, não cor chapada. */
-  papelParede?: boolean
   relogio?: boolean
   prateleira?: boolean
   /** Fita de LED colorida contornando o alto das paredes. */
@@ -440,12 +445,19 @@ export type CadeiraTipo = "padrao" | "ergonomica" | "gamer"
  *  e para esses `cores.piso` já basta. */
 export type PisoTipo = "liso" | "tabua" | "ladrilho"
 
+/** Acabamento da parede. Os três últimos são DESENHO, e desenho em caixinha
+ *  sairia caro: só o tijolinho daria umas 380 malhas por parede. Eles entram
+ *  como textura (ver lib/office-textura). */
+export type ParedeTipo = "lisa" | "listrada" | "tijolo" | "ripada" | "cimento"
+
 export interface EscritorioOpts {
   extras?: EscritorioExtras
   cores?: { parede?: string; piso?: string; cadeira?: string }
   /** Nível do dono: a sala cresce com ele (comparação social num relance). */
   nivel?: number
   cadeira?: CadeiraTipo
+  /** Acabamento da parede. "listrada" é o antigo papel de parede. */
+  parede?: ParedeTipo
   /** Desenho do piso. Sem isto, "piso de madeira" era um retângulo marrom: a
    *  cor certa não faz madeira, o que faz é a régua e a emenda entre tábuas. */
   piso?: PisoTipo
@@ -607,6 +619,49 @@ function desenharPiso(g: Group, tam: number, tipo: PisoTipo, base: string | V3):
   }
 }
 
+/** Um `Padrao` de pixels vira textura repetida na parede.
+ *
+ *  Lados potência de dois (128×64, 32×4, 128×128) porque só assim o three gera
+ *  mipmap — sem ele, a parede vista de longe cintila conforme a câmera anda. */
+function comoTextura(p: Padrao, repeteX: number, repeteY: number): DataTexture {
+  const t = new DataTexture(p.dados, p.largura, p.altura)
+  t.colorSpace = SRGBColorSpace
+  t.wrapS = RepeatWrapping
+  t.wrapT = RepeatWrapping
+  t.repeat.set(repeteX, repeteY)
+  t.magFilter = LinearFilter
+  t.minFilter = LinearMipmapLinearFilter
+  t.generateMipmaps = true
+  t.needsUpdate = true
+  return t
+}
+
+const ALTURA_PAREDE = 2.6
+
+/**
+ * A textura da parede, no tamanho certo em METROS.
+ *
+ * A repetição não é gosto: um tijolo tem 24 cm de verdade, e o azulejo carrega
+ * dois deles. Errar essa conta dá tijolo de meio metro, que é o tipo de coisa
+ * que faz a cena parecer de brinquedo sem ninguém saber apontar por quê.
+ */
+function texturaDaParede(tipo: ParedeTipo, tam: number): DataTexture | null {
+  if (tipo === "tijolo") {
+    const p = texturaTijolo([0.56, 0.28, 0.21] as Cor, [0.8, 0.77, 0.72] as Cor)
+    return comoTextura(p, tam / 0.5, ALTURA_PAREDE / 0.2) // azulejo = 2 tijolos × 2 fiadas
+  }
+  if (tipo === "ripada") {
+    const p = texturaRipado([0.42, 0.28, 0.17] as Cor, [0.09, 0.07, 0.06] as Cor)
+    return comoTextura(p, tam / 0.08, 1) // régua de 6 cm + fresta de 2 cm
+  }
+  if (tipo === "cimento") {
+    // UMA vez na parede toda: as manchas são largas, e repetir revelaria a grade.
+    const p = texturaCimento([0.62, 0.61, 0.59] as Cor)
+    return comoTextura(p, 1, 1)
+  }
+  return null
+}
+
 // A sala cresce em degraus, não continuamente — assim subir de nível é um
 // evento perceptível, e não um centímetro invisível por vez.
 export function tamanhoDaSala(nivel = 1): number {
@@ -630,7 +685,12 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   const S = tam / 2        // meia-sala: face interna das paredes
   const dy = recuoDaSala(opts.nivel) // deslocamento da zona de trabalho
   const mPiso = tmat(opts.cores?.piso ?? [0.82, 0.62, 0.4], 0, "piso")
-  const mParede = tmat(opts.cores?.parede ?? [0.94, 0.9, 0.85], 0, "parede")
+  const tipoParede: ParedeTipo = opts.parede ?? "lisa"
+  const texturaParede = texturaDaParede(tipoParede, tam)
+  // Com textura a cor do material vira BRANCO: o `map` MULTIPLICA a cor, então
+  // uma parede bege por baixo tingiria o tijolo inteiro de bege.
+  const mParede = tmat(texturaParede ? "#ffffff" : opts.cores?.parede ?? [0.94, 0.9, 0.85], 0, "parede")
+  if (texturaParede) mParede.map = texturaParede
   // A padrão é plástico injetado (reflete um pouco); as compradas são estofadas
   // e comem a luz. O acabamento é metade do que separa uma da outra — só a
   // silhueta, com todas foscas iguais, ainda lia como "a mesma cadeira".
@@ -658,7 +718,7 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
 
   // Papel de parede: listras verticais coladas na face interna das duas paredes.
   // É PADRÃO, não cor — trocar o tom da parede já é o que os outros itens fazem.
-  if (extras.papelParede) {
+  if (tipoParede === "listrada") {
     const mListra = tmat([0.72, 0.66, 0.58], 0, "parede")
     const PASSO = 0.34, LARG = 0.13, ALT = 2.5, ZC = 1.32
     const n = Math.floor(tam / PASSO)
