@@ -10,6 +10,7 @@ import { useTheme } from "next-themes"
 import { TickerDoGsap } from "@/components/r3f-ticker"
 import {
   pontosDaEsfera, intensidadeDaRepulsao, fatorDeRetorno, respiracao, velocidadeDoGiro,
+  brilhoPorProfundidade, inclinacaoDoEixo,
 } from "@/lib/neuro-sphere"
 
 // A presença da Neuro IA no chat: uma casca de partículas que gira devagar,
@@ -125,6 +126,9 @@ function Nuvem({
   const geometria = useMemo(() => {
     const g = new BufferGeometry()
     g.setAttribute("position", new Float32BufferAttribute(base.slice(), 3))
+    // Cinza por partícula: o material multiplica a cor do tema por ele, então
+    // aqui só entra o BRILHO da profundidade (ver lib/neuro-sphere.ts).
+    g.setAttribute("color", new Float32BufferAttribute(new Float32Array(QUANTIDADE * 3).fill(1), 3))
     return g
   }, [base])
   const textura = useMemo(() => texturaRedonda(), [])
@@ -152,9 +156,16 @@ function Nuvem({
 
     grupo.rotation.y += velocidadeDoGiro(reduzido) * delta
     grupo.scale.setScalar(reduzido ? 1 : respiracao(state.clock.elapsedTime))
+    // O eixo do giro balança devagar. Com ele cravado no y, a mesma volta mostra
+    // sempre o mesmo desenho e o giro não aparece; balançando, os polos passeiam.
+    if (!reduzido) {
+      const eixo = inclinacaoDoEixo(state.clock.elapsedTime)
+      grupo.rotation.x = eixo.x
+      grupo.rotation.z = eixo.z
+    }
+    grupo.updateMatrixWorld()
 
     if (!reduzido && ponteiroRef.current) {
-      grupo.updateMatrixWorld()
       aux.raycaster.setFromCamera(state.pointer, state.camera)
       // O raio vai para o espaço do GRUPO em vez de cada partícula ir para o
       // mundo: uma transformação por quadro no lugar de mil e quatrocentas.
@@ -197,11 +208,31 @@ function Nuvem({
     const volta = fatorDeRetorno(delta)
     const attr = pontos.geometry.getAttribute("position")
     const posicoes = attr.array as Float32Array
-    for (let i = 0; i < QUANTIDADE * 3; i++) {
-      deslocamento[i] *= volta
-      posicoes[i] = base[i] + deslocamento[i]
+    const attrCor = pontos.geometry.getAttribute("color")
+    const cores = attrCor.array as Float32Array
+
+    // A profundidade de cada partícula sai de UMA linha da matriz do grupo (a
+    // do z), e não de transformar o vetor inteiro: o resto do resultado seria
+    // jogado fora, e são mil e quatrocentas contas por quadro.
+    const m = grupo.matrixWorld.elements
+    const escala = grupo.scale.x || 1
+
+    for (let i = 0; i < QUANTIDADE; i++) {
+      const k = i * 3
+      for (let e = 0; e < 3; e++) {
+        deslocamento[k + e] *= volta
+        posicoes[k + e] = base[k + e] + deslocamento[k + e]
+      }
+      const z = m[2] * posicoes[k] + m[6] * posicoes[k + 1] + m[10] * posicoes[k + 2] + m[14]
+      // O raio acompanha a respiração: sem isso a esfera clarearia e escureceria
+      // inteira a cada ciclo, em vez de só mudar de tamanho.
+      const brilho = brilhoPorProfundidade(z, RAIO * escala)
+      cores[k] = brilho
+      cores[k + 1] = brilho
+      cores[k + 2] = brilho
     }
     attr.needsUpdate = true
+    attrCor.needsUpdate = true
   })
 
   return (
@@ -212,6 +243,9 @@ function Nuvem({
           sizeAttenuation
           map={textura}
           color={new Color(cor)}
+          // A cor do tema entra no material e o brilho da profundidade por
+          // partícula: o shader multiplica os dois.
+          vertexColors
           transparent
           // Additivo com depthWrite ligado deixaria a partícula de trás
           // recortar a da frente, e a nuvem ficaria com falhas.

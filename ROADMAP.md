@@ -550,11 +550,29 @@ vira ruído.
 > "Seus números" achou (acender no lugar de animar): texto que se escreve sozinho **é** o
 > movimento, e reduzi-lo é mostrá-lo pronto.
 
-- [ ] **A esfera da tela vazia está parada demais.** É a bola acima do "Olá! Sou a Neuro IA"
-      (`components/neuro-sphere.tsx`): o Gustavo quer ela se mexendo de um jeito que leia
-      como 3D. Hoje ela só reage ao ponteiro. **O que ela já tem e não se pode perder**: é o
-      único WebGL da página e entra no ticker único por `TickerDoGsap` — movimento novo
-      entra no `useFrame` que já existe, nunca num `requestAnimationFrame` próprio.
+> **A esfera parada demais: resolvido (27/08), e o diagnóstico não era velocidade.** Ela
+> já girava (0,16 rad/s) e já respirava — o giro é que era INVISÍVEL. Numa casca de pontos
+> espalhados por igual, todo ângulo tem a mesma silhueta e o mesmo desenho: não há detalhe
+> para o olho seguir, então o giro lê como parado. É exatamente o defeito da primeira borda
+> da conversa ao vivo (anel uniforme girando lê como moldura), e a saída foi a mesma —
+> variação, não velocidade.
+>
+> **Duas coisas entraram, e a primeira é a que importa.** O brilho de cada partícula agora
+> sai da PROFUNDIDADE dela: 1 na frente, 0,3 no fundo (`brilhoPorProfundidade`). É o que dá
+> volume — sem isso a nuvem tem o mesmo brilho da frente ao fundo e lê como um disco de
+> pontos; com isso cada partícula acende ao passar pela frente e apaga ao dar a volta, e é
+> aí que o giro aparece. A segunda: o eixo balança devagar (`inclinacaoDoEixo`, ±15°, em
+> dois tempos primos entre si — 23 s e 17 s), então os polos passeiam e a mesma volta mostra
+> partes diferentes da casca.
+>
+> **O que a implementação não podia gastar**: a profundidade sai de UMA linha da matriz do
+> grupo (a do z) e não de transformar o vetor inteiro — o resto do resultado iria para o
+> lixo, mil e quatrocentas vezes por quadro. O brilho entra por `vertexColors`, então o
+> shader multiplica a cor do tema pelo cinza da profundidade e a paleta continua vindo do
+> token `--primary`. Tudo dentro do `useFrame` que já existia, no ticker único.
+>
+> Com `prefers-reduced-motion` a esfera continua parada — mas agora a foto parada também
+> tem volume, porque o brilho por profundidade é sombreado, não movimento.
 
 - [ ] **A conversa ao vivo abre vazia, e não devia.** Quem está escrevendo com a Neuro sobre
       um assunto e clica em conversar ao vivo perde a conversa de vista — o modo voz mantém

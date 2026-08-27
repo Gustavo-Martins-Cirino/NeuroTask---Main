@@ -5,9 +5,15 @@ import {
   fatorDeRetorno,
   respiracao,
   velocidadeDoGiro,
+  brilhoPorProfundidade,
+  inclinacaoDoEixo,
   ATRITO_POR_QUADRO,
   AMPLITUDE_DA_RESPIRACAO,
+  AMPLITUDE_DA_INCLINACAO,
+  BRILHO_DO_FUNDO,
   GIRO_PARADO,
+  PERIODO_DA_INCLINACAO_X,
+  PERIODO_DA_INCLINACAO_Z,
 } from "./neuro-sphere"
 
 function raioDe(pos: Float32Array, i: number): number {
@@ -163,5 +169,69 @@ describe("velocidadeDoGiro", () => {
 
   it("movimento reduzido para a esfera de vez", () => {
     expect(velocidadeDoGiro(true)).toBe(0)
+  })
+})
+
+describe("brilhoPorProfundidade", () => {
+  it("a frente acende e o fundo apaga — é o que dá volume", () => {
+    expect(brilhoPorProfundidade(1)).toBeCloseTo(1, 12)
+    expect(brilhoPorProfundidade(-1)).toBeCloseTo(BRILHO_DO_FUNDO, 12)
+    expect(brilhoPorProfundidade(0)).toBeCloseTo((1 + BRILHO_DO_FUNDO) / 2, 12)
+  })
+
+  it("cresce sempre da traseira para a frente, sem degrau", () => {
+    let anterior = -Infinity
+    for (let z = -1; z <= 1; z += 0.05) {
+      const b = brilhoPorProfundidade(z)
+      expect(b).toBeGreaterThan(anterior)
+      anterior = b
+    }
+  })
+
+  it("o fundo nunca some de vez — a casca de trás continua lá", () => {
+    expect(BRILHO_DO_FUNDO).toBeGreaterThan(0)
+    for (let z = -3; z <= 3; z += 0.1) {
+      expect(brilhoPorProfundidade(z)).toBeGreaterThanOrEqual(BRILHO_DO_FUNDO - 1e-12)
+      expect(brilhoPorProfundidade(z)).toBeLessThanOrEqual(1 + 1e-12)
+    }
+  })
+
+  it("segue o raio: numa esfera maior o fundo continua sendo o fundo", () => {
+    expect(brilhoPorProfundidade(2, 2)).toBeCloseTo(1, 12)
+    expect(brilhoPorProfundidade(-2, 2)).toBeCloseTo(BRILHO_DO_FUNDO, 12)
+  })
+
+  it("raio ou z impossíveis não apagam a partícula", () => {
+    expect(brilhoPorProfundidade(NaN)).toBe(1)
+    expect(brilhoPorProfundidade(1, 0)).toBeCloseTo(1, 12)
+    expect(brilhoPorProfundidade(1, NaN)).toBeCloseTo(1, 12)
+  })
+})
+
+describe("inclinacaoDoEixo", () => {
+  it("balança pouco: o eixo passeia, a esfera não cambaleia", () => {
+    for (let t = 0; t < 200; t += 0.37) {
+      const { x, z } = inclinacaoDoEixo(t)
+      expect(Math.abs(x)).toBeLessThanOrEqual(AMPLITUDE_DA_INCLINACAO + 1e-12)
+      expect(Math.abs(z)).toBeLessThanOrEqual(AMPLITUDE_DA_INCLINACAO + 1e-12)
+    }
+  })
+
+  it("os dois tempos não se dividem — a pose não volta em ciclo curto", () => {
+    // Múltiplos dariam ar de brinquedo de corda: o eixo repetiria a mesma volta
+    // sempre no mesmo ponto do balanço.
+    const maior = Math.max(PERIODO_DA_INCLINACAO_X, PERIODO_DA_INCLINACAO_Z)
+    const menor = Math.min(PERIODO_DA_INCLINACAO_X, PERIODO_DA_INCLINACAO_Z)
+    expect(maior % menor).not.toBe(0)
+  })
+
+  it("se mexe de verdade ao longo do tempo", () => {
+    const a = inclinacaoDoEixo(0)
+    const b = inclinacaoDoEixo(PERIODO_DA_INCLINACAO_X / 4)
+    expect(Math.abs(b.x - a.x)).toBeGreaterThan(0.1)
+  })
+
+  it("tempo impossível deixa o eixo em pé", () => {
+    for (const t of [NaN, Infinity]) expect(inclinacaoDoEixo(t)).toEqual({ x: 0, z: 0 })
   })
 })
