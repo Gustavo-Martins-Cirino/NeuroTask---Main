@@ -99,14 +99,13 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > pouquinho mais completo antes da gente entregar."* Os cinco primeiros são defeito (coisa
 > que está errada na cena); os demais são conteúdo.
 
-- [ ] **Relógio e quadro ocupam o mesmo pedaço de parede.** Conferido no código, não é
-      impressão: o quadro é uma moldura de 0,56 de largura centrada em `x=-0,95`, e o
-      relógio um disco de raio 0,145 em `x=-1,15` — os dois na parede do fundo, sobrepostos
-      de `-1,23` a `-1,00`. Com os dois comprados, um atravessa o outro
-      (`lib/office-model.ts`, blocos `extras.quadro` e `extras.relogio`).
-      **Não basta mover o relógio uma vez**: janela, quadro, neon e relógio disputam a mesma
-      parede, e a próxima decoração de parede recria o problema. O que resolve é as peças de
-      parede saírem de uma lista de vagas, com a vaga marcada como ocupada.
+> **Relógio × quadro: resolvido (25/08), e pela raiz.** Não foi mover o relógio — isso
+> resolveria hoje e quebraria na próxima decoração de parede. Nenhuma peça escolhe mais o
+> próprio x: elas entram numa fileira e recebem a vaga (`lib/office-parede.ts`), centrada no
+> vão que sobra. A janela fica de fora da conta, porque é um buraco na parede e não um
+> enfeite pendurado, mas come o espaço à direita — então a fileira acontece à esquerda dela.
+> **Decoração de parede nova entra na fileira**, e não com um x cravado. O teste que importa
+> compara as caixas nos três eixos: é o que "um em cima do outro" quer dizer.
 
 > **Cabo: resolvido (25/08).** Era o diagnóstico certo — as duas curvas terminavam quatro
 > centímetros à frente da placa, com a ponta solta apontando para a parede. Cada cabo ganhou

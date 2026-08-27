@@ -453,6 +453,49 @@ describe("papel de parede", () => {
   })
 })
 
+describe("vagas na parede do fundo", () => {
+  /** Duas caixas se cruzam nos três eixos? É o que "um em cima do outro" quer
+   *  dizer, e era o caso do relógio com o quadro. */
+  const cruzam = (a: Box3, b: Box3) =>
+    a.max.x > b.min.x + 1e-6 && a.min.x < b.max.x - 1e-6 &&
+    a.max.y > b.min.y + 1e-6 && a.min.y < b.max.y - 1e-6 &&
+    a.max.z > b.min.z + 1e-6 && a.min.z < b.max.z - 1e-6
+
+  it("relógio e quadro juntos não se sobrepõem — era o bug", () => {
+    const g = buildEscritorio({ extras: { quadro: true, relogio: true } })
+    const quadro = caixaMundo(g, "Quadro_Moldura")
+    for (const n of pecas(g, "Relogio_")) {
+      expect(cruzam(caixaMundo(g, n), quadro)).toBe(false)
+    }
+  })
+
+  it("nem com a janela junto, que come o lado direito da parede", () => {
+    const g = buildEscritorio({ extras: { quadro: true, relogio: true, janela: true } })
+    const janela = caixaMundo(g, "Janela_Vidro")
+    for (const n of [...pecas(g, "Relogio_"), ...pecas(g, "Quadro_")]) {
+      expect(cruzam(caixaMundo(g, n), janela)).toBe(false)
+    }
+  })
+
+  it("sozinho, cada um continua cabendo na parede", () => {
+    for (const extras of [{ quadro: true }, { relogio: true }]) {
+      const g = buildEscritorio({ extras })
+      for (const n of [...pecas(g, "Quadro_"), ...pecas(g, "Relogio_")]) {
+        const b = caixaMundo(g, n)
+        expect(b.min.x).toBeGreaterThanOrEqual(FACE_LATERAL - 1e-6)
+        expect(b.max.x).toBeLessThanOrEqual(2 + 1e-6)
+      }
+    }
+  })
+
+  it("a vaga MUDA conforme o que está pendurado — x cravado é o que quebrava", () => {
+    const so = buildEscritorio({ extras: { quadro: true } })
+    const comRelogio = buildEscritorio({ extras: { quadro: true, relogio: true } })
+    expect(caixaMundo(so, "Quadro_Moldura").min.x)
+      .not.toBeCloseTo(caixaMundo(comRelogio, "Quadro_Moldura").min.x, 2)
+  })
+})
+
 describe("paredes com desenho", () => {
   const materialDaParede = (parede: "tijolo" | "ripada" | "cimento" | "lisa") => {
     const g = buildEscritorio({ parede })

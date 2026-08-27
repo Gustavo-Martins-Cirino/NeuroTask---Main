@@ -29,6 +29,7 @@ import {
 } from "three"
 import type { AvatarAccessories } from "./avatar-accessories"
 import { texturaCimento, texturaRipado, texturaTijolo, type Cor, type Padrao } from "./office-textura"
+import { distribuirNaParede } from "./office-parede"
 import { PALETA_CIDADE, type FaseDoDia } from "./office-city"
 import { criarGotas, GOTAS_PADRAO, type Gota } from "./office-rain"
 
@@ -1046,12 +1047,28 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     })
   }
 
+  // ---- Vagas na parede do fundo ----
+  // Quadro e relógio nasceram cada um com o seu x cravado, e se sobrepunham de
+  // -1,23 a -1,00. Agora nenhum dos dois escolhe onde fica: eles entram numa
+  // fileira e recebem a vaga (ver lib/office-parede). A janela não entra na
+  // conta — ela é um buraco na parede, não um enfeite pendurado —, mas come o
+  // espaço à direita, então a fileira acontece à esquerda dela.
+  const LARG_QUADRO = 0.56
+  const LARG_RELOGIO = 0.29
+  const naFileira: number[] = []
+  if (extras.quadro) naFileira.push(LARG_QUADRO)
+  if (extras.relogio) naFileira.push(LARG_RELOGIO)
+  const bordaDireita = extras.janela ? 0.25 : S - 0.3
+  const vagas = distribuirNaParede(naFileira, -S + 0.3, bordaDireita)
+  const xQuadro = extras.quadro ? vagas[0] : 0
+  const xRelogio = extras.relogio ? vagas[extras.quadro ? 1 : 0] : 0
+
   if (extras.quadro) {
     const mMold = tmat([0.42, 0.31, 0.18])
     const mCeu = tmat([0.75, 0.89, 0.95])
     const mMont = tmat([0.54, 0.59, 0.65])
-    g.add(box("Quadro_Moldura", [0.56, 0.04, 0.42], [-0.95, S - 0.08, 1.8], mMold))
-    g.add(box("Quadro_Tela", [0.48, 0.01, 0.34], [-0.95, S - 0.105, 1.8], mCeu))
+    g.add(box("Quadro_Moldura", [LARG_QUADRO, 0.04, 0.42], [xQuadro, S - 0.08, 1.8], mMold))
+    g.add(box("Quadro_Tela", [0.48, 0.01, 0.34], [xQuadro, S - 0.105, 1.8], mCeu))
     // Achatadas em Y: são um relevo na tela. Cone redondo aqui atravessaria a
     // parede (o raio cresce nos DOIS sentidos de y, não só para o observador).
     const montanha = (nome: string, raio: number, alt: number, p: V3, mat: Material) => {
@@ -1059,8 +1076,8 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
       m.scale.y = 0.12
       return m
     }
-    g.add(montanha("Quadro_Montanha_A", 0.13, 0.2, [-1.03, S - 0.116, 1.74], mMont))
-    g.add(montanha("Quadro_Montanha_B", 0.1, 0.15, [-0.87, S - 0.116, 1.72], tmat([0.62, 0.66, 0.71])))
+    g.add(montanha("Quadro_Montanha_A", 0.13, 0.2, [xQuadro - 0.08, S - 0.116, 1.74], mMont))
+    g.add(montanha("Quadro_Montanha_B", 0.1, 0.15, [xQuadro + 0.08, S - 0.116, 1.72], tmat([0.62, 0.66, 0.71])))
   }
 
   if (extras.neon) {
@@ -1087,12 +1104,12 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     g.add(cyl("Trofeu_Taca", 0.028, 0.09, [x, y, TAMPO_Z + 0.135], ouro, undefined, 0.07))
   }
 
-  // Relógio de parede: na parede do FUNDO, à esquerda do quadro/janela.
+  // Relógio de parede: na parede do FUNDO, na vaga que sobrou da fileira.
   if (extras.relogio) {
     const mAro = tmat([0.16, 0.15, 0.17], 0, "plastico")
     const mMostr = tmat([0.96, 0.95, 0.92], 0, "ceramica")
     const mPont = tmat([0.1, 0.1, 0.12], 0, "plastico")
-    const x = -1.15, yP = S - 0.075, z = 1.92
+    const x = xRelogio, yP = S - 0.075, z = 1.92
     const emPe: V3 = [D(90), 0, 0] // gira o cilindro para o eixo furar a parede
     g.add(cyl("Relogio_Aro", 0.145, 0.045, [x, yP, z], mAro, emPe))
     g.add(cyl("Relogio_Mostrador", 0.125, 0.012, [x, yP - 0.026, z], mMostr, emPe))
