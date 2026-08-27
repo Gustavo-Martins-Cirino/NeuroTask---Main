@@ -107,7 +107,24 @@ function RichText({ text }: { text: string }) {
   )
 }
 
-export function VoiceConversation({ open, onClose }: { open: boolean; onClose: () => void }) {
+/**
+ * A conversa ao vivo é a MESMA conversa do chat de texto, não uma paralela.
+ *
+ * Antes ela abria vazia: quem estava escrevendo sobre um assunto e clicava em
+ * conversar ao vivo perdia tudo de vista — e a Neuro perdia junto, porque o que
+ * vai para a rota são as últimas mensagens desta lista. Agora ela abre com o que
+ * já foi dito e devolve o que foi falado ao fechar.
+ */
+export function VoiceConversation({
+  open, onClose, historico = [], aoEncerrar,
+}: {
+  open: boolean
+  onClose: () => void
+  /** O que já foi conversado por escrito. */
+  historico?: Msg[]
+  /** A conversa inteira, de volta para o chat de texto, ao fechar. */
+  aoEncerrar?: (mensagens: Msg[]) => void
+}) {
   const [status, setStatus] = useState<Status>("idle")
   const [messages, setMessages] = useState<Msg[]>([])
   const [interim, setInterim] = useState("")
@@ -126,6 +143,14 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
   const endHoldRef = useRef<() => void>(() => {})
   const submitRef = useRef<(t: string) => void>(() => {})
   const retryRef = useRef<() => void>(() => {})
+  // O histórico entra por ref: como prop nas dependências, cada render do chat
+  // remontaria a conversa ao vivo no meio de uma fala.
+  const historicoRef = useRef<Msg[]>(historico)
+  historicoRef.current = historico
+  const aoEncerrarRef = useRef(aoEncerrar)
+  aoEncerrarRef.current = aoEncerrar
+  /** Quantas mensagens vieram do chat escrito — essas já foram lidas. */
+  const [herdadas, setHerdadas] = useState(0)
 
   phaseRef.current = status
   messagesRef.current = messages
@@ -172,7 +197,10 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     setError(null)
     setResting(false)
     setHolding(false)
-    setMessages([])
+    // Abre com o que já foi escrito: é a mesma conversa, só que agora falada.
+    const herdado = historicoRef.current.filter((m) => m.content.trim())
+    setHerdadas(herdado.length)
+    setMessages(herdado)
     setInterim("")
 
     const synth = window.speechSynthesis
@@ -448,7 +476,10 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
   // tudo de uma vez deixaria a resposta lida antes de a voz começar, e aí a
   // leitura corre na frente da fala. Por isso a revelação anda pelo relógio, no
   // ritmo aproximado da voz (lib/transcricao-viva.ts).
-  const ultimaFala = messages.length > 0 && messages[messages.length - 1].role === "assistant"
+  //
+  // O que veio do chat escrito fica de fora: já foi lido, e reescrevê-lo letra
+  // a letra ao abrir fingiria que a Neuro está falando o que ela disse antes.
+  const ultimaFala = messages.length > herdadas && messages[messages.length - 1]?.role === "assistant"
     ? messages[messages.length - 1].content
     : null
   const [revelado, setRevelado] = useState(0)
@@ -480,6 +511,15 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
     if (el) el.scrollTop = el.scrollHeight
   }, [messages, revelado, interim])
 
+  // Fechar devolve a conversa ao chat de texto — o que foi falado fica escrito
+  // lá, e é o que faz as duas serem UMA. Sem nada novo, nada é devolvido: uma
+  // lista nova com o mesmo conteúdo só serviria para marcar a conversa como
+  // mexida agora.
+  const encerrar = () => {
+    if (messagesRef.current.length > herdadas) aoEncerrarRef.current?.(messagesRef.current)
+    onClose()
+  }
+
   const needsConfirm =
     !resting && !holding && status === "idle" && !!lastAssistant &&
     /(posso confirmar|confirmar\?|confirma\?)/i.test(lastAssistant.content)
@@ -500,7 +540,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
               dela, senão a luz passaria por cima do X e do texto. */}
           <OndaSonora estado={estadoDaOnda(status, holding)} />
 
-          <button onClick={onClose} aria-label="Encerrar conversa" className="absolute right-6 top-6 z-10 rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+          <button onClick={encerrar} aria-label="Encerrar conversa" className="absolute right-6 top-6 z-10 rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
             <X className="h-6 w-6" />
           </button>
 
@@ -523,7 +563,7 @@ export function VoiceConversation({ open, onClose }: { open: boolean; onClose: (
                 className="flex h-[52vh] w-full flex-col gap-5 overflow-y-auto scrollbar-thin px-1"
               >
                 {messages.map((m, i) => {
-                  const ultima = i === messages.length - 1 && m.role === "assistant"
+                  const ultima = ultimaFala !== null && i === messages.length - 1 && m.role === "assistant"
                   const texto = ultima ? fecharMarcacao(fatiar(m.content, revelado)) : m.content
                   if (!texto) return null
                   return m.role === "assistant" ? (

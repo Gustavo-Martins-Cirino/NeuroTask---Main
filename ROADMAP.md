@@ -574,15 +574,21 @@ vira ruído.
 > Com `prefers-reduced-motion` a esfera continua parada — mas agora a foto parada também
 > tem volume, porque o brilho por profundidade é sombreado, não movimento.
 
-- [ ] **A conversa ao vivo abre vazia, e não devia.** Quem está escrevendo com a Neuro sobre
-      um assunto e clica em conversar ao vivo perde a conversa de vista — o modo voz mantém
-      histórico PRÓPRIO (`setMessages([])` ao abrir, em `voice-conversation.tsx`). O pedido é
-      que as mensagens do chat de texto estejam lá, roláveis, enquanto a conversa ao vivo
-      acontece; a transcrição no ritmo da fala continua igual, só deixa de começar do zero.
-      **A parte que precisa de decisão**: hoje são duas listas separadas, e o modo voz manda
-      só as 6 últimas para a rota. Juntar as duas quer dizer escolher se a conversa passa a
-      ser UMA (o que se fala ao vivo volta escrito para o chat quando fechar) ou se a de voz
-      só LÊ a de texto como ponto de partida. A primeira é o que a descrição sugere.
+> **A conversa ao vivo abre vazia: resolvido (27/08), e a decisão foi a primeira das duas.**
+> É UMA conversa: a ao vivo abre com o que já foi escrito e devolve o que foi falado ao
+> chat, ao fechar. A outra saída (só LER o texto como ponto de partida) deixaria o que se
+> falou desaparecer ao fechar o overlay — e o argumento do item era justamente não perder a
+> conversa de vista ao trocar de modo.
+>
+> O ganho maior nem é ver as mensagens antigas roláveis: é que as 6 últimas mandadas à rota
+> passam a ser as 6 da conversa inteira. Antes, quem discutia um assunto por escrito e
+> clicava no botão de voz encontrava uma Neuro que não sabia de nada.
+>
+> **Dois detalhes que o código precisa acertar.** O histórico entra por ref, não como
+> dependência do efeito — como prop nas dependências, cada render do chat remontaria o
+> overlay no meio de uma fala. E as mensagens herdadas ficam fora da revelação pelo relógio:
+> reescrevê-las letra a letra ao abrir fingiria que a Neuro está falando de novo o que ela
+> já disse.
 
 - [ ] **Ver a tela da Neuro IA no olho, clara e escura.** O que este item pedia — conferir a
       calibragem da malha pastel nos dois temas — deixou de existir: a malha saiu, o grão que

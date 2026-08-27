@@ -482,7 +482,16 @@ export default function AiPage() {
         </DropdownMenu>
       </Header>
 
-      <VoiceConversation open={voiceOpen} onClose={() => setVoiceOpen(false)} />
+      {/* Uma conversa só: a ao vivo abre com o que já foi escrito e devolve o
+          que foi falado ao fechar. Antes ela tinha histórico próprio, e quem
+          trocava de modo no meio de um assunto perdia o assunto — a Neuro
+          junto, porque é desta lista que saem as mensagens mandadas à rota. */}
+      <VoiceConversation
+        open={voiceOpen}
+        historico={messages}
+        aoEncerrar={(msgs) => { setMessages(msgs); definirRevelado(TUDO) }}
+        onClose={() => setVoiceOpen(false)}
+      />
 
       {/* Sem conversa começada, a barra sobe e o grupo inteiro (esfera, saudação,
           sugestões e barra) fica centrado — a conversa começa no meio da tela,

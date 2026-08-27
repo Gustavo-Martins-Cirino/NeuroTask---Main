@@ -172,7 +172,8 @@ Gemini ou Anthropic (streaming, sem ferramentas). Chave: `GROQ_API_KEY` etc.
   Não transforma desabafo em tarefa. Horário ambíguo → pergunta manhã/noite.
 - **Tarefa com horário** vira também um bloco no calendário (auto). Detecta **conflito/proximidade** de horários.
 - **Modo voz** (`mode: "voice"`): respostas curtas/faláveis. Usado por `voice-conversation.tsx`
-  (STT+TTS do navegador via Web Speech API, barge-in). Tela cheia sem dock, visual igual ao
+  (STT+TTS do navegador via Web Speech API, barge-in). É a **mesma** conversa do chat de
+  texto: abre com o que já foi escrito e devolve o que foi falado ao fechar. Tela cheia sem dock, visual igual ao
   resto do site, com a conversa transcrita — a resposta vai aparecendo escrita no ritmo da
   fala. A única diferença visual é a onda de luz no rodapé: azul na vez de quem usa, verde
   na vez da Neuro. Só funciona bem em Chrome/Edge.
