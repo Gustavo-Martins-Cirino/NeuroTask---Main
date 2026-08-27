@@ -363,6 +363,51 @@ function boneco(acess: Parameters<typeof buildPersonagem>[1]) {
   return p
 }
 
+describe("corpo do boneco", () => {
+  const caixa = (nome: string) => new Box3().setFromObject(malha(boneco({}), nome), true)
+
+  it("o tronco não é uma tábua: o fundo acompanha a largura", () => {
+    // Era 32 cm de largura por 20 de fundo. De perfil — que é de onde a câmera
+    // olha — uma tábua dessas some.
+    const t = caixa("Torso").getSize(new Vector3())
+    expect(t.y / t.x).toBeGreaterThan(0.7)
+  })
+
+  it("existe ombro entre o tronco e o braço, e ele cobre a ponta do braço", () => {
+    // Sem a bola, o braço é um palito espetado na quina da caixa do tronco —
+    // e engrossar o braço não conserta isso, só engrossa o palito.
+    const torso = caixa("Torso")
+    const ombro = caixa("Ombro_Direito")
+    const braco = caixa("Braco_Direito")
+    expect(ombro.max.x).toBeGreaterThan(torso.max.x)
+    expect(ombro.max.x).toBeGreaterThan(braco.max.x - 0.005)
+  })
+
+  it("a perna dobra num joelho, não numa quina", () => {
+    const joelho = caixa("Joelho_Direita")
+    const coxa = caixa("Coxa_Direita")
+    const canela = caixa("Canela_Direita")
+    // O joelho ocupa o encontro dos dois: a frente da coxa e o topo da canela.
+    expect(joelho.max.y).toBeGreaterThan(coxa.max.y - 0.02)
+    expect(joelho.min.z).toBeLessThan(canela.max.z)
+  })
+
+  it("a gola da camisa envolve o pescoço, e ele fica de fora por cima", () => {
+    const gola = caixa("Gola")
+    const pescoco = caixa("Pescoco")
+    expect(gola.max.x).toBeGreaterThan(pescoco.max.x)
+    expect(pescoco.max.z).toBeGreaterThan(gola.max.z)
+  })
+
+  it("o pé apoia no piso, sem afundar nem flutuar", () => {
+    for (const suf of ["Direita", "Esquerda"] as const) {
+      const pe = caixa(`Pe_${suf}`)
+      expect(pe.min.z).toBeGreaterThan(-0.001)
+      expect(pe.min.z).toBeLessThan(0.01)
+    }
+  })
+})
+
 describe("cabeça e cabelo", () => {
   // Caixa PRECISA (medida nos vértices). A do three, por padrão, gira a caixa
   // local e devolve a caixa disso — para uma calota inclinada isso mede 6 cm a

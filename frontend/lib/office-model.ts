@@ -1284,9 +1284,16 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   const mOlho = tmat([0.08, 0.08, 0.08])
   const mBoca = tmat([0.55, 0.3, 0.28])
 
-  g.add(box("Quadril", [0.3, 0.24, 0.18], [0, CENTRO_Y, 0.56], mCal))
-  g.add(box("Torso", [0.32, 0.2, 0.42], [0, CENTRO_Y, 0.86], mCam))
-  g.add(cyl("Pescoco", 0.05, 0.08, [0, CENTRO_Y, 1.11], mCam))
+  // O tronco era uma TÁBUA: 32 cm de largura por 20 de fundo, com o braço saindo
+  // direto do canto da caixa. Aprofundar já tira metade do "achatado"; o resto é
+  // o ombro, que agora é uma bola entre o tronco e o braço — sem ela o braço é um
+  // palito espetado numa quina, e nenhuma espessura de braço conserta isso.
+  g.add(box("Quadril", [0.31, 0.25, 0.19], [0, CENTRO_Y, 0.555], mCal))
+  g.add(box("Torso", [0.32, 0.24, 0.42], [0, CENTRO_Y, 0.86], mCam))
+  // Pescoço de PELE, com a gola da camisa por cima: antes ele era da cor da
+  // camisa, então a cabeça saía direto de um tubo de tecido.
+  g.add(cyl("Gola", 0.082, 0.035, [0, CENTRO_Y, 1.078], mCam))
+  g.add(cyl("Pescoco", 0.058, 0.09, [0, CENTRO_Y, 1.115], mPele))
 
   g.add(sph("Cabeca", CABECA_R, CABECA_CENTRO, mPele, CABECA_ESC))
   // A calota pende para trás: a borda passa alta na testa e desce pela nuca.
@@ -1313,7 +1320,8 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
     const ombro: V3 = [lado * OMBRO[0], OMBRO[1], OMBRO[2]]
     const cotovelo: V3 = [lado * COTOVELO[0], COTOVELO[1], COTOVELO[2]]
     const mao: V3 = [lado * MAO[0], MAO[1], MAO[2]]
-    g.add(segmento(`Braco_${suf}`, ombro, cotovelo, 0.045, mCam))
+    g.add(sph(`Ombro_${suf}`, 0.06, [lado * 0.166, CENTRO_Y, 1.005], mCam))
+    g.add(segmento(`Braco_${suf}`, ombro, cotovelo, 0.05, mCam))
     // Antebraço e mão num grupo com origem no COTOVELO: girar esse grupo em X
     // é exatamente o gesto de digitar (a mão sobe e desce em arco). É por este
     // nome que a cena acha o pivô a cada quadro — ver lib/office-typing.
@@ -1321,16 +1329,19 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
     pivo.name = `${PIVO_ANTEBRACO}${suf}`
     pivo.position.set(...cotovelo)
     const rel: V3 = [mao[0] - cotovelo[0], mao[1] - cotovelo[1], mao[2] - cotovelo[2]]
-    pivo.add(segmento(`Antebraco_${suf}`, [0, 0, 0], rel, 0.04, mPele))
+    pivo.add(segmento(`Antebraco_${suf}`, [0, 0, 0], rel, 0.043, mPele))
     pivo.add(sph(`Mao_${suf}`, 0.05, rel, mPele))
     g.add(pivo)
   }
   for (const lado of [1, -1]) {
     const qx = lado * 0.1
     const suf = lado === 1 ? "Direita" : "Esquerda"
-    g.add(cyl(`Coxa_${suf}`, 0.07, 0.35, [qx, CENTRO_Y + 0.175, 0.56], mCal, [D(90), 0, 0]))
-    g.add(cyl(`Canela_${suf}`, 0.055, 0.56, [qx, CENTRO_Y + 0.35, 0.28], mCal))
-    g.add(box(`Pe_${suf}`, [0.1, 0.22, 0.06], [qx, CENTRO_Y + 0.42, 0.03], mSap))
+    g.add(cyl(`Coxa_${suf}`, 0.076, 0.35, [qx, CENTRO_Y + 0.175, 0.56], mCal, [D(90), 0, 0]))
+    // A quina onde a coxa deitada encontra a canela em pé. Sem ela, a perna
+    // dobra em ângulo reto — duas varas encostadas, não um joelho.
+    g.add(sph(`Joelho_${suf}`, 0.07, [qx, CENTRO_Y + 0.35, 0.555], mCal))
+    g.add(cyl(`Canela_${suf}`, 0.06, 0.56, [qx, CENTRO_Y + 0.35, 0.28], mCal))
+    g.add(box(`Pe_${suf}`, [0.108, 0.235, 0.06], [qx, CENTRO_Y + 0.425, 0.03], mSap))
   }
 
   // ---- Acessórios da loja ----

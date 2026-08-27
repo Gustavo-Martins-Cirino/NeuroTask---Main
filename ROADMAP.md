@@ -184,9 +184,19 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > mesma regra da fileira da parede — com a altura cravada em cada peça, mexer no cabelo
 > afundaria a aba dentro dele, e só se descobriria no olho.
 
-- [ ] **O corpo do boneco continua achatado.** Tronco e quadril são caixas rasas e os
-      braços são cilindros finos; cabeça e cabelo já foram (ver acima). Falta dar volume ao
-      resto — e conferir tudo no olho, que é a parte que nenhum teste faz.
+> **O corpo: resolvido (27/08).** O tronco era uma TÁBUA — 32 cm de largura por 20 de
+> fundo —, e de perfil (que é de onde a câmera olha) uma tábua some. O fundo subiu para 24.
+>
+> **A outra metade não era espessura, era JUNTA.** O braço saía direto da quina da caixa do
+> tronco, e a perna dobrava em ângulo reto: dois cilindros encostados. Engrossar o braço só
+> engrossa o palito. Entraram a bola do ombro (entre o tronco e o braço, cobrindo a ponta
+> dele) e a do joelho, no encontro da coxa deitada com a canela em pé.
+>
+> Junto: o pescoço virou PELE com gola de camisa por cima — antes ele era da cor da camisa,
+> então a cabeça saía direto de um tubo de tecido.
+>
+> **Falta o olho.** Nada disso foi visto rodando; o que os testes garantem é geometria (o
+> ombro cobre a ponta do braço, o pé apoia no piso, a gola envolve o pescoço), não beleza.
 
 - [ ] **Mais três chapéus.** Hoje são três (boné, social, coroa).
 
