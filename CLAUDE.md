@@ -103,6 +103,7 @@ frontend/
 │   ├── revelacao-resposta.ts # Resposta entrando escrita no chat: duração fixa, ritmo pelo tamanho (puro)
 │   ├── onda-sonora.ts        # De quem é a vez de falar → cor da onda (puro)
 │   ├── atalhos-neuro.ts      # Atalhos da Neuro IA: padrões, saneamento e tetos (puro)
+│   ├── telegram-fuso.ts      # De que parede o /hoje do bot fala: vínculo → push → padrão (puro)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
@@ -110,7 +111,7 @@ frontend/
 └── styles/global.css
 
 supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
-  33 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
+  37 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
 
 ## Rotas existentes
@@ -134,6 +135,10 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
   (`/start CODIGO`, gerado em Configurações). Webhook em `app/api/telegram/webhook`
   protegido pelo header `x-telegram-bot-api-secret-token`; `app/api/telegram/setup`
   registra o webhook. Parser puro e determinístico em `lib/telegram-commands.ts` (sem LLM).
+
+  O fuso de quem usa pega carona no código de pareamento e fica no vínculo
+  (`lib/telegram-fuso.ts`, `supabase/telegram_tz.sql`) — o Telegram não conta de onde a
+  mensagem vem, e sem isso o `/hoje` responde pela parede do Brasil para todo mundo.
 
 **Variáveis de ambiente novas**: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`.
 Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).

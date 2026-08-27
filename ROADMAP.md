@@ -70,12 +70,30 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > da data de hoje. Todo lembrete marcado nos dez primeiros minutos do dia nunca chegava, em
 > qualquer fuso. Agora a janela para em 00:00.
 
-- [ ] **Fuso no bot do Telegram.** É a mesma dívida na outra ponta: `app/api/telegram/webhook`
-      ainda resolve "amanhã 9h" pelo `DEFAULT_TZ_OFFSET_MIN`. Aqui é mais difícil do que no
-      push, e por isso ficou: o Telegram não conta o fuso de quem manda a mensagem, então o
-      dado teria que vir do app (do último aparelho que ligou push, por exemplo) ou ser
-      perguntado no pareamento.
-      Não confundir com o formato 12h/24h, que é outra coisa e já está resolvido.
+> **Fuso no bot do Telegram: resolvido (27/08).** O que de fato usava o
+> `DEFAULT_TZ_OFFSET_MIN` era o `/hoje` — a virada do dia e o "HH:mm" da agenda (o parser do
+> bot nunca leu data; o item dizia "amanhã 9h" por engano). Quem estivesse em Lisboa às 23h
+> já via a agenda de amanhã, e às 00:30 ainda via a de ontem.
+>
+> **A saída foi a que o item previa, e as duas ao mesmo tempo.** O fuso do navegador pega
+> carona no CÓDIGO DE PAREAMENTO — é o único momento em que o app fala com o Telegram — e
+> fica gravado no vínculo (`supabase/telegram_tz.sql`). Quem parear pelo aparelho errado, ou
+> viajar depois, cai no segundo palpite: a inscrição de push mais recente, que é reescrita
+> toda vez que alguém liga o push num aparelho. O padrão do servidor é o último recurso.
+>
+> **`fusoDoUsuario` não usa `??`, e isso é o teste que mais importa**: zero é fuso legítimo
+> (Londres no inverno), e um `??` distraído mandaria quem está em UTC para o horário do
+> Brasil.
+>
+> **Banco sem o SQL rodado não pode quebrar nada**, e foi o cuidado que mais mexeu no código:
+> o webhook lê os vínculos com `select("*")` — pedir a coluna nova devolveria erro, o vínculo
+> viria nulo e o bot responderia "esta conversa não está ligada" a quem já está pareado. Na
+> mesma linha, gerar o código tenta com o fuso e repete sem ele se a coluna não existir.
+>
+> **Pede um passo do Gustavo**: rodar `supabase/telegram_tz.sql` e parear de novo (o vínculo
+> antigo fica sem fuso e cai no palpite seguinte).
+>
+> Não confundir com o formato 12h/24h, que é outra coisa e já estava resolvido.
 > **Seletores de hora**: resolvido. O wheel virou `components/time-select.tsx` e os três
 > diálogos (bloco de tempo, tarefa, convite) usam o mesmo — a preferência 12h/24h vale para
 > LER e para DIGITAR. O risco que segurava este item (mexer no que vai pro banco) não se

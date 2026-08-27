@@ -23,11 +23,18 @@ export async function generateTelegramCode(): Promise<{ code: string; expiresAt:
   const code = randomCode()
   const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString()
 
-  const { error } = await supabase.from("telegram_pairing_codes").insert({
-    user_id: user.id,
-    code,
-    expires_at: expiresAt,
-  })
+  // O fuso pega carona no código: é o ÚNICO momento em que o app fala com o
+  // Telegram, e o Telegram não conta de onde a mensagem vem (ver lib/telegram-fuso).
+  const base = { user_id: user.id, code, expires_at: expiresAt }
+  let { error } = await supabase
+    .from("telegram_pairing_codes")
+    .insert({ ...base, tz_offset_min: new Date().getTimezoneOffset() })
+  // Banco sem o telegram_tz.sql rodado: parear é mais importante que o fuso, e
+  // sem a segunda tentativa a tela de Configurações simplesmente pararia de
+  // gerar código — um jeito caro de anunciar que falta um ALTER TABLE.
+  if (error && error.message.includes("tz_offset_min")) {
+    ({ error } = await supabase.from("telegram_pairing_codes").insert(base))
+  }
   if (error) return null
 
   return { code, expiresAt }

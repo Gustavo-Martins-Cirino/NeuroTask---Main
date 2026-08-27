@@ -1,5 +1,13 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { parseCommand, AJUDA } from "@/lib/telegram-commands"
+import { fusoDoUsuario, horaLocal, janelaDoDia } from "@/lib/telegram-fuso"
+
+// O tipo sai da chamada, e não de `ReturnType<typeof createServiceClient>`: os
+// genéricos declarados têm outros padrões, e o cliente real não encaixa neles.
+function clienteDeServico(url: string, key: string) {
+  return createServiceClient(url, key, { auth: { persistSession: false } })
+}
+type Db = ReturnType<typeof clienteDeServico>
 
 export const runtime = "nodejs"
 
@@ -36,20 +44,33 @@ async function responder(chatId: number, texto: string) {
   }
 }
 
-function inicioDoDiaLocal(): { inicio: string; fim: string } {
-  const agora = new Date()
-  const local = new Date(agora.getTime() - TZ_MIN * 60_000)
-  const y = local.getUTCFullYear(), m = local.getUTCMonth(), d = local.getUTCDate()
-  const inicioUtc = Date.UTC(y, m, d) + TZ_MIN * 60_000
-  return {
-    inicio: new Date(inicioUtc).toISOString(),
-    fim: new Date(inicioUtc + 24 * 3_600_000).toISOString(),
+/**
+ * De que parede o "hoje" está falando.
+ *
+ * Primeiro palpite: o fuso gravado no vínculo, que veio do navegador junto com
+ * o código de pareamento. Segundo: a inscrição de push mais recente — reescrita
+ * toda vez que alguém liga o push num aparelho, então ela envelhece devagar.
+ * Por último, o padrão do servidor.
+ *
+ * As duas colunas podem não existir (banco sem `telegram_tz.sql` ou sem
+ * `push_tz.sql`): a consulta falhando devolve `undefined`, que é só mais um
+ * palpite ruim — o bot responde pelo padrão em vez de dar erro.
+ */
+async function fusoDoVinculo(db: Db, userId: string, doVinculo: unknown): Promise<number> {
+  let dePush: unknown
+  try {
+    const { data } = await db
+      .from("push_subscriptions")
+      .select("tz_offset_min")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    dePush = data?.tz_offset_min
+  } catch {
+    /* sem push_tz.sql: segue para o padrão */
   }
-}
-
-const hhmm = (iso: string) => {
-  const d = new Date(new Date(iso).getTime() - TZ_MIN * 60_000)
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`
+  return fusoDoUsuario([doVinculo, dePush], TZ_MIN)
 }
 
 export async function POST(req: Request) {
@@ -73,13 +94,16 @@ export async function POST(req: Request) {
   const texto = update.message?.text
   if (typeof chatId !== "number") return new Response("ok") // edições, fotos, etc.
 
-  const db = createServiceClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+  const db = clienteDeServico(supabaseUrl, serviceKey)
   const cmd = parseCommand(texto)
 
   try {
+    // `*`, e não a lista de colunas: pedir `tz_offset_min` num banco sem o
+    // `telegram_tz.sql` rodado devolveria erro, `link` viria nulo e o bot
+    // responderia "esta conversa não está ligada" a quem já está pareado.
     const { data: link } = await db
       .from("telegram_links")
-      .select("id, user_id")
+      .select("*")
       .eq("chat_id", chatId)
       .maybeSingle()
 
@@ -88,7 +112,7 @@ export async function POST(req: Request) {
       if (cmd.kind === "start" && cmd.code) {
         const { data: pairing } = await db
           .from("telegram_pairing_codes")
-          .select("id, user_id, expires_at")
+          .select("*")
           .eq("code", cmd.code.trim())
           .maybeSingle()
 
@@ -97,11 +121,15 @@ export async function POST(req: Request) {
           return new Response("ok")
         }
 
-        const { error } = await db.from("telegram_links").insert({
+        // O fuso viaja do navegador para o vínculo dentro do código: é a única
+        // ponte que existe entre o app e esta conversa.
+        const vinculo: Record<string, unknown> = {
           user_id: pairing.user_id,
           chat_id: chatId,
           username: update.message?.from?.username ?? null,
-        })
+        }
+        if (typeof pairing.tz_offset_min === "number") vinculo.tz_offset_min = pairing.tz_offset_min
+        const { error } = await db.from("telegram_links").insert(vinculo)
         if (error) {
           await responder(chatId, "Não consegui conectar agora. Tente de novo em instantes.")
           return new Response("ok")
@@ -138,7 +166,8 @@ export async function POST(req: Request) {
         break
 
       case "today": {
-        const { inicio, fim } = inicioDoDiaLocal()
+        const fuso = await fusoDoVinculo(db, link.user_id, link.tz_offset_min)
+        const { inicio, fim } = janelaDoDia(Date.now(), fuso)
         const [tarefasR, blocosR] = await Promise.all([
           db.from("tasks")
             .select("title, status, due_date")
@@ -163,7 +192,9 @@ export async function POST(req: Request) {
         const linhas: string[] = []
         if (blocos.length > 0) {
           linhas.push("📅 Hoje na agenda:")
-          for (const b of blocos) linhas.push(`  ${hhmm(b.start_time)}–${hhmm(b.end_time)}  ${b.title}`)
+          for (const b of blocos) {
+            linhas.push(`  ${horaLocal(b.start_time, fuso)}–${horaLocal(b.end_time, fuso)}  ${b.title}`)
+          }
         }
         if (tarefas.length > 0) {
           if (linhas.length > 0) linhas.push("")

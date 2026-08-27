@@ -51,7 +51,9 @@ para o dia seguinte),
 `nivel-faixa`, `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
 `revelacao-resposta` (a resposta da Neuro entrando escrita no chat: duração fixa e ritmo
 saindo do tamanho — é o que impede uma resposta longa de levar meio minuto para aparecer),
-`routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands` e
+`routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands`,
+`telegram-fuso` (de que parede o `/hoje` do bot está falando — e que zero é fuso de
+verdade, não "ausente") e
 `time-format`. É onde a lógica sutil regride sem
 ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de
 Supabase, e não é ali que mora o risco.
@@ -225,8 +227,13 @@ feita à mão pode ter batizado o constraint de outro jeito.
 
 **8. Integrações externas** (só se for usá-las)
 ```
-telegram.sql · calendar_feed.sql
+telegram.sql → telegram_tz.sql · calendar_feed.sql
 ```
+`telegram_tz.sql` guarda o fuso de quem parear. Sem ele o `/hoje` responde pela parede do
+Brasil para todo mundo — quem estiver em Lisboa às 23h já vê a agenda de amanhã. O fuso
+pega carona no código de pareamento (é o único momento em que o app fala com o Telegram),
+então quem já estava pareado precisa **parear de novo**; até lá o bot tenta o fuso da
+inscrição de push mais recente e, se não houver, o padrão do servidor.
 `calendar_feed.sql` liga o feed assinável (Configurações → "Assinar no Google/Outlook"). Sem dependências.
 
 **Faxina (opcional, e só se você quiser)**
