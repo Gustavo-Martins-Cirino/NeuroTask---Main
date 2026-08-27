@@ -160,8 +160,33 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > cadeira, boneco, tapete — passaria a flutuar 14 mm. Entraram três pisos:
 > madeira escura (55), porcelanato (90) e cimento queimado (110) — `supabase/office_v5.sql`.
 
-- [ ] **O boneco está achatado, e a cabeça também; o cabelo está ralo.** É o que mais aparece
-      na cena e é o que menos convence hoje.
+> **Cabeça e cabelo: resolvidos (27/08).** O crânio era uma ESFERA de 28 cm em todo eixo —
+> por isso "a cabeça também está achatada": bola não é cabeça. Agora ele é mais estreito
+> que fundo e mais alto que largo, e ganhou nariz, orelhas e sobrancelhas. Isso importa mais
+> do que parece nesta cena: a câmera olha o boneco quase de PERFIL (ver o item do azimute
+> abaixo), e de perfil quem aparece é o nariz e a orelha, não olho e boca.
+>
+> **O cabelo ralo tinha causa medível**: a panqueca de cabelo terminava exatamente na altura
+> do topo do crânio — zero de espessura na coroa. Só se via uma faixa em volta, e daí "ralo".
+>
+> **A correção não foi engordar a casca, e é a decisão que vale registrar.** Casca cheia
+> grande o bastante para sobrar em cima sobra também na frente e desce sobre os olhos;
+> encolhida até liberar o rosto, volta a ter zero em cima. Não há ponto bom no meio — é a
+> mesma armadilha da malha pastel. O que resolve é a calota ter BORDA: ela pende para trás,
+> e a borda passa alta na testa (a linha do cabelo) e baixa na nuca. Os ângulos são a borda.
+>
+> **Uma armadilha de medição saiu junto**, das que fazem um teste acusar defeito onde não
+> há: `Box3.setFromObject` gira a caixa local e devolve a caixa disso. Para uma calota
+> inclinada isso mede 6 cm a mais no topo — o teste de "o chapéu encosta no cabelo"
+> reprovava contra um cabelo que não existe. Os testes da cabeça usam a caixa PRECISA.
+>
+> **Nenhum chapéu escolhe mais a própria altura**: todos assentam em `TOPO_DO_CABELO`. É a
+> mesma regra da fileira da parede — com a altura cravada em cada peça, mexer no cabelo
+> afundaria a aba dentro dele, e só se descobriria no olho.
+
+- [ ] **O corpo do boneco continua achatado.** Tronco e quadril são caixas rasas e os
+      braços são cilindros finos; cabeça e cabelo já foram (ver acima). Falta dar volume ao
+      resto — e conferir tudo no olho, que é a parte que nenhum teste faz.
 
 - [ ] **Mais três chapéus.** Hoje são três (boné, social, coroa).
 

@@ -141,6 +141,25 @@ function sph(name: string, raio: number, pos: V3, material: Material, esc?: V3):
 }
 
 /**
+ * Calota: um pedaço de casca de esfera, com o eixo em Z (convenção Blender).
+ *
+ * O `thetaLength` do three abre a partir de +Y, então a geometria é girada como
+ * a dos cilindros — sem isso, uma "touca" nasceria virada para a frente do rosto
+ * em vez de para cima. `abertura` é o MEIO-ângulo: π/2 é meia esfera.
+ */
+function calota(name: string, raio: number, abertura: number, pos: V3, material: Material, rot?: V3, esc?: V3): Mesh {
+  const geo = new SphereGeometry(raio, 24, 16, 0, Math.PI * 2, 0, abertura)
+  geo.rotateX(Math.PI / 2)
+  const m = new Mesh(geo, material)
+  m.name = name
+  m.position.set(...pos)
+  if (rot) m.rotation.set(...rot)
+  if (esc) m.scale.set(...esc)
+  m.castShadow = true
+  return m
+}
+
+/**
  * Marca uma peça para NÃO entrar no bloom, mesmo tendo emissivo.
  *
  * É o caso da tela do monitor. Os LEDs passam por `mled`, que corta a cor a 8%
@@ -1200,6 +1219,48 @@ const CENTRO_Y = 0.9
 /** Prefixo do grupo que a cena gira para o boneco digitar (sufixo = o lado). */
 export const PIVO_ANTEBRACO = "Antebraco_Pivo_"
 
+// ---- A cabeça, e por que ela tem medidas com nome ----
+//
+// Ela era uma ESFERA de 28 cm em todo eixo com uma panqueca de cabelo em cima:
+// o cabelo tinha o topo exatamente na altura do topo do crânio, ou seja, zero de
+// espessura na coroa. Daí o "cabelo ralo" — só se via uma faixa em volta.
+//
+// Agora o crânio é um pouco mais estreito que fundo e mais alto que largo (que é
+// como uma cabeça é), e o cabelo é uma casca maior deslocada para trás e para
+// cima: cobre topo, nuca e laterais com volume de verdade e deixa o rosto livre.
+// A linha do cabelo não é desenhada — ela nasce onde as duas superfícies se
+// cruzam, uns 5 cm acima dos olhos.
+//
+// **Nenhum chapéu escolhe a própria altura**: todos assentam em `TOPO_DO_CABELO`.
+// É a mesma regra da fileira da parede (lib/office-parede) — com a altura cravada
+// em cada peça, mexer no cabelo faria o chapéu afundar nele, e só se descobriria
+// no olho.
+const CABECA_R = 0.132
+const CABECA_ESC: V3 = [0.92, 1, 0.98]
+export const CABECA_CENTRO: V3 = [0, CENTRO_Y, 1.252]
+/** Meias-medidas do crânio (x lateral, y para onde o rosto olha, z para cima). */
+export const CABECA_SEMI: V3 = [
+  CABECA_R * CABECA_ESC[0], CABECA_R * CABECA_ESC[1], CABECA_R * CABECA_ESC[2],
+]
+
+// O cabelo é uma CALOTA, não um elipsoide cheio, e a diferença é a única forma
+// de ter as duas coisas ao mesmo tempo: volume na coroa e rosto livre. Uma casca
+// cheia grande o bastante para sobrar em cima do crânio sobra também na frente,
+// e desce sobre os olhos; encolhida até liberar o rosto, ela volta a ter zero de
+// espessura em cima — que era exatamente o defeito de antes.
+//
+// A calota resolve porque tem BORDA: ela pende para trás, e a borda passa alta
+// na testa (a linha do cabelo) e baixa na nuca. Os ângulos abaixo são essa
+// borda — abertura menos inclinação dá onde ela cruza a testa.
+const CABELO_R = 0.146
+const CABELO_CENTRO: V3 = [0, CENTRO_Y - 0.012, 1.252]
+const CABELO_ESC: V3 = [0.88, 1, 1]
+const CABELO_ABERTURA = D(107.5)
+const CABELO_INCLINACAO = D(47.5)
+
+/** Onde um chapéu encosta: o topo do CABELO, não o do crânio. */
+export const TOPO_DO_CABELO = CABELO_CENTRO[2] + CABELO_R
+
 // Pose do braço em PONTOS (x é espelhado pelo lado; y/z valem para os dois).
 // O teclado ocupa y ∈ [1.26, 1.38] com o topo em z=0.83, então a mão pousa em
 // y=1.29 e paira 2 cm acima das teclas — a tecladinha de office-typing encosta
@@ -1217,6 +1278,9 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   const mCal = tmat(cores.calca ?? [0.24, 0.24, 0.3], 0, "tecido")
   const mSap = tmat(cores.sapato ?? [0.15, 0.15, 0.16], 0, "plastico")
   const mCab = tmat(cores.cabelo ?? [0.32, 0.2, 0.14], 0, "tecido")
+  // A calota do cabelo é uma superfície aberta embaixo: sem as duas faces, olhar
+  // a nuca por baixo mostraria o vazio de dentro dela.
+  mCab.side = DoubleSide
   const mOlho = tmat([0.08, 0.08, 0.08])
   const mBoca = tmat([0.55, 0.3, 0.28])
 
@@ -1224,10 +1288,24 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   g.add(box("Torso", [0.32, 0.2, 0.42], [0, CENTRO_Y, 0.86], mCam))
   g.add(cyl("Pescoco", 0.05, 0.08, [0, CENTRO_Y, 1.11], mCam))
 
-  g.add(sph("Cabeca", 0.14, [0, CENTRO_Y, 1.26], mPele))
-  g.add(sph("Cabelo", 0.145, [0, CENTRO_Y - 0.01, 1.32], mCab, [1, 1, 0.55]))
-  g.add(sph("Olho_Direito", 0.018, [0.05, CENTRO_Y + 0.12, 1.28], mOlho))
-  g.add(sph("Olho_Esquerdo", 0.018, [-0.05, CENTRO_Y + 0.12, 1.28], mOlho))
+  g.add(sph("Cabeca", CABECA_R, CABECA_CENTRO, mPele, CABECA_ESC))
+  // A calota pende para trás: a borda passa alta na testa e desce pela nuca.
+  g.add(calota("Cabelo", CABELO_R, CABELO_ABERTURA, CABELO_CENTRO, mCab, [CABELO_INCLINACAO, 0, 0], CABELO_ESC))
+
+  // O rosto de perfil: a câmera olha o boneco quase de lado (ver lib/office-camera),
+  // então nariz e orelhas aparecem mais do que olhos e boca.
+  g.add(sph("Nariz", 0.022, [0, CENTRO_Y + 0.124, 1.255], mPele, [0.7, 1, 0.75]))
+  for (const lado of [1, -1]) {
+    const suf = lado === 1 ? "Direita" : "Esquerda"
+    // Fora do cabelo de propósito: dentro dele a orelha simplesmente não existe.
+    g.add(sph(`Orelha_${suf}`, 0.03, [lado * 0.122, CENTRO_Y - 0.02, 1.262], mPele, [0.5, 0.9, 1.2]))
+  }
+  g.add(sph("Olho_Direito", 0.018, [0.05, CENTRO_Y + 0.113, 1.28], mOlho))
+  g.add(sph("Olho_Esquerdo", 0.018, [-0.05, CENTRO_Y + 0.113, 1.28], mOlho))
+  for (const lado of [1, -1]) {
+    const suf = lado === 1 ? "Direita" : "Esquerda"
+    g.add(box(`Sobrancelha_${suf}`, [0.042, 0.012, 0.01], [lado * 0.05, CENTRO_Y + 0.118, 1.301], mCab))
+  }
   g.add(box("Boca", [0.05, 0.015, 0.015], [0, CENTRO_Y + 0.12, 1.2], mBoca))
 
   for (const lado of [1, -1]) {
@@ -1308,17 +1386,21 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   if (acess.chapeu === "social") {
     const mFeltro = tmat([0.18, 0.16, 0.19])
     const mFita = tmat([0.55, 0.14, 0.2])
-    g.add(cyl("Chapeu_Aba", 0.25, 0.022, [0, CENTRO_Y, 1.395], mFeltro))
-    g.add(cyl("Chapeu_Fita", 0.142, 0.045, [0, CENTRO_Y, 1.428], mFita))
-    g.add(cyl("Chapeu_Copa", 0.135, 0.12, [0, CENTRO_Y, 1.5], mFeltro))
+    // Assenta no cabelo, e por isso a altura sai de TOPO_DO_CABELO: com o número
+    // cravado, engrossar o cabelo afundaria a aba dentro dele.
+    const base = TOPO_DO_CABELO + 0.012
+    g.add(cyl("Chapeu_Aba", 0.25, 0.022, [0, CENTRO_Y, base], mFeltro))
+    g.add(cyl("Chapeu_Fita", 0.142, 0.045, [0, CENTRO_Y, base + 0.033], mFita))
+    g.add(cyl("Chapeu_Copa", 0.135, 0.12, [0, CENTRO_Y, base + 0.105], mFeltro))
   }
 
   if (acess.chapeu === "coroa") {
     const ouro = tmat([0.93, 0.75, 0.24], 0.45)
-    g.add(cyl("Coroa_Aro", 0.142, 0.055, [0, CENTRO_Y, 1.41], ouro))
+    const base = TOPO_DO_CABELO + 0.03
+    g.add(cyl("Coroa_Aro", 0.142, 0.055, [0, CENTRO_Y, base], ouro))
     for (let i = 0; i < 5; i++) {
       const a = (i * 72 * Math.PI) / 180
-      g.add(cyl(`Coroa_Ponta_${i}`, 0.032, 0.075, [Math.cos(a) * 0.125, CENTRO_Y + Math.sin(a) * 0.125, 1.47], ouro, undefined, 0.001))
+      g.add(cyl(`Coroa_Ponta_${i}`, 0.032, 0.075, [Math.cos(a) * 0.125, CENTRO_Y + Math.sin(a) * 0.125, base + 0.06], ouro, undefined, 0.001))
     }
   }
 

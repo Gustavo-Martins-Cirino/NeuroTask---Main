@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest"
 import { Box3, DoubleSide, Group, Mesh, MeshStandardMaterial, Vector3 } from "three"
-import { buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO, type EscritorioExtras } from "./office-model"
+import {
+  buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO,
+  CABECA_CENTRO, CABECA_SEMI, TOPO_DO_CABELO, type EscritorioExtras,
+} from "./office-model"
 import { typingTap, TECLA_AMPLITUDE } from "./office-typing"
 import { CAMERA_POS } from "./office-camera"
 
@@ -153,7 +156,7 @@ describe("pose do boneco", () => {
   /** Ângulo entre a direção do rosto e a direção da câmera, em graus.
    *  > 90° = vemos as costas; 90° = perfil. */
   function anguloRostoCamera(camera: readonly [number, number, number]): number {
-    const cabecaM = paraMundo(new Vector3(0, 0.9, 1.26))
+    const cabecaM = paraMundo(new Vector3(...CABECA_CENTRO))
     // O rosto olha para +Y na sala, que no mundo é −Z.
     const frenteM = new Vector3(0, 0, -1)
     const paraCamera = new Vector3(...camera).sub(cabecaM).normalize()
@@ -342,17 +345,112 @@ describe("letreiro de neon", () => {
 })
 
 // Boné e óculos: "o boné tá muito reto" e "coloco os óculos e nem consigo ver".
-// A cabeça é uma esfera de raio 0.14 centrada em (0, 0.9, 1.26) — é dela que
-// saem todas as medidas abaixo.
+// A cabeça é um elipsoide (mais estreita que funda, mais alta que larga) — as
+// medidas dela vêm do próprio módulo, e não copiadas aqui: foi copiando que a
+// primeira versão destes testes ficou medindo uma esfera que já não existia.
 
-const CABECA = new Vector3(0, 0.9, 1.26)
-const R_CABECA = 0.14
+const CABECA = new Vector3(...CABECA_CENTRO)
+
+/** Meia-largura do crânio (no eixo do rosto) na altura `z`. */
+function raioDoRostoEm(z: number): number {
+  const t = (z - CABECA.z) / CABECA_SEMI[2]
+  return CABECA_SEMI[1] * Math.sqrt(Math.max(0, 1 - t * t))
+}
 
 function boneco(acess: Parameters<typeof buildPersonagem>[1]) {
   const p = buildPersonagem(undefined, acess)
   p.updateMatrixWorld(true)
   return p
 }
+
+describe("cabeça e cabelo", () => {
+  // Caixa PRECISA (medida nos vértices). A do three, por padrão, gira a caixa
+  // local e devolve a caixa disso — para uma calota inclinada isso mede 6 cm a
+  // mais no topo, e um teste de "o chapéu encosta no cabelo" acusaria colisão
+  // com um cabelo que não está lá.
+  const caixa = (nome: string, acess: Parameters<typeof buildPersonagem>[1] = {}) =>
+    new Box3().setFromObject(malha(boneco(acess), nome), true)
+
+  it("o crânio tem forma de cabeça: mais estreito que fundo, mais alto que largo", () => {
+    const c = caixa("Cabeca").getSize(new Vector3())
+    expect(c.x).toBeLessThan(c.y) // estreito no eixo de orelha a orelha
+    expect(c.x).toBeLessThan(c.z) // e mais alto do que largo
+  })
+
+  it("o cabelo tem espessura NA COROA — era aí que ele sumia", () => {
+    // O defeito antigo: a panqueca de cabelo terminava exatamente no topo do
+    // crânio, então sobrava zero de cabelo em cima e só se via uma faixa.
+    const cranio = caixa("Cabeca")
+    const cabelo = caixa("Cabelo")
+    expect(cabelo.max.z - cranio.max.z).toBeGreaterThan(0.01)
+  })
+
+  it("o cabelo cobre nuca e laterais, e não só o topo", () => {
+    const cranio = caixa("Cabeca")
+    const cabelo = caixa("Cabelo")
+    expect(cabelo.min.y).toBeLessThan(cranio.min.y - 0.01) // sobra na nuca
+    expect(cabelo.max.x).toBeGreaterThan(cranio.max.x)     // e nas laterais
+  })
+
+  it("o cabelo NÃO invade o rosto — a borda dele passa acima da testa", () => {
+    // Medido nos VÉRTICES, não na caixa: a caixa do cabelo cobre olhos e nariz
+    // sem que exista uma única peça de cabelo ali (a calota pende para trás, e
+    // a região da frente dela é buraco).
+    // A faixa de olhos, nariz e sobrancelhas. A borda do cabelo passa ACIMA
+    // dela: no topo desta caixa o cabelo mais à frente ainda está na nuca.
+    const rosto = new Box3(
+      new Vector3(-0.075, CABECA.y + 0.09, 1.23),
+      new Vector3(0.075, CABECA.y + 0.22, 1.308)
+    )
+    const p = boneco({})
+    const m = malha(p, "Cabelo") as Mesh
+    const pos = m.geometry.attributes.position
+    const v = new Vector3()
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld)
+      expect(rosto.containsPoint(v)).toBe(false)
+    }
+  })
+
+  it("olhos, nariz e boca ficam à mostra, não afundados na cabeça", () => {
+    for (const nome of ["Olho_Direito", "Olho_Esquerdo", "Nariz", "Boca", "Sobrancelha_Direita"]) {
+      const c = caixa(nome)
+      const z = c.getCenter(new Vector3()).z
+      expect(c.max.y).toBeGreaterThan(CABECA.y + raioDoRostoEm(z))
+    }
+  })
+
+  it("o nariz aparece de perfil, que é de onde a câmera olha", () => {
+    const nariz = caixa("Nariz")
+    const z = nariz.getCenter(new Vector3()).z
+    expect(nariz.max.y - (CABECA.y + raioDoRostoEm(z))).toBeGreaterThan(0.008)
+  })
+
+  it("a orelha escapa do cabelo — dentro dele ela não existiria", () => {
+    const cabelo = caixa("Cabelo")
+    for (const suf of ["Direita", "Esquerda"] as const) {
+      const orelha = caixa(`Orelha_${suf}`)
+      expect(Math.max(Math.abs(orelha.min.x), Math.abs(orelha.max.x)))
+        .toBeGreaterThan(Math.max(Math.abs(cabelo.min.x), Math.abs(cabelo.max.x)))
+    }
+  })
+
+  it("todo chapéu assenta no CABELO, e nenhum afunda nele", () => {
+    // A altura de cada chapéu sai de TOPO_DO_CABELO. Com o número cravado em
+    // cada peça, engrossar o cabelo enfiaria a aba dentro dele — e só se
+    // descobriria no olho.
+    for (const [chapeu, peca] of [["social", "Chapeu_Aba"], ["coroa", "Coroa_Aro"]] as const) {
+      const c = caixa(peca, { chapeu })
+      expect(c.max.z).toBeGreaterThan(TOPO_DO_CABELO)
+      expect(c.min.z).toBeGreaterThan(TOPO_DO_CABELO - 0.005)
+    }
+  })
+
+  it("o boné cobre o cabelo em vez de ser atravessado por ele", () => {
+    expect(caixa("Bone_Copa", { chapeu: "bone" }).max.z)
+      .toBeGreaterThan(caixa("Cabelo", { chapeu: "bone" }).max.z)
+  })
+})
 
 describe("boné", () => {
   const comBone = () => boneco({ chapeu: "bone" })
@@ -400,8 +498,7 @@ describe("óculos", () => {
       const lente = new Box3().setFromObject(malha(p, "Oculos_Lente_Direita"))
       const z = lente.getCenter(new Vector3()).z
       // Raio da seção da cabeça naquela altura: o que a lente precisa passar.
-      const raioNaAltura = Math.sqrt(Math.max(0, R_CABECA ** 2 - (z - CABECA.z) ** 2))
-      expect(lente.min.y).toBeGreaterThan(CABECA.y + raioNaAltura - 0.005)
+      expect(lente.min.y).toBeGreaterThan(CABECA.y + raioDoRostoEm(z) - 0.005)
     })
 
     it(`${tipo}: tem ARO em volta — é ele que se enxerga de longe, não a lente`, () => {
