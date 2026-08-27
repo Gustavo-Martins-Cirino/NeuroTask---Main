@@ -487,6 +487,43 @@ describe("itens novos da loja", () => {
     }
   })
 
+  it("cabo: a ponta termina DENTRO do plugue — antes parava solta no ar", () => {
+    // O bug era esse: os dois cabos acabavam quatro centímetros à frente da
+    // placa, com a ponta apontando para a parede sem encostar em nada.
+    const g = buildEscritorio()
+    for (const [cabo, plugue] of [["Cabo_PC", "Tomada_Plugue_A"], ["Cabo_Monitor", "Tomada_Plugue_B"]]) {
+      const caixaPlugue = caixaMundo(g, plugue)
+      const m = malha(g, cabo) as Mesh
+      const pos = m.geometry.getAttribute("position")
+      // A ponta é o vértice mais próximo da parede do fundo (maior y).
+      let ponta = new Vector3()
+      for (let i = 0; i < pos.count; i++) {
+        const v = new Vector3().fromBufferAttribute(pos, i)
+        if (v.y > ponta.y || i === 0) ponta = v
+      }
+      expect(caixaPlugue.containsPoint(ponta.add(m.position))).toBe(true)
+    }
+  })
+
+  it("cabo: o plugue encosta na placa da tomada, sem folga e sem afundar", () => {
+    const g = buildEscritorio()
+    const placa = caixaMundo(g, "Tomada_Espelho")
+    for (const p of ["Tomada_Plugue_A", "Tomada_Plugue_B"]) {
+      // A face de trás do plugue e a da frente da placa são a mesma linha.
+      expect(Math.abs(caixaMundo(g, p).max.y - placa.min.y)).toBeLessThan(1e-6)
+    }
+  })
+
+  it("tomada: dois bocais, um por cabo — com um só, um dos dois sobrava", () => {
+    const g = buildEscritorio()
+    expect(pecas(g, "Tomada_Furo_").length).toBe(6)
+    expect(pecas(g, "Tomada_Plugue_").length).toBe(2)
+    // Os dois plugues em alturas diferentes, senão são o mesmo ponto.
+    const a = caixaMundo(g, "Tomada_Plugue_A")
+    const b = caixaMundo(g, "Tomada_Plugue_B")
+    expect(a.min.z).toBeGreaterThan(b.max.z - 1e-6)
+  })
+
   it("estante: a armação não engole os livros — era o que a deixava um bloco marrom", () => {
     const g = buildEscritorio({ extras: { estante: true } })
     const livros = pecas(g, "Estante_Livro_")

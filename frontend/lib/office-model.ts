@@ -620,22 +620,47 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   const mCabo = tmat([0.09, 0.09, 0.1], 0, "plastico")
   const xTom = 1.05
   const yParede = S - 0.055 // face interna da parede do fundo (espessura 0.1)
+  const yFace = yParede - 0.01 // a face do espelho virada para a sala
   g.add(box("Tomada_Espelho", [0.13, 0.02, 0.13], [xTom, yParede, 0.32], mTomada))
-  g.add(cyl("Tomada_Furo_Esq", 0.014, 0.012, [xTom - 0.028, yParede - 0.016, 0.335], mFuro, [D(90), 0, 0]))
-  g.add(cyl("Tomada_Furo_Dir", 0.014, 0.012, [xTom + 0.028, yParede - 0.016, 0.335], mFuro, [D(90), 0, 0]))
-  g.add(cyl("Tomada_Furo_Terra", 0.014, 0.012, [xTom, yParede - 0.016, 0.29], mFuro, [D(90), 0, 0]))
 
+  // DUAS tomadas na mesma placa, e não uma. São dois cabos na sala; com um
+  // ponto só, um deles ficava sobrando de qualquer jeito. Placa de 13 cm é 4×4,
+  // que é onde cabem duas — não é licença poética.
+  const zTomadas = { alta: 0.355, baixa: 0.285 }
+  const bocal = (sufixo: string, zc: number) => {
+    g.add(cyl(`Tomada_Furo_Esq${sufixo}`, 0.011, 0.012, [xTom - 0.023, yFace - 0.006, zc + 0.009], mFuro, [D(90), 0, 0]))
+    g.add(cyl(`Tomada_Furo_Dir${sufixo}`, 0.011, 0.012, [xTom + 0.023, yFace - 0.006, zc + 0.009], mFuro, [D(90), 0, 0]))
+    g.add(cyl(`Tomada_Furo_Terra${sufixo}`, 0.011, 0.012, [xTom, yFace - 0.006, zc - 0.018], mFuro, [D(90), 0, 0]))
+  }
+  bocal("_A", zTomadas.alta)
+  bocal("_B", zTomadas.baixa)
+
+  // O plugue é o que faltava. Antes os cabos paravam em `yParede - 0.05`, quatro
+  // centímetros À FRENTE da placa: a ponta ficava solta no ar apontando para a
+  // parede, e é isso que lia como cabo torto. Agora cada um termina DENTRO de um
+  // plugue, e o plugue encosta na placa.
+  const PLUGUE_FUNDO = 0.03
+  const plugue = (nome: string, zc: number) => {
+    g.add(box(nome, [0.05, PLUGUE_FUNDO, 0.05], [xTom, yFace - PLUGUE_FUNDO / 2, zc], mTomada))
+  }
+  plugue("Tomada_Plugue_A", zTomadas.alta)
+  plugue("Tomada_Plugue_B", zTomadas.baixa)
+
+  // O último ponto cai dentro do plugue; o penúltimo faz o cabo chegar POR
+  // BAIXO, que é como um cabo sobe do chão até a tomada.
   g.add(cabo("Cabo_PC", [
     [0.62, 1.66 + dy, 0.80],
     [0.74, 1.87 + dy, 0.5],
-    [0.9, 1.9 + dy, 0.14],
-    [xTom - 0.03, yParede - 0.05, 0.26],
+    [0.92, 1.9 + dy, 0.16],
+    [xTom + 0.02, yParede - 0.055, 0.23],
+    [xTom, yFace - PLUGUE_FUNDO / 2, zTomadas.alta],
   ], 0.012, mCabo))
   g.add(cabo("Cabo_Monitor", [
     [0.05, 1.37 + dy, 0.85],
     [0.34, 1.86 + dy, 0.58],
     [0.72, 1.91 + dy, 0.16],
-    [xTom + 0.03, yParede - 0.05, 0.26],
+    [xTom - 0.03, yParede - 0.055, 0.19],
+    [xTom, yFace - PLUGUE_FUNDO / 2, zTomadas.baixa],
   ], 0.01, mCabo))
 
   // ---- Itens da loja ----

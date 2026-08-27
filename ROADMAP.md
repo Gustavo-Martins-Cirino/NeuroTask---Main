@@ -108,10 +108,13 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       parede, e a próxima decoração de parede recria o problema. O que resolve é as peças de
       parede saírem de uma lista de vagas, com a vaga marcada como ocupada.
 
-- [ ] **O cabo não encosta na tomada.** As duas curvas terminam em `yParede - 0,05`, cinco
-      centímetros ANTES da face da parede, e a ponta fica solta no ar — é o torto da foto.
-      Termina rente ao espelho da tomada e ganha um plugue (um bloquinho), senão o cabo
-      parece atravessado por ela.
+> **Cabo: resolvido (25/08).** Era o diagnóstico certo — as duas curvas terminavam quatro
+> centímetros à frente da placa, com a ponta solta apontando para a parede. Cada cabo ganhou
+> um plugue, que encosta na face da placa, e a curva agora termina DENTRO dele, chegando por
+> baixo. A tomada virou dupla (dois bocais na mesma placa de 13 cm, que é 4×4): são dois
+> cabos na sala, e com um ponto só um deles ia sobrar de qualquer jeito. Três testes seguram:
+> a ponta do cabo tem de cair dentro da caixa do plugue, o plugue tem de encostar na placa
+> sem folga e sem afundar, e os dois bocais têm de estar em alturas diferentes.
 
 - [ ] **O beagle flutua.** `PetBeagle` em `office-scene-3d.tsx` faz
       `position.y = |sin(t·2,2)|·0,08` — um pulinho contínuo, sem pata no chão e sem pausa.
