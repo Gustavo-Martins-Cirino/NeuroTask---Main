@@ -136,10 +136,19 @@ function PetBeagle({ recuo = 0 }: { recuo?: number }) {
     })
     return c
   }, [scene])
+  // Ele fica no chão. Antes era `position.y = |sin(t·2,2)| · 0,08` — um pulinho
+  // contínuo, sem pata no chão e sem pausa nenhuma, que de longe lê como um
+  // cachorro flutuando. Cachorro parado não pula: respira e olha em volta.
+  //
+  // A respiração é escala, não altura: o corpo incha um triz e volta, com as
+  // patas paradas onde estão. Os dois tempos não se dividem (1,6 e 0,7), então
+  // o balanço da cabeça não cai sempre no mesmo ponto do fôlego — é o que evita
+  // o ar de brinquedo de corda.
   useFrame((state) => {
     if (!ref.current) return
     const t = state.clock.elapsedTime
-    ref.current.position.y = Math.abs(Math.sin(t * 2.2)) * 0.08 // pulinho
+    const folego = 1 + Math.sin(t * 1.6) * 0.018
+    ref.current.scale.set(1, folego, folego)
     ref.current.rotation.y = Math.PI * 0.25 + Math.sin(t * 0.7) * 0.3 // olha em volta
   })
   return (

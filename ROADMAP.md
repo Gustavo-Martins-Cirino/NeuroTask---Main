@@ -116,10 +116,10 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > a ponta do cabo tem de cair dentro da caixa do plugue, o plugue tem de encostar na placa
 > sem folga e sem afundar, e os dois bocais têm de estar em alturas diferentes.
 
-- [ ] **O beagle flutua.** `PetBeagle` em `office-scene-3d.tsx` faz
-      `position.y = |sin(t·2,2)|·0,08` — um pulinho contínuo, sem pata no chão e sem pausa.
-      Cachorro parado respira e vira a cabeça; quando pula, pula uma vez e cai. Trocar o
-      salto perpétuo por respiração (escala mínima no tronco) + a cabeça que ele já vira.
+> **Beagle: resolvido (25/08).** O pulinho perpétuo saiu e virou respiração — escala, não
+> altura, então as patas ficam onde estão. Os dois tempos não se dividem (1,6 do fôlego e
+> 0,7 do olhar), para o balanço da cabeça não cair sempre no mesmo ponto da respiração; com
+> tempos múltiplos, ele ganha ar de brinquedo de corda.
 
 > **Estante: resolvida (25/08).** Era o diagnóstico certo — `Estante_Corpo` era uma caixa
 > maciça e os livros estavam posicionados dentro dela, lacrados. Virou armação (fundo, duas
@@ -131,8 +131,8 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > nenhuma peça da armação pode CONTER um livro, nada pode ficar na frente de um livro, e
 > nenhum livro pode furar o tampo.
 
-- [ ] **O emoji do papel de parede é um rolo de papel higiênico** (🧻, `parede-papel` em
-      `lib/shop.ts`). Trocar.
+> **Emoji do papel de parede: resolvido (25/08).** 🧻 → 📜, e o nome virou "Papel listrado",
+> que é o que o item de fato é.
 
 - [ ] **Mais paredes: 5 ou 6, com as elaboradas mais caras.** Pedidos por nome: **tijolinho**
       e **cimento queimado**. As de hoje são cor chapada (40–70 moedas); as novas têm padrão,
