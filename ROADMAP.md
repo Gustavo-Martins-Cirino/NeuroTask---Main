@@ -528,9 +528,27 @@ vira ruído.
 > página). Não foi economia: o canvas do ShaderGradient é justamente o que **não** entra no
 > ticker único, e abriria um segundo `requestAnimationFrame` concorrendo com a esfera.
 
-- [ ] **A resposta da Neuro entra sem transição.** Ela aparece de uma vez no lugar onde
-      estava o vazio. Vale a mesma ideia da conversa ao vivo, que já tem isso
-      (`lib/transcricao-viva.ts`): a mensagem chega, não surge.
+> **A resposta entra escrita: resolvido (27/08).** Era o diagnóstico certo — o chat até
+> lê a resposta com `getReader()`, mas o provedor padrão (Groq, o único com ferramentas)
+> responde de uma vez, então o "streaming" chegava num pedaço só e a bolha saltava pronta
+> no lugar do spinner. Agora ela é revelada pelo relógio (`lib/revelacao-resposta.ts`),
+> reaproveitando o corte em palavra inteira e o fecha-negrito da conversa ao vivo.
+>
+> **O que muda em relação ao ritmo da voz**, e é a decisão do módulo novo: lá o ritmo é o
+> da fala (16 caracteres por segundo, fixo); aqui o que se fixa é a DURAÇÃO. Com um CPS
+> fixo, uma resposta de mil caracteres levaria quase meio minuto para acabar de aparecer.
+> Toda resposta entra em ~0,9s, e é o tamanho dela que decide a velocidade — com piso, para
+> a resposta de uma linha não ficar lenta à toa.
+>
+> Duas armadilhas que o código evita de propósito: o alvo mora numa ref, não nas
+> dependências do efeito (com um provedor que transmite mesmo em pedaços, o texto muda mais
+> de uma vez a cada 50ms e o relógio reiniciaria antes de fechar um passo, travando a
+> revelação em zero); e a contagem guarda o resto em número fracionário, senão velocidade
+> menor que um caractere por passo arredondaria para zero para sempre.
+>
+> Com `prefers-reduced-motion` o texto aparece inteiro. Aqui não cabe o meio-termo que
+> "Seus números" achou (acender no lugar de animar): texto que se escreve sozinho **é** o
+> movimento, e reduzi-lo é mostrá-lo pronto.
 
 - [ ] **A esfera da tela vazia está parada demais.** É a bola acima do "Olá! Sou a Neuro IA"
       (`components/neuro-sphere.tsx`): o Gustavo quer ela se mexendo de um jeito que leia

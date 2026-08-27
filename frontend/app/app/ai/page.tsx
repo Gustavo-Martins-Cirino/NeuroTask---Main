@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { Bot, ArrowUp, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/client"
 import { VoiceConversation, unlockSpeech } from "@/components/voice-conversation"
 import { AtalhosNeuro } from "@/components/atalhos-neuro"
 import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
+import { avancarRevelacao, revelacaoTerminou, PASSO_MS } from "@/lib/revelacao-resposta"
+import { fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +66,21 @@ function saveConvos(list: Convo[]) {
   try { localStorage.setItem(CONVOS_KEY, JSON.stringify(list)) } catch {}
 }
 
+function usaMovimentoReduzido() {
+  const [reduzido, setReduzido] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const ler = () => setReduzido(mq.matches)
+    ler()
+    mq.addEventListener("change", ler)
+    return () => mq.removeEventListener("change", ler)
+  }, [])
+  return reduzido
+}
+
+/** Já revelado por inteiro — o valor que faz o texto aparecer sem esperar relógio. */
+const TUDO = Number.MAX_SAFE_INTEGER
+
 export default function AiPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
@@ -75,6 +92,7 @@ export default function AiPage() {
   const [convos, setConvos] = useState<Convo[]>([])
   const [activeId, setActiveId] = useState<string>("")
   const bootedRef = useRef(false)
+  const reduzido = usaMovimentoReduzido()
   const scrollRef = useRef<HTMLDivElement>(null)
   const mascaraRolagem = useMascaraRolagem(scrollRef)
   const recorderRef = useRef<MediaRecorder | null>(null)
@@ -142,9 +160,70 @@ export default function AiPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, activeId])
 
+  // ---- A resposta entrando escrita ----
+  //
+  // Com o Groq (o provedor padrão, e o único com ferramentas) a rota responde de
+  // uma vez: o texto inteiro chega num pedaço só e a bolha saltava pronta no
+  // lugar onde estava o spinner. Aqui ela é revelada pelo relógio, como na
+  // conversa ao vivo — a diferença é que lá o ritmo é o da voz e aqui é o da
+  // leitura (lib/revelacao-resposta.ts).
+  const [revelado, setRevelado] = useState(TUDO)
+  const reveladoRef = useRef(TUDO)
+  const definirRevelado = useCallback((n: number) => {
+    reveladoRef.current = n
+    setRevelado(n)
+  }, [])
+
+  // Só a ÚLTIMA mensagem é revelada, e só quando é resposta: as anteriores já
+  // foram lidas, e reabrir uma conversa antiga não deve reescrevê-la.
+  const ultimaResposta =
+    messages.length > 0 && messages[messages.length - 1].role === "assistant"
+      ? messages[messages.length - 1].content
+      : null
+
+  // O alvo e o "ainda está chegando" moram em refs, e não nas dependências do
+  // efeito: com um provedor que transmite em pedaços, o texto muda mais de uma
+  // vez a cada 50ms — o efeito reiniciaria o relógio antes de o passo fechar, e
+  // a revelação nunca sairia do lugar. Quem (re)começa a contagem é o envio.
+  const alvoRef = useRef(0)
+  alvoRef.current = ultimaResposta?.length ?? 0
+  const carregandoRef = useRef(false)
+  carregandoRef.current = loading
+  const [envio, setEnvio] = useState(0)
+
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
-  }, [messages, loading])
+    if (envio === 0) return
+    // Movimento reduzido: o texto aparece inteiro. Aqui não cabe o meio-termo
+    // que "Seus números" achou (acender no lugar de animar) — texto que se
+    // escreve sozinho É o movimento, e reduzi-lo é mostrá-lo pronto.
+    if (reduzido) { definirRevelado(TUDO); return }
+
+    let anterior = performance.now()
+    const id = setInterval(() => {
+      const agora = performance.now()
+      const passo = (agora - anterior) / 1000
+      anterior = agora
+      const alvo = alvoRef.current
+      const proximo = avancarRevelacao(reveladoRef.current, alvo, passo)
+      definirRevelado(proximo)
+      // Alcançar o alvo só encerra depois que a resposta parou de crescer:
+      // enquanto ela chega em pedaços, ficar em dia é situação passageira.
+      if (!carregandoRef.current && revelacaoTerminou(proximo, alvo)) clearInterval(id)
+    }, PASSO_MS)
+    return () => clearInterval(id)
+  }, [envio, reduzido, definirRevelado])
+
+  const revelando = ultimaResposta !== null && !revelacaoTerminou(revelado, ultimaResposta.length)
+
+  useEffect(() => {
+    // Enquanto o texto cresce o acompanhamento é seco: uma rolagem suave nova a
+    // cada 50ms disputaria com a anterior e a lista tremeria.
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: revelando ? "auto" : "smooth",
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, loading, revelado])
 
   const send = async (text: string) => {
     const trimmed = text.trim()
@@ -157,6 +236,9 @@ export default function AiPage() {
 
     // placeholder para a resposta que será preenchida via streaming
     setMessages((prev) => [...prev, { role: "assistant", content: "" }])
+    // A revelação recomeça do zero: é esta bolha que vai ser escrita.
+    definirRevelado(0)
+    setEnvio((n) => n + 1)
 
     try {
       const res = await fetch("/api/ai", {
@@ -300,11 +382,14 @@ export default function AiPage() {
   // Decide o papel do botão redondo: seta de enviar ou onda da conversa ao vivo.
   const temTexto = input.trim().length > 0
 
+  // Trocar de conversa mostra o que já foi lido, inteiro: reescrever uma
+  // resposta antiga letra a letra seria fingir que ela está chegando agora.
   const newConversation = () => {
     const c = newConvo()
     setConvos((prev) => pruneConvos([c, ...prev]))
     setActiveId(c.id)
     setMessages([])
+    definirRevelado(TUDO)
   }
   const switchConvo = (id: string) => {
     if (id === activeId) return
@@ -312,6 +397,7 @@ export default function AiPage() {
     if (!c) return
     setActiveId(id)
     setMessages(c.messages)
+    definirRevelado(TUDO)
   }
   const togglePin = (id: string) => {
     setConvos((prev) => {
@@ -323,6 +409,7 @@ export default function AiPage() {
   const deleteConvo = (id: string) => {
     const next = convos.filter((c) => c.id !== id)
     if (id === activeId) {
+      definirRevelado(TUDO)
       if (next.length > 0) {
         const nx = [...next].sort((a, b) => b.updatedAt - a.updatedAt)[0]
         setActiveId(nx.id)
@@ -448,27 +535,35 @@ export default function AiPage() {
           ) : (
             <div className="space-y-4">
               <AnimatePresence initial={false}>
-                {messages.map((m, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
-                  >
-                    <div
-                      className={cn(
-                        "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                        m.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card border border-border/50"
-                      )}
+                {messages.map((m, i) => {
+                  // A última resposta é a que está sendo escrita; as outras já
+                  // foram lidas e aparecem inteiras.
+                  const escrevendo = i === messages.length - 1 && m.role === "assistant"
+                  const texto = escrevendo
+                    ? fecharMarcacao(fatiar(m.content, Math.floor(revelado)))
+                    : m.content
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
                     >
-                      {m.content || (
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                      <div
+                        className={cn(
+                          "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                          m.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card border border-border/50"
+                        )}
+                      >
+                        {texto || (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
+                    </motion.div>
+                  )
+                })}
               </AnimatePresence>
             </div>
           )}

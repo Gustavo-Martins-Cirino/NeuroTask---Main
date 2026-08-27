@@ -49,6 +49,8 @@ para o dia seguinte),
 `foto-perfil` (o recorte quadrado central, o que se aceita e o carimbo anti-cache),
 `gamification` (anti-farm), `ics`, `iniciais` (nome → iniciais e cor do avatar),
 `nivel-faixa`, `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
+`revelacao-resposta` (a resposta da Neuro entrando escrita no chat: duração fixa e ritmo
+saindo do tamanho — é o que impede uma resposta longa de levar meio minuto para aparecer),
 `routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands` e
 `time-format`. É onde a lógica sutil regride sem
 ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de

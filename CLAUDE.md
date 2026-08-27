@@ -100,6 +100,7 @@ frontend/
 │   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
 │   ├── neuro-sphere.ts       # Esfera da Neuro: pontos, repulsão e retorno (puro)
 │   ├── transcricao-viva.ts   # Resposta aparecendo no ritmo da fala, na conversa ao vivo (puro)
+│   ├── revelacao-resposta.ts # Resposta entrando escrita no chat: duração fixa, ritmo pelo tamanho (puro)
 │   ├── onda-sonora.ts        # De quem é a vez de falar → cor da onda (puro)
 │   ├── atalhos-neuro.ts      # Atalhos da Neuro IA: padrões, saneamento e tetos (puro)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
