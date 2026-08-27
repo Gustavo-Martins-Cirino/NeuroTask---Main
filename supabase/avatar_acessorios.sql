@@ -10,7 +10,10 @@ insert into public.shop_items (id, name, price, category) values
   ('oculos-grau',    'Óculos de grau',  35,  'oculos'),
   ('oculos-escuros', 'Óculos escuros',  70,  'oculos'),
   ('chapeu-bone',    'Boné',            45,  'chapeu'),
+  ('chapeu-gorro',   'Gorro de lã',     60,  'chapeu'),
   ('chapeu-social',  'Chapéu social',   90,  'chapeu'),
-  ('chapeu-coroa',   'Coroa dourada',   220, 'chapeu')
+  ('chapeu-capuz',   'Capuz',           130, 'chapeu'),
+  ('chapeu-coroa',   'Coroa dourada',   220, 'chapeu'),
+  ('chapeu-aureola', 'Auréola',         260, 'chapeu')
 on conflict (id) do update
   set name = excluded.name, price = excluded.price, category = excluded.category;

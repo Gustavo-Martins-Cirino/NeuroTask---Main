@@ -198,7 +198,25 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > **Falta o olho.** Nada disso foi visto rodando; o que os testes garantem é geometria (o
 > ombro cobre a ponta do braço, o pé apoia no piso, a gola envolve o pescoço), não beleza.
 
-- [ ] **Mais três chapéus.** Hoje são três (boné, social, coroa).
+> **Mais três chapéus: entregues (27/08)** — **gorro de lã** (60), **capuz** (130) e
+> **auréola** (260). São seis agora, com a escada de preço fechada:
+> 45 · 60 · 90 · 130 · 220 · 260.
+>
+> O critério de escolha foi **silhueta**, não tema: com a câmera olhando o boneco por trás e
+> de lado, chapéu que só muda de cor não muda nada. Um abraça o crânio (com barra enrolada
+> e pompom), outro é um casco bem maior que a cabeça descendo até os ombros, o terceiro nem
+> encosta — paira e é EMISSIVO, então quem o acende é o passe de bloom. Um chapéu de mago
+> ficou de fora por um motivo bobo e real: o cone passaria do `RETRATO_VIEWBOX`, e alargar o
+> enquadramento encolheria o retrato de todo mundo.
+>
+> **Regra de item novo, cumprida**: linha no `shop_items` (`avatar_acessorios.sql`, que é
+> idempotente), tradução em `lib/avatar-accessories`, desenho no 3D e no bonequinho 2D, e
+> entrada no `SQL_DO_ITEM` — senão o erro de compra manda rodar o arquivo errado. Um teste
+> novo varre o catálogo e cobra a tradução de todo chapéu: sem ele, item novo é comprável e
+> simplesmente não aparece na cabeça, sem barulho nenhum.
+>
+> **Pede um passo do Gustavo**: rodar `supabase/avatar_acessorios.sql` de novo. Sem isso os
+> três aparecem na loja e a compra falha com `ITEM_INEXISTENTE`.
 
 - [ ] **Seção de móveis na loja**, e outras se fizerem sentido. Hoje `decor` é um saco onde
       cabe tudo — planta, quadro, relógio, pet, troféu, LED. Móvel é o que muda a PLANTA da

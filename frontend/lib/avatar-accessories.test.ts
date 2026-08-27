@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { acessoriosEquipados } from "./avatar-accessories"
+import { CATALOG } from "./shop"
 
 describe("acessoriosEquipados", () => {
   it("sem nada equipado devolve objeto vazio", () => {
@@ -16,6 +17,20 @@ describe("acessoriosEquipados", () => {
     expect(acessoriosEquipados(["chapeu-bone"]).chapeu).toBe("bone")
     expect(acessoriosEquipados(["chapeu-social"]).chapeu).toBe("social")
     expect(acessoriosEquipados(["chapeu-coroa"]).chapeu).toBe("coroa")
+    expect(acessoriosEquipados(["chapeu-gorro"]).chapeu).toBe("gorro")
+    expect(acessoriosEquipados(["chapeu-capuz"]).chapeu).toBe("capuz")
+    expect(acessoriosEquipados(["chapeu-aureola"]).chapeu).toBe("aureola")
+  })
+
+  it("todo chapéu do catálogo da loja tem tradução aqui", () => {
+    // Sem isto, um item novo é comprável e simplesmente não aparece na cabeça —
+    // e o erro não faz barulho nenhum.
+    for (const item of CATALOG.filter((i) => i.category === "chapeu")) {
+      expect(acessoriosEquipados([item.id]).chapeu).toBeDefined()
+    }
+    for (const item of CATALOG.filter((i) => i.category === "oculos")) {
+      expect(acessoriosEquipados([item.id]).oculos).toBeDefined()
+    }
   })
 
   it("reconhece cada óculos", () => {

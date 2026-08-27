@@ -211,6 +211,17 @@ function pecas(g: Group, prefixo: string): string[] {
   return out
 }
 
+/** Os vértices de uma malha, já em coordenadas do mundo. */
+function verticesDe(g: Group, nome: string): Vector3[] {
+  const m = malha(g, nome) as Mesh
+  const pos = m.geometry.attributes.position
+  const out: Vector3[] = []
+  for (let i = 0; i < pos.count; i++) {
+    out.push(new Vector3().fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld))
+  }
+  return out
+}
+
 function caixaMundo(g: Group, nome: string): Box3 {
   g.updateMatrixWorld(true)
   return new Box3().setFromObject(malha(g, nome))
@@ -447,14 +458,7 @@ describe("cabeça e cabelo", () => {
       new Vector3(-0.075, CABECA.y + 0.09, 1.23),
       new Vector3(0.075, CABECA.y + 0.22, 1.308)
     )
-    const p = boneco({})
-    const m = malha(p, "Cabelo") as Mesh
-    const pos = m.geometry.attributes.position
-    const v = new Vector3()
-    for (let i = 0; i < pos.count; i++) {
-      v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld)
-      expect(rosto.containsPoint(v)).toBe(false)
-    }
+    for (const v of verticesDe(boneco({}), "Cabelo")) expect(rosto.containsPoint(v)).toBe(false)
   })
 
   it("olhos, nariz e boca ficam à mostra, não afundados na cabeça", () => {
@@ -533,6 +537,67 @@ describe("boné", () => {
     for (const n of pecas(p, "Bone_Aba_")) {
       expect(new Box3().setFromObject(malha(p, n)).min.z).toBeGreaterThan(1.27)
     }
+  })
+})
+
+describe("chapéus novos", () => {
+  const caixa = (nome: string, chapeu: NonNullable<Parameters<typeof buildPersonagem>[1]>["chapeu"]) =>
+    new Box3().setFromObject(malha(boneco({ chapeu }), nome), true)
+
+  it("gorro: a copa cobre o cabelo, e não o contrário", () => {
+    const copa = caixa("Gorro_Copa", "gorro")
+    const cabelo = caixa("Cabelo", "gorro")
+    expect(copa.max.z).toBeGreaterThan(cabelo.max.z)
+    expect(copa.max.x).toBeGreaterThan(cabelo.max.x)
+  })
+
+  it("gorro: a barra para acima dos olhos", () => {
+    // Só o que passa NA FRENTE dos olhos conta: a barra é um anel inclinado, e
+    // a parte dela que desce mais é a da nuca. Comparar caixas mediria isso.
+    const p = boneco({ chapeu: "gorro" })
+    const olho = new Box3().setFromObject(malha(p, "Olho_Direito"), true)
+    for (const v of verticesDe(p, "Gorro_Barra")) {
+      if (v.y > CABECA.y && Math.abs(v.x) <= olho.max.x) expect(v.z).toBeGreaterThan(olho.max.z)
+    }
+  })
+
+  it("gorro: o pompom fica no alto e para trás, não na testa", () => {
+    const pompom = caixa("Gorro_Pompom", "gorro")
+    const copa = caixa("Gorro_Copa", "gorro")
+    expect(pompom.max.z).toBeGreaterThan(copa.max.z)
+    expect(pompom.getCenter(new Vector3()).y).toBeLessThan(CABECA.y)
+  })
+
+  it("capuz: engole a cabeça e desce até os ombros", () => {
+    const casco = caixa("Capuz_Casco", "capuz")
+    const cabelo = caixa("Cabelo", "capuz")
+    expect(casco.max.z).toBeGreaterThan(cabelo.max.z)
+    expect(casco.max.x).toBeGreaterThan(cabelo.max.x + 0.03)
+    expect(casco.min.z).toBeLessThan(1.08) // alcança o alto do ombro
+  })
+
+  it("capuz: na frente dos olhos não existe pano — só atrás e dos lados", () => {
+    // Uma calota é superfície aberta: a caixa dela cobre o rosto inteiro sem
+    // que exista uma peça ali. Na faixa dos olhos e no eixo deles, todo vértice
+    // do capuz tem de estar ATRÁS da cabeça.
+    const p = boneco({ chapeu: "capuz" })
+    const olho = new Box3().setFromObject(malha(p, "Olho_Direito"), true)
+    for (const v of verticesDe(p, "Capuz_Casco")) {
+      if (v.z > olho.min.z && v.z < olho.max.z && Math.abs(v.x) <= olho.max.x) {
+        expect(v.y).toBeLessThan(olho.min.y)
+      }
+    }
+  })
+
+  it("auréola: paira acima da cabeça, sem encostar em nada", () => {
+    const aureola = caixa("Aureola", "aureola")
+    const cabelo = caixa("Cabelo", "aureola")
+    expect(aureola.min.z).toBeGreaterThan(cabelo.max.z + 0.02)
+  })
+
+  it("auréola: é emissiva — é a luz que a faz ler como auréola, não o dourado", () => {
+    const m = malha(boneco({ chapeu: "aureola" }), "Aureola") as Mesh
+    expect((m.material as MeshStandardMaterial).emissiveIntensity).toBeGreaterThan(0.5)
   })
 })
 

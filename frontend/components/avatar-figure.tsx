@@ -23,6 +23,9 @@ const BONE = "#29599e"
 const FELTRO = "#3b3542"
 const FITA = "#8c2333"
 const OURO = "#edbf3d"
+const LA = "#b8434a"
+const LA_BARRA = "#dc6b70"
+const MOLETOM = "#4a4e59"
 
 // Acessórios da loja no bonequinho DE COSTAS. Chapéu se vê inteiro; do óculos
 // sobra o que passa da silhueta da cabeça: as hastes correndo até a orelha e a
@@ -77,6 +80,37 @@ function Acessorios({ acess, hx, hy }: { acess: AvatarAccessories; hx: number; h
             fill={FELTRO}
           />
           <path d={`M ${hx - 7.5} ${hy - 8.2} h 15 v 3.6 h -15 z`} fill={FITA} />
+        </g>
+      )}
+
+      {acess.chapeu === "gorro" && (
+        <g>
+          {/* a copa abraça o crânio; a barra enrolada é o que diz "gorro" */}
+          <path d={`M ${hx - 10.9} ${hy + 1.6} a 10.9 10.9 0 0 1 21.8 0 z`} fill={LA} />
+          <rect x={hx - 11.1} y={hy - 0.4} width="22.2" height="4.8" rx="2.4" fill={LA_BARRA} />
+          <circle cx={hx} cy={hy - 12.2} r="3" fill={LA_BARRA} />
+        </g>
+      )}
+
+      {acess.chapeu === "capuz" && (
+        <g>
+          {/* de costas o capuz é o que MAIS se vê: ele engole a cabeça inteira */}
+          <path
+            d={`M ${hx - 13.6} ${hy + 8.5} q -1.4 -16.5 13.6 -17.6 q 15 1.1 13.6 17.6 q -6.2 4.2 -13.6 4.2 q -7.4 0 -13.6 -4.2 z`}
+            fill={MOLETOM}
+          />
+          <path
+            d={`M ${hx - 13.6} ${hy + 8.5} q 13.6 5.2 27.2 0 l 0.7 3.2 q -14.3 5.4 -28.6 0 z`}
+            fill={darken(MOLETOM, 20)}
+          />
+        </g>
+      )}
+
+      {acess.chapeu === "aureola" && (
+        <g>
+          {/* paira acima da cabeça: não encosta, e é isso que a faz ler como luz */}
+          <ellipse cx={hx} cy={hy - 13} rx="8.2" ry="2.8" fill="none" stroke={OURO} strokeWidth="2.4" />
+          <ellipse cx={hx} cy={hy - 13} rx="8.2" ry="2.8" fill="none" stroke="#fff6cf" strokeWidth="0.9" opacity="0.75" />
         </g>
       )}
 

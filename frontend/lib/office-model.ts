@@ -23,6 +23,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   SphereGeometry,
+  TorusGeometry,
   TubeGeometry,
   Vector3,
   type Material,
@@ -135,6 +136,17 @@ function sph(name: string, raio: number, pos: V3, material: Material, esc?: V3):
   const m = new Mesh(new SphereGeometry(raio, 16, 12), material)
   m.name = name
   m.position.set(...pos)
+  if (esc) m.scale.set(...esc)
+  m.castShadow = true
+  return m
+}
+
+/** Anel deitado: o torus do three já nasce no plano XY, que é o chão daqui. */
+function anel(name: string, raio: number, tubo: number, pos: V3, material: Material, rot?: V3, esc?: V3): Mesh {
+  const m = new Mesh(new TorusGeometry(raio, tubo, 10, 28), material)
+  m.name = name
+  m.position.set(...pos)
+  if (rot) m.rotation.set(...rot)
   if (esc) m.scale.set(...esc)
   m.castShadow = true
   return m
@@ -1413,6 +1425,56 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
       const a = (i * 72 * Math.PI) / 180
       g.add(cyl(`Coroa_Ponta_${i}`, 0.032, 0.075, [Math.cos(a) * 0.125, CENTRO_Y + Math.sin(a) * 0.125, base + 0.06], ouro, undefined, 0.001))
     }
+  }
+
+  // Gorro de lã: a calota abraça o crânio e desce até pouco acima das
+  // sobrancelhas; a barra enrolada é o que separa "gorro" de "touca de banho".
+  if (acess.chapeu === "gorro") {
+    const mLa = tmat([0.72, 0.26, 0.29], 0, "tecido")
+    mLa.side = DoubleSide
+    const mBarra = tmat([0.86, 0.42, 0.44], 0, "tecido")
+    const C: V3 = [0, CENTRO_Y - 0.006, 1.262]
+    const R = 0.152
+    const ABERTURA = D(84.9)
+    const QUEDA = D(27.5)
+    const ESC: V3 = [0.9, 1, 1]
+    g.add(calota("Gorro_Copa", R, ABERTURA, C, mLa, [QUEDA, 0, 0], ESC))
+    // A barra mora NA BORDA da calota, e a borda é um círculo inclinado: o anel
+    // entra pelo mesmo eixo, senão sobra de um lado e afunda do outro.
+    const eixo = [0, -Math.sin(QUEDA), Math.cos(QUEDA)]
+    const dBorda = R * Math.cos(ABERTURA)
+    g.add(anel(
+      "Gorro_Barra", R * Math.sin(ABERTURA), 0.022,
+      [0, C[1] + eixo[1] * dBorda, C[2] + eixo[2] * dBorda], mBarra, [QUEDA, 0, 0], ESC
+    ))
+    const dPom = R + 0.032
+    g.add(sph("Gorro_Pompom", 0.037, [0, C[1] + eixo[1] * dPom, C[2] + eixo[2] * dPom], mBarra))
+  }
+
+  // Capuz: uma calota BEM maior que a cabeça, pendendo para trás — a boca dela
+  // fica na frente do rosto sem tapá-lo, e o fundo encosta nos ombros. É o
+  // chapéu que mais rende nesta câmera, que olha o boneco por trás e de lado.
+  if (acess.chapeu === "capuz") {
+    const mMoletom = tmat([0.29, 0.31, 0.36], 0, "tecido")
+    mMoletom.side = DoubleSide
+    const C: V3 = [0, CENTRO_Y - 0.048, 1.232]
+    const R = 0.188
+    const ABERTURA = D(96)
+    const QUEDA = D(60)
+    g.add(calota("Capuz_Casco", R, ABERTURA, C, mMoletom, [QUEDA, 0, 0]))
+    const eixo = [0, -Math.sin(QUEDA), Math.cos(QUEDA)]
+    const d = R * Math.cos(ABERTURA)
+    // Debrum na boca do capuz: sem ele a borda é uma linha de espessura zero.
+    g.add(anel(
+      "Capuz_Debrum", R * Math.sin(ABERTURA), 0.019,
+      [0, C[1] + eixo[1] * d, C[2] + eixo[2] * d], tmat([0.22, 0.24, 0.28], 0, "tecido"), [QUEDA, 0, 0]
+    ))
+  }
+
+  // Auréola: não encosta na cabeça — paira. Emissiva de propósito, para o passe
+  // de bloom acender o anel; é o que a faz ler como luz e não como aro dourado.
+  if (acess.chapeu === "aureola") {
+    g.add(anel("Aureola", 0.105, 0.017, [0, CENTRO_Y - 0.012, TOPO_DO_CABELO + 0.075], tmat([0.99, 0.88, 0.4], 1.4, "brilhante")))
   }
 
   if (acess.oculos) {

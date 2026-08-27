@@ -6,7 +6,7 @@
 // (components/avatar-figure). Duplicar a tabela seria garantir que um dia um
 // chapéu novo aparecesse só em um dos dois.
 
-export type Chapeu = "bone" | "social" | "coroa"
+export type Chapeu = "bone" | "social" | "coroa" | "gorro" | "capuz" | "aureola"
 export type Oculos = "grau" | "escuros"
 
 export interface AvatarAccessories {
@@ -20,6 +20,9 @@ const CHAPEUS: [string, Chapeu][] = [
   ["chapeu-bone", "bone"],
   ["chapeu-social", "social"],
   ["chapeu-coroa", "coroa"],
+  ["chapeu-gorro", "gorro"],
+  ["chapeu-capuz", "capuz"],
+  ["chapeu-aureola", "aureola"],
 ]
 
 const OCULOS: [string, Oculos][] = [
