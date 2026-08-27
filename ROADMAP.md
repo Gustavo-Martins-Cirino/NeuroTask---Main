@@ -140,8 +140,13 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       linha em `shop_items` (SQL) além do modelo — sem isso a compra falha com
       `ITEM_INEXISTENTE`.
 
-- [ ] **O piso de madeira não parece madeira** — é marrom forte e liso. Precisa de veio e de
-      régua (tábuas com emenda), não de outra cor. Mais opções de piso junto.
+> **Piso: resolvido (25/08).** O diagnóstico estava certo — o piso era UMA caixa com uma cor,
+> e cor nenhuma faz madeira. Agora o piso tem duas metades: a cor (que já existia) e o
+> DESENHO (`PisoTipo`), com tábua corrida e ladrilho. Três coisas fazem a tábua ler como
+> tábua: a régua (peças de 26 cm), a emenda deslocada de fileira em fileira, e o tom variando
+> entre vizinhas. As peças são REBAIXADAS (de −14 mm a 0), senão a sala inteira — mesa,
+> cadeira, boneco, tapete — passaria a flutuar 14 mm. Entraram três pisos:
+> madeira escura (55), porcelanato (90) e cimento queimado (110) — `supabase/office_v5.sql`.
 
 - [ ] **O boneco está achatado, e a cabeça também; o cabelo está ralo.** É o que mais aparece
       na cena e é o que menos convence hoje.

@@ -435,12 +435,20 @@ export interface EscritorioExtras {
  *  outras duas são compradas na loja e mudam a MALHA, não só a cor. */
 export type CadeiraTipo = "padrao" | "ergonomica" | "gamer"
 
+/** O piso é o único item da loja que a pessoa olha o tempo todo sem reparar.
+ *  Os que têm DESENHO (tábua, ladrilho) precisam de malha; os lisos são só cor,
+ *  e para esses `cores.piso` já basta. */
+export type PisoTipo = "liso" | "tabua" | "ladrilho"
+
 export interface EscritorioOpts {
   extras?: EscritorioExtras
   cores?: { parede?: string; piso?: string; cadeira?: string }
   /** Nível do dono: a sala cresce com ele (comparação social num relance). */
   nivel?: number
   cadeira?: CadeiraTipo
+  /** Desenho do piso. Sem isto, "piso de madeira" era um retângulo marrom: a
+   *  cor certa não faz madeira, o que faz é a régua e a emenda entre tábuas. */
+  piso?: PisoTipo
   /** Hora do dia — por enquanto só a vista da janela depende dela. Padrão
    *  "dusk" para quem não passa nada ver a cidade no melhor horário dela. */
   fase?: FaseDoDia
@@ -536,6 +544,69 @@ function cabo(name: string, pontos: V3[], raio: number, material: Material): Mes
   return m
 }
 
+/**
+ * O desenho do piso, por cima da laje.
+ *
+ * As peças são REBAIXADAS: elas ocupam de −0,014 a 0 em z, então a superfície
+ * onde tudo se apoia continua sendo z=0. Empilhar por cima faria a sala inteira
+ * — mesa, cadeira, boneco, tapete — passar a flutuar 14 mm.
+ *
+ * A emenda não é uma peça: é a folga entre as peças, com a laje escura
+ * aparecendo por baixo. Uma tábua desenhada como linha clara em cima da outra
+ * não lê como junta, lê como risco.
+ */
+function desenharPiso(g: Group, tam: number, tipo: PisoTipo, base: string | V3): void {
+  if (tipo === "liso") return
+  const S = tam / 2
+  const ESP = 0.014
+  const z = -ESP / 2
+  // Variação de tom entre peças vizinhas. É o que separa madeira de retângulo
+  // marrom: tábua de verdade não tem duas iguais coladas.
+  const tom = (i: number, amplitude: number): Material => {
+    const c = new Color(typeof base === "string" ? base : `rgb(${base.map((v) => Math.round(v * 255)).join(",")})`)
+    const d = (((i * 37) % 7) / 6 - 0.5) * amplitude
+    const hsl = { h: 0, s: 0, l: 0 }
+    c.getHSL(hsl)
+    c.setHSL(hsl.h, hsl.s, Math.max(0.04, Math.min(0.96, hsl.l + d)))
+    return tmat([c.r, c.g, c.b], 0, tipo === "tabua" ? "madeira" : "ceramica")
+  }
+
+  if (tipo === "tabua") {
+    const LARG = 0.26, JUNTA = 0.008
+    const n = Math.max(2, Math.floor(tam / (LARG + JUNTA)))
+    const passo = tam / n
+    for (let i = 0; i < n; i++) {
+      const y = -S + passo * (i + 0.5)
+      // Três trechos por fileira, com a emenda deslocada de fileira em fileira:
+      // tábua inteira de parede a parede denuncia que é textura, não piso.
+      const corte = [0.22, 0.55, 0.78][i % 3]
+      const limites = [-S, -S + tam * corte, -S + tam * Math.min(0.97, corte + 0.36), S]
+      for (let k = 0; k < 3; k++) {
+        const a = limites[k] + (k === 0 ? 0 : JUNTA / 2)
+        const b = limites[k + 1] - (k === 2 ? 0 : JUNTA / 2)
+        if (b - a < 0.05) continue
+        g.add(box(`Piso_Tabua_${i}_${k}`, [b - a, passo - JUNTA, ESP], [(a + b) / 2, y, z], tom(i * 5 + k * 3, 0.07)))
+      }
+    }
+    return
+  }
+
+  // Ladrilho: quadrado grande com rejunte fino, que é o que porcelanato é.
+  const LADO = 0.62, REJUNTE = 0.012
+  const n = Math.max(2, Math.round(tam / LADO))
+  const passo = tam / n
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < n; k++) {
+      g.add(box(
+        `Piso_Ladrilho_${i}_${k}`,
+        [passo - REJUNTE, passo - REJUNTE, ESP],
+        [-S + passo * (i + 0.5), -S + passo * (k + 0.5), z],
+        tom(i * 4 + k * 9, 0.03)
+      ))
+    }
+  }
+}
+
 // A sala cresce em degraus, não continuamente — assim subir de nível é um
 // evento perceptível, e não um centímetro invisível por vez.
 export function tamanhoDaSala(nivel = 1): number {
@@ -579,6 +650,7 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   const mFolha = tmat([0.27, 0.55, 0.3], 0, "tecido")
 
   g.add(box("Piso", [tam, tam, 0.1], [0, 0, -0.05], mPiso))
+  desenharPiso(g, tam, opts.piso ?? "liso", opts.cores?.piso ?? [0.82, 0.62, 0.4])
   g.add(box("Parede_Fundo", [tam, 0.1, 2.6], [0, S, 1.3], mParede))
   g.add(box("Parede_Lateral", [0.1, tam, 2.6], [-S, 0, 1.3], mParede))
   g.add(box("Rodape_Fundo", [tam, 0.12, 0.14], [0, S - 0.09, 0.07], mRodape))

@@ -13,7 +13,7 @@ import {
 import { useTheme } from "next-themes"
 import {
   buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO,
-  type EscritorioExtras, type PersonagemCores,
+  type EscritorioExtras, type PersonagemCores, type PisoTipo,
 } from "@/lib/office-model"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { faseDaHora, type FaseDoDia } from "@/lib/office-city"
@@ -61,11 +61,29 @@ const WALL_COLORS: Record<string, string> = {
   "parede-azul": "#8fb3d9", "parede-verde": "#9ec6a6", "parede-rosa": "#e5b5c8",
   "parede-cinza": "#8f939a", "parede-preta": "#232329", "parede-papel": "#cfc4b4",
 }
-const FLOOR_COLORS: Record<string, string> = { "piso-madeira": "#b5824f", "piso-carpete": "#8aa0b8" }
+// O piso tem duas metades: a COR (aqui) e o DESENHO (PisoTipo, abaixo). Cor
+// sozinha nunca fez madeira — o antigo "piso de madeira" era um retângulo marrom.
+const FLOOR_COLORS: Record<string, string> = {
+  "piso-madeira": "#b07b46",
+  "piso-carpete": "#8aa0b8",
+  "piso-madeira-escura": "#5d4227",
+  "piso-porcelanato": "#d8d6d1",
+  "piso-cimento": "#9b9894",
+}
+const FLOOR_PATTERNS: Record<string, PisoTipo> = {
+  "piso-madeira": "tabua",
+  "piso-madeira-escura": "tabua",
+  "piso-porcelanato": "ladrilho",
+}
 const CHAIR_COLORS: Record<string, string> = { "cadeira-ergonomica": "#3a4250", "cadeira-gamer": "#b23b3b" }
 function pick(map: Record<string, string>, equipped: Set<string> | undefined): string | undefined {
   if (equipped) for (const id in map) if (equipped.has(id)) return map[id]
   return undefined
+}
+
+function pisoTipoDe(equipped?: Set<string>): PisoTipo {
+  if (equipped) for (const id in FLOOR_PATTERNS) if (equipped.has(id)) return FLOOR_PATTERNS[id]
+  return "liso"
 }
 
 function cadeiraTipoDe(equipped?: Set<string>): "padrao" | "ergonomica" | "gamer" {
@@ -271,6 +289,7 @@ function CartoonOffice({
           cadeira: pick(CHAIR_COLORS, equipped),
         },
         cadeira: cadeiraTipoDe(equipped),
+        piso: pisoTipoDe(equipped),
       })
       // Quem tem emissivo forte entra na camada do bloom (neon, telas, LEDs).
       marcarQuemAcende(r)

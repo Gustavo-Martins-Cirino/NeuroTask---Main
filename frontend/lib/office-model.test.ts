@@ -487,6 +487,47 @@ describe("itens novos da loja", () => {
     }
   })
 
+  it("piso de tábua: as peças ficam REBAIXADAS — subir 14mm faria a sala flutuar", () => {
+    const g = buildEscritorio({ piso: "tabua" })
+    const tabuas = pecas(g, "Piso_Tabua_")
+    expect(tabuas.length).toBeGreaterThan(20)
+    for (const n of tabuas) {
+      // A superfície de apoio da sala é z=0. Nada do piso pode passar dela.
+      expect(caixaMundo(g, n).max.z).toBeLessThanOrEqual(1e-6)
+    }
+  })
+
+  it("piso de tábua: as emendas não se alinham de fileira em fileira", () => {
+    // Tábua inteira de parede a parede — ou emenda sempre no mesmo x — denuncia
+    // que aquilo é textura, não piso.
+    const g = buildEscritorio({ piso: "tabua" })
+    const fimDaPrimeira = (fileira: number) => caixaMundo(g, `Piso_Tabua_${fileira}_0`).max.x
+    expect(fimDaPrimeira(0)).not.toBeCloseTo(fimDaPrimeira(1), 2)
+    expect(fimDaPrimeira(1)).not.toBeCloseTo(fimDaPrimeira(2), 2)
+  })
+
+  it("piso de tábua: vizinhas têm tons diferentes — iguais viram retângulo marrom", () => {
+    const g = buildEscritorio({ piso: "tabua" })
+    const cor = (n: string) => ((malha(g, n) as Mesh).material as unknown as { color: { getHex(): number } }).color.getHex()
+    expect(cor("Piso_Tabua_0_0")).not.toBe(cor("Piso_Tabua_1_0"))
+  })
+
+  it("piso liso não desenha peça nenhuma — cor sozinha é o item inteiro", () => {
+    const g = buildEscritorio({ piso: "liso" })
+    expect(pecas(g, "Piso_Tabua_").length).toBe(0)
+    expect(pecas(g, "Piso_Ladrilho_").length).toBe(0)
+  })
+
+  it("ladrilho: cobre a sala inteira, sem sobra nas bordas", () => {
+    const g = buildEscritorio({ piso: "ladrilho" })
+    const ladrilhos = pecas(g, "Piso_Ladrilho_")
+    expect(ladrilhos.length).toBeGreaterThan(20)
+    const caixas = ladrilhos.map((n) => caixaMundo(g, n))
+    const piso = caixaMundo(g, "Piso")
+    expect(Math.min(...caixas.map((c) => c.min.x))).toBeGreaterThanOrEqual(piso.min.x - 1e-6)
+    expect(Math.max(...caixas.map((c) => c.max.x))).toBeLessThanOrEqual(piso.max.x + 1e-6)
+  })
+
   it("cabo: a ponta termina DENTRO do plugue — antes parava solta no ar", () => {
     // O bug era esse: os dois cabos acabavam quatro centímetros à frente da
     // placa, com a ponta apontando para a parede sem encostar em nada.

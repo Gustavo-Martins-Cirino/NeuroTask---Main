@@ -67,8 +67,11 @@ export const CATALOG: ShopItem[] = [
   { id: "parede-cinza", name: "Parede cinza", price: 40, category: "parede", emoji: "⚪", desc: "Concreto sóbrio" },
   { id: "parede-preta", name: "Parede preta", price: 55, category: "parede", emoji: "⚫", desc: "Fundo escuro, foco no que brilha" },
   { id: "parede-papel", name: "Papel listrado", price: 70, category: "parede", emoji: "📜", desc: "Listras verticais, não só cor" },
-  { id: "piso-madeira", name: "Piso de madeira", price: 30, category: "piso", emoji: "🪵", desc: "Taco clássico" },
+  { id: "piso-madeira", name: "Piso de madeira", price: 30, category: "piso", emoji: "🪵", desc: "Tábua corrida, com emenda" },
   { id: "piso-carpete", name: "Carpete", price: 30, category: "piso", emoji: "🧶", desc: "Piso macio azulado" },
+  { id: "piso-madeira-escura", name: "Madeira escura", price: 55, category: "piso", emoji: "🟫", desc: "Tábua em tom nogueira" },
+  { id: "piso-porcelanato", name: "Porcelanato", price: 90, category: "piso", emoji: "⬜", desc: "Ladrilho grande com rejunte" },
+  { id: "piso-cimento", name: "Cimento queimado", price: 110, category: "piso", emoji: "🪨", desc: "Liso, cinza e sem emenda" },
 ]
 
 export interface OwnedItem {
