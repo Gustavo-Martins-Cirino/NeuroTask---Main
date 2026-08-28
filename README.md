@@ -43,6 +43,8 @@ Antes do primeiro login, rode os SQLs em [supabase/](supabase/) — ver
 datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `avatar-accessories`,
 `backward-plan`, `calendar-feed`, `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
+`enquete` (quando perguntar e quando ficar quieto — e que "agora não" cala a enquete
+inteira, não só a pergunta recusada),
 `dashboard-metricas` (as três perguntas de "Seus números" — e o agrupamento por dia e
 hora **locais**, que é onde um `toISOString()` distraído jogaria toda noite de trabalho
 para o dia seguinte),

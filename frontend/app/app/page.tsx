@@ -3,6 +3,7 @@
 import { Header } from "@/components/header"
 import { GettingStarted } from "@/components/getting-started"
 import { MetricasDashboard } from "@/components/metricas-dashboard"
+import { Enquete } from "@/components/enquete"
 import { SplitGreeting } from "@/components/split-greeting"
 import { saudacaoPorHora } from "@/lib/saudacao"
 import { Calendar, CheckSquare, Bot, ArrowRight, Clock, Target, ListTodo, LayoutDashboard, Bell, Brain } from "lucide-react"
@@ -337,6 +338,11 @@ export default function DashboardPage() {
           >
             <MetricasDashboard />
           </motion.div>
+
+          {/* Enquete de uma pergunta. Fica DEPOIS do que a pessoa veio ver: ela
+              abriu o app para trabalhar, não para responder pesquisa. Some
+              sozinha quando não há pergunta pendente. */}
+          <Enquete />
 
           {/* Autoconhecimento — tempos reais vs. planejados (dos check-ins) */}
           {insights.length > 0 && (

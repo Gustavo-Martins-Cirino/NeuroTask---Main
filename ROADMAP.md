@@ -781,6 +781,25 @@ fora **de propósito** o tour interativo que destaca elementos reais da tela
 guia curto já cumpre o "entender o que fazer sem alguém do lado". Se o feedback
 do primeiro contato pedir, o tour vira item próprio.
 
+O `votacao2-feedback.tsx` (`PollWidget`) saiu da tabela: virou a **enquete de uma
+pergunta** no fim do dashboard (`components/enquete.tsx` + `lib/enquete.ts`,
+puro e testado). Ela existe pelo mesmo motivo do botão de feedback ter perdido o
+diálogo: nesta fase o pior resultado possível é feedback que não chega, e
+**escrever é atrito**. Uma pergunta com até quatro respostas prontas cabe num
+toque — e um toque é a diferença entre saber e supor.
+
+Três decisões que valem para quem mexer nisso. A resposta vai para a tabela
+`feedback` que já existe, como uma linha legível (`[enquete] pergunta → resposta`):
+sem tabela nova, sem SQL, sem RLS, e o painel do dono já a mostra. O preço é não
+haver contagem agregada, e com um punhado de testadores ler as linhas sai mais
+barato que construir o relatório. As perguntas moram no CÓDIGO, porque quem as
+muda é quem faz o deploy. E o "agora não" cala a enquete **inteira** por três
+dias, não só a pergunta recusada — emendar outra pergunta em quem acabou de
+recusar é o incômodo que faz parar de responder qualquer uma.
+
+O cartão fica **depois** do que a pessoa veio ver: ela abriu o app para
+trabalhar, não para responder pesquisa.
+
 O `feedback.jsx` (`MorphSurface`) saiu da tabela: o botão de feedback **virou o
 formulário**, sem diálogo. O que o diálogo custava não era estética, era atrito
 — escurecia o app inteiro, tirava de vista a tela que a pessoa ia comentar e
@@ -815,7 +834,6 @@ acabou de removê-los de propósito.
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
 | `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |
 | `youtube-button.jsx` | `FamilyButton` — flutuante que expande | Ações rápidas do dashboard |
-| `votacao2-feedback.tsx` | `PollWidget` — enquete de uma pergunta | Perguntar ao usuário-teste sem ele ter de escrever |
 | `votacao-feedback.jsx` | Grade de ícones de serviços (Google, GitHub, Notion…) | Serve de referência de ícone para o login social acima |
 | `convite.jsx` | Painel estilo central de controle | Convite de compromisso, em Amigos |
 | `popover.jsx` | Popover com corpo, botões e fechar | Genérico — base para os de cima, não item próprio |

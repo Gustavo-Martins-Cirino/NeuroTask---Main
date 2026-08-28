@@ -54,6 +54,7 @@ frontend/
 │   ├── borda-conversa.tsx    # Borda colorida da conversa ao vivo — DESMONTADA (ver ROADMAP)
 │   ├── onda-sonora.tsx       # Luz que respira no rodapé da conversa ao vivo (azul/verde)
 │   ├── atalhos-neuro.tsx     # Atalhos da tela vazia da Neuro IA: editáveis, no user_metadata
+│   ├── enquete.tsx           # Enquete de uma pergunta no fim do dashboard (resposta vira feedback)
 │   ├── fundo-grao.tsx        # Grão do fundo da Neuro IA — DESMONTADO (ver ROADMAP)
 │   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
 │   ├── avatar-iniciais.tsx   # Retrato: foto enviada → foto da conta → bonequinho → iniciais
@@ -103,6 +104,7 @@ frontend/
 │   ├── revelacao-resposta.ts # Resposta entrando escrita no chat: duração fixa, ritmo pelo tamanho (puro)
 │   ├── onda-sonora.ts        # De quem é a vez de falar → cor da onda (puro)
 │   ├── atalhos-neuro.ts      # Atalhos da Neuro IA: padrões, saneamento e tetos (puro)
+│   ├── enquete.ts            # Perguntas da enquete + quando perguntar e quando calar (puro)
 │   ├── telegram-fuso.ts      # De que parede o /hoje do bot fala: vínculo → push → padrão (puro)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
