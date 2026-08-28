@@ -83,14 +83,18 @@ export function respiracao(tempo: number, amplitude = AMPLITUDE_DA_RESPIRACAO): 
 /**
  * Giro de repouso. Devagar de propósito: a esfera é presença, não animação de
  * carregamento — quem sinaliza "estou pensando" é o spinner da bolha vazia.
- *
- * Movimento reduzido zera o giro. Fica aqui, e não no componente, porque é a
- * regra do projeto para efeito pesado e vale ter um teste cobrando.
  */
 export const GIRO_PARADO = 0.16
 
+/** O giro de quem pediu menos movimento. Era ZERO, e zero estava errado: a
+ *  esfera congelada não lê como "efeito desligado", lê como cena travada — e é
+ *  ela que ocupa o meio da tela vazia da Neuro IA. Um terço da velocidade, sem
+ *  a respiração e sem reagir ao cursor, é o "reduzir" que a norma pede; parar de
+ *  vez é o "remover" que ela NÃO pede. */
+export const GIRO_REDUZIDO = GIRO_PARADO / 3
+
 export function velocidadeDoGiro(reduzido: boolean): number {
-  return reduzido ? 0 : GIRO_PARADO
+  return reduzido ? GIRO_REDUZIDO : GIRO_PARADO
 }
 
 // ---- O que faz a esfera ler como 3D ----

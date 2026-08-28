@@ -485,6 +485,17 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > · **ambiente** (fundo que respira, luz que gira, deslize de página): para de vez. Ninguém
 >   perde dado nenhum, e é aqui que o desconforto realmente mora.
 >
+> **A esfera da Neuro IA entrou na regra (28/08), e era o pior caso.** Ela não só parava:
+> `velocidadeDoGiro` devolvia ZERO e o canvas ficava em `frameloop="demand"`, que desenha uma
+> vez e só volta se algo mudar. Como nada mudava, ela congelava no primeiro quadro — e
+> congelada não lê como "efeito desligado", lê como cena travada, bem no meio da tela vazia.
+> Agora gira a um terço da velocidade, sem respirar e sem reagir ao cursor: é o "reduzir" da
+> norma, e não o "remover", que ela não pede. Medido no navegador com a preferência ligada:
+> 11.983 pixels mudam entre duas capturas, onde antes mudariam zero.
+>
+> **O Escritório nunca obedeceu a preferência** — a cena 3D anima para todo mundo. Fica
+> anotado como decisão consciente, não esquecimento: lá o movimento é o produto.
+>
 > **Aplicado por enquanto só em "Seus números"**, que foi a queixa concreta. Faltam os outros
 > que hoje apagam e deveriam encurtar: `numero-rolante`, `split-greeting`, `coin-flight`.
 > Ficam de fora, corretamente: `smooth-scroll`, `focus-gradient`, as cenas 3D e os deslizes

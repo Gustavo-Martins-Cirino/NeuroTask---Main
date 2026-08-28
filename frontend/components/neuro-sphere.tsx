@@ -329,17 +329,23 @@ export function NeuroSphere({
       onPointerLeave={() => { ponteiroRef.current = false }}
     >
       <Canvas
-        // Movimento reduzido: "demand" desenha uma vez e só volta a desenhar se
-        // algo mudar — a esfera fica parada de verdade, sem custo por quadro.
-        // Fora isso quem manda desenhar é o ticker do GSAP; "always" só existe
-        // como socorro, se os quadros pararem de chegar.
-        frameloop={reduzido ? "demand" : socorro && naTela ? "always" : "never"}
+        // Quem manda desenhar é o ticker do GSAP; "always" só existe como
+        // socorro, se os quadros pararem de chegar.
+        //
+        // Movimento reduzido também desenha, e isso mudou: antes era "demand",
+        // que desenha UMA vez e só volta se algo mudar. Como nada mudava, a
+        // esfera ficava congelada no primeiro quadro — e congelada ela não lê
+        // como "efeito desligado", lê como cena travada, bem no meio da tela
+        // vazia. Agora ela gira devagar (ver GIRO_REDUZIDO), sem respirar e sem
+        // reagir ao cursor. O custo por quadro continua limitado pelo mesmo
+        // ticker, e some junto quando a esfera sai da tela.
+        frameloop={socorro && naTela ? "always" : "never"}
         dpr={[1, 2]}
         camera={{ position: [0, 0, 3.2], fov: 45 }}
         gl={{ antialias: true, alpha: true }}
         style={{ width: "100%", height: "100%" }}
       >
-        {!reduzido && !socorro && <TickerDoGsap ativo={naTela} onSocorro={socorrer} />}
+        {!socorro && <TickerDoGsap ativo={naTela} onSocorro={socorrer} />}
         <Nuvem reduzido={reduzido} cor={cor} fundo={fundo} claro={claro} ponteiroRef={ponteiroRef} />
       </Canvas>
     </div>

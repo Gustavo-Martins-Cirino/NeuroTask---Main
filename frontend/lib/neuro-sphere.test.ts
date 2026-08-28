@@ -5,6 +5,7 @@ import {
   fatorDeRetorno,
   respiracao,
   velocidadeDoGiro,
+  GIRO_REDUZIDO,
   brilhoPorProfundidade,
   inclinacaoDoEixo,
   ATRITO_POR_QUADRO,
@@ -167,8 +168,10 @@ describe("velocidadeDoGiro", () => {
     expect(GIRO_PARADO).toBeGreaterThan(0)
   })
 
-  it("movimento reduzido para a esfera de vez", () => {
-    expect(velocidadeDoGiro(true)).toBe(0)
+  it("movimento reduzido DESACELERA, não congela — congelada lê como travada", () => {
+    expect(velocidadeDoGiro(true)).toBe(GIRO_REDUZIDO)
+    expect(GIRO_REDUZIDO).toBeGreaterThan(0)
+    expect(GIRO_REDUZIDO).toBeLessThan(GIRO_PARADO)
   })
 })
 
