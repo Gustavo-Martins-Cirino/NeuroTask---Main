@@ -442,14 +442,28 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > **O código está pronto** (`components/social-login.tsx` + `lib/auth-metodos.ts`): os
 > botões, as marcas em SVG e o selo "último acesso". O que falta não é código.
 
-- [ ] **Habilitar os provedores no Supabase e ligar a env.** Nesta ordem, que é fácil
-      inverter: primeiro Authentication → Providers no painel (Client ID/Secret + a callback
-      URL que ele mostra), **depois** `NEXT_PUBLIC_OAUTH_PROVIDERS="google,github"` na
-      Vercel. Ao contrário, o botão aparece antes de funcionar — e é por isso que a env
-      existe: sem ela o código não tem como adivinhar o que está configurado do outro lado.
-      Enquanto a env estiver vazia, a tela é exatamente a de hoje.
-      **Custo escondido**: o Apple exige conta paga de Apple Developer (99 USD/ano); Google
-      e GitHub são de graça.
+> **Login social no ar (28/08): Google e GitHub.** `NEXT_PUBLIC_OAUTH_PROVIDERS=google,github`,
+> com os dois provedores configurados no painel do Supabase. O Apple continua fora — exige
+> conta paga de Apple Developer (99 USD/ano).
+>
+> **Três pedras do caminho, para quem ligar o próximo provedor:**
+>
+> · O **Client ID do GitHub** não é o seu e-mail. É uma chave que o GitHub gera ao criar o
+>   OAuth App (Settings → Developer settings → OAuth Apps), com a *Authorization callback URL*
+>   apontando para a URL que o Supabase mostra na tela do provedor.
+> · No Vercel, `NEXT_PUBLIC_*` é **Config, nunca Secret**. Secret ali é o pior dos dois mundos:
+>   o valor entra no bundle do navegador de qualquer jeito, e "Secret" é write-only — perde-se
+>   a leitura sem ganhar proteção. Pior: **secret salvo não converte para Config**, só apagando
+>   e recriando.
+> · Editar a env **não republica**. `NEXT_PUBLIC_` é gravada dentro do bundle no build, então
+>   precisa de Redeploy.
+>
+> **E uma armadilha de verificação, que custou o botão do Google.** Conferi o HTML procurando
+> a frase `"Entrar com"` e concluí que nada estava no ar — daí a instrução de pôr só `github`,
+> que APAGOU o Google, que já funcionava. O rótulo é montado por concatenação, e o React o
+> quebra: o HTML traz `Entrar<!-- --> com <!-- -->Google`. **Sonda certa é o nome do provedor**
+> (`google`, `github`), nunca a frase montada. E vale olhar o contexto do que casou: `apple`
+> aparece no `/login` por causa do `<link rel="apple-touch-icon">`, não de um botão.
 
 #### Dashboard — `Captura de tela 2026-08-07 213605.png`
 
