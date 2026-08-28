@@ -57,7 +57,9 @@ export const CATALOG: ShopItem[] = [
   { id: "tapete", name: "Tapete", price: 50, category: "decor", emoji: "🟫", desc: "Conforto sob os pés" },
   { id: "planta-grande", name: "Planta grande", price: 60, category: "decor", emoji: "🌿", desc: "Uma costela-de-adão no canto" },
   { id: "estante", name: "Estante de livros", price: 80, category: "movel", emoji: "📚", desc: "Sua biblioteca pessoal" },
+  { id: "mesa-centro", name: "Mesa de centro", price: 70, category: "movel", emoji: "🪵", desc: "Com um livro e uma caneca em cima" },
   { id: "sofa", name: "Sofá", price: 170, category: "movel", emoji: "🛋️", desc: "Dois lugares encostados na parede" },
+  { id: "poltrona", name: "Poltrona", price: 120, category: "movel", emoji: "🪑", desc: "Solta no chão, virada para a mesa" },
   { id: "quadro-neon", name: "Neon \"focus\"", price: 90, category: "decor", emoji: "🔆", desc: "Letreiro neon na parede" },
   { id: "janela-cidade", name: "Janela · Cidade", price: 100, category: "decor", emoji: "🌆", desc: "Vista para a cidade" },
   { id: "pet-gato", name: "Gato de estimação", price: 120, category: "decor", emoji: "🐈", desc: "Companhia de produtividade" },
@@ -119,6 +121,8 @@ export async function fetchShopState(): Promise<ShopState> {
 const SQL_DO_ITEM: Record<string, string> = {
   "pet-cachorro": "office_3d.sql",
   sofa: "office_v7.sql",
+  poltrona: "office_v7.sql",
+  "mesa-centro": "office_v7.sql",
   "chapeu-bone": "avatar_acessorios.sql",
   "chapeu-social": "avatar_acessorios.sql",
   "chapeu-coroa": "avatar_acessorios.sql",

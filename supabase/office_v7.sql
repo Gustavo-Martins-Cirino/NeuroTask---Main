@@ -8,8 +8,12 @@
 -- A estante MUDA DE CATEGORIA (o update abaixo), e por isso este arquivo não é
 -- só um insert: quem já a comprou continua com ela, só que na aba nova.
 
+-- Os três formam um canto de estar: sofá na parede, mesa de centro à frente
+-- dele e a poltrona solta no chão. Junto com a estante, a aba tem quatro itens.
 insert into public.shop_items (id, name, price, category) values
-  ('sofa', 'Sofá', 170, 'movel')
+  ('mesa-centro', 'Mesa de centro',  70, 'movel'),
+  ('poltrona',    'Poltrona',       120, 'movel'),
+  ('sofa',        'Sofá',           170, 'movel')
 on conflict (id) do update
   set name = excluded.name, price = excluded.price, category = excluded.category;
 

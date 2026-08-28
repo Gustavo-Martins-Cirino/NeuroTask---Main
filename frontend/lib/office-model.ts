@@ -456,6 +456,10 @@ export interface EscritorioExtras {
   estante?: boolean
   /** Sofá de dois lugares, encostado na parede lateral. */
   sofa?: boolean
+  /** Poltrona solta, no chão livre da frente. */
+  poltrona?: boolean
+  /** Mesa de centro, entre o sofá e o meio da sala. */
+  mesaCentro?: boolean
   quadro?: boolean
   neon?: boolean
   trofeu?: boolean
@@ -1060,6 +1064,58 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     // Almofada de encosto jogada no canto, inclinada — é o detalhe que faz o
     // sofá parecer usado em vez de recém-entregue.
     g.add(box("Sofa_Cuxim", [0.1, 0.26, 0.26], [x + 0.14, y + 0.46, 0.61], tmat([0.72, 0.44, 0.32], 0, "tecido"), [D(-16), 0, 0]))
+  }
+
+  // Mesa de centro, na frente do sofá. Baixa de propósito: ela cruza a linha
+  // entre a câmera e o sofá, e com 40 cm só tapa o pé dele — que é exatamente o
+  // que uma mesa de centro tapa numa sala de verdade.
+  if (extras.mesaCentro) {
+    const mTampoMesa = tmat([0.5, 0.34, 0.2], 0, "madeira")
+    const mPeMesa = tmat([0.3, 0.2, 0.12], 0, "madeira")
+    const x = -S + 1.42
+    const y = -1.12
+    const ALT = 0.38
+    for (const ox of [-0.22, 0.22]) {
+      for (const oy of [-0.37, 0.37]) {
+        g.add(cyl(`Mesa_Centro_Pe_${ox}_${oy}`, 0.022, ALT, [x + ox, y + oy, ALT / 2], mPeMesa))
+      }
+    }
+    g.add(box("Mesa_Centro_Prateleira", [0.45, 0.78, 0.03], [x, y, 0.13], mPeMesa))
+    g.add(box("Mesa_Centro_Tampo", [0.55, 0.9, 0.05], [x, y, ALT + 0.025], mTampoMesa))
+    // Tábua vazia é tábua: as duas coisas em cima é que fazem "mesa de centro".
+    g.add(box("Mesa_Centro_Livro", [0.17, 0.23, 0.03], [x - 0.02, y - 0.2, ALT + 0.065], tmat([0.24, 0.42, 0.62], 0, "tecido"), [0, 0, D(12)]))
+    g.add(cyl("Mesa_Centro_Caneca", 0.035, 0.07, [x + 0.06, y + 0.22, ALT + 0.085], tmat([0.82, 0.3, 0.28], 0, "ceramica")))
+  }
+
+  // Poltrona. Ela é o único móvel SOLTO no chão, e por isso o ângulo importa
+  // mais que a posição: a câmera vem do +x, e uma poltrona virada para a parede
+  // seria um bloco. Virada para a mesa, ela aparece de perfil — dá para ver o
+  // braço, o encosto e o assento, que é tudo o que uma poltrona tem para
+  // mostrar. De frente para a câmera ficaria melhor, mas aí ela estaria olhando
+  // para fora da sala.
+  if (extras.poltrona) {
+    const mEst = tmat([0.42, 0.34, 0.3], 0, "tecido")
+    const mAlm = tmat([0.5, 0.42, 0.37], 0, "tecido")
+    const mPePol = tmat([0.32, 0.21, 0.13], 0, "madeira")
+    const p = new Group()
+    p.name = "Poltrona"
+    p.position.set(S - 0.78, -S + 0.72, 0)
+    p.rotation.z = D(95)
+    // Dentro do grupo, a FRENTE é o +x — a mesma convenção do sofá.
+    for (const ox of [-0.24, 0.24]) {
+      for (const oy of [-0.24, 0.24]) {
+        p.add(cyl(`Poltrona_Pe_${ox}_${oy}`, 0.026, 0.07, [ox, oy, 0.035], mPePol))
+      }
+    }
+    p.add(box("Poltrona_Corpo", [0.72, 0.72, 0.22], [0, 0, 0.18], mEst))
+    p.add(box("Poltrona_Encosto", [0.18, 0.72, 0.56], [-0.27, 0, 0.57], mEst))
+    for (const lado of [1, -1]) {
+      const suf = lado === 1 ? "Direito" : "Esquerdo"
+      p.add(box(`Poltrona_Braco_${suf}`, [0.72, 0.14, 0.22], [0, lado * 0.29, 0.4], mEst))
+    }
+    p.add(box("Poltrona_Assento", [0.54, 0.58, 0.13], [0.05, 0, 0.355], mAlm))
+    p.add(box("Poltrona_Costa", [0.12, 0.6, 0.34], [-0.14, 0, 0.6], mAlm))
+    g.add(p)
   }
 
   if (extras.estante) {

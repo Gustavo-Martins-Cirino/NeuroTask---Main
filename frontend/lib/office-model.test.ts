@@ -432,6 +432,71 @@ describe("móveis: sofá", () => {
   })
 })
 
+describe("móveis: poltrona e mesa de centro", () => {
+  const canto = () => buildEscritorio({ extras: { sofa: true, poltrona: true, mesaCentro: true } })
+
+  it("a mesa de centro fica NA FRENTE do sofá, sem encostar nele", () => {
+    const s = canto()
+    const mesa = caixaMundo(s, "Mesa_Centro_Tampo")
+    const sofa = caixaMundo(s, "Sofa_Corpo")
+    expect(mesa.min.x).toBeGreaterThan(sofa.max.x)
+    expect(mesa.min.x - sofa.max.x).toBeLessThan(0.4) // do lado dele, não no meio da sala
+  })
+
+  it("a mesa de centro é baixa — ela cruza a linha da câmera até o sofá", () => {
+    // Com altura de mesa de jantar ela taparia o sofá inteiro. 40 cm só tapa o
+    // pé dele, que é o que uma mesa de centro tapa numa sala de verdade.
+    expect(caixaMundo(canto(), "Mesa_Centro_Tampo").max.z).toBeLessThan(0.45)
+  })
+
+  it("o que está em cima da mesa apoia nela, sem afundar", () => {
+    const s = canto()
+    const tampo = caixaMundo(s, "Mesa_Centro_Tampo")
+    for (const nome of ["Mesa_Centro_Livro", "Mesa_Centro_Caneca"]) {
+      const c = caixaMundo(s, nome)
+      expect(c.min.z).toBeGreaterThan(tampo.max.z - 0.012)
+      expect(c.min.x).toBeGreaterThan(tampo.min.x)
+      expect(c.max.x).toBeLessThan(tampo.max.x)
+    }
+  })
+
+  it("a poltrona não invade sofá, mesa nem tapete", () => {
+    const s = buildEscritorio({ extras: { sofa: true, poltrona: true, mesaCentro: true, tapete: true } })
+    const poltrona = caixaMundo(s, "Poltrona")
+    for (const nome of ["Sofa_Corpo", "Mesa_Centro_Tampo", "Tapete"]) {
+      expect(poltrona.intersectsBox(caixaMundo(s, nome))).toBe(false)
+    }
+  })
+
+  it("a poltrona cabe na sala do nível 1", () => {
+    const s = buildEscritorio({ nivel: 1, extras: { poltrona: true } })
+    const piso = caixaMundo(s, "Piso")
+    const poltrona = caixaMundo(s, "Poltrona")
+    expect(poltrona.min.x).toBeGreaterThan(piso.min.x)
+    expect(poltrona.max.x).toBeLessThan(piso.max.x)
+    expect(poltrona.min.y).toBeGreaterThan(piso.min.y)
+  })
+
+  it("a poltrona não fica de costas para a câmera", () => {
+    // O ângulo é o que decide se ela é uma poltrona ou um bloco. Virada para a
+    // parede do fundo estaria de costas; de frente para a câmera estaria olhando
+    // para fora da sala. Perfil é o que sobra, e é onde ela está.
+    const s = canto()
+    const encosto = caixaMundo(s, "Poltrona_Encosto").getCenter(new Vector3())
+    const assento = caixaMundo(s, "Poltrona_Assento").getCenter(new Vector3())
+    const frente = new Vector3().subVectors(assento, encosto).setZ(0).normalize()
+    // Direção da câmera vista da sala: ela mora no +x (ver lib/office-camera).
+    const paraCamera = new Vector3(1, 0, 0)
+    expect(frente.dot(paraCamera)).toBeGreaterThan(-0.35) // nada de nuca
+  })
+
+  it("sem comprar, nenhuma das duas deixa peça na sala", () => {
+    const vazia = buildEscritorio()
+    expect(pecas(vazia, "Poltrona")).toHaveLength(0)
+    expect(pecas(vazia, "Mesa_Centro_")).toHaveLength(0)
+  })
+})
+
 describe("corpo do boneco", () => {
   const caixa = (nome: string) => new Box3().setFromObject(malha(boneco({}), nome), true)
 

@@ -250,10 +250,21 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 >
 > **Pede um passo do Gustavo**: rodar `supabase/office_v7.sql`.
 
-- [ ] **Mais móveis.** O sofá abriu a seção; faltam os outros que o item original citava —
-      poltrona e armário. O armário é o mais delicado: alto, encostado na parede do fundo,
-      ele disputa pano com quadro e relógio, então teria de entrar na conta da fileira
-      (`lib/office-parede`) em vez de cravar um x.
+> **A aba fechou com quatro (27/08)**: estante, mesa de centro (70), poltrona (120) e sofá
+> (170). Os três novos formam um canto de estar — sofá na parede, mesa à frente dele,
+> poltrona solta no chão.
+>
+> **O armário ficou de fora, e por medida.** Ele quer parede: a do fundo é da janela (que
+> ocupa x de 0,40 a 1,70 e sobe até 2,22) e o resto dela é a fileira de quadro e relógio; a
+> lateral, no nível 1, tem 50 cm livres entre a estante e a planta do canto, e um armário
+> tem 90. Não é que seja difícil — é que **não cabe na sala menor**. Se voltar, entra
+> amarrado ao nível (só a partir do 3, quando a sala cresce) e dentro da fileira da parede,
+> nunca com um x cravado.
+>
+> **A poltrona ensinou uma coisa que vale para todo móvel solto**: o ângulo decide mais que
+> a posição. Virada para a parede ela é um bloco; virada para a câmera, está olhando para
+> fora da sala. Perfil é o que sobra nesta planta — e tem teste cobrando que ela nunca fique
+> de nuca para quem olha.
 
 - [ ] **Girar a câmera com o mouse ("mãozinha").** Arrastar para a direita gira a vista para
       a esquerda, como virar um objeto na mão. **O que precisa mudar junto**: a câmera é uma

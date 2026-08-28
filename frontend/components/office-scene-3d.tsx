@@ -116,6 +116,8 @@ function extrasDe(equipped?: Set<string>): EscritorioExtras {
     luminaria: equipped.has("luminaria"),
     estante: equipped.has("estante"),
     sofa: equipped.has("sofa"),
+    poltrona: equipped.has("poltrona"),
+    mesaCentro: equipped.has("mesa-centro"),
     quadro: equipped.has("quadro-montanhas"),
     neon: equipped.has("quadro-neon"),
     trofeu: equipped.has("trofeu"),
