@@ -9,7 +9,10 @@ import { RichTextEditor } from "@/components/rich-text-editor"
 import type { Note } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { FileText, Plus, Trash2, Loader2, Check, Star } from "lucide-react"
+import { FileText, Plus, Trash2, Loader2, Check, Star, Palette, Ban } from "lucide-react"
+import { toast } from "sonner"
+import { CORES_DE_NOTA, corDeNota, fundoDaNota, tarjaDaNota } from "@/lib/nota-cor"
+import { colunaFaltante } from "@/lib/feedback"
 
 type SaveState = "idle" | "saving" | "saved"
 
@@ -23,6 +26,8 @@ export default function NotesPage() {
   const [loading, setLoading] = useState(true)
   const [saveState, setSaveState] = useState<SaveState>("idle")
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [paletaAberta, setPaletaAberta] = useState(false)
+  const paletaRef = useRef<HTMLDivElement>(null)
   const listaRef = useRef<HTMLDivElement>(null)
   const mascaraLista = useMascaraRolagem(listaRef)
   const supabase = createClient()
@@ -74,6 +79,38 @@ export default function NotesPage() {
       if (activeId === id) setActiveId(next[0]?.id ?? null)
       return next
     })
+  }
+
+  // Fechar a paleta: Esc e clique fora, o mesmo par do botão de feedback.
+  useEffect(() => {
+    if (!paletaAberta) return
+    const onTecla = (e: KeyboardEvent) => { if (e.key === "Escape") setPaletaAberta(false) }
+    const onFora = (e: PointerEvent) => {
+      if (!paletaRef.current?.contains(e.target as Node)) setPaletaAberta(false)
+    }
+    window.addEventListener("keydown", onTecla)
+    document.addEventListener("pointerdown", onFora, true)
+    return () => {
+      window.removeEventListener("keydown", onTecla)
+      document.removeEventListener("pointerdown", onFora, true)
+    }
+  }, [paletaAberta])
+
+  // A cor pinta na hora e grava depois. Se a coluna não existir (SQL não
+  // rodado), a cor VOLTA — melhor do que uma etiqueta que some sozinha no
+  // próximo carregamento sem ninguém saber por quê.
+  const pintarNota = async (id: string, cor: string | null) => {
+    const antes = notes.find((n) => n.id === id)?.color ?? null
+    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, color: cor } : n)))
+    setPaletaAberta(false)
+    const { error } = await supabase.from("notes").update({ color: cor }).eq("id", id)
+    if (!error) return
+    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, color: antes } : n)))
+    toast.error(
+      colunaFaltante(error)
+        ? "A tabela de notas ainda não tem a coluna de cor. Rode supabase/notas_cor.sql no Supabase."
+        : "Não consegui salvar a cor agora."
+    )
   }
 
   const toggleFavorite = async (note: Note) => {
@@ -132,13 +169,26 @@ export default function NotesPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, height: 0 }}
                     onClick={() => setActiveId(n.id)}
+                    // O véu vai no `style` e não numa classe: a cor sai de uma
+                    // tabela de dados, e Tailwind não gera classe para valor que
+                    // ele não vê no código.
+                    style={{ background: activeId === n.id ? undefined : fundoDaNota(n.color) }}
                     className={cn(
-                      "group flex w-full flex-col rounded-xl border px-3 py-2.5 text-left transition-colors",
+                      "group relative flex w-full flex-col overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-colors",
                       activeId === n.id
                         ? "border-primary/40 bg-accent"
                         : "border-border/40 hover:border-border hover:bg-accent/50"
                     )}
                   >
+                    {/* A tarja é o que se acha de relance numa lista — o véu
+                        sozinho é discreto demais para servir de etiqueta. */}
+                    {tarjaDaNota(n.color) && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-y-0 left-0 w-1"
+                        style={{ background: tarjaDaNota(n.color) }}
+                      />
+                    )}
                     <span className="truncate text-sm font-medium">
                       {n.title.trim() || "Sem título"}
                     </span>
@@ -153,7 +203,19 @@ export default function NotesPage() {
         </aside>
 
         {/* Editor */}
-        <main className="flex min-h-[55vh] flex-1 flex-col rounded-2xl border border-border/40 bg-card/30 md:min-h-0">
+        {/* A cor também aparece aqui, mas só como um fio no topo: um véu sobre a
+            área de escrita é onde a cor deixaria de ser etiqueta e começaria a
+            disputar com o texto. */}
+        <main
+          className="relative flex min-h-[55vh] flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/30 md:min-h-0"
+        >
+          {active && tarjaDaNota(active.color) && (
+            <span
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-1"
+              style={{ background: tarjaDaNota(active.color) }}
+            />
+          )}
           {active ? (
             <motion.div
               key={active.id}
@@ -177,6 +239,62 @@ export default function NotesPage() {
                   </AnimatePresence>
                 </div>
                 <div className="flex items-center gap-1">
+                  {/* Painel flutuante de cor (inspirações/notas-cores.jsx). Da
+                      referência veio a cor; a imagem ficou de fora — nota com
+                      imagem de fundo é outra feature, e mais cara. */}
+                  <div ref={paletaRef} className="relative">
+                    <button
+                      onClick={() => setPaletaAberta((v) => !v)}
+                      aria-label="Cor da nota"
+                      aria-expanded={paletaAberta}
+                      className="flex items-center rounded-lg p-2 text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {corDeNota(active.color) ? (
+                        <span
+                          className="h-4 w-4 rounded-full ring-1 ring-inset ring-black/10"
+                          style={{ background: tarjaDaNota(active.color) }}
+                        />
+                      ) : (
+                        <Palette className="h-4 w-4" />
+                      )}
+                    </button>
+                    <AnimatePresence>
+                      {paletaAberta && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.14 }}
+                          className="absolute right-0 top-full z-30 mt-1 flex items-center gap-1.5 rounded-xl border border-border/60 bg-popover p-2 shadow-xl"
+                        >
+                          <button
+                            onClick={() => pintarNota(active.id, null)}
+                            title="Sem cor"
+                            className={cn(
+                              "flex h-6 w-6 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:text-foreground",
+                              !corDeNota(active.color) && "ring-2 ring-primary ring-offset-1 ring-offset-popover"
+                            )}
+                          >
+                            <Ban className="h-3 w-3" />
+                          </button>
+                          {CORES_DE_NOTA.map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => pintarNota(active.id, c.id)}
+                              title={c.nome}
+                              style={{ background: c.cor }}
+                              className={cn(
+                                "h-6 w-6 rounded-full transition-transform hover:scale-110",
+                                active.color === c.id && "ring-2 ring-primary ring-offset-1 ring-offset-popover"
+                              )}
+                            >
+                              <span className="sr-only">{c.nome}</span>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                   <button
                     onClick={() => toggleFavorite(active)}
                     aria-label={active.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}

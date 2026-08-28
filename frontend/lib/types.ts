@@ -85,6 +85,8 @@ export interface Note {
   title: string
   content: string
   is_favorite: boolean
+  /** Nome da cor (ver lib/nota-cor), nunca o hex. Null = sem cor. */
+  color?: string | null
   created_at: string
   updated_at: string
 }

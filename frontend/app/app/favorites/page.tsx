@@ -9,6 +9,7 @@ import type { Task, Note } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Star, ListTodo, FileText, Loader2, ArrowRight } from "lucide-react"
+import { fundoDaNota, tarjaDaNota } from "@/lib/nota-cor"
 
 export default function FavoritesPage() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -112,8 +113,14 @@ export default function FavoritesPage() {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.97 }}
-                        className="flex flex-col rounded-xl border border-border/50 bg-card p-3"
+                        // A mesma etiqueta da lista de Notas: a cor não vale de
+                        // nada se a nota muda de aparência ao aparecer aqui.
+                        style={{ background: fundoDaNota(n.color) }}
+                        className="relative flex flex-col overflow-hidden rounded-xl border border-border/50 bg-card p-3"
                       >
+                        {tarjaDaNota(n.color) && (
+                          <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={{ background: tarjaDaNota(n.color) }} />
+                        )}
                         <div className="flex items-start justify-between gap-2">
                           <span className="truncate text-sm font-medium">{n.title.trim() || "Sem título"}</span>
                           <button onClick={() => unfavNote(n.id)} aria-label="Remover dos favoritos" className="shrink-0 text-amber-400 transition-transform hover:scale-110">

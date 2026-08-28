@@ -800,6 +800,29 @@ recusar é o incômodo que faz parar de responder qualquer uma.
 O cartão fica **depois** do que a pessoa veio ver: ela abriu o app para
 trabalhar, não para responder pesquisa.
 
+O `notas-cores.jsx` saiu da tabela: as notas ganharam **cor**
+(`components/…/notes/page.tsx` + `lib/nota-cor.ts`, puro e testado). Da
+referência veio a cor, **não a imagem** — nota com imagem de fundo é outra
+feature, e bem mais cara.
+
+**A cor entra como ETIQUETA, não como fundo.** Pintar a nota inteira brigaria
+com os tokens do tema nas duas pontas: no claro vira papel de bala, no escuro o
+texto perde contraste contra um fundo que já não é o `--card`. O que ficou foi
+uma tarja de 4 px na lista e um véu de 14% no cartão — o suficiente para achar a
+nota de relance, que é para o que serve cor em lista. Na área de escrita a cor é
+só um fio no topo: um véu ali passaria a disputar com o texto.
+
+**O que se guarda é o NOME, nunca o hex.** Com o hex no banco, mudar a paleta um
+dia deixaria notas antigas apontando para uma cor que não existe mais, sem como
+corrigi-las em bloco. E o véu usa `color-mix` com transparente em vez de um
+segundo hex por tema: quem aparece através dele é o fundo do tema, então a mesma
+paleta serve ao claro e ao escuro sem duas tabelas para manter em sincronia.
+
+O `notas_cor.sql` **não tem CHECK** de propósito: a lista de cores muda no
+código, e um CHECK aqui viraria a mesma armadilha do `feedback_kind_check` — um
+constraint velho recusando um valor novo, num banco onde ninguém lembra de tê-lo
+criado. Cor desconhecida vira "sem cor" no app, nunca erro.
+
 O `feedback.jsx` (`MorphSurface`) saiu da tabela: o botão de feedback **virou o
 formulário**, sem diálogo. O que o diálogo custava não era estética, era atrito
 — escurecia o app inteiro, tirava de vista a tela que a pessoa ia comentar e
@@ -829,7 +852,6 @@ acabou de removê-los de propósito.
 
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
-| `notas-cores.jsx` | Painel flutuante de cor e imagem | Cor da nota, em Notas |
 | `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | A paleta de `lib/reminders.ts` (a cor de fundo do Escritório já saiu — ver nota) |
 | `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
 | `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |

@@ -50,7 +50,8 @@ hora **locais**, que é onde um `toISOString()` distraído jogaria toda noite de
 para o dia seguinte),
 `foto-perfil` (o recorte quadrado central, o que se aceita e o carimbo anti-cache),
 `gamification` (anti-farm), `ics`, `iniciais` (nome → iniciais e cor do avatar),
-`nivel-faixa`, `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
+`nivel-faixa`, `nota-cor` (a paleta das notas: guarda o nome e não o hex, e cor órfã
+vira "sem cor" em vez de erro), `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
 `revelacao-resposta` (a resposta da Neuro entrando escrita no chat: duração fixa e ritmo
 saindo do tamanho — é o que impede uma resposta longa de levar meio minuto para aparecer),
 `routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands`,
@@ -163,7 +164,10 @@ A ordem importa (há dependências entre eles). Do zero, rode nesta sequência:
 ```
 fix_schema.sql · task_lists.sql · favorites.sql · notes.sql · day_notes.sql
 reminders.sql · task_recurrence.sql · task_order.sql · task_meeting.sql · realtime.sql
+notas_cor.sql
 ```
+`notas_cor.sql` acrescenta a cor da nota (depende de `notes.sql`). Sem ele as notas
+funcionam igual; só escolher uma cor falha, com um aviso dizendo qual arquivo rodar.
 
 **2. Gamificação e loja** — `gamification.sql` cria o `award_xp` de que o resto depende
 ```

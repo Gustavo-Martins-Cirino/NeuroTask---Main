@@ -105,6 +105,7 @@ frontend/
 │   ├── onda-sonora.ts        # De quem é a vez de falar → cor da onda (puro)
 │   ├── atalhos-neuro.ts      # Atalhos da Neuro IA: padrões, saneamento e tetos (puro)
 │   ├── enquete.ts            # Perguntas da enquete + quando perguntar e quando calar (puro)
+│   ├── nota-cor.ts           # Paleta das notas: guarda o nome, não o hex (puro)
 │   ├── telegram-fuso.ts      # De que parede o /hoje do bot fala: vínculo → push → padrão (puro)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
@@ -113,7 +114,7 @@ frontend/
 └── styles/global.css
 
 supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
-  38 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
+  39 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
 
 ## Rotas existentes
