@@ -635,12 +635,12 @@ vira ruído.
 > O efeito de **arcos** subindo do rodapé (`214017`) foi tentado e revertido; está no
 > commit `b4b5900` se um dia fizer sentido.
 
-- [ ] **A mesma borda no Modo Foco**, se fizer sentido. Lá o estado que ela sinalizaria
-      seria a sessão correndo — vale só se não competir com os ambientes animados, que já
-      são o efeito principal daquela tela. **Entrar aqui sabendo do placar**: moldura já foi
-      recusada três vezes seguidas (chat, fundo da Neuro, conversa ao vivo). O Foco é o único
-      lugar onde ela ainda não foi tentada, e é também o único com argumento diferente — a
-      tela já é um overlay dedicado, não uma página do app com dock em volta.
+> **Borda no Modo Foco: recusada (28/08).** O Gustavo decidiu que não vale. Fecha o placar em
+> QUATRO recusas seguidas de moldura — chat, fundo da Neuro, conversa ao vivo e agora o Foco —,
+> e é o bastante para virar regra em vez de item: **contorno em volta da tela não é a
+> linguagem deste app.** O que passou no lugar dela foi luz que INFORMA e mora dentro da
+> tela: a onda sonora da conversa ao vivo (azul de quem fala, verde da Neuro). Efeito novo
+> que só decore a borda não precisa ser tentado de novo — o de dentro, sim.
 
 > **Quatro componentes vivem no repositório desmontados**, e é de propósito: `borda-viva.tsx`,
 > `borda-conversa.tsx`, `fundo-grao.tsx` e `robot-mascot.tsx`. Cada um foi montado, visto e
