@@ -33,6 +33,26 @@ chega é o pior resultado possível.
 O que sobrou não é código, é **verificação** — e é a parte que não dá para fazer lendo o
 repositório:
 
+> **As telas vazias foram abertas (28/08) — a metade que dava para fazer daqui.** As sete
+> telas protegidas foram montadas fora do `/app` e carregadas com o banco respondendo VAZIO
+> em tudo (nenhuma tarefa, bloco, nota, item comprado, amigo; `single` devolvendo PGRST116).
+> **Nenhuma quebrou**: zero erro de JS nas sete, e cada uma tem estado vazio escrito — o
+> dashboard com o "Comece por aqui 0/3", o Escritório com "Seu cantinho começa simples", os
+> Amigos pedindo o @usuário. O Escritório também renderiza sem GPU de verdade (swiftshader),
+> o que é a primeira notícia sobre o caminho sem WebGL acelerado.
+>
+> **Achou um defeito, e na primeira frase que uma conta nova lê**: "Sexta-Feira, 28 De
+> Agosto". O `capitalize` do CSS sobe TODA palavra, e `toLocaleDateString("pt-BR")` devolve
+> tudo minúsculo — em inglês o mesmo CSS acerta ("Friday, August 28"), e é por isso que o
+> hábito passa despercebido. Estava em quatro lugares: dashboard, cabeçalho do calendário,
+> seletor de data e diálogo de bloco. Virou `lib/texto.ts` (`maiusculaInicial`). Onde o rótulo
+> é uma palavra só — as abas dia/semana/mês/ano —, o `capitalize` ficou, porque ali ele está
+> certo.
+>
+> **O que este item ainda pede, e não dá para fazer daqui**: conta nova de verdade (as
+> políticas de RLS e os gatilhos do cadastro não passam por esta simulação), aparelho que não
+> é o seu, e a tela de um celular real.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

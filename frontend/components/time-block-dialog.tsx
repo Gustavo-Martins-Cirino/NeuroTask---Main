@@ -1,4 +1,5 @@
 "use client"
+import { maiusculaInicial } from "@/lib/texto"
 
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -316,7 +317,7 @@ export function TimeBlockDialog({
             <div className="space-y-2">
               <OptionRow
                 label="Data"
-                value={<span className="capitalize">{dateLabel(date)}</span>}
+                value={<span>{maiusculaInicial(dateLabel(date))}</span>}
                 open={expanded === "date"}
                 onToggle={() => toggle("date")}
               >

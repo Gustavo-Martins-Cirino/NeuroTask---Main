@@ -1,6 +1,7 @@
 "use client"
 
 import { Header } from "@/components/header"
+import { maiusculaInicial } from "@/lib/texto"
 import { GettingStarted } from "@/components/getting-started"
 import { MetricasDashboard } from "@/components/metricas-dashboard"
 import { Enquete } from "@/components/enquete"
@@ -197,7 +198,7 @@ export default function DashboardPage() {
             className="space-y-2"
           >
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <p className="text-sm capitalize text-muted-foreground">{today}</p>
+              <p className="text-sm text-muted-foreground">{maiusculaInicial(today)}</p>
               {/* Diferenciação por nível em área pequena: o ponto colorido é o
                   único acento, o resto vem dos tokens do tema. */}
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">

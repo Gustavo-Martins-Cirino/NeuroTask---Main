@@ -783,6 +783,41 @@ describe("papel de parede", () => {
   })
 })
 
+describe("orçamento da cena", () => {
+  const malhasDe = (g: Group) => {
+    let n = 0
+    g.traverse((o) => { if ((o as Mesh).isMesh) n++ })
+    return n
+  }
+
+  // Medido em 28/08, com o catálogo já dobrado: 74 malhas na sala nova e 438 na
+  // sala de nível 8 com tudo comprado (+30 do boneco). Cada malha é um draw call,
+  // e a passada de sombra cobra de novo — então o número é o dobro na prática.
+  //
+  // O teto não é para economizar hoje: é para a próxima dúzia de itens da loja
+  // não dobrar isso sem ninguém notar. Se esbarrar, o caminho não é cortar item,
+  // é juntar geometria (ver InstancedMesh no roadmap). Quem mais pesa hoje:
+  // janela 85, piso 64, estante 41, monitores 34.
+  it("a sala com TUDO comprado cabe no orçamento de malhas", () => {
+    const cheia = buildEscritorio({
+      nivel: 8,
+      piso: "tabua",
+      parede: "tijolo",
+      cadeira: "gamer",
+      extras: {
+        janela: true, tapete: true, plantaPequena: true, plantaGrande: true, luminaria: true,
+        estante: true, sofa: true, poltrona: true, mesaCentro: true, quadro: true, neon: true,
+        trofeu: true, gato: true, setup: "duplo", relogio: true, prateleira: true, ledRgb: true,
+      },
+    })
+    expect(malhasDe(cheia)).toBeLessThan(520)
+  })
+
+  it("a sala nova é leve — é a primeira coisa que uma conta nova carrega", () => {
+    expect(malhasDe(buildEscritorio())).toBeLessThan(110)
+  })
+})
+
 describe("vagas na parede do fundo", () => {
   /** Duas caixas se cruzam nos três eixos? É o que "um em cima do outro" quer
    *  dizer, e era o caso do relógio com o quadro. */

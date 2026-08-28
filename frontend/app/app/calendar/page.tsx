@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
+import { maiusculaInicial } from "@/lib/texto"
 import { Header } from "@/components/header"
 import { TimeBlockDialog } from "@/components/time-block-dialog"
 import { createClient } from "@/lib/supabase/client"
@@ -484,7 +485,7 @@ export default function CalendarPage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <span className="text-sm font-medium capitalize text-muted-foreground">{rangeLabel}</span>
+            <span className="text-sm font-medium text-muted-foreground">{maiusculaInicial(rangeLabel)}</span>
           </div>
 
           <div className="flex rounded-lg border border-border/50 p-0.5">

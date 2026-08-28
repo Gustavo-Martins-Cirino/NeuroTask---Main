@@ -1,4 +1,5 @@
 "use client"
+import { maiusculaInicial } from "@/lib/texto"
 
 import { useState } from "react"
 import { cn } from "@/lib/utils"
@@ -46,8 +47,8 @@ export function DatePicker({
         <button type="button" onClick={() => shiftMonth(-1)} className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="text-sm font-medium capitalize">
-          {month.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+        <span className="text-sm font-medium">
+          {maiusculaInicial(month.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }))}
         </span>
         <button type="button" onClick={() => shiftMonth(1)} className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
           <ChevronRight className="h-4 w-4" />
