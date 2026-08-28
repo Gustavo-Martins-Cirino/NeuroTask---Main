@@ -266,14 +266,30 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > fora da sala. Perfil é o que sobra nesta planta — e tem teste cobrando que ela nunca fique
 > de nuca para quem olha.
 
-- [ ] **Girar a câmera com o mouse ("mãozinha").** Arrastar para a direita gira a vista para
-      a esquerda, como virar um objeto na mão. **O que precisa mudar junto**: a câmera é uma
-      constante (`AZIMUTE` = 15° em `lib/office-camera.ts`) e o enquadramento é calculado
-      por `fitOrthoCamera` para um ângulo só. Com azimute livre, o `fit` passa a rodar por
-      quadro ou a caixa de enquadramento vira a maior de todas as voltas.
-      **Limites conhecidos da planta**: passar de ~90° põe a câmera atrás de uma parede, que
-      então tapa a sala. Ou o arrasto tem trava de ângulo, ou as paredes de trás somem
-      conforme a volta — e aí vira outro item.
+> **Girar a câmera: resolvido (27/08).** Arrastar gira a vista, duplo clique devolve ao
+> ângulo de sempre, e a mãozinha (`grab`/`grabbing`) anuncia que dá para pegar.
+>
+> **Das duas saídas que o item previa, a escolhida foi a caixa maior de todas as voltas** —
+> e a conta desarmou a objeção. Refazer o `fit` por quadro faria a sala inchar e murchar
+> enquanto se arrasta, que é o oposto de "virar um objeto na mão": objeto que se vira muda
+> de silhueta, não de tamanho. O medo era o preço — a largura projetada cresce ~15% entre
+> 15° e 45°. Só que **quem aperta o quadro aqui é a ALTURA, não a largura**: com o canvas em
+> 480×340 sobra folga lateral de sobra, e o giro não mexe na altura. O custo virou zero.
+>
+> **A trava de ângulo veio dos muros, medida, não do gosto.** A câmera fica em
+> (R·cos θ, 14, R·sin θ), que no chão é (R·cos θ, −R·sin θ): com θ ≤ 0 ela passa para o lado
+> +y e a parede do fundo entra na frente; passando de ~95°, o x fica negativo e a lateral faz
+> o mesmo. Daí [5°, 85°] — 80° de volta, sem precisar sumir com parede nenhuma.
+>
+> **Duas armadilhas de interação, e a segunda quebraria o que já existia.** O clique no
+> boneco tinha de sobreviver: um arrasto que anda mais de 4 px deixa de valer como clique,
+> senão toda volta de câmera terminaria abrindo o editor de avatar. E o arrasto NÃO usa
+> `setPointerCapture` no container — capturar ali redirecionaria os eventos para a div, o
+> canvas nunca veria o `pointerup` e o clique no boneco simplesmente deixaria de existir. O
+> arrasto mora na janela, que resolve o "saiu da caixa" sem esse efeito colateral.
+>
+> No toque, `touch-action: pan-y`: a página do Escritório é comprida, e roubar a rolagem
+> vertical do dedo para girar a sala seria trocar uma coisa útil por um enfeite.
 
 **Vida na cena**
 
@@ -283,7 +299,7 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Itens que existem mas não convencem**
 
-- [ ] **Conferir o novo ângulo de câmera no olho.** A cena olhava para a nuca do boneco
+- [ ] **Conferir o ângulo de câmera no olho — agora com o giro.** A cena olhava para a nuca do boneco
       (rosto a 137° da câmera: óculos, olhos e boca nunca apareciam, e do boné só a copa).
       O azimute saiu de 45° — a diagonal do canto — para 15°, e o rosto foi para ~112°,
       quase perfil. Altura e distância são as mesmas, só o azimute mudou, mas o
@@ -292,6 +308,10 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
       **Limite conhecido**: ver o rosto de FRENTE exigiria a câmera atrás da parede do
       fundo, que passaria a tapar a sala. Perfil é o teto desta planta — só uma parede a
       menos mudaria isso.
+      **O que mudou**: 15° virou só o ângulo de PARTIDA. Dá para arrastar entre 5° e 85° e
+      voltar com duplo clique, então a pergunta agora é outra — dentro dessa volta, qual
+      ângulo é o melhor? Se for consistentemente um diferente de 15°, é uma constante só
+      (`AZIMUTE_PADRAO`).
 
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 

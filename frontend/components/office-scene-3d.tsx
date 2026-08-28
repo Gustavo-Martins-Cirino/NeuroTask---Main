@@ -4,7 +4,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { ContactShadows, Environment, Lightformer, OrthographicCamera, useGLTF } from "@react-three/drei"
 import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type DirectionalLight, type Material, type MeshStandardMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
-import { fitOrthoCamera, CAMERA_POS } from "@/lib/office-camera"
+import {
+  fitOrthoCamera, apontarCamera, azimuteApos, centroDoConteudo, passoDoGiro,
+  AZIMUTE_PADRAO, CAMERA_POS,
+} from "@/lib/office-camera"
 import { OfficeBloom, marcarQuemAcende } from "@/components/office-bloom"
 import { resolveOfficeBg } from "@/lib/office-bg"
 import {
@@ -443,15 +446,42 @@ function CartoonOffice({
 // canvas é redimensionado — sala centralizada e cheia em qualquer nível. Não
 // depende dos itens equipados (todos cabem dentro da casca), então prever um
 // chapéu na loja não faz a câmera pular.
-function FitCamera({ contentRef, dep }: { contentRef: React.RefObject<Group | null>; dep: string }) {
+function FitCamera({
+  contentRef, dep, azimuteRef, alvoRef,
+}: {
+  contentRef: React.RefObject<Group | null>
+  dep: string
+  /** A volta em que a câmera está — escrita pelo arrasto, lida por quadro. */
+  azimuteRef: React.RefObject<number>
+  /** Para onde ela quer ir. Arrastando os dois andam juntos; no duplo clique
+   *  só o alvo muda, e o giro corre atrás dele. */
+  alvoRef: React.RefObject<number>
+}) {
   const cam = useThree((s) => s.camera)
   const size = useThree((s) => s.size)
+  const centroRef = useRef<Vector3 | null>(null)
+
   useLayoutEffect(() => {
     const content = contentRef.current
     if (content && (cam as ThreeOrthoCam).isOrthographicCamera) {
-      fitOrthoCamera(cam as ThreeOrthoCam, content, size.width / size.height)
+      fitOrthoCamera(cam as ThreeOrthoCam, content, size.width / size.height, 1.06, azimuteRef.current)
+      centroRef.current = centroDoConteudo(content)
     }
-  }, [cam, size.width, size.height, dep, contentRef])
+  }, [cam, size.width, size.height, dep, contentRef, azimuteRef])
+
+  useFrame((_, delta) => {
+    const centro = centroRef.current
+    if (!centro || !(cam as ThreeOrthoCam).isOrthographicCamera) return
+    const alvo = alvoRef.current
+    const atual = azimuteRef.current
+    if (Math.abs(alvo - atual) < 1e-5) return
+    // Um resto de amortecimento, e não o valor cru do arrasto: com meia-vida de
+    // 50 ms o arrasto continua colado no dedo, e o duplo clique ganha de graça
+    // uma volta suave em vez de um salto.
+    azimuteRef.current = atual + (alvo - atual) * passoDoGiro(delta)
+    apontarCamera(cam as ThreeOrthoCam, azimuteRef.current, centro)
+  })
+
   return null
 }
 
@@ -499,7 +529,7 @@ function SombraSobDemanda({
 }
 
 function Scene({
-  working, onAvatarClick, phase, avatar, equipped, nivel, celebrateNonce, bloom,
+  working, onAvatarClick, phase, avatar, equipped, nivel, celebrateNonce, bloom, azimuteRef, alvoRef,
 }: {
   working?: boolean
   onAvatarClick: () => void
@@ -509,6 +539,8 @@ function Scene({
   nivel?: number
   celebrateNonce?: number
   bloom?: boolean
+  azimuteRef: React.RefObject<number>
+  alvoRef: React.RefObject<number>
 }) {
   const L = LIGHT[phase]
   const contentRef = useRef<Group>(null)
@@ -568,7 +600,7 @@ function Scene({
           festaRef={festaRef}
         />
       </group>
-      <FitCamera contentRef={contentRef} dep={String(nivel ?? 1)} />
+      <FitCamera contentRef={contentRef} dep={String(nivel ?? 1)} azimuteRef={azimuteRef} alvoRef={alvoRef} />
       <SombraSobDemanda luzRef={luzRef} festaRef={festaRef} chave={chaveDaCena} />
       {/* Fora do contentRef de propósito: o confete não pode entrar na conta do
           auto-fit, senão a sala encolheria para caber num papelzinho no teto. */}
@@ -641,6 +673,67 @@ export function OfficeScene3D({
   // não deixaria a cena lenta — deixaria congelada, e sem nada explicando.
   const [socorro, setSocorro] = useState(false)
   const socorrer = useCallback(() => setSocorro(true), [])
+
+  // ---- Girar a vista com o mouse ("mãozinha") ----
+  //
+  // Arrastar para a direita leva a câmera para a esquerda da cena, que é o que
+  // faz a sala parecer virar junto com a mão. Os limites estão em
+  // lib/office-camera: fora deles uma parede entra na frente da sala.
+  const azimuteRef = useRef(AZIMUTE_PADRAO)
+  const alvoRef = useRef(AZIMUTE_PADRAO)
+  const arrastoRef = useRef<{ id: number; x: number; base: number; andou: boolean } | null>(null)
+  const [arrastando, setArrastando] = useState(false)
+
+  const comecarArrasto = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return
+    arrastoRef.current = { id: e.pointerId, x: e.clientX, base: alvoRef.current, andou: false }
+    setArrastando(true)
+  }
+
+  // O resto do arrasto mora na JANELA, e não em `setPointerCapture` no container.
+  // Capturar aqui redirecionaria os eventos para esta div, o canvas nunca veria
+  // o pointerup e o clique no boneco deixaria de existir — a captura conserta o
+  // arrasto que sai da caixa e quebra a única interação que a cena já tinha.
+  useEffect(() => {
+    if (!arrastando) return
+    const mover = (e: PointerEvent) => {
+      const a = arrastoRef.current
+      if (!a || a.id !== e.pointerId) return
+      const dx = e.clientX - a.x
+      // Uns poucos pixels de tolerância: sem isso o tremor de um clique no
+      // boneco contaria como arrasto e engoliria o clique.
+      if (Math.abs(dx) > 4) a.andou = true
+      alvoRef.current = azimuteApos(a.base, dx)
+    }
+    // Sai depois do clique do R3F: o canvas recebe o pointerup na fase de alvo,
+    // a janela só na de borbulha. Limpar antes apagaria o "andou" que o clique
+    // do boneco consulta.
+    const soltar = (e: PointerEvent) => {
+      const a = arrastoRef.current
+      if (!a || a.id !== e.pointerId) return
+      arrastoRef.current = null
+      setArrastando(false)
+    }
+    window.addEventListener("pointermove", mover)
+    window.addEventListener("pointerup", soltar)
+    window.addEventListener("pointercancel", soltar)
+    return () => {
+      window.removeEventListener("pointermove", mover)
+      window.removeEventListener("pointerup", soltar)
+      window.removeEventListener("pointercancel", soltar)
+    }
+  }, [arrastando])
+
+  // Duplo clique devolve a vista ao ângulo de sempre — sem isso não há caminho
+  // de volta de uma volta esquisita a não ser recarregar a página.
+  const voltarAoAngulo = () => { alvoRef.current = AZIMUTE_PADRAO }
+
+  // O clique no boneco só vale se a mão não arrastou: numa volta de câmera,
+  // abrir o editor de avatar no fim seria o oposto do que se pediu.
+  const clicarNoAvatar = useCallback(() => {
+    if (arrastoRef.current?.andou) return
+    onAvatarClick()
+  }, [onAvatarClick])
   // Bloom custa DOIS renders por quadro. Em tela pequena a cena já é minúscula
   // (o halo mal se veria) e o custo cairia justamente em quem tem menos GPU —
   // então ali ele não entra. É a regra de "efeito pesado" do roadmap.
@@ -685,7 +778,23 @@ export function OfficeScene3D({
   }
 
   return (
-    <div ref={caixaRef} className={className} style={{ position: "relative", background: bgStyle }}>
+    <div
+      ref={caixaRef}
+      className={className}
+      // `pan-y` e não `none`: a página do Escritório é comprida, e roubar a
+      // rolagem vertical do dedo para girar a sala seria trocar uma coisa útil
+      // por um enfeite. O arrasto horizontal é nosso; o vertical continua sendo
+      // da página.
+      style={{
+        position: "relative",
+        background: bgStyle,
+        touchAction: "pan-y",
+        cursor: arrastando ? "grabbing" : "grab",
+        userSelect: "none",
+      }}
+      onPointerDown={comecarArrasto}
+      onDoubleClick={voltarAoAngulo}
+    >
       <Canvas
         shadows="soft"
         // Fora da tela nada desenha, nos dois arranjos: a página é comprida e a
@@ -705,7 +814,9 @@ export function OfficeScene3D({
         {!socorro && <TickerDoGsap ativo={naTela} onSocorro={socorrer} />}
         <Scene
           working={working}
-          onAvatarClick={onAvatarClick}
+          onAvatarClick={clicarNoAvatar}
+          azimuteRef={azimuteRef}
+          alvoRef={alvoRef}
           phase={phase}
           avatar={avatar}
           equipped={equipped}
