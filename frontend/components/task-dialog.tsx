@@ -14,7 +14,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { DatePicker } from "@/components/date-picker"
 import { TimeSelect } from "@/components/time-select"
-import { RECURRENCE_OPTIONS } from "@/lib/task-recurrence"
+import { RECURRENCE_OPTIONS, regraParaBanco } from "@/lib/task-recurrence"
 import type { Task, TaskPriority } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Loader2, ArrowDown, ArrowRight, ArrowUp, AlertCircle, Minus, Plus, Video, Copy, MapPin, ChevronDown, Check } from "lucide-react"
@@ -176,8 +176,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
       estimated_minutes: estimated,
       due_date: resolveDueDate(),
       list_id: task ? task.list_id : listId,
-      recurrence_rule:
-        recurrence === "none" ? null : recurrence === "every" ? `every:${Math.max(1, everyDays)}` : recurrence,
+      recurrence_rule: regraParaBanco(recurrence, everyDays),
       meeting_url: meetingUrl.trim() || null,
       location: location.trim() || null,
       user_id: user.id,

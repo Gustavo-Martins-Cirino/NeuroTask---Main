@@ -9,7 +9,7 @@ import { TaskDialog } from "@/components/task-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
 import { awardXp, taskXpAmount, MIN_TASK_AGE_MIN } from "@/lib/gamification"
-import { nextFutureOccurrence } from "@/lib/task-recurrence"
+import { nextFutureOccurrence, recurrenceLabel } from "@/lib/task-recurrence"
 import type { Task, TaskStatus, TaskList } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -276,6 +276,22 @@ export default function TasksPage() {
     fetchTasks()
   }
 
+  // Trocar a repetição pelo menu do cartão. Mexe SÓ na regra: o prazo continua
+  // onde estava, e é ao concluir que ele avança (ver lib/task-recurrence). Se
+  // isto reescrevesse o due_date, marcar "semanalmente" numa tarefa de hoje a
+  // jogaria para a semana que vem sem ninguém pedir.
+  const handleRecurrenceChange = async (task: Task, rule: string | null) => {
+    if ((task.recurrence_rule ?? null) === rule) return
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, recurrence_rule: rule } : t)))
+    const { error } = await supabase.from("tasks").update({ recurrence_rule: rule }).eq("id", task.id)
+    if (error) {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, recurrence_rule: task.recurrence_rule } : t)))
+      toast.error("Não consegui mudar a repetição agora.")
+      return
+    }
+    toast.success(rule ? `Repete: ${recurrenceLabel(rule)?.toLowerCase()}` : "Não repete mais")
+  }
+
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open)
     if (!open) setEditingTask(null)
@@ -332,6 +348,7 @@ export default function TasksPage() {
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
                   onToggleFavorite={handleToggleFavorite}
+                  onRecurrenceChange={handleRecurrenceChange}
                 />
               </div>
             )

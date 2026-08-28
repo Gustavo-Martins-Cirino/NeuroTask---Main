@@ -823,6 +823,28 @@ código, e um CHECK aqui viraria a mesma armadilha do `feedback_kind_check` — 
 constraint velho recusando um valor novo, num banco onde ninguém lembra de tê-lo
 criado. Cor desconhecida vira "sem cor" no app, nunca erro.
 
+O `tarefas.jsx` saiu da tabela: a **repetição saiu do diálogo** e virou um
+submenu no menu de ações do cartão — trocar "semanalmente" numa tarefa que já
+existe deixou de exigir abrir o formulário inteiro.
+
+**Ela entrou no menu, e não como um controle no cartão**, e isso é o
+minimalista ganhando de novo: a lista de tarefas é a tela que mais se olha, e um
+seletor por cartão a encheria. O menu de ações já estava lá e não custou um
+pixel.
+
+O `slider` da referência não veio: **"a cada N dias" não cabe num menu**, então
+ela continua sendo escolhida no diálogo. O que o menu faz questão de mostrar é a
+repetição personalizada MARCADA — sem essa linha, uma tarefa que repete a cada
+três dias abriria o menu sem nada marcado, dizendo que não repete.
+
+Duas coisas ficaram amarradas por teste. `regraParaBanco` passou a ser a única
+dona da conversão "none → NULO" (ela estava escrita à mão no diálogo, e duas
+cópias da mesma regra é como uma delas fica para trás), e há um teste cobrando
+que tudo que sai dela seja lido por `nextOccurrence` — se as duas pontas
+divergirem, a tarefa repete na tela e não avança de prazo ao concluir. E mudar a
+repetição mexe SÓ na regra: reescrever o `due_date` junto jogaria uma tarefa de
+hoje para a semana que vem sem ninguém pedir.
+
 O `feedback.jsx` (`MorphSurface`) saiu da tabela: o botão de feedback **virou o
 formulário**, sem diálogo. O que o diálogo custava não era estética, era atrito
 — escurecia o app inteiro, tirava de vista a tela que a pessoa ia comentar e
@@ -853,7 +875,6 @@ acabou de removê-los de propósito.
 | Arquivo | O que é | Onde encaixa |
 |---|---|---|
 | `color-picker.jsx` | Paleta gerada (Poline), com travar e copiar | A paleta de `lib/reminders.ts` (a cor de fundo do Escritório já saiu — ver nota) |
-| `tarefas.jsx` | Lista com recorrência e slider | Recorrência de tarefa, que hoje mora num diálogo |
 | `navegação-effects.jsx` | Ícones que trocam de forma | O Dock |
 | `youtube-button.jsx` | `FamilyButton` — flutuante que expande | Ações rápidas do dashboard |
 | `votacao-feedback.jsx` | Grade de ícones de serviços (Google, GitHub, Notion…) | Serve de referência de ícone para o login social acima |

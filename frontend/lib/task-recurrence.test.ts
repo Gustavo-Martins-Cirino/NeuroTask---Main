@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { recurrenceLabel, nextOccurrence, nextFutureOccurrence } from "./task-recurrence"
+import {
+  recurrenceLabel, nextOccurrence, nextFutureOccurrence, regraParaBanco, ehRepeticaoPersonalizada,
+} from "./task-recurrence"
 
 // Recorrência mexe com o prazo da tarefa depois de concluída. Um erro aqui não
 // aparece na hora: some ou duplica uma ocorrência dias depois.
@@ -108,5 +110,51 @@ describe("nextFutureOccurrence", () => {
     vi.setSystemTime(new Date(2026, 2, 10, 12, 0, 0))
     expect(nextFutureOccurrence(new Date(2010, 0, 1), "monthly")!.getTime()).toBeGreaterThan(Date.now())
     expect(nextFutureOccurrence(new Date(1990, 0, 1), "yearly")!.getTime()).toBeGreaterThan(Date.now())
+  })
+})
+
+describe("regraParaBanco", () => {
+  it('"não repete" vira NULO, e não a string "none"', () => {
+    // Tarefa que não repete não tem regra nenhuma. Gravar "none" faria
+    // recurrenceLabel devolver null e nextOccurrence não achar a regra — um
+    // estado que parece certo na tela e é lixo no banco.
+    expect(regraParaBanco("none")).toBeNull()
+    expect(regraParaBanco("")).toBeNull()
+  })
+
+  it("as fixas passam como estão", () => {
+    for (const v of ["daily", "weekly", "monthly", "yearly"]) {
+      expect(regraParaBanco(v)).toBe(v)
+    }
+  })
+
+  it('"a cada N dias" vira every:N, e N nunca é zero nem quebrado', () => {
+    expect(regraParaBanco("every", 3)).toBe("every:3")
+    expect(regraParaBanco("every", 0)).toBe("every:1")
+    expect(regraParaBanco("every", -5)).toBe("every:1")
+    expect(regraParaBanco("every", 2.7)).toBe("every:2")
+    expect(regraParaBanco("every", Number.NaN)).toBe("every:1")
+  })
+
+  it("o que sai daqui é o que nextOccurrence sabe ler", () => {
+    // As duas pontas da mesma regra: se elas divergirem, a tarefa repete na
+    // tela e não avança de prazo ao concluir.
+    for (const [valor, n] of [["daily", 1], ["weekly", 1], ["every", 4]] as const) {
+      const regra = regraParaBanco(valor, n)!
+      expect(nextOccurrence(new Date(2026, 0, 1), regra)).not.toBeNull()
+    }
+  })
+})
+
+describe("ehRepeticaoPersonalizada", () => {
+  it("só 'a cada N dias' é personalizada", () => {
+    expect(ehRepeticaoPersonalizada("every:3")).toBe(true)
+    expect(ehRepeticaoPersonalizada("every:1")).toBe(true)
+  })
+
+  it("as fixas e a ausência de regra não são", () => {
+    for (const v of ["daily", "weekly", "monthly", "yearly", null, undefined, "", "every:", "every:x"]) {
+      expect(ehRepeticaoPersonalizada(v)).toBe(false)
+    }
   })
 })

@@ -7,8 +7,13 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
   DropdownMenuItem,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
@@ -19,7 +24,9 @@ import {
   ArrowUp, ArrowRight, ArrowDown, Check, Play, Star, Repeat,
   Video, Copy, MapPin,
 } from "lucide-react"
-import { recurrenceLabel } from "@/lib/task-recurrence"
+import {
+  RECURRENCE_OPTIONS, ehRepeticaoPersonalizada, recurrenceLabel, regraParaBanco,
+} from "@/lib/task-recurrence"
 import { marcarOrigemDaMoeda } from "@/lib/coin-flight"
 import { toast } from "sonner"
 
@@ -29,6 +36,8 @@ interface TaskCardProps {
   onDelete: (taskId: string) => void
   onStatusChange: (taskId: string, status: TaskStatus) => void
   onToggleFavorite?: (task: Task) => void
+  /** Trocar a repetição sem abrir o diálogo. `null` = não repete. */
+  onRecurrenceChange?: (task: Task, rule: string | null) => void
 }
 
 const priorityConfig: Record<TaskPriority, { label: string; color: string; icon: React.ReactNode }> = {
@@ -70,7 +79,9 @@ function dueInfo(task: Task) {
   return { pct, overdue, label, color }
 }
 
-export function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleFavorite }: TaskCardProps) {
+export function TaskCard({
+  task, onEdit, onDelete, onStatusChange, onToggleFavorite, onRecurrenceChange,
+}: TaskCardProps) {
   const [confetti, setConfetti] = useState(false)
   const priority = priorityConfig[task.priority]
   const isCompleted = task.status === "completed"
@@ -159,6 +170,48 @@ export function TaskCard({ task, onEdit, onDelete, onStatusChange, onToggleFavor
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
+
+              {/* Repetição sem abrir o diálogo. Ela entra AQUI, e não como um
+                  controle no cartão: a lista de tarefas é a tela que mais se
+                  olha, e um seletor por cartão a encheria. O menu de ações já
+                  existe e não custa um pixel a mais.
+                  Referência: components/inspirações/tarefas.jsx. */}
+              {onRecurrenceChange && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Repeat className="mr-2 h-4 w-4" />
+                    Repetir
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      {RECURRENCE_OPTIONS.map((o) => (
+                        <DropdownMenuCheckboxItem
+                          key={o.value}
+                          checked={(task.recurrence_rule ?? "none") === o.value}
+                          onCheckedChange={() => onRecurrenceChange(task, regraParaBanco(o.value))}
+                        >
+                          {o.label}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                      {/* "A cada N dias" não cabe num menu — o número se escolhe
+                          com o passo a passo do diálogo. E ela precisa APARECER
+                          marcada aqui: sem esta linha, uma tarefa que repete a
+                          cada 3 dias abriria o menu sem nada marcado, dizendo
+                          que não repete. */}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuCheckboxItem
+                        checked={ehRepeticaoPersonalizada(task.recurrence_rule)}
+                        onCheckedChange={() => onEdit(task)}
+                      >
+                        {ehRepeticaoPersonalizada(task.recurrence_rule)
+                          ? recurrenceLabel(task.recurrence_rule)
+                          : "A cada N dias…"}
+                      </DropdownMenuCheckboxItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+              )}
+
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />

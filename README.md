@@ -54,7 +54,8 @@ para o dia seguinte),
 vira "sem cor" em vez de erro), `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
 `revelacao-resposta` (a resposta da Neuro entrando escrita no chat: duração fixa e ritmo
 saindo do tamanho — é o que impede uma resposta longa de levar meio minuto para aparecer),
-`routine-insights`, `saudacao`, `task-recurrence`, `telegram-commands`,
+`routine-insights`, `saudacao`, `task-recurrence` (inclusive que "não repete" vira NULO e
+não a string "none", e que o que sai de `regraParaBanco` é lido por `nextOccurrence`), `telegram-commands`,
 `telegram-fuso` (de que parede o `/hoje` do bot está falando — e que zero é fuso de
 verdade, não "ausente") e
 `time-format`. É onde a lógica sutil regride sem

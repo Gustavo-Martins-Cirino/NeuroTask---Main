@@ -107,6 +107,10 @@ function DropdownMenuRadioItem({ className, children, ...props }: React.Componen
   )
 }
 
+function DropdownMenuSub({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
+  return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />
+}
+
 function DropdownMenuSubTrigger({ className, inset, children, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & { inset?: boolean }) {
   return (
     <DropdownMenuPrimitive.SubTrigger
@@ -141,6 +145,7 @@ export {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuPortal,
+  DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 }

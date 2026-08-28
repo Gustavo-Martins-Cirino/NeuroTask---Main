@@ -10,6 +10,31 @@ export const RECURRENCE_OPTIONS = [
   { value: "yearly", label: "Anualmente" },
 ] as const
 
+/**
+ * O valor do formulário virando o que vai para o banco.
+ *
+ * "none" é NULO na coluna, e não a string "none": uma tarefa que não repete não
+ * tem regra nenhuma. A conversão morava escrita à mão no diálogo, e passou a
+ * valer também para o menu rápido do cartão — duas cópias da mesma regra é
+ * como uma delas fica para trás.
+ */
+export function regraParaBanco(valor: string, aCadaDias = 1): string | null {
+  if (valor === "none" || !valor) return null
+  if (valor === "every") return `every:${Math.max(1, Math.floor(aCadaDias) || 1)}`
+  return valor
+}
+
+/**
+ * Repetição que o menu rápido do cartão NÃO sabe montar (hoje, "a cada N dias").
+ *
+ * Ela existe para o menu não mentir: oferecer só as fixas e marcar nenhuma
+ * faria uma tarefa que repete a cada 3 dias parecer que não repete. Quem cai
+ * aqui é mandado ao diálogo, que é onde o número se escolhe.
+ */
+export function ehRepeticaoPersonalizada(rule: string | null | undefined): boolean {
+  return typeof rule === "string" && /^every:\d+$/.test(rule)
+}
+
 export function recurrenceLabel(rule: string | null | undefined): string | null {
   if (!rule) return null
   const fixed = RECURRENCE_OPTIONS.find((o) => o.value === rule)
