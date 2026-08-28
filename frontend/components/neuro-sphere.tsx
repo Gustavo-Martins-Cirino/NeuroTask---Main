@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import {
-  AdditiveBlending, BufferGeometry, CanvasTexture, Color, Float32BufferAttribute,
+  AdditiveBlending, BufferGeometry, CanvasTexture, Color, Float32BufferAttribute, NormalBlending,
   Matrix4, Points, Ray, Raycaster, Vector3, type Group,
 } from "three"
 import { useTheme } from "next-themes"
@@ -70,6 +70,10 @@ function useNaTela<T extends HTMLElement>(ref: React.RefObject<T | null>) {
  * bytes. A cor de queda entra ANTES como sentinela: `fillStyle` ignora valor
  * inválido em silêncio, e nesse caso é ela que sobra.
  */
+/** O material fica branco: a cor de cada partícula já vem resolvida no atributo,
+ *  e o shader multiplica os dois. */
+const BRANCO = new Color(1, 1, 1)
+
 function corDoToken(nome: string, queda: string): string {
   try {
     const bruto = getComputedStyle(document.documentElement).getPropertyValue(nome).trim()
@@ -109,12 +113,20 @@ function texturaRedonda(): CanvasTexture {
 }
 
 function Nuvem({
-  reduzido, cor, ponteiroRef,
+  reduzido, cor, fundo, claro, ponteiroRef,
 }: {
   reduzido: boolean
   cor: string
+  /** A cor do fundo da página: no tema claro a partícula se dissolve NELA. */
+  fundo: string
+  claro: boolean
   ponteiroRef: React.RefObject<boolean>
 }) {
+  // A cor final de cada partícula é resolvida aqui e vai inteira no atributo —
+  // o material fica branco. Antes o atributo era só o brilho (cinza) e o
+  // material carregava a cor, o que só funciona somando luz.
+  const tinta = useMemo(() => new Color(cor), [cor])
+  const chao = useMemo(() => new Color(fundo), [fundo])
   const grupoRef = useRef<Group>(null)
   const pontosRef = useRef<Points>(null)
 
@@ -227,9 +239,19 @@ function Nuvem({
       // O raio acompanha a respiração: sem isso a esfera clarearia e escureceria
       // inteira a cada ciclo, em vez de só mudar de tamanho.
       const brilho = brilhoPorProfundidade(z, RAIO * escala)
-      cores[k] = brilho
-      cores[k + 1] = brilho
-      cores[k + 2] = brilho
+      // No escuro a partícula distante APAGA (tende ao preto, e o aditivo soma
+      // luz sobre o fundo). No claro ela não pode apagar: preto sobre branco é
+      // o ponto de MAIOR contraste, e a esfera viraria uma bola escura com a
+      // profundidade invertida. Ali ela se dissolve na cor do fundo.
+      if (claro) {
+        cores[k] = chao.r + (tinta.r - chao.r) * brilho
+        cores[k + 1] = chao.g + (tinta.g - chao.g) * brilho
+        cores[k + 2] = chao.b + (tinta.b - chao.b) * brilho
+      } else {
+        cores[k] = tinta.r * brilho
+        cores[k + 1] = tinta.g * brilho
+        cores[k + 2] = tinta.b * brilho
+      }
     }
     attr.needsUpdate = true
     attrCor.needsUpdate = true
@@ -242,15 +264,18 @@ function Nuvem({
           size={0.032}
           sizeAttenuation
           map={textura}
-          color={new Color(cor)}
-          // A cor do tema entra no material e o brilho da profundidade por
-          // partícula: o shader multiplica os dois.
+          // Branco de propósito: a cor já vem resolvida por partícula, e o
+          // shader MULTIPLICA as duas.
+          color={BRANCO}
           vertexColors
           transparent
           // Additivo com depthWrite ligado deixaria a partícula de trás
           // recortar a da frente, e a nuvem ficaria com falhas.
           depthWrite={false}
-          blending={AdditiveBlending}
+          // Aditivo só soma LUZ, e sobre branco não há o que somar: no tema
+          // claro a esfera sumia — virava um borrão pálido no meio da tela
+          // vazia, que é justamente onde ela é o centro da atenção.
+          blending={claro ? NormalBlending : AdditiveBlending}
         />
       </points>
     </group>
@@ -277,9 +302,19 @@ export function NeuroSphere({
 
   const { resolvedTheme } = useTheme()
   const [cor, setCor] = useState("rgb(75,130,255)")
+  const [fundo, setFundo] = useState("rgb(10,10,15)")
   useEffect(() => {
     setCor(corDoToken("--primary", "rgb(75,130,255)"))
+    setFundo(corDoToken("--background", "rgb(10,10,15)"))
   }, [resolvedTheme])
+
+  // O tema sai da LUMINÂNCIA do fundo, não do `resolvedTheme`: o que decide se
+  // dá para somar luz é a cor que está atrás da esfera, e ela é a mesma conta
+  // em qualquer nome de tema que venha a existir.
+  const claro = useMemo(() => {
+    const [r, g, b] = fundo.match(/\d+/g)?.map(Number) ?? [0, 0, 0]
+    return (r * 0.299 + g * 0.587 + b * 0.114) / 255 > 0.5
+  }, [fundo])
 
   // Sem WebGL sobra o que quem chamou mandou pôr no lugar — a página não fica
   // com um buraco do tamanho da esfera.
@@ -305,7 +340,7 @@ export function NeuroSphere({
         style={{ width: "100%", height: "100%" }}
       >
         {!reduzido && !socorro && <TickerDoGsap ativo={naTela} onSocorro={socorrer} />}
-        <Nuvem reduzido={reduzido} cor={cor} ponteiroRef={ponteiroRef} />
+        <Nuvem reduzido={reduzido} cor={cor} fundo={fundo} claro={claro} ponteiroRef={ponteiroRef} />
       </Canvas>
     </div>
   )

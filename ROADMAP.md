@@ -319,19 +319,13 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Itens que existem mas não convencem**
 
-- [ ] **Conferir o ângulo de câmera no olho — agora com o giro.** A cena olhava para a nuca do boneco
-      (rosto a 137° da câmera: óculos, olhos e boca nunca apareciam, e do boné só a copa).
-      O azimute saiu de 45° — a diagonal do canto — para 15°, e o rosto foi para ~112°,
-      quase perfil. Altura e distância são as mesmas, só o azimute mudou, mas o
-      enquadramento da sala muda bastante: a parede lateral vira o fundo e a do fundo
-      recua para a esquerda. É uma constante só, `AZIMUTE` em `lib/office-camera.ts`.
-      **Limite conhecido**: ver o rosto de FRENTE exigiria a câmera atrás da parede do
-      fundo, que passaria a tapar a sala. Perfil é o teto desta planta — só uma parede a
-      menos mudaria isso.
-      **O que mudou**: 15° virou só o ângulo de PARTIDA. Dá para arrastar entre 5° e 85° e
-      voltar com duplo clique, então a pergunta agora é outra — dentro dessa volta, qual
-      ângulo é o melhor? Se for consistentemente um diferente de 15°, é uma constante só
-      (`AZIMUTE_PADRAO`).
+> **Conferido no olho (28/08).** A cena foi renderizada em build de produção com a sala
+> cheia, e o arrasto foi disparado por evento de mouse de verdade. O ângulo de partida mostra
+> o rosto de perfil, a janela, e o relógio e o quadro lado a lado sem se tocar (a fileira de
+> vagas funciona). Girando para os dois extremos a sala continua legível e nenhuma parede
+> entra na frente — a trava de azimute segura. Os itens dos últimos dias aparecem como
+> deviam: livros na estante aberta, tábua com emenda deslocada no piso, fiada do tijolinho,
+> cabo entrando no plugue.
 
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 
@@ -727,12 +721,22 @@ vira ruído.
 > reescrevê-las letra a letra ao abrir fingiria que a Neuro está falando de novo o que ela
 > já disse.
 
-- [ ] **Ver a tela da Neuro IA no olho, clara e escura.** O que este item pedia — conferir a
-      calibragem da malha pastel nos dois temas — deixou de existir: a malha saiu, o grão que
-      a substituiu saiu junto, e a tela ficou lisa (ver a nota "Encerrado (23/08)" acima). O
-      que sobra de conferir é o **tema claro**, que nunca foi aberto: a tela foi desenhada
-      preta, e sem efeito nenhum atrás dela a esfera e a barra em pílula ficam sozinhas sobre
-      branco. Se destoarem, o ajuste é de token no `:root`, não de efeito de volta.
+> **Conferida no olho, nos dois temas (28/08) — e o claro estava quebrado.** A tela foi
+> montada fora do `/app` e aberta em build de produção, com os dados forjados. No escuro está
+> como se queria; **no claro a esfera sumia**: virava um borrão pálido no meio da tela vazia,
+> que é justamente onde ela é o centro da atenção.
+>
+> A causa é `AdditiveBlending`: aditivo só SOMA luz, e sobre branco não há o que somar. Vale
+> registrar que uma medição anterior tinha dado a esfera como aprovada no claro — mas era uma
+> simulação em canvas 2D, cujo modelo de alfa não bate com o do WebGL. **Render de verdade
+> desmentiu a simulação**; para efeito que depende de blending, não há substituto.
+>
+> O conserto: a cor de cada partícula passou a ser resolvida no ATRIBUTO (o material ficou
+> branco), e no claro ela se dissolve na cor do FUNDO em vez de apagar para o preto — preto
+> sobre branco é o ponto de maior contraste, e a esfera viraria uma bola escura com a
+> profundidade invertida. O blending sai da LUMINÂNCIA do fundo, não do nome do tema.
+> Medido depois: pico de contraste 60,6 no claro contra 34,5 no escuro — ela pesa mais no
+> claro do que no escuro, e o caminho do escuro é matematicamente o mesmo de antes.
 
 #### Idioma e região — `202645.png` e `202658.png`
 
