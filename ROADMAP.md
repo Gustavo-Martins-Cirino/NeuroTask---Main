@@ -470,6 +470,31 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > 3:1 de uma marca com dado; e a linha ganhou margem nas pontas porque a bolinha do
 > último ponto saía metade para fora do SVG.
 
+> ✅ **Confirmado pelo Gustavo (28/08): era o Windows dele com "Mostrar animações" desligado.**
+> Ligando, tudo voltou. E aí veio o pedido certo: *ninguém deveria ter que mexer no Windows
+> para ver isso*.
+>
+> **A regra do app mudou, e está em `lib/movimento.ts`.** `prefers-reduced-motion` existe
+> contra movimento que embrulha o estômago — parallax, giro, zoom, coisa grande atravessando
+> a tela — e a recomendação da norma é REDUZIR, não apagar. O app vinha apagando. Agora a
+> animação declara o que ela FAZ:
+>
+> · **informativo** (o gráfico se desenhando, um número subindo até o valor): continua
+>   rodando, com a duração encurtada. Some, e a pessoa perde informação — some, e o clique
+>   parece não ter feito nada. É pequeno, local, não desloca a tela: não é gatilho vestibular.
+> · **ambiente** (fundo que respira, luz que gira, deslize de página): para de vez. Ninguém
+>   perde dado nenhum, e é aqui que o desconforto realmente mora.
+>
+> **Aplicado por enquanto só em "Seus números"**, que foi a queixa concreta. Faltam os outros
+> que hoje apagam e deveriam encurtar: `numero-rolante`, `split-greeting`, `coin-flight`.
+> Ficam de fora, corretamente: `smooth-scroll`, `focus-gradient`, as cenas 3D e os deslizes
+> de página.
+>
+> **O que fica de aprendizado**: "Mostrar animações" não é o padrão do Windows estar
+> desligado — mas cai sozinho em quem escolhe "Ajustar para melhor desempenho" nas opções de
+> desempenho, que é comum. E o efeito no app era total: gráfico, saudação, moedas, números,
+> scroll suave e a borda, tudo parado, sem nenhum aviso de por quê.
+>
 > ⚠️ **`prefers-reduced-motion` é a explicação de "não animou" — e provavelmente de mais de
 > uma queixa.** O Gustavo trocava de aba no site e não via desenho nenhum. Reproduzido em
 > build de produção, com o mesmo aninhamento da página real (`PageTransition`, que é um

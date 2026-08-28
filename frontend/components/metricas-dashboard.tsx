@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { ChevronDown, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { duracaoDoMovimento } from "@/lib/movimento"
 import { createClient } from "@/lib/supabase/client"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import {
@@ -87,15 +88,6 @@ const DESLOCAMENTO_ABA = 28
  *  perto: a seção fica com um ritmo só, em vez de uma aba destoando. */
 const DESENHO = 0.55
 
-/** Quanto o gráfico leva para ACENDER, quando o sistema pede menos movimento.
- *
- *  `prefers-reduced-motion` existe contra movimento que embrulha o estômago —
- *  parallax, giro, coisa grande atravessando a tela —, e a recomendação é
- *  REDUZIR, não apagar. Apagando, a troca de aba virava um corte seco: o gráfico
- *  novo aparecia pronto no lugar do velho e a impressão era de que o clique não
- *  fez nada. Aceso, nada se move (a geometria já nasce no lugar final) e ainda
- *  assim dá para ver que uma coisa saiu e outra entrou. */
-const FUNDIDO = 0.24
 
 const ALTURA_PLOT = 132
 const BANDA_EIXO = 22
@@ -129,11 +121,10 @@ const MARGEM_LINHA = 7
  * chave antes disso faria as barras montarem já cheias.
  *
  * A chave é a mesma com ou sem `prefers-reduced-motion`, e isso é de propósito:
- * quem pede menos movimento recebe o gráfico ACESO em vez de construído (ver
- * `FUNDIDO` abaixo), e para acender também é preciso um quadro no estado
- * inicial. Enquanto ela dependia da preferência, a troca de aba não tinha
- * transição alguma para essa pessoa — o gráfico novo simplesmente aparecia
- * pronto, e trocar de aba parecia não fazer nada.
+ * o gráfico se desenha para todo mundo, só que mais curto para quem pediu menos
+ * movimento (ver lib/movimento.ts). Enquanto ela dependia da preferência, a
+ * troca de aba não tinha transição alguma para essa pessoa — o gráfico novo
+ * aparecia pronto, e trocar de aba parecia não fazer nada.
  */
 function useConstrucao(pronto: boolean): boolean {
   const [construido, setConstruido] = useState(false)
@@ -219,11 +210,6 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
     <motion.div
       ref={ref}
       className="relative pt-7"
-      // Sem `initial`: o dashboard vive dentro de um <AnimatePresence
-      // initial={false}> (o PageTransition), e animação de MONTAGEM não roda
-      // ali. Por isso o acender também se pendura na chave que vira depois.
-      animate={{ opacity: semMovimento && !construido ? 0 : 1 }}
-      transition={{ duration: semMovimento ? FUNDIDO : 0 }}
     >
       {largura > 0 && (
         <svg
@@ -262,7 +248,7 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
             fill="url(#nt-area-dias)"
             initial={false}
             animate={{ opacity: construido ? 1 : 0 }}
-            transition={semMovimento ? { duration: 0 } : { duration: 0.4, delay: DESENHO * 0.4 }}
+            transition={{ duration: duracaoDoMovimento(0.4, "informativo", semMovimento), delay: duracaoDoMovimento(DESENHO * 0.4, "informativo", semMovimento) }}
           />
           {/* O traço se desenha da esquerda para a direita, que é o sentido do
               tempo no eixo: a linha cresce como os dias passaram. */}
@@ -276,7 +262,7 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
             vectorEffect="non-scaling-stroke"
             initial={false}
             animate={{ pathLength: construido ? 1 : 0 }}
-            transition={semMovimento ? { duration: 0 } : { duration: DESENHO, ease: "easeInOut" }}
+            transition={{ duration: duracaoDoMovimento(DESENHO, "informativo", semMovimento), ease: "easeInOut" }}
           />
 
           {ativo !== null && (
@@ -296,7 +282,7 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
             fill={ACENTO} stroke="var(--card)" strokeWidth="2"
             initial={false}
             animate={{ r: construido ? 4.5 : 0 }}
-            transition={semMovimento ? { duration: 0 } : { ...MOLA_DASHBOARD, delay: DESENHO * 0.88 }}
+            transition={{ ...MOLA_DASHBOARD, delay: duracaoDoMovimento(DESENHO * 0.88, "informativo", semMovimento) }}
           />
 
           {/* Alvos invisíveis por dia: dão o valor a quem para o cursor e a quem
@@ -360,11 +346,6 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
     <motion.div
       ref={ref}
       className="relative pt-7"
-      // Sem `initial`: o dashboard vive dentro de um <AnimatePresence
-      // initial={false}> (o PageTransition), e animação de MONTAGEM não roda
-      // ali. Por isso o acender também se pendura na chave que vira depois.
-      animate={{ opacity: semMovimento && !construido ? 0 : 1 }}
-      transition={{ duration: semMovimento ? FUNDIDO : 0 }}
     >
       {largura > 0 && (
         <svg width={largura} height={ALTURA_TOTAL} role="img" aria-label="Gráfico de colunas">
@@ -407,11 +388,11 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
                         ? { y: ALTURA_PLOT - altura, height: altura }
                         : { y: ALTURA_PLOT, height: 0 }
                     }
-                    transition={
-                      semMovimento
-                        ? { duration: 0 }
-                        : { duration: 0.42, ease: [0, 0, 0.2, 1], delay: i * passoDaBarra }
-                    }
+                    transition={{
+                      duration: duracaoDoMovimento(0.42, "informativo", semMovimento),
+                      ease: [0, 0, 0.2, 1],
+                      delay: duracaoDoMovimento(i * passoDaBarra, "informativo", semMovimento),
+                    }}
                   />
                 )}
                 {rotulo && (
