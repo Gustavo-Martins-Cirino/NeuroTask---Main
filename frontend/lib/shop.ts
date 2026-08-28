@@ -9,7 +9,12 @@ import { createClient } from "@/lib/supabase/client"
 // isso (ainda mais a "premium", que não mudava nada) não se sustentava. Os ids
 // continuam no banco, inofensivos; só não aparecem mais.
 
-export type ShopCategory = "decor" | "cadeira" | "setup" | "parede" | "piso" | "chapeu" | "oculos"
+// `movel` nasceu porque `decor` era um saco onde cabia tudo — planta, quadro,
+// relógio, pet, troféu, LED e uma estante. Móvel é o que muda a PLANTA da sala:
+// ocupa chão, tem silhueta e você desviaria dele para andar. Pendurar um quadro
+// é outra coisa, e misturar as duas na mesma lista fazia a loja parecer um
+// depósito.
+export type ShopCategory = "decor" | "movel" | "cadeira" | "setup" | "parede" | "piso" | "chapeu" | "oculos"
 
 export interface ShopItem {
   id: string
@@ -24,6 +29,7 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
   chapeu: "Chapéus",
   oculos: "Óculos",
   decor: "Decoração",
+  movel: "Móveis",
   cadeira: "Cadeira",
   setup: "Setup",
   parede: "Parede",
@@ -50,7 +56,8 @@ export const CATALOG: ShopItem[] = [
   { id: "quadro-montanhas", name: "Quadro · Montanhas", price: 40, category: "decor", emoji: "🖼️", desc: "Paisagem pra respirar" },
   { id: "tapete", name: "Tapete", price: 50, category: "decor", emoji: "🟫", desc: "Conforto sob os pés" },
   { id: "planta-grande", name: "Planta grande", price: 60, category: "decor", emoji: "🌿", desc: "Uma costela-de-adão no canto" },
-  { id: "estante", name: "Estante de livros", price: 80, category: "decor", emoji: "📚", desc: "Sua biblioteca pessoal" },
+  { id: "estante", name: "Estante de livros", price: 80, category: "movel", emoji: "📚", desc: "Sua biblioteca pessoal" },
+  { id: "sofa", name: "Sofá", price: 170, category: "movel", emoji: "🛋️", desc: "Dois lugares encostados na parede" },
   { id: "quadro-neon", name: "Neon \"focus\"", price: 90, category: "decor", emoji: "🔆", desc: "Letreiro neon na parede" },
   { id: "janela-cidade", name: "Janela · Cidade", price: 100, category: "decor", emoji: "🌆", desc: "Vista para a cidade" },
   { id: "pet-gato", name: "Gato de estimação", price: 120, category: "decor", emoji: "🐈", desc: "Companhia de produtividade" },
@@ -111,6 +118,7 @@ export async function fetchShopState(): Promise<ShopState> {
 // no office_3d.sql. Por isso a dica aponta o arquivo por item.
 const SQL_DO_ITEM: Record<string, string> = {
   "pet-cachorro": "office_3d.sql",
+  sofa: "office_v7.sql",
   "chapeu-bone": "avatar_acessorios.sql",
   "chapeu-social": "avatar_acessorios.sql",
   "chapeu-coroa": "avatar_acessorios.sql",

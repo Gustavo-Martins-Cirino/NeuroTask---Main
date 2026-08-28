@@ -454,6 +454,8 @@ export interface EscritorioExtras {
   plantaGrande?: boolean
   luminaria?: boolean
   estante?: boolean
+  /** Sofá de dois lugares, encostado na parede lateral. */
+  sofa?: boolean
   quadro?: boolean
   neon?: boolean
   trofeu?: boolean
@@ -1019,6 +1021,45 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     cabeca.add(cyl("Luminaria_Luz", 0.11, 0.006, [0, 0, 0.2], mLuz))
     cabeca.add(sph("Luminaria_Bulbo", 0.03, [0, 0, 0.207], tmat([1, 0.95, 0.82], 2.6)))
     g.add(cabeca)
+  }
+
+  // Sofá de dois lugares. Encosta na parede LATERAL e olha para dentro da sala:
+  // a câmera vem do +x (ver lib/office-camera), então dali se vê a frente dele.
+  // Na parede do fundo veríamos o encosto, e um sofá visto por trás é um bloco.
+  //
+  // Ele é o primeiro item da categoria "móveis", e a diferença para a decoração
+  // é essa: ocupa chão. Por isso o y é escolhido pelo VÃO que sobra à frente da
+  // estante — não pode nascer com um número cravado que um dia colide com ela.
+  if (extras.sofa) {
+    const mEstofado = tmat([0.35, 0.39, 0.46], 0, "tecido")
+    const mAlmofada = tmat([0.42, 0.46, 0.53], 0, "tecido")
+    const mPe = tmat([0.32, 0.21, 0.13], 0, "madeira")
+    // O rodapé se projeta 12 cm da parede e vai até 14 cm de altura: encostado
+    // na parede, o sofá afundaria NELE, não nela. O x sai daí, não do gosto.
+    const x = -S + 0.56
+    const y = -1.12
+    const COMP = 1.5   // ao longo da parede
+    const FUNDO = 0.78 // para dentro da sala
+    const zAssento = 0.32
+
+    for (const ox of [-0.3, 0.3]) {
+      for (const oy of [-0.62, 0.62]) {
+        g.add(cyl(`Sofa_Pe_${ox}_${oy}`, 0.028, 0.06, [x + ox, y + oy, 0.03], mPe))
+      }
+    }
+    g.add(box("Sofa_Corpo", [FUNDO, COMP, 0.26], [x, y, 0.19], mEstofado))
+    g.add(box("Sofa_Encosto", [0.2, COMP, 0.52], [x - 0.29, y, 0.58], mEstofado))
+    for (const lado of [1, -1]) {
+      const suf = lado === 1 ? "Direito" : "Esquerdo"
+      g.add(box(`Sofa_Braco_${suf}`, [FUNDO, 0.16, 0.24], [x, y + lado * 0.67, zAssento + 0.12], mEstofado))
+      // Almofadas mais claras: o vinco entre elas é o que faz ler "dois
+      // lugares" em vez de um banco corrido.
+      g.add(box(`Sofa_Assento_${suf}`, [0.56, 0.66, 0.14], [x + 0.06, y + lado * 0.35, zAssento + 0.07], mAlmofada))
+      g.add(box(`Sofa_Costa_${suf}`, [0.14, 0.64, 0.34], [x - 0.16, y + lado * 0.35, 0.61], mAlmofada))
+    }
+    // Almofada de encosto jogada no canto, inclinada — é o detalhe que faz o
+    // sofá parecer usado em vez de recém-entregue.
+    g.add(box("Sofa_Cuxim", [0.1, 0.26, 0.26], [x + 0.14, y + 0.46, 0.61], tmat([0.72, 0.44, 0.32], 0, "tecido"), [D(-16), 0, 0]))
   }
 
   if (extras.estante) {

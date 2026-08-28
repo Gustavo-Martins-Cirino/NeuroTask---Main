@@ -374,6 +374,64 @@ function boneco(acess: Parameters<typeof buildPersonagem>[1]) {
   return p
 }
 
+describe("móveis: sofá", () => {
+  const sala = (extras: EscritorioExtras = {}) => buildEscritorio({ extras: { sofa: true, ...extras } })
+  const peca = (nome: string, extras: EscritorioExtras = {}) => caixaMundo(sala(extras), nome)
+
+  it("encosta na parede sem afundar no rodapé", () => {
+    // O rodapé se projeta 12 cm da parede: "encostar na parede" e "encostar no
+    // rodapé" são coisas diferentes, e é fácil escrever a errada.
+    const rodape = peca("Rodape_Lateral")
+    const corpo = peca("Sofa_Corpo")
+    expect(corpo.min.x).toBeGreaterThan(rodape.max.x)
+    expect(corpo.min.x - rodape.max.x).toBeLessThan(0.1) // encostado, não solto no meio
+  })
+
+  it("olha para dentro da sala: o encosto fica do lado da parede", () => {
+    // Da câmera (que vem do +x) um sofá virado ao contrário é um bloco.
+    // Pelos CENTROS: a almofada do assento se enfia um pouco por baixo do
+    // encosto, como num sofá de verdade — comparar bordas acusaria isso.
+    const encosto = peca("Sofa_Encosto").getCenter(new Vector3())
+    const assento = peca("Sofa_Assento_Direito").getCenter(new Vector3())
+    expect(encosto.x).toBeLessThan(assento.x - 0.15)
+    expect(encosto.z).toBeGreaterThan(assento.z)
+  })
+
+  it("não invade a estante, que mora na mesma parede", () => {
+    const s = sala({ estante: true })
+    const sofa = caixaMundo(s, "Sofa_Braco_Direito")
+    const estante = caixaMundo(s, "Estante_Base")
+    expect(sofa.max.y).toBeLessThan(estante.min.y)
+  })
+
+  it("cabe na sala do nível 1, que é a menor de todas", () => {
+    const s = buildEscritorio({ nivel: 1, extras: { sofa: true } })
+    const piso = caixaMundo(s, "Piso")
+    for (const nome of ["Sofa_Corpo", "Sofa_Braco_Direito", "Sofa_Braco_Esquerdo"]) {
+      const c = caixaMundo(s, nome)
+      expect(c.min.y).toBeGreaterThan(piso.min.y)
+      expect(c.min.x).toBeGreaterThan(piso.min.x)
+    }
+  })
+
+  it("os pés tocam o piso e o assento não flutua sobre eles", () => {
+    const pe = peca("Sofa_Pe_-0.3_-0.62")
+    const corpo = peca("Sofa_Corpo")
+    expect(pe.min.z).toBeLessThan(0.005)
+    expect(corpo.min.z).toBeLessThanOrEqual(pe.max.z + 1e-6)
+  })
+
+  it("a almofada solta apoia no assento, sem afundar nele", () => {
+    const cuxim = peca("Sofa_Cuxim")
+    const assento = peca("Sofa_Assento_Direito")
+    expect(cuxim.min.z).toBeGreaterThan(assento.max.z - 0.02)
+  })
+
+  it("sem comprar, não sobra peça nenhuma dele na sala", () => {
+    expect(pecas(buildEscritorio(), "Sofa_")).toHaveLength(0)
+  })
+})
+
 describe("corpo do boneco", () => {
   const caixa = (nome: string) => new Box3().setFromObject(malha(boneco({}), nome), true)
 

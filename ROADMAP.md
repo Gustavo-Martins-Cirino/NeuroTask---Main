@@ -236,9 +236,24 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > **Pede um passo do Gustavo**: rodar `supabase/avatar_acessorios.sql` de novo. Sem isso os
 > três aparecem na loja e a compra falha com `ITEM_INEXISTENTE`.
 
-- [ ] **Seção de móveis na loja**, e outras se fizerem sentido. Hoje `decor` é um saco onde
-      cabe tudo — planta, quadro, relógio, pet, troféu, LED. Móvel é o que muda a PLANTA da
-      sala (mesa, sofá, poltrona, armário), e isso é outra coisa de pendurar enfeite.
+> **Seção de móveis: aberta (27/08), com o sofá.** A aba **Móveis** existe, a estante mudou
+> de categoria (`supabase/office_v7.sql` faz o update — quem já a comprou continua com ela,
+> só que na aba nova) e entrou o primeiro item de verdade: um **sofá de dois lugares** (170).
+>
+> **Ele encosta na parede LATERAL, e isso não é gosto.** A câmera vem do +x: na parede do
+> fundo veríamos o encosto, e sofá visto por trás é um bloco. O x também não é escolhido — o
+> rodapé se projeta 12 cm da parede e sobe 14 cm, então "encostar na parede" e "encostar no
+> rodapé" são coisas diferentes, e é fácil escrever a errada. Tem teste para as duas.
+>
+> Móvel é o que ocupa CHÃO, e por isso o sofá é o primeiro item que precisa saber onde os
+> outros estão: o y dele sai do vão à frente da estante, que mora na mesma parede.
+>
+> **Pede um passo do Gustavo**: rodar `supabase/office_v7.sql`.
+
+- [ ] **Mais móveis.** O sofá abriu a seção; faltam os outros que o item original citava —
+      poltrona e armário. O armário é o mais delicado: alto, encostado na parede do fundo,
+      ele disputa pano com quadro e relógio, então teria de entrar na conta da fileira
+      (`lib/office-parede`) em vez de cravar um x.
 
 - [ ] **Girar a câmera com o mouse ("mãozinha").** Arrastar para a direita gira a vista para
       a esquerda, como virar um objeto na mão. **O que precisa mudar junto**: a câmera é uma

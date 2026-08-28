@@ -29,7 +29,7 @@ import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
 import { fetchAvatar, saveAvatar, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
 
-const CATEGORY_ORDER: ShopCategory[] = ["decor", "setup", "cadeira", "parede", "piso", "chapeu", "oculos"]
+const CATEGORY_ORDER: ShopCategory[] = ["decor", "movel", "setup", "cadeira", "parede", "piso", "chapeu", "oculos"]
 
 export default function OfficePage() {
   const [loading, setLoading] = useState(true)
