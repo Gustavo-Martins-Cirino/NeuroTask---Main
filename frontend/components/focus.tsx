@@ -107,6 +107,8 @@ function AnalogClock({ stroke }: { stroke: string }) {
 export function FocusProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
   const [inProgress, setInProgress] = useState<Task | null>(null)
+  /** Id da tarefa cujo aviso foi dispensado — some ao trocar de tarefa. */
+  const [dispensado, setDispensado] = useState<string | null>(null)
   const [, setTick] = useState(0)
 
   const [open, setOpen] = useState(false)
@@ -230,9 +232,15 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     <FocusContext.Provider value={{ openFocus, inProgress }}>
       {children}
 
-      {/* Card de tarefa em andamento */}
+      {/* Card de tarefa em andamento.
+          Ele PRECISA ter saída. Fixo no canto, ele fica sobre o conteúdo o tempo
+          todo enquanto houver tarefa em andamento — e num celular, onde a tela é
+          estreita, isso chegava a tapar o botão "Comprar" de um item da loja.
+          Rolar não resolve (é `fixed`), e não havia nada para fechar.
+          O dispensar vale só para a tarefa ATUAL: começar outra traz o card de
+          volta, senão fechá-lo uma vez desligaria o aviso para sempre. */}
       <AnimatePresence>
-        {inProgress && !open && (
+        {inProgress && !open && dispensado !== inProgress.id && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -244,7 +252,15 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
               </span>
-              <span className="text-xs font-medium uppercase tracking-wide text-blue-500">Em andamento</span>
+              <span className="flex-1 text-xs font-medium uppercase tracking-wide text-blue-500">Em andamento</span>
+              <button
+                type="button"
+                onClick={() => setDispensado(inProgress.id)}
+                aria-label="Dispensar o aviso"
+                className="-mr-1 -mt-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
             <p className="mt-2 truncate font-medium text-foreground">{inProgress.title}</p>
             {inProgressRemaining !== null && (

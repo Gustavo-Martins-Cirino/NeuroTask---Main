@@ -53,6 +53,26 @@ repositório:
 > políticas de RLS e os gatilhos do cadastro não passam por esta simulação), aparelho que não
 > é o seu, e a tela de um celular real.
 
+> **Varredura de celular (28/08): as oito telas a 390×844, com dados de conta em uso.**
+> Nenhuma tem rolagem horizontal e nenhuma quebrou. Três achados, dois já consertados:
+>
+> · **Os botões "Comprar" do Escritório tinham 28px de altura** — a ação principal da tela,
+>   na faixa de errar o toque (o guia da Apple pede 44pt, o do Android 48dp). Foram para 36
+>   no celular e continuam 28 no desktop, onde a densidade da grade é que manda. As bolinhas
+>   de cor do avatar (20px) e as abas da loja (22px) subiram junto. Alvos abaixo de 32px na
+>   tela: de 30 para 17, e os que sobraram são secundários.
+> · **O cartão "Em andamento" não tinha saída.** Fixo no canto, ele fica sobre o conteúdo o
+>   tempo todo enquanto houver tarefa em andamento — e no celular chegava a tapar um botão
+>   "Comprar" da loja. Rolar não resolve, porque é `fixed`. Ganhou um ✕, que vale só para a
+>   tarefa ATUAL: começar outra traz o aviso de volta.
+> · **O calendário ainda pede rolagem lateral** (`min-w-[760px]` na grade da semana). Não é
+>   quebra — o container rola sozinho —, mas numa tela de 390px a semana inteira nunca cabe.
+>   Fica aberto: ou a visão de semana vira lista no celular, ou o padrão no telefone passa a
+>   ser "dia".
+>
+> **Uma regressão minha, pega na segunda passada**: com as bolinhas maiores, "8 itens
+> conquistados" virou "8…". A frase passou a ocupar a linha inteira no celular.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

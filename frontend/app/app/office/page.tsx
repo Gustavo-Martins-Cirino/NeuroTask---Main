@@ -229,7 +229,11 @@ export default function OfficePage() {
               )}
             </AnimatePresence>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border/50 px-4 py-2.5">
-              <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+              {/* `basis-full` no celular: a linha já é apertada, e com as bolinhas
+                  de cor maiores a frase era espremida até virar "8…". Ocupando a
+                  largura toda ela cabe inteira, e as cores descem para a linha de
+                  baixo — que é o que `flex-wrap` já estava esperando. */}
+              <p className="min-w-0 basis-full truncate text-xs text-muted-foreground sm:flex-1 sm:basis-auto">
                 {ownedCount === 0
                   ? "Seu cantinho começa simples — decore-o com a sua produtividade."
                   : `${ownedCount} ${ownedCount === 1 ? "item conquistado" : "itens conquistados"}`}
@@ -247,7 +251,9 @@ export default function OfficePage() {
                       aria-label={`Fundo: ${o.label}`}
                       aria-pressed={officeBg === o.id}
                       className={cn(
-                        "h-5 w-5 rounded-full border transition-transform hover:scale-110",
+                        // 20px de bolinha é menor que a ponta de um dedo. No celular elas
+                        // crescem; no desktop continuam discretas, que é o ponto delas.
+                        "h-7 w-7 rounded-full border transition-transform hover:scale-110 sm:h-5 sm:w-5",
                         officeBg === o.id ? "border-primary ring-2 ring-primary/40" : "border-border/60"
                       )}
                       style={{ background: o.swatch }}
@@ -307,7 +313,7 @@ export default function OfficePage() {
                     type="button"
                     onClick={() => setFilter(c)}
                     className={cn(
-                      "rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
+                      "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:px-2.5 sm:py-0.5",
                       filter === c
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border/50 text-muted-foreground hover:border-border"
@@ -365,7 +371,11 @@ export default function OfficePage() {
                       disabled={busy || loading || (!isOwned && !canAfford)}
                       onClick={() => (isOwned ? handleToggle(item) : handleBuy(item))}
                       className={cn(
-                        "mt-auto flex h-7 items-center justify-center gap-1 rounded-lg text-xs font-medium transition-colors disabled:opacity-45",
+                        // h-9 no celular: 28px é a altura de um botão de mouse, não de dedo. O
+                        // guia da Apple pede 44pt e o do Android 48dp; num cartão desta
+                        // largura não cabe tanto, mas 36 já sai da faixa de errar o toque.
+                        // No desktop volta a 28, que é onde a densidade da grade funciona.
+                        "mt-auto flex h-9 items-center justify-center gap-1 rounded-lg text-xs font-medium transition-colors disabled:opacity-45 sm:h-7",
                         isOwned
                           ? isEquipped
                             ? "border border-border/50 text-muted-foreground hover:bg-accent"
