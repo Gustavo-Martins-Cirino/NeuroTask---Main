@@ -130,6 +130,19 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > **Regra prática**: item novo precisa de linha em `shop_items` (SQL) além do modelo 3D —
 > sem isso a compra falha com `ITEM_INEXISTENTE`. Foi o caso do beagle, que mora no
 > `office_3d.sql` enquanto a mensagem mandava rodar o `coins_shop.sql`.
+>
+> **Agora tem teste (28/08)**: `lib/shop-sql.test.ts` cruza o `CATALOG` com os inserts dos
+> `.sql` e quebra se um item entrar na loja sem a linha dele. Não confere BANCO, confere
+> repositório — se o arquivo existe e ninguém rodou, a falha é do passo manual e o README diz
+> qual é. Conferido que ele pega o erro de verdade, com um item de mentira.
+>
+> **Estado do banco em 28/08 (conferido, não presumido)**: 53 itens em `shop_items`, e todo
+> item da loja tem linha — o Gustavo rodou todos os SQLs pendentes. Sobram 6 linhas órfãs das
+> `skin-*`, que saíram da loja mas continuam no banco; ficam onde estão, porque apagá-las
+> quebraria o `user_items` de quem já comprou.
+>
+> **Uma armadilha ao conferir isso**: `shop_items` tem RLS `for select to authenticated`, então
+> uma consulta anônima devolve LISTA VAZIA em vez de erro — parece tabela vazia e não é.
 
 **Rodada de 28/08 — segunda passada do Gustavo na cena**
 
