@@ -97,7 +97,7 @@ export function GettingStarted() {
           <Bot className="h-3.5 w-3.5" /> Planejar o dia com a IA
         </Link>
         <Link href="/app/calendar" className="flex items-center gap-1 rounded-full border border-border/50 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
-          <CalendarPlus className="h-3.5 w-3.5" /> Importar do Google
+          <CalendarPlus className="h-3.5 w-3.5" /> Trazer minha agenda
         </Link>
         <Link href="/app/office" className="flex items-center gap-1 rounded-full border border-border/50 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground">
           <Armchair className="h-3.5 w-3.5" /> Seu Escritório

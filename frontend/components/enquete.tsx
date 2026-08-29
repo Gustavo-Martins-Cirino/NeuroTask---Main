@@ -6,7 +6,7 @@ import { Check, MessageSquareQuote, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
-  CHAVE_ENQUETE, adiado, comResposta, mensagemDaResposta, proximaPergunta, saneiaEstado,
+  CHAVE_ENQUETE, adiado, comResposta, mensagemDaResposta, mostrada, proximaPergunta, saneiaEstado,
   type EstadoEnquete, type Pergunta,
 } from "@/lib/enquete"
 import { colunaFaltante, envioSemColuna, MAX_TENTATIVAS } from "@/lib/feedback"
@@ -28,10 +28,17 @@ import { colunaFaltante, envioSemColuna, MAX_TENTATIVAS } from "@/lib/feedback"
 
 const MOLA = { type: "spring" as const, stiffness: 380, damping: 34 }
 
+/** Quanto o "Obrigado" fica na tela antes de sair sozinho.
+ *
+ *  Ele é um aviso de recebimento, não conteúdo: cumprida a função, ocupar o fim
+ *  do dashboard pelo resto da sessão só transforma um agrado em mobília. */
+const SEGUNDOS_DO_OBRIGADO = 12
+
 export function Enquete() {
   const [estado, setEstado] = useState<EstadoEnquete | null>(null)
   const [pergunta, setPergunta] = useState<Pergunta | null>(null)
   const [respondida, setRespondida] = useState(false)
+  const [sumiu, setSumiu] = useState(false)
   const semMovimento = useReducedMotion()
 
   useEffect(() => {
@@ -39,11 +46,17 @@ export function Enquete() {
     createClient().auth.getUser().then(({ data: { user } }) => {
       if (!vivo) return
       const e = saneiaEstado(user?.user_metadata?.[CHAVE_ENQUETE])
-      setEstado(e)
+      const agora = Date.now()
       // A pergunta é escolhida UMA vez, na abertura, e congelada: recalcular a
       // cada render faria o cartão trocar de pergunta debaixo do dedo de quem
       // está lendo as opções.
-      setPergunta(proximaPergunta(e, Date.now()))
+      const escolhida = proximaPergunta(e, agora)
+      setPergunta(escolhida)
+      // Aparecer JÁ compra a semana de silêncio, mesmo que ninguém responda nem
+      // recuse. Sem isso, quem só ignora revê a mesma pergunta a cada abertura
+      // do dashboard — e é justamente quem menos quer ser perguntado de novo.
+      if (escolhida) guardar(mostrada(e, agora))
+      else setEstado(e)
     })
     return () => { vivo = false }
   }, [])
@@ -58,7 +71,7 @@ export function Enquete() {
   const responder = async (opcao: string) => {
     if (!pergunta || !estado) return
     setRespondida(true)
-    guardar(comResposta(estado, pergunta.id))
+    guardar(comResposta(estado, pergunta.id, Date.now()))
 
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -90,10 +103,18 @@ export function Enquete() {
 
   if (!pergunta) return null
 
+  // O "Obrigado" se despede sozinho; a pergunta fica até alguém decidir algo.
+  useEffect(() => {
+    if (!respondida) return
+    const id = setTimeout(() => setSumiu(true), SEGUNDOS_DO_OBRIGADO * 1000)
+    return () => clearTimeout(id)
+  }, [respondida])
+
   const transicao = semMovimento ? { duration: 0 } : MOLA
 
   return (
     <AnimatePresence initial={false}>
+      {!sumiu && (
       <motion.section
         key={respondida ? "obrigado" : pergunta.id}
         initial={semMovimento ? { opacity: 0 } : { opacity: 0, y: 8 }}
@@ -141,6 +162,7 @@ export function Enquete() {
           </>
         )}
       </motion.section>
+      )}
     </AnimatePresence>
   )
 }

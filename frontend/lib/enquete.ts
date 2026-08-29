@@ -63,9 +63,23 @@ export interface EstadoEnquete {
 
 const VAZIO: EstadoEnquete = { respondidas: [], adiadoAte: 0 }
 
-/** Quanto tempo o "agora não" compra de silêncio. */
-export const DIAS_DE_ADIAMENTO = 3
+/**
+ * O silêncio entre uma aparição e a próxima — o teto que o Gustavo deu.
+ *
+ * Vale para TODOS os caminhos: responder, dizer "agora não", e só ter visto.
+ * Antes eram três dias, e só para quem recusava; quem respondia recebia a
+ * pergunta seguinte na visita imediata, e quem não fazia nada revia a mesma a
+ * cada abertura do dashboard. A enquete no fim do dashboard só sobrevive
+ * enquanto for rara: virou paisagem, ninguém responde mais nenhuma.
+ */
+export const DIAS_DE_SILENCIO = 7
 const MS_POR_DIA = 24 * 60 * 60 * 1000
+
+function silencioAte(agoraMs: number, dias: number = DIAS_DE_SILENCIO): number {
+  const base = Number.isFinite(agoraMs) ? agoraMs : 0
+  const d = Number.isFinite(dias) && dias > 0 ? dias : DIAS_DE_SILENCIO
+  return base + d * MS_POR_DIA
+}
 
 /**
  * Deixa o que veio do `user_metadata` em estado utilizável.
@@ -102,18 +116,32 @@ export function proximaPergunta(estado: EstadoEnquete, agoraMs: number): Pergunt
   return PERGUNTAS.find((p) => !feitas.has(p.id)) ?? null
 }
 
-/** O estado depois de responder — a resposta em si vai para o `feedback`. */
-export function comResposta(estado: EstadoEnquete, id: string): EstadoEnquete {
-  if (estado.respondidas.includes(id)) return estado
-  // Responder também compra silêncio: duas perguntas seguidas viram formulário.
-  return { respondidas: [...estado.respondidas, id], adiadoAte: 0 }
+/**
+ * O estado depois de responder — a resposta em si vai para o `feedback`.
+ *
+ * Responder compra silêncio de verdade. O código antigo gravava `adiadoAte: 0`
+ * com um comentário dizendo justamente o contrário: zero não compra nada, e a
+ * pergunta seguinte aparecia na visita imediata.
+ */
+export function comResposta(estado: EstadoEnquete, id: string, agoraMs: number): EstadoEnquete {
+  const respondidas = estado.respondidas.includes(id) ? estado.respondidas : [...estado.respondidas, id]
+  return { respondidas, adiadoAte: silencioAte(agoraMs) }
 }
 
 /** O estado depois de "agora não". */
-export function adiado(estado: EstadoEnquete, agoraMs: number, dias = DIAS_DE_ADIAMENTO): EstadoEnquete {
-  const base = Number.isFinite(agoraMs) ? agoraMs : 0
-  const d = Number.isFinite(dias) && dias > 0 ? dias : DIAS_DE_ADIAMENTO
-  return { ...estado, adiadoAte: base + d * MS_POR_DIA }
+export function adiado(estado: EstadoEnquete, agoraMs: number, dias = DIAS_DE_SILENCIO): EstadoEnquete {
+  return { ...estado, adiadoAte: silencioAte(agoraMs, dias) }
+}
+
+/**
+ * O estado depois de a pergunta ter APARECIDO na tela.
+ *
+ * É o que faltava por inteiro. Sem registrar a aparição, quem não responde e não
+ * recusa revê a mesma pergunta a cada abertura do dashboard — e é exatamente
+ * quem não quis interagir que menos merece ser perguntado de novo.
+ */
+export function mostrada(estado: EstadoEnquete, agoraMs: number): EstadoEnquete {
+  return { ...estado, adiadoAte: silencioAte(agoraMs) }
 }
 
 /**

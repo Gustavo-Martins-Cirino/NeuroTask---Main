@@ -492,10 +492,13 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > que ele deu é **uma vez por semana**, e o "Obrigado! Isso ajuda mais do que parece" deve
 > sumir sozinho em **10 a 20 segundos** em vez de ficar na tela.
 >
-> **Tem um bug de verdade por trás disso**: `comResposta` grava `adiadoAte: 0`, e o comentário
-> logo acima diz que responder "compra silêncio". Zero não compra nada — a próxima pergunta
-> aparece na visita seguinte. E não existe registro de "já mostrei hoje", então dentro da
-> mesma semana ela reaparece a cada abertura do dashboard.
+> **Resolvido (28/08).** Havia um bug de verdade por trás: `comResposta` gravava `adiadoAte: 0`
+> com o comentário logo acima dizendo que responder "compra silêncio" — zero não compra nada.
+> Agora todos os três caminhos compram a mesma semana: responder, recusar e **só ter
+> aparecido**. Esse terceiro faltava por inteiro, e era o que fazia a pergunta voltar a cada
+> abertura do dashboard para quem simplesmente ignorava — justamente quem menos quer ser
+> perguntado de novo. O "Obrigado" sai sozinho em 12s: ele é aviso de recebimento, não
+> conteúdo, e ocupar o fim do dashboard pelo resto da sessão transforma um agrado em mobília.
 
 #### Dashboard — `Captura de tela 2026-08-07 213605.png`
 
