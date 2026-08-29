@@ -62,7 +62,7 @@ export function CalendarFeed() {
       await navigator.clipboard.writeText(feedUrl(token, origin))
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-      toast.success("Link copiado! Cole no Google → Outros calendários → De URL.")
+      toast.success("Link copiado! Cole no seu calendário, em \"assinar por URL\".")
     } catch {
       toast.error("Não consegui copiar — selecione o link e copie manualmente.")
     }

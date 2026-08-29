@@ -578,10 +578,20 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > **O Escritório nunca obedeceu a preferência** — a cena 3D anima para todo mundo. Fica
 > anotado como decisão consciente, não esquecimento: lá o movimento é o produto.
 >
-> **Aplicado por enquanto só em "Seus números"**, que foi a queixa concreta. Faltam os outros
-> que hoje apagam e deveriam encurtar: `numero-rolante`, `split-greeting`, `coin-flight`.
-> Ficam de fora, corretamente: `smooth-scroll`, `focus-gradient`, as cenas 3D e os deslizes
-> de página.
+> **Aplicado em "Seus números" e no número rolante (28/08).** Passando os três candidatos
+> pela régua, só UM era informativo — e vale registrar o erro, porque a nota anterior aqui
+> listava os três como pendentes:
+>
+> · `numero-rolante` **é informativo**: o giro dos dígitos é o que diz que o valor MUDOU.
+>   Trocado por texto parado, o número vira outro entre um quadro e o seguinte, e quem pediu
+>   menos movimento perde a informação em vez do enfeite. Agora rola em 0,18s, sem mola —
+>   o repique de uma mola é movimento extra, e extra é o que a preferência pede para tirar.
+> · `split-greeting` **é ambiente**: as letras sobem 120% da própria altura, o que é texto
+>   deslizando pela tela — gatilho clássico. E a saudação está inteira lá sem a animação.
+> · `coin-flight` **é ambiente**: a moeda atravessa a tela, e o XP atualiza de qualquer jeito.
+>
+> Ou seja, dois dos três estavam certos como estavam. Ficam de fora, também corretamente:
+> `smooth-scroll`, `focus-gradient`, as cenas 3D e os deslizes de página.
 >
 > **O que fica de aprendizado**: "Mostrar animações" não é o padrão do Windows estar
 > desligado — mas cai sozinho em quem escolhe "Ajustar para melhor desempenho" nas opções de
@@ -1030,13 +1040,12 @@ Nenhum é pré-requisito de nada, e nenhum vale sozinho. O critério para tirar 
 
 ### Calendário aberto pra fora
 
-- [ ] **Parar de dizer "Google" onde a coisa é padrão.** A importação é por arquivo **`.ics`**,
-      que Google, Outlook, Apple e qualquer outro exportam — e o feed de saída é `.ics`
-      também. O Gustavo perguntou se dá para importar do Outlook: dá, e sempre deu. Quem
-      está estreito é o texto: o atalho do "Comece por aqui" diz **"Importar do Google"**
-      (`components/getting-started.tsx`). Trocar por algo que valha para todos, e conferir os
-      outros lugares que citam Google por nome — em Configurações o nome próprio ajuda
-      (ensina onde clicar), no atalho ele só exclui quem usa outro.
+> **Resolvido (28/08).** A importação é `.ics` e sempre serviu Google, Outlook, Apple e
+> qualquer outro; o que estava estreito era o texto. Saíram os três que assumiam Google: o
+> atalho do "Comece por aqui" (virou "Trazer minha agenda"), o toast de link copiado e a
+> mensagem de erro de importação. **Ficam citando Google de propósito** as instruções passo a
+> passo, em Configurações e no diálogo de importar: ali o nome próprio ENSINA onde clicar, e
+> os dois trechos já dizem "Google Calendar, Outlook e outros" antes de dar a receita de um.
 
 > Importar e exportar `.ics` já existem, em Configurações → "Importar e exportar". O que
 > falta aqui é o que depende de outra empresa.

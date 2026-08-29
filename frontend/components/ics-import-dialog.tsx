@@ -56,7 +56,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
       const text = await file.text()
       const parsed = parseIcs(text)
       if (parsed.length === 0) {
-        setError("Não encontrei eventos nesse arquivo. Exporte a agenda como .ics no Google Calendar.")
+        setError("Não encontrei eventos nesse arquivo. Exporte a agenda como .ics no seu calendário.")
         setEvents([]); setSel(new Set()); setDupes(new Set())
         return
       }
