@@ -53,6 +53,19 @@ repositório:
 > políticas de RLS e os gatilhos do cadastro não passam por esta simulação), aparelho que não
 > é o seu, e a tela de um celular real.
 
+> **Varredura de tema claro (28/08): as oito telas, medindo contraste — está limpo.** Nenhum
+> texto abaixo do piso da WCAG (4,5:1, ou 3:1 no texto grande), em nenhuma das oito, em
+> NENHUM dos dois temas. O fundo do canvas do Escritório segue o tema como devia. Fecha a
+> preocupação que a esfera da Neuro IA tinha levantado: aquele era um caso isolado de
+> blending, não um sintoma de tema claro malcuidado.
+>
+> ⚠️ **A varredura quase acusou um bug que não existe**, e a armadilha vale para a próxima:
+> forçar a classe `dark` no `<html>` engana o CSS mas NÃO o `next-themes`, e quem lê
+> `resolvedTheme` (o fundo do Escritório, a cor da esfera) continua no tema antigo. O
+> Escritório apareceu com canvas escuro numa página clara e parecia defeito. **Trocar o tema
+> pelo botão do próprio app** é o único jeito de medir isso — e o rótulo dele mora num
+> `<span class="sr-only">`, não num `aria-label`.
+
 > **Varredura de celular (28/08): as oito telas a 390×844, com dados de conta em uso.**
 > Nenhuma tem rolagem horizontal e nenhuma quebrou. Três achados, dois já consertados:
 >
