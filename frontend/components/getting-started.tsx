@@ -42,7 +42,7 @@ export function GettingStarted() {
   const steps = [
     { done: counts.tasks > 0, label: "Crie sua primeira tarefa", href: "/app/tasks", cta: "Criar tarefa" },
     { done: counts.done > 0, label: "Conclua uma tarefa — você ganha XP e moedas pro Escritório", href: "/app/tasks", cta: "Ver tarefas" },
-    { done: counts.blocks > 0, label: "Monte seu dia no calendário (ou importe do Google)", href: "/app/calendar", cta: "Abrir calendário" },
+    { done: counts.blocks > 0, label: "Monte seu dia no calendário (ou importe algum!)", href: "/app/calendar", cta: "Abrir calendário" },
   ]
   const feitos = steps.filter((s) => s.done).length
   if (feitos === steps.length) return null // graduou — some sozinho

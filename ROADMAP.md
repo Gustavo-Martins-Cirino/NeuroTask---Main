@@ -131,6 +131,28 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > sem isso a compra falha com `ITEM_INEXISTENTE`. Foi o caso do beagle, que mora no
 > `office_3d.sql` enquanto a mensagem mandava rodar o `coins_shop.sql`.
 
+**Rodada de 28/08 — segunda passada do Gustavo na cena**
+
+> O que ele aprovou, e vale saber o que NÃO mexer: o piso, o sofá e os móveis novos.
+> "Me surpreendi com o piso, com o sofá. Especialmente gostei do sofá, dos móveis."
+
+- [ ] **Os bichos não podem se mexer como brinquedo de vitrine.** O beagle parou de pular
+      (25/08) mas continua girando o corpo — `rotation.y = π/4 + sin(t·0,7)·0,3` em
+      `office-scene-3d.tsx`. A imagem que o Gustavo usou é exata: *"parece aquele frango
+      rodando no mercado"*. Cachorro parado não gira sobre o próprio eixo.
+      **O pedido é simplificar, não animar melhor**: ele DEITADO, só respirando. O gato
+      igual, num canto do chão — nem precisa estar em cima de móvel.
+      **E a caminha vem junto**: quem compra o pet recebe a cama, sem item separado na loja.
+      Um bicho deitado no chão pelado lê como bicho largado; com a cama, lê como bicho em casa.
+
+- [ ] **Os chapéus não sentam na cabeça.** Pior no NÍVEL 1, que é onde quase todo mundo
+      começa: a sala é menor, a câmera fica mais perto e o erro de encaixe fica grande na
+      tela. Item por item, na avaliação dele:
+      **boné** — a aba é reta e esquisita, devia ser curva; **gorro** — não convence;
+      **chapéu social** — parece flutuando acima da cabeça; **capuz** — fora de proporção.
+      **coroa e auréola estão bons** — não mexer neles.
+      Vale conferir o encaixe no nível 1 especificamente, e não no 8.
+
 **Rodada de 25/08 — o que o Gustavo apontou vendo a cena no olho**
 
 > A régua que ele deu: *"não precisa ficar perfeito e 100% completo, mas precisa ficar um
@@ -464,6 +486,16 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > quebra: o HTML traz `Entrar<!-- --> com <!-- -->Google`. **Sonda certa é o nome do provedor**
 > (`google`, `github`), nunca a frase montada. E vale olhar o contexto do que casou: `apple`
 > aparece no `/login` por causa do `<link rel="apple-touch-icon">`, não de um botão.
+
+> **A enquete do dashboard (28/08): aprovada na forma, reprovada na frequência.** O Gustavo:
+> *"ficou muito bacana, só que a gente precisa garantir que ele não seja repetitivo"*. O teto
+> que ele deu é **uma vez por semana**, e o "Obrigado! Isso ajuda mais do que parece" deve
+> sumir sozinho em **10 a 20 segundos** em vez de ficar na tela.
+>
+> **Tem um bug de verdade por trás disso**: `comResposta` grava `adiadoAte: 0`, e o comentário
+> logo acima diz que responder "compra silêncio". Zero não compra nada — a próxima pergunta
+> aparece na visita seguinte. E não existe registro de "já mostrei hoje", então dentro da
+> mesma semana ela reaparece a cada abertura do dashboard.
 
 #### Dashboard — `Captura de tela 2026-08-07 213605.png`
 
@@ -961,6 +993,14 @@ Nenhum é pré-requisito de nada, e nenhum vale sozinho. O critério para tirar 
 **a tela ficar melhor** — não o componente ser bonito na pasta.
 
 ### Calendário aberto pra fora
+
+- [ ] **Parar de dizer "Google" onde a coisa é padrão.** A importação é por arquivo **`.ics`**,
+      que Google, Outlook, Apple e qualquer outro exportam — e o feed de saída é `.ics`
+      também. O Gustavo perguntou se dá para importar do Outlook: dá, e sempre deu. Quem
+      está estreito é o texto: o atalho do "Comece por aqui" diz **"Importar do Google"**
+      (`components/getting-started.tsx`). Trocar por algo que valha para todos, e conferir os
+      outros lugares que citam Google por nome — em Configurações o nome próprio ajuda
+      (ensina onde clicar), no atalho ele só exclui quem usa outro.
 
 > Importar e exportar `.ics` já existem, em Configurações → "Importar e exportar". O que
 > falta aqui é o que depende de outra empresa.
