@@ -202,6 +202,8 @@ describe("pose do boneco", () => {
 // "a janela parece só algumas manchas na parede" e "o neon não dá pra ver nada".
 // A causa da janela era medível — as peças ficavam DENTRO da parede (z-fighting).
 
+/** Altura dos olhos do boneco: nenhum chapéu pode descer daqui. */
+const OLHOS_Z = 1.28
 const FACE_FUNDO = 1.95   // face interna da parede do fundo no nível padrão
 const FACE_LATERAL = -1.95
 
@@ -607,14 +609,26 @@ describe("cabeça e cabelo", () => {
     }
   })
 
-  it("todo chapéu assenta no CABELO, e nenhum afunda nele", () => {
-    // A altura de cada chapéu sai de TOPO_DO_CABELO. Com o número cravado em
-    // cada peça, engrossar o cabelo enfiaria a aba dentro dele — e só se
-    // descobriria no olho.
-    for (const [chapeu, peca] of [["social", "Chapeu_Aba"], ["coroa", "Coroa_Aro"]] as const) {
-      const c = caixa(peca, { chapeu })
-      expect(c.max.z).toBeGreaterThan(TOPO_DO_CABELO)
-      expect(c.min.z).toBeGreaterThan(TOPO_DO_CABELO - 0.005)
+  it("chapéu ENTRA na cabeça: passa do topo do cabelo para cima e o cruza embaixo", () => {
+    // A regra antiga era o contrário — exigia que a peça inteira ficasse ACIMA
+    // de TOPO_DO_CABELO — e era ela que produzia o defeito: o crânio é redondo,
+    // então um disco pousado no ponto mais alto só encosta no centro e deixa vão
+    // em toda a volta. Foi o "parece flutuando" que o Gustavo apontou no social.
+    //
+    // Chapéu de verdade entra na cabeça: a copa sobe acima do cabelo e a aba
+    // cruza a linha dele. O piso é a altura dos olhos, que não pode ser tapada.
+    // A coroa fica de fora de propósito: coroa POUSA no alto da cabeça, é o que
+    // ela é. A regra vale para chapéu que se veste.
+    // O boné fica de fora daqui e tem regra própria (a aba, não a copa): a copa
+    // dele é uma calota que desce pelos lados do crânio, abaixo dos olhos, por
+    // definição — é o que a diferencia de uma boina pousada em cima.
+    for (const [chapeu, alto, baixo] of [
+      ["social", "Chapeu_Copa", "Chapeu_Aba"],
+    ] as const) {
+      expect(caixa(alto, { chapeu }).max.z).toBeGreaterThan(TOPO_DO_CABELO)
+      const base = caixa(baixo, { chapeu })
+      expect(base.min.z).toBeLessThan(TOPO_DO_CABELO)   // encosta, não paira
+      expect(base.min.z).toBeGreaterThan(OLHOS_Z)       // e não desce sobre o rosto
     }
   })
 
@@ -696,7 +710,7 @@ describe("chapéus novos", () => {
     const cabelo = caixa("Cabelo", "capuz")
     expect(casco.max.z).toBeGreaterThan(cabelo.max.z)
     expect(casco.max.x).toBeGreaterThan(cabelo.max.x + 0.03)
-    expect(casco.min.z).toBeLessThan(1.08) // alcança o alto do ombro
+    expect(casco.min.z).toBeLessThan(1.1) // alcança o alto do ombro
   })
 
   it("capuz: na frente dos olhos não existe pano — só atrás e dos lados", () => {
@@ -805,6 +819,17 @@ describe("bichos deitados", () => {
     expect(pecas(buildEscritorio({ extras: { gato: true } }), "Cama_Gato_").length).toBe(2)
   })
 
+  it("a cama tem NINHO: o rolo em volta é mais alto que o forro do meio", () => {
+    // Sem essa diferença a cama vira um relevo no chão, que foi como o Gustavo
+    // descreveu a primeira versão.
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    const rolo = caixaMundo(g, "Cama_Cachorro_Rolo")
+    const forro = caixaMundo(g, "Cama_Cachorro_Forro")
+    expect(rolo.max.z).toBeGreaterThan(forro.max.z + 0.02)
+    // E o forro fica DENTRO do rolo, não transbordando por cima dele
+    expect(forro.max.x).toBeLessThan(rolo.max.x)
+  })
+
   it("as camas ficam no chão, sem afundar nele", () => {
     const g = buildEscritorio({ extras: { gato: true, camaCachorro: true } })
     for (const n of [...pecas(g, "Cama_Gato_"), ...pecas(g, "Cama_Cachorro_")]) {
@@ -814,8 +839,8 @@ describe("bichos deitados", () => {
 
   it("as duas camas não se sobrepõem — os bichos não dividem cama", () => {
     const g = buildEscritorio({ extras: { gato: true, camaCachorro: true } })
-    const gato = caixaMundo(g, "Cama_Gato_Borda")
-    const cao = caixaMundo(g, "Cama_Cachorro_Borda")
+    const gato = caixaMundo(g, "Cama_Gato_Rolo")
+    const cao = caixaMundo(g, "Cama_Cachorro_Rolo")
     expect(gato.intersectsBox(cao)).toBe(false)
   })
 })

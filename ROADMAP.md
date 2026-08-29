@@ -145,6 +145,15 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > "deitado" não é o desenho do animal, é ele estar apoiado em alguma coisa. Ela vem junto com
 > o pet, sem item separado na loja.
 >
+> **Duas correções depois do Gustavo ver (28/08).** A cama era um tronco de cone com um disco
+> dentro e lia como "um relevo no chão"; virou um ROLO (toro) em volta com o forro afundado —
+> o que uma cama de bicho tem, e um relevo não, é a borda roliça mais alta que o miolo. E o
+> cachorro estava deitado DE LADO, o que ele leu como bicho morto: de lado, as quatro patas
+> apontam para a mesma direção, coisa que só acontece com bicho desacordado. Agora é de
+> barriga para baixo, e o truque é mais simples que girar — o modelo é um cachorro em pé, e
+> um cachorro deitado é o mesmo corpo com as pernas dobradas embaixo: afundando as patas no
+> acolchoado, o rolo da cama esconde exatamente o pedaço que deveria estar dobrado.
+>
 > **Uma armadilha de 3D que custou um render**: tombar o GLB 90° gira em torno da ORIGEM do
 > modelo (que fica nas patas), então o corpo inteiro sai para o lado pela própria altura — o
 > cachorro desceu da cama. O conserto é recentrar pela `Box3` depois de girar, e não chutar um
@@ -153,13 +162,29 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > O gato também estava errado e ninguém tinha reparado: sentado, ereto, rabo para cima — pose
 > de alerta, parada. Virou bola achatada enrodilhada, com o rabo contornando o corpo.
 
-- [ ] **Os chapéus não sentam na cabeça.** Pior no NÍVEL 1, que é onde quase todo mundo
-      começa: a sala é menor, a câmera fica mais perto e o erro de encaixe fica grande na
-      tela. Item por item, na avaliação dele:
-      **boné** — a aba é reta e esquisita, devia ser curva; **gorro** — não convence;
-      **chapéu social** — parece flutuando acima da cabeça; **capuz** — fora de proporção.
-      **coroa e auréola estão bons** — não mexer neles.
-      Vale conferir o encaixe no nível 1 especificamente, e não no 8.
+> **Chapéus: resolvido (28/08), conferindo no nível 1 como ele pediu.** Os quatro tinham
+> defeito diferente, e um deles estava CODIFICADO NUM TESTE.
+>
+> · **Boné** — a copa era uma esfera achatada a 38% da altura, pousada em cima: isso é a
+>   forma de uma BOINA, e foi assim que o Gustavo leu. Virou calota funda, que desce pelos
+>   lados do crânio. A aba ganhou largura até os segmentos se sobreporem (com 5,5 cm eles se
+>   encostavam pelas quinas e a aba aparecia listrada) e um tom mais escuro que a copa —
+>   nesta escala é o contraste entre as duas peças que faz a aba existir aos olhos.
+> · **Social** — flutuava, e a causa estava numa REGRA: a altura saía de `TOPO_DO_CABELO`,
+>   ou seja, o disco da aba pousava rente ao ponto mais alto do crânio. Só que o crânio é
+>   redondo: o disco encosta no centro e sobra vão em toda a volta. Chapéu de verdade ENTRA
+>   na cabeça, com a aba cruzando a linha do cabelo.
+> · **Gorro** — tombado 27°, subia na nuca e deixava cabelo aparecendo atrás. Quase reto e
+>   mais fundo, desce igual em toda a volta.
+> · **Capuz** — raio 0,188 contra uma cabeça de 0,14 é 34% maior: um ovo cinza. Ficou mais
+>   estreito de lado e mais comprido para baixo, que é a diferença entre pano caindo nos
+>   ombros e uma bola em volta da cabeça.
+>
+> **O teste "todo chapéu assenta no CABELO" exigia o defeito**: pedia que a peça inteira
+> ficasse acima de `TOPO_DO_CABELO`. Foi reescrito para a regra certa — a copa passa do
+> cabelo para cima, a aba cruza ele por baixo, e nada desce da linha dos olhos. **A coroa
+> ficou de fora da regra de propósito**: coroa POUSA no alto da cabeça, é o que ela é. Coroa
+> e auréola não foram tocadas, como ele pediu.
 
 **Rodada de 25/08 — o que o Gustavo apontou vendo a cena no olho**
 

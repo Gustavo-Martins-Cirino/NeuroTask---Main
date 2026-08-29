@@ -132,6 +132,17 @@ export function pintarDegrade(mesh: Mesh, topo: V3, base: V3) {
   geo.setAttribute("color", new BufferAttribute(cores, 3))
 }
 
+/** Anel de seção redonda, deitado no plano do chão (o furo aponta para cima). */
+function toro(name: string, raioAnel: number, raioTubo: number, pos: V3, material: Material, esc?: V3): Mesh {
+  const m = new Mesh(new TorusGeometry(raioAnel, raioTubo, 10, 26), material)
+  m.name = name
+  m.position.set(...pos)
+  if (esc) m.scale.set(...esc)
+  m.castShadow = true
+  m.receiveShadow = true
+  return m
+}
+
 function sph(name: string, raio: number, pos: V3, material: Material, esc?: V3): Mesh {
   const m = new Mesh(new SphereGeometry(raio, 16, 12), material)
   m.name = name
@@ -1301,10 +1312,16 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
   const camaDePet = (nome: string, x: number, y: number, raio: number, cor: V3) => {
     const mBorda = tmat(cor, 0, "tecido")
     const mDentro = tmat([cor[0] * 0.86, cor[1] * 0.86, cor[2] * 0.9], 0, "tecido")
-    // A borda é um tronco de cone: mais larga embaixo, como almofada cedendo.
-    g.add(cyl(`${nome}_Borda`, raio, 0.1, [x, y, 0.05], mBorda, undefined, raio * 0.9))
-    // O forro afunda um pouco dentro da borda — sem isso a cama vira um disco.
-    g.add(cyl(`${nome}_Forro`, raio * 0.78, 0.05, [x, y, 0.055], mDentro))
+    // O ROLO em volta é o que faz a cama ler como cama. A primeira versão era um
+    // tronco de cone com um disco dentro, e o Gustavo descreveu certo: parecia um
+    // relevo no chão. O que uma cama de bicho tem, e um relevo não, é a borda
+    // roliça mais alta que o miolo — é ela que dá o ninho.
+    const tubo = raio * 0.24
+    const anel = raio - tubo
+    // Levemente oval, como as de verdade: círculo perfeito lê como almofada.
+    g.add(toro(`${nome}_Rolo`, anel, tubo, [x, y, tubo], mBorda, [1.12, 1, 0.85]))
+    // O forro fica ABAIXO do topo do rolo — se empatar, some o ninho.
+    g.add(cyl(`${nome}_Forro`, anel + tubo * 0.4, tubo * 0.8, [x, y, tubo * 0.55], mDentro, undefined, undefined))
   }
 
   if (extras.camaCachorro) camaDePet("Cama_Cachorro", -0.85, 0.25 + dy, 0.42, [0.36, 0.4, 0.52])
@@ -1491,6 +1508,9 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
     // segmentos em arco que CAEM nas pontas (a curva do boné de verdade), e o
     // conjunto vai num grupo inclinado: usado torto, como se usa boné.
     const mBone = tmat([0.16, 0.35, 0.62], 0, "tecido")
+    // A aba um tom abaixo da copa, como quase todo boné de verdade: nesta escala
+    // é o contraste entre as duas peças que faz a aba EXISTIR aos olhos.
+    const mAba = tmat([0.11, 0.26, 0.48], 0, "tecido")
     const bone = new Group()
     bone.name = "Bone"
     // ANCORADO NO CENTRO DA CABEÇA: girar o grupo com origem no chão do boneco
@@ -1498,30 +1518,39 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
     // flutuando ao lado da cabeça em vez de assentar nela.
     bone.position.set(0, CENTRO_Y, 1.26)
 
-    // Copa rasa e alta o bastante para não descer sobre os olhos.
-    bone.add(sph("Bone_Copa", 0.152, [0, 0, 0.102], mBone, [1, 1, 0.38]))
-    bone.add(cyl("Bone_Botao", 0.022, 0.018, [0, 0, 0.158], mBone))
+    // A copa ABRAÇA o crânio. Antes era uma esfera achatada a 38% da altura,
+    // pousada em cima: um disco na cabeça, que é literalmente a forma de uma
+    // BOINA — e foi assim que o Gustavo leu. Boné tem calota funda, que desce
+    // até a linha do cabelo e esconde a metade de cima da cabeça.
+    //
+    // A calota é meia esfera aberta para baixo, com o raio um triz maior que o
+    // do cabelo (0,146): encaixa por fora sem afundar nele.
+    bone.add(calota("Bone_Copa", 0.157, D(92), [0, 0, 0.006], mBone, [D(6), 0, 0], [1, 1, 0.86]))
+    bone.add(sph("Bone_Botao", 0.022, [0, 0, 0.14], mBone))
 
     // A cabeça é uma esfera de raio 0.14: a aba nasce colada nela (raio 0.13) e
     // projeta pouco mais de 5 cm. Leque estreito — abrir demais faz a aba virar
     // uma pá saindo da cabeça, não um boné.
-    const SEGS = 7
-    const RAIO = 0.13
+    // A aba também cresceu, e os segmentos passaram a se SOBREPOR: com 5,5 cm
+    // de largura eles se encostavam pelas quinas e a aba aparecia listrada, com
+    // as emendas à vista. Largos, o leque fecha e vira uma peça só.
+    const SEGS = 9
+    const RAIO = 0.135
     for (let i = 0; i < SEGS; i++) {
       const t = i / (SEGS - 1)                 // 0 → 1 ao longo do leque
-      const ang = (t - 0.5) * D(96)            // ±48°, só a frente da cabeça
+      const ang = (t - 0.5) * D(104)           // ±52°, só a frente da cabeça
       const borda = Math.abs(t - 0.5) * 2      // 0 no meio, 1 nas pontas
       // Ponta cai: é a curva que faz o boné parecer boné, e não uma placa.
       // A curva vem da POSIÇÃO (ponta mais baixa), com só um resto de pitch:
       // somados, pitch e espessura desciam a ponta abaixo dos olhos (z≈1.28) e
       // ela tapava o rosto — o teste de geometria pegou.
-      const queda = borda * borda * 0.018
+      const queda = borda * borda * 0.02
       bone.add(box(
         `Bone_Aba_${i}`,
-        [0.05, 0.115, 0.017],
-        [Math.sin(ang) * RAIO, Math.cos(ang) * RAIO, 0.075 - queda],
-        mBone,
-        [-D(5) - borda * D(7), 0, -ang]
+        [0.078, 0.135, 0.018],
+        [Math.sin(ang) * RAIO, Math.cos(ang) * RAIO, 0.082 - queda],
+        mAba,
+        [-D(3) - borda * D(6), 0, -ang]
       ))
     }
 
@@ -1534,12 +1563,17 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   if (acess.chapeu === "social") {
     const mFeltro = tmat([0.18, 0.16, 0.19])
     const mFita = tmat([0.55, 0.14, 0.2])
-    // Assenta no cabelo, e por isso a altura sai de TOPO_DO_CABELO: com o número
-    // cravado, engrossar o cabelo afundaria a aba dentro dele.
-    const base = TOPO_DO_CABELO + 0.012
-    g.add(cyl("Chapeu_Aba", 0.25, 0.022, [0, CENTRO_Y, base], mFeltro))
-    g.add(cyl("Chapeu_Fita", 0.142, 0.045, [0, CENTRO_Y, base + 0.033], mFita))
-    g.add(cyl("Chapeu_Copa", 0.135, 0.12, [0, CENTRO_Y, base + 0.105], mFeltro))
+    // A aba fica na LINHA DO CABELO, não no topo da cabeça.
+    //
+    // Antes a base era `TOPO_DO_CABELO + 0.012`, ou seja, o disco da aba pousava
+    // rente ao ponto mais alto do crânio. Só que o crânio é redondo: o disco só
+    // encosta nele no centro, e em toda a volta sobra um vão — daí o "parece
+    // estar flutuando". Chapéu de verdade entra na cabeça, e a aba cruza o
+    // cabelo na altura em que ele ainda é largo.
+    const base = CABELO_CENTRO[2] + 0.072
+    g.add(cyl("Chapeu_Aba", 0.245, 0.022, [0, CENTRO_Y, base], mFeltro))
+    g.add(cyl("Chapeu_Fita", 0.15, 0.048, [0, CENTRO_Y, base + 0.035], mFita))
+    g.add(cyl("Chapeu_Copa", 0.143, 0.13, [0, CENTRO_Y, base + 0.12], mFeltro))
   }
 
   if (acess.chapeu === "coroa") {
@@ -1558,11 +1592,14 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
     const mLa = tmat([0.72, 0.26, 0.29], 0, "tecido")
     mLa.side = DoubleSide
     const mBarra = tmat([0.86, 0.42, 0.44], 0, "tecido")
-    const C: V3 = [0, CENTRO_Y - 0.006, 1.262]
-    const R = 0.152
-    const ABERTURA = D(84.9)
-    const QUEDA = D(27.5)
-    const ESC: V3 = [0.9, 1, 1]
+    // Tombado 27° o gorro subia na nuca e deixava cabelo aparecendo por trás —
+    // touca torta, não gorro. Quase reto e mais fundo, ele desce igual em toda a
+    // volta, que é como um gorro de lã se comporta.
+    const C: V3 = [0, CENTRO_Y - 0.004, 1.302]
+    const R = 0.158
+    const ABERTURA = D(89)
+    const QUEDA = D(9)
+    const ESC: V3 = [0.92, 1, 1]
     g.add(calota("Gorro_Copa", R, ABERTURA, C, mLa, [QUEDA, 0, 0], ESC))
     // A barra mora NA BORDA da calota, e a borda é um círculo inclinado: o anel
     // entra pelo mesmo eixo, senão sobra de um lado e afunda do outro.
@@ -1582,17 +1619,23 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   if (acess.chapeu === "capuz") {
     const mMoletom = tmat([0.29, 0.31, 0.36], 0, "tecido")
     mMoletom.side = DoubleSide
-    const C: V3 = [0, CENTRO_Y - 0.048, 1.232]
-    const R = 0.188
-    const ABERTURA = D(96)
-    const QUEDA = D(60)
-    g.add(calota("Capuz_Casco", R, ABERTURA, C, mMoletom, [QUEDA, 0, 0]))
+    // Raio 0.188 contra uma cabeça de 0.14 é 34% maior: virava um ovo cinza em
+    // volta do boneco, não um capuz. Moletom sobra um pouco, não meia cabeça.
+    const C: V3 = [0, CENTRO_Y - 0.05, 1.238]
+    const R = 0.172
+    const ABERTURA = D(92)
+    const QUEDA = D(56)
+    // Estreito de lado e comprido para baixo: é a diferença entre pano caindo
+    // sobre os ombros e uma bola em volta da cabeça. Uma esfera de raio único
+    // não tem como parecer capuz nesta escala.
+    const ESC: V3 = [0.97, 1, 1.2]
+    g.add(calota("Capuz_Casco", R, ABERTURA, C, mMoletom, [QUEDA, 0, 0], ESC))
     const eixo = [0, -Math.sin(QUEDA), Math.cos(QUEDA)]
     const d = R * Math.cos(ABERTURA)
     // Debrum na boca do capuz: sem ele a borda é uma linha de espessura zero.
     g.add(anel(
       "Capuz_Debrum", R * Math.sin(ABERTURA), 0.019,
-      [0, C[1] + eixo[1] * d, C[2] + eixo[2] * d], tmat([0.22, 0.24, 0.28], 0, "tecido"), [QUEDA, 0, 0]
+      [0, C[1] + eixo[1] * d, C[2] + eixo[2] * d], tmat([0.22, 0.24, 0.28], 0, "tecido"), [QUEDA, 0, 0], ESC
     ))
   }
 

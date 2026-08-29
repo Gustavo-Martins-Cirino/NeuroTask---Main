@@ -157,16 +157,23 @@ function PetBeagle({ recuo = 0 }: { recuo?: number }) {
     const c = scene.clone(true)
     const h0 = new Box3().setFromObject(c).getSize(new Vector3()).y || 1
     c.scale.setScalar(1.6 / h0) // ~0.4 m de altura na escala da sala
-    // Deita de lado, e RECENTRA depois. O giro acontece em torno da origem do
-    // modelo (que fica nas patas), então tombar 90° joga o corpo inteiro para o
-    // lado pela própria altura: sem recentrar, o cachorro desce da cama.
-    c.rotation.set(0, Math.PI * 0.15, Math.PI * 0.5)
+    // De barriga para BAIXO, não de lado. Tombado 90° o corpo lia como bicho
+    // morto — o Gustavo apontou, e é o risco de deitar um modelo rígido: de lado,
+    // as quatro patas apontam para a mesma direção, o que só acontece com bicho
+    // desacordado.
+    //
+    // O truque é outro, e mais simples: o modelo é um cachorro EM PÉ, e um
+    // cachorro deitado de barriga para baixo é o mesmo corpo com as pernas
+    // dobradas embaixo. Afundando as patas no acolchoado, o rolo da cama esconde
+    // exatamente o pedaço que deveria estar dobrado.
+    c.rotation.set(0, Math.PI * 0.15, 0)
     c.updateMatrixWorld(true)
     const caixa = new Box3().setFromObject(c)
     const centro = caixa.getCenter(new Vector3())
-    // Centro no meio da cama, barriga no forro. Medido da caixa e não chutado:
-    // o modelo é de terceiro e a origem dele não é promessa nenhuma.
-    c.position.set(-centro.x, -caixa.min.y, -centro.z)
+    const altura = caixa.max.y - caixa.min.y
+    // Medido da caixa e não chutado: o modelo é de terceiro e a origem dele não é
+    // promessa nenhuma. A perna de um beagle é cerca de um terço da altura.
+    c.position.set(-centro.x, -caixa.min.y - altura * 0.33, -centro.z)
     const brown = new Color("#a4703c")
     c.traverse((o) => {
       const m = o as Mesh
