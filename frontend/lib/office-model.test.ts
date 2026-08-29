@@ -783,6 +783,43 @@ describe("papel de parede", () => {
   })
 })
 
+describe("bichos deitados", () => {
+  it("o gato fica EM CIMA do forro da cama, não afundado nem flutuando", () => {
+    const g = buildEscritorio({ extras: { gato: true } })
+    const forro = caixaMundo(g, "Cama_Gato_Forro")
+    const corpo = caixaMundo(g, "Gato_Corpo")
+    expect(corpo.min.z).toBeGreaterThan(forro.min.z)
+    expect(corpo.min.z).toBeLessThan(forro.max.z + 0.05)
+  })
+
+  it("o gato é uma bola achatada, não um bicho ereto — ereto lê como alerta", () => {
+    const g = buildEscritorio({ extras: { gato: true } })
+    const corpo = caixaMundo(g, "Gato_Corpo").getSize(new Vector3())
+    expect(corpo.z).toBeLessThan(corpo.x)
+    expect(corpo.z).toBeLessThan(corpo.y)
+  })
+
+  it("a cama vem com o bicho: comprou o cachorro, tem cama", () => {
+    expect(pecas(buildEscritorio({ extras: { camaCachorro: true } }), "Cama_Cachorro_").length).toBe(2)
+    expect(pecas(buildEscritorio(), "Cama_Cachorro_").length).toBe(0)
+    expect(pecas(buildEscritorio({ extras: { gato: true } }), "Cama_Gato_").length).toBe(2)
+  })
+
+  it("as camas ficam no chão, sem afundar nele", () => {
+    const g = buildEscritorio({ extras: { gato: true, camaCachorro: true } })
+    for (const n of [...pecas(g, "Cama_Gato_"), ...pecas(g, "Cama_Cachorro_")]) {
+      expect(caixaMundo(g, n).min.z).toBeGreaterThanOrEqual(-1e-6)
+    }
+  })
+
+  it("as duas camas não se sobrepõem — os bichos não dividem cama", () => {
+    const g = buildEscritorio({ extras: { gato: true, camaCachorro: true } })
+    const gato = caixaMundo(g, "Cama_Gato_Borda")
+    const cao = caixaMundo(g, "Cama_Cachorro_Borda")
+    expect(gato.intersectsBox(cao)).toBe(false)
+  })
+})
+
 describe("orçamento da cena", () => {
   const malhasDe = (g: Group) => {
     let n = 0

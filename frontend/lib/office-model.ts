@@ -464,6 +464,8 @@ export interface EscritorioExtras {
   neon?: boolean
   trofeu?: boolean
   gato?: boolean
+  /** A caminha do cachorro. O bicho é GLB e mora na cena; a cama é da sala. */
+  camaCachorro?: boolean
   /** Setup da mesa: undefined = 1 monitor; "duplo" = 2; "ultrawide" = 1 largão;
    *  "notebook" troca o desktop inteiro por um laptop. */
   setup?: "duplo" | "ultrawide" | "notebook"
@@ -1292,16 +1294,42 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     }
   }
 
+  // A caminha vem JUNTO com o bicho, sem item separado na loja. Bicho deitado no
+  // chão pelado lê como bicho largado; com a cama, lê como bicho em casa. E ela
+  // resolve de graça o problema de pose: o que dá o "deitado" não é o desenho do
+  // animal, é ele estar apoiado em alguma coisa.
+  const camaDePet = (nome: string, x: number, y: number, raio: number, cor: V3) => {
+    const mBorda = tmat(cor, 0, "tecido")
+    const mDentro = tmat([cor[0] * 0.86, cor[1] * 0.86, cor[2] * 0.9], 0, "tecido")
+    // A borda é um tronco de cone: mais larga embaixo, como almofada cedendo.
+    g.add(cyl(`${nome}_Borda`, raio, 0.1, [x, y, 0.05], mBorda, undefined, raio * 0.9))
+    // O forro afunda um pouco dentro da borda — sem isso a cama vira um disco.
+    g.add(cyl(`${nome}_Forro`, raio * 0.78, 0.05, [x, y, 0.055], mDentro))
+  }
+
+  if (extras.camaCachorro) camaDePet("Cama_Cachorro", -0.85, 0.25 + dy, 0.42, [0.36, 0.4, 0.52])
+
   if (extras.gato) {
     const mPelo = tmat([0.85, 0.54, 0.25], 0, "tecido")
     const mPeloD = tmat([0.79, 0.47, 0.21], 0, "tecido")
-    const x = 0.8, y = 0.3 + dy
-    g.add(sph("Gato_Corpo", 0.12, [x, y, 0.12], mPelo, [1, 1.35, 1]))
-    g.add(sph("Gato_Cabeca", 0.085, [x, y - 0.15, 0.26], mPelo))
+    const x = 0.82, y = 0.34 + dy
+    camaDePet("Cama_Gato", x, y, 0.26, [0.55, 0.42, 0.6])
+    // Gato DEITADO, enrodilhado na cama. Antes ele estava sentado, ereto, com o
+    // rabo para cima: parado numa pose de alerta, o que dá a mesma estranheza do
+    // cachorro girando. Gato em repouso é uma bola achatada.
+    const zCama = 0.085
+    g.add(sph("Gato_Corpo", 0.135, [x, y, zCama + 0.05], mPelo, [1.05, 0.92, 0.52]))
+    // A cabeça encosta no próprio corpo, não fica pescoço para cima.
+    g.add(sph("Gato_Cabeca", 0.075, [x - 0.09, y - 0.08, zCama + 0.06], mPelo))
     for (const lado of [1, -1]) {
-      g.add(cyl(`Gato_Orelha_${lado}`, 0.035, 0.07, [x + lado * 0.05, y - 0.15, 0.33], mPeloD, undefined, 0.001))
+      g.add(cyl(`Gato_Orelha_${lado}`, 0.028, 0.055, [x - 0.095, y - 0.09 + lado * 0.045, zCama + 0.115], mPeloD, [D(-18), 0, 0], 0.001))
     }
-    g.add(cyl("Gato_Rabo", 0.022, 0.24, [x, y + 0.19, 0.15], mPeloD, [D(35), 0, 0]))
+    // O rabo contorna o corpo em vez de apontar para cima: é o que fecha a bola.
+    g.add(cabo("Gato_Rabo", [
+      [x + 0.11, y + 0.03, zCama + 0.04],
+      [x + 0.05, y - 0.13, zCama + 0.03],
+      [x - 0.06, y - 0.15, zCama + 0.03],
+    ], 0.022, mPeloD))
   }
 
   return g

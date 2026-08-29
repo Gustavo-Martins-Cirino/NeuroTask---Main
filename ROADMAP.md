@@ -136,14 +136,22 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > O que ele aprovou, e vale saber o que NÃO mexer: o piso, o sofá e os móveis novos.
 > "Me surpreendi com o piso, com o sofá. Especialmente gostei do sofá, dos móveis."
 
-- [ ] **Os bichos não podem se mexer como brinquedo de vitrine.** O beagle parou de pular
-      (25/08) mas continua girando o corpo — `rotation.y = π/4 + sin(t·0,7)·0,3` em
-      `office-scene-3d.tsx`. A imagem que o Gustavo usou é exata: *"parece aquele frango
-      rodando no mercado"*. Cachorro parado não gira sobre o próprio eixo.
-      **O pedido é simplificar, não animar melhor**: ele DEITADO, só respirando. O gato
-      igual, num canto do chão — nem precisa estar em cima de móvel.
-      **E a caminha vem junto**: quem compra o pet recebe a cama, sem item separado na loja.
-      Um bicho deitado no chão pelado lê como bicho largado; com a cama, lê como bicho em casa.
+> **Bichos: resolvido (28/08).** Os dois deitados, cada um na sua caminha, só respirando.
+> Foram três rodadas até acertar, e a lição se repetiu: **bicho parado que se mexe no eixo lê
+> como objeto de vitrine.** Pulou sem parar (flutuava) → parou de pular mas girava o corpo
+> ("o frango rodando") → agora não faz nem um nem outro.
+>
+> **A caminha foi o que resolveu a pose de graça**, e vale para o próximo bicho: o que dá o
+> "deitado" não é o desenho do animal, é ele estar apoiado em alguma coisa. Ela vem junto com
+> o pet, sem item separado na loja.
+>
+> **Uma armadilha de 3D que custou um render**: tombar o GLB 90° gira em torno da ORIGEM do
+> modelo (que fica nas patas), então o corpo inteiro sai para o lado pela própria altura — o
+> cachorro desceu da cama. O conserto é recentrar pela `Box3` depois de girar, e não chutar um
+> deslocamento: o modelo é de terceiro e a origem dele não é promessa nenhuma.
+>
+> O gato também estava errado e ninguém tinha reparado: sentado, ereto, rabo para cima — pose
+> de alerta, parada. Virou bola achatada enrodilhada, com o rabo contornando o corpo.
 
 - [ ] **Os chapéus não sentam na cabeça.** Pior no NÍVEL 1, que é onde quase todo mundo
       começa: a sala é menor, a câmera fica mais perto e o erro de encaixe fica grande na

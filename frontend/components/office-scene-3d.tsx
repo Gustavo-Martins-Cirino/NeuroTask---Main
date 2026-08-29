@@ -125,6 +125,7 @@ function extrasDe(equipped?: Set<string>): EscritorioExtras {
     neon: equipped.has("quadro-neon"),
     trofeu: equipped.has("trofeu"),
     gato: equipped.has("pet-gato"),
+    camaCachorro: equipped.has("pet-cachorro"),
     setup: equipped.has("setup-ultrawide") ? "ultrawide"
       : equipped.has("setup-duplo") ? "duplo"
       : equipped.has("setup-notebook") ? "notebook"
@@ -156,6 +157,16 @@ function PetBeagle({ recuo = 0 }: { recuo?: number }) {
     const c = scene.clone(true)
     const h0 = new Box3().setFromObject(c).getSize(new Vector3()).y || 1
     c.scale.setScalar(1.6 / h0) // ~0.4 m de altura na escala da sala
+    // Deita de lado, e RECENTRA depois. O giro acontece em torno da origem do
+    // modelo (que fica nas patas), então tombar 90° joga o corpo inteiro para o
+    // lado pela própria altura: sem recentrar, o cachorro desce da cama.
+    c.rotation.set(0, Math.PI * 0.15, Math.PI * 0.5)
+    c.updateMatrixWorld(true)
+    const caixa = new Box3().setFromObject(c)
+    const centro = caixa.getCenter(new Vector3())
+    // Centro no meio da cama, barriga no forro. Medido da caixa e não chutado:
+    // o modelo é de terceiro e a origem dele não é promessa nenhuma.
+    c.position.set(-centro.x, -caixa.min.y, -centro.z)
     const brown = new Color("#a4703c")
     c.traverse((o) => {
       const m = o as Mesh
@@ -173,23 +184,25 @@ function PetBeagle({ recuo = 0 }: { recuo?: number }) {
     })
     return c
   }, [scene])
-  // Ele fica no chão. Antes era `position.y = |sin(t·2,2)| · 0,08` — um pulinho
-  // contínuo, sem pata no chão e sem pausa nenhuma, que de longe lê como um
-  // cachorro flutuando. Cachorro parado não pula: respira e olha em volta.
+  // Ele fica DEITADO na caminha, e só respira.
+  //
+  // Foram duas rodadas até aqui, e a lição é a mesma das duas vezes: bicho
+  // parado que se mexe no eixo lê como objeto de vitrine, não como bicho. A
+  // primeira versão pulava sem parar (flutuava); a segunda parou de pular mas
+  // continuou girando o corpo — o Gustavo acertou a imagem: "parece aquele
+  // frango rodando no mercado". Cachorro deitado não gira, não pula, respira.
   //
   // A respiração é escala, não altura: o corpo incha um triz e volta, com as
-  // patas paradas onde estão. Os dois tempos não se dividem (1,6 e 0,7), então
-  // o balanço da cabeça não cai sempre no mesmo ponto do fôlego — é o que evita
-  // o ar de brinquedo de corda.
+  // patas onde estão. O tombo para o lado é o que dá o deitado sem plataforma de
+  // animação — e a caminha embaixo é o que faz a pose ler como escolha.
   useFrame((state) => {
     if (!ref.current) return
     const t = state.clock.elapsedTime
     const folego = 1 + Math.sin(t * 1.6) * 0.018
     ref.current.scale.set(1, folego, folego)
-    ref.current.rotation.y = Math.PI * 0.25 + Math.sin(t * 0.7) * 0.3 // olha em volta
   })
   return (
-    <group ref={ref} position={[-3.4, 0, -4 * (0.25 + recuo)]}>
+    <group ref={ref} position={[-3.4, 0.22, -4 * (0.25 + recuo)]}>
       <primitive object={dog} />
     </group>
   )
