@@ -92,6 +92,7 @@ interface DragState {
 export default function CalendarPage() {
   const timeFormat = useTimeFormat()
   const [view, setView] = useState<ViewMode>("semana")
+  const escolheuAVisao = useRef(false)
   const [anchor, setAnchor] = useState(() => new Date())
   const [blocks, setBlocks] = useState<TimeBlock[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
@@ -408,7 +409,29 @@ export default function CalendarPage() {
 
   const goToDay = (day: Date) => {
     setAnchor(new Date(day))
-    setView("dia")
+    trocarVisao("dia")
+  }
+
+  // No CELULAR o padrão é "dia", não "semana".
+  //
+  // A grade da semana tem `min-w-[760px]`: numa tela de 390 ela existe atrás de
+  // uma rolagem lateral, e a pessoa chega no calendário vendo um pedaço de dois
+  // dias. A visão de semana continua a um toque de distância — o que muda é só
+  // por onde se começa.
+  //
+  // Vale UMA vez, na montagem. A media query é lida DIRETO, e não pelo
+  // `useIsMobile`: aquele hook devolve `false` no primeiro render e só corrige
+  // depois do efeito dele, então a trava de "já decidiu" disparava antes de o
+  // valor existir e o padrão nunca chegava a ser aplicado.
+  useEffect(() => {
+    if (escolheuAVisao.current) return
+    escolheuAVisao.current = true
+    if (window.matchMedia("(max-width: 767px)").matches) setView("dia")
+  }, [])
+
+  const trocarVisao = (v: ViewMode) => {
+    escolheuAVisao.current = true
+    setView(v)
   }
 
   const rangeLabel = useMemo(() => {
@@ -492,7 +515,7 @@ export default function CalendarPage() {
             {(["dia", "semana", "mes", "ano"] as ViewMode[]).map((v) => (
               <button
                 key={v}
-                onClick={() => setView(v)}
+                onClick={() => trocarVisao(v)}
                 className={cn(
                   "relative rounded-md px-3 py-1 text-sm font-medium capitalize transition-colors",
                   view === v ? "text-foreground" : "text-muted-foreground hover:text-foreground"
@@ -557,7 +580,7 @@ export default function CalendarPage() {
                     return (
                       <div key={mi} className="rounded-xl border border-border/40 p-3">
                         <button
-                          onClick={() => { setAnchor(monthDate); setView("mes") }}
+                          onClick={() => { setAnchor(monthDate); trocarVisao("mes") }}
                           className="mb-2 text-sm font-semibold capitalize transition-colors hover:text-primary"
                         >
                           {monthDate.toLocaleDateString("pt-BR", { month: "long" })}

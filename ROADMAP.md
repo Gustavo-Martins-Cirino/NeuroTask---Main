@@ -65,10 +65,12 @@ repositório:
 >   tempo todo enquanto houver tarefa em andamento — e no celular chegava a tapar um botão
 >   "Comprar" da loja. Rolar não resolve, porque é `fixed`. Ganhou um ✕, que vale só para a
 >   tarefa ATUAL: começar outra traz o aviso de volta.
-> · **O calendário ainda pede rolagem lateral** (`min-w-[760px]` na grade da semana). Não é
->   quebra — o container rola sozinho —, mas numa tela de 390px a semana inteira nunca cabe.
->   Fica aberto: ou a visão de semana vira lista no celular, ou o padrão no telefone passa a
->   ser "dia".
+> · **O calendário abria na semana, que não cabe num telefone** (`min-w-[760px]` na grade).
+>   Não era quebra — o container rola sozinho —, mas a pessoa chegava vendo um pedaço de dois
+>   dias. Das duas saídas previstas, a escolhida foi a menos invasiva: **no celular o padrão
+>   vira "dia"**, e a semana continua a um toque. A grade não foi reescrita como lista.
+>   A decisão vale UMA vez, na montagem, e some no instante em que alguém toca numa aba —
+>   girar o telefone depois disso não pode arrancar a visão que a pessoa escolheu.
 >
 > **Uma regressão minha, pega na segunda passada**: com as bolinhas maiores, "8 itens
 > conquistados" virou "8…". A frase passou a ocupar a linha inteira no celular.
