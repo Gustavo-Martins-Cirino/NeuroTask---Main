@@ -101,14 +101,19 @@ export function Enquete() {
     setPergunta(null)
   }
 
-  if (!pergunta) return null
-
   // O "Obrigado" se despede sozinho; a pergunta fica até alguém decidir algo.
+  //
+  // ACIMA do `return null`, e isso não é estilo. A pergunta só existe depois da
+  // resposta do banco: com o efeito embaixo, a primeira renderização tinha
+  // quatro hooks e a segunda cinco, que é o React #310 — "mais hooks que na
+  // renderização anterior". Derrubava o dashboard inteiro para a tela de erro.
   useEffect(() => {
     if (!respondida) return
     const id = setTimeout(() => setSumiu(true), SEGUNDOS_DO_OBRIGADO * 1000)
     return () => clearTimeout(id)
   }, [respondida])
+
+  if (!pergunta) return null
 
   const transicao = semMovimento ? { duration: 0 } : MOLA
 

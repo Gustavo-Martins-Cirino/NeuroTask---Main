@@ -53,6 +53,28 @@ repositório:
 > políticas de RLS e os gatilhos do cadastro não passam por esta simulação), aparelho que não
 > é o seu, e a tela de um celular real.
 
+> 🔴 **Varredura de queda do banco (28/08): o dashboard quebrava, e o bug era de horas antes.**
+> As oito telas foram abertas com o Supabase respondendo 500, com a rede caindo e com a
+> resposta estourando o tempo — a sessão continuando válida, porque o que cai é o BANCO, não
+> o login. Sete aguentaram. O **dashboard ia para a tela de erro nos três modos**, e ele é a
+> primeira coisa que se vê depois de entrar.
+>
+> A causa: um `useEffect` que eu tinha posto ABAIXO de `if (!pergunta) return null` na
+> enquete, poucas horas antes. Primeira renderização com quatro hooks, seguinte com cinco —
+> React #310, e o React derruba a árvore inteira. **Passou por `tsc`, por 684 testes e por
+> `next build`**, porque nenhum deles olha ordem de hook.
+>
+> **O buraco por trás disso: o projeto não tem eslint.** A regra que pega isso
+> (`react-hooks/rules-of-hooks`) existe, é padrão, e nunca rodou aqui. Em vez de instalar uma
+> toolchain, a regra virou teste — `lib/hooks-depois-de-return.test.ts`, escrita com o
+> compilador do TypeScript, que já é dependência. AST e não regex: regex confunde `return`
+> dentro de callback com saída do componente e enche de falso positivo (tentei, deu doze).
+> Conferido que ela pega o bug real, reintroduzindo-o.
+>
+> **Fica aberto, e é menor**: com o banco fora, as telas mostram estado VAZIO em vez de dizer
+> que algo falhou. Quem abrir numa queda vê "Nenhuma tarefa" e pode achar que perdeu o que
+> tinha. Só Configurações avisa. Não é quebra, é recado faltando.
+
 > **Varredura de tema claro (28/08): as oito telas, medindo contraste — está limpo.** Nenhum
 > texto abaixo do piso da WCAG (4,5:1, ou 3:1 no texto grande), em nenhuma das oito, em
 > NENHUM dos dois temas. O fundo do canvas do Escritório segue o tema como devia. Fecha a
