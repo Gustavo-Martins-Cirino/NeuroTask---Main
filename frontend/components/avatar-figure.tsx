@@ -232,6 +232,14 @@ export function AvatarFigure({
           <line x1={torsoX + torsoW} y1={shoulderY} x2={torsoX + torsoW + 2.5} y2="-9" stroke={darken(sleeve, 7)} strokeWidth="5" strokeLinecap="round" />
           <circle cx={torsoX - 3} cy="-7" r="2" fill={darken(skin, 8)} />
           <circle cx={torsoX + torsoW + 3} cy="-7" r="2" fill={darken(skin, 12)} />
+          {/* manga curta: sem ela, o braço nu inteiro fazia a camiseta ler como
+              regata. Cobre só o topo do braço, um fio mais grossa para "vestir" */}
+          {outfit === "camiseta" && (
+            <>
+              <line x1={torsoX} y1={shoulderY - 0.5} x2={torsoX - 1} y2="-19.5" stroke={outfitColor} strokeWidth="5.6" strokeLinecap="round" />
+              <line x1={torsoX + torsoW} y1={shoulderY - 0.5} x2={torsoX + torsoW + 1} y2="-19.5" stroke={darken(outfitColor, 7)} strokeWidth="5.6" strokeLinecap="round" />
+            </>
+          )}
         </g>
       )}
 
@@ -263,7 +271,10 @@ export function AvatarFigure({
 
       {/* pescoço + cabeça de costas — a NUCA. Não existe círculo de pele:
           a cabeça É o cabelo (pele só no pescoço). Sem rosto possível. */}
-      <rect x={hx - 3.5} y={hy + 6} width="7" height="7" fill={darken(skin, 8)} />
+      {/* nuca: cantos arredondados (era um quadrado de cantos vivos, que lia como
+          recorte/glitch) + sombra da gola na base, para não sair direto da cabeça */}
+      <rect x={hx - 3.5} y={hy + 6} width="7" height="7" rx="2.4" fill={darken(skin, 8)} />
+      <ellipse cx={hx} cy={hy + 12.5} rx="5" ry="1.7" fill="#000" opacity="0.14" />
       {hairStyle === "raspado" ? (
         <g>
           <circle cx={hx} cy={hy} r="10" fill={darken(skin, 10)} />
@@ -303,12 +314,19 @@ export function AvatarFigure({
           o arco do headphone passa por cima do boné e das hastes do óculos) */}
       {accessories && <Acessorios acess={accessories} hx={hx} hy={hy} />}
 
-      {/* fones (de costas: arco + as duas conchas) */}
+      {/* fones (de costas: arco + as duas conchas). O arco tem raio MAIOR que o
+          crânio (12 vs 10), para passar por cima do cabelo em vez de afundar
+          nele, e o grafite claro contrasta com o cabelo escuro — antes era quase
+          da mesma cor (#2f2f38 vs cabelo #2f2a26) e o fone sumia. */}
       {headphones && (
         <g>
-          <path d={`M ${hx - 10} ${hy - 2} a 10 10 0 0 1 20 0`} fill="none" stroke="#2f2f38" strokeWidth="3" strokeLinecap="round" />
-          <ellipse cx={hx - 10} cy={hy + 2} rx="3" ry="4.4" fill="#2f2f38" />
-          <ellipse cx={hx + 10} cy={hy + 2} rx="3" ry="4.4" fill="#2f2f38" />
+          <path d={`M ${hx - 11} ${hy - 2} a 12 12 0 0 1 22 0`} fill="none" stroke="#474d5a" strokeWidth="3" strokeLinecap="round" />
+          {[-1, 1].map((s) => (
+            <g key={s}>
+              <ellipse cx={hx + s * 10.5} cy={hy + 2} rx="3.1" ry="4.6" fill="#3a3f4a" />
+              <ellipse cx={hx + s * 10.5} cy={hy + 2} rx="1.4" ry="2.4" fill="#5b6270" />
+            </g>
+          ))}
         </g>
       )}
     </g>
