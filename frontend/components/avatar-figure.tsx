@@ -36,22 +36,22 @@ function Acessorios({ acess, hx, hy }: { acess: AvatarAccessories; hx: number; h
       {acess.oculos && (() => {
         const escuros = acess.oculos === "escuros"
         const aro = escuros ? "#14141a" : "#4d3120"
-        const lente = escuros ? "#0d0f17" : "#addbf0"
-        // Fica ACIMA da linha das orelhas de propósito: a haste do óculos passa
-        // por cima delas na vida real e, no desenho, é o único jeito de não
-        // sumir atrás das conchas do fone (que ficam em hy+2).
+        // De costas, do óculos sobra só a HASTE correndo por cima do cabelo até
+        // a orelha e a dobradiça que escapa junto à silhueta — nunca a LENTE,
+        // que aponta para a frente. A versão antiga desenhava a lente inteira,
+        // clara e brilhante, ACIMA da linha das orelhas: fora do crânio e no
+        // meio do rosto que não existe, ela lia como um olho/orelha de ogro.
         return (
           <g>
             {[-1, 1].map((s) => (
               <g key={s}>
-                {/* haste correndo por cima do cabelo, em direção à orelha */}
+                {/* haste diagonal, do alto para trás, terminando na orelha */}
                 <path
-                  d={`M ${hx + s * 10.4} ${hy - 5.2} q ${s * -0.6} 2.6 ${s * -2} 4.2`}
-                  fill="none" stroke={aro} strokeWidth="1.8" strokeLinecap="round"
+                  d={`M ${hx + s * 3.5} ${hy - 6.5} q ${s * 4.5} 1 ${s * 6.5} 6`}
+                  fill="none" stroke={aro} strokeWidth="1.6" strokeLinecap="round"
                 />
-                {/* borda do aro escapando da silhueta da cabeça */}
-                <ellipse cx={hx + s * 11.3} cy={hy - 5.2} rx="1.9" ry="3.4" fill={aro} />
-                <ellipse cx={hx + s * 11.6} cy={hy - 5.2} rx="0.9" ry="2.1" fill={lente} opacity={escuros ? 1 : 0.75} />
+                {/* dobradiça junto à orelha — só a pontinha que passa da cabeça */}
+                <ellipse cx={hx + s * 9.6} cy={hy - 0.2} rx="1.4" ry="1.9" fill={aro} />
               </g>
             ))}
           </g>
@@ -181,7 +181,7 @@ export function AvatarFigure({
           <polyline
             points="-2,10 -11,25 -9,44"
             fill="none"
-            stroke={darken(pants, 16)}
+            stroke={darken(pants, 8)}
             strokeWidth="8"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -207,7 +207,7 @@ export function AvatarFigure({
         <g>
           <ellipse cx="-4.8" cy="13.8" rx="3.4" ry="1.5" fill="rgba(0,0,0,0.15)" />
           <ellipse cx="4.8" cy="13.8" rx="3.4" ry="1.5" fill="rgba(0,0,0,0.15)" />
-          <path d="M -4.6 -4 L -1.2 -4 Q -0.4 2 -1 6 Q -1.6 9 -1.3 12 L -4.8 13.6 L -5.6 11 Q -6.2 7 -5.8 4 Q -5.4 0 -4.6 -4 Z" fill={darken(pants, 16)} />
+          <path d="M -4.6 -4 L -1.2 -4 Q -0.4 2 -1 6 Q -1.6 9 -1.3 12 L -4.8 13.6 L -5.6 11 Q -6.2 7 -5.8 4 Q -5.4 0 -4.6 -4 Z" fill={darken(pants, 8)} />
           <ellipse cx="-4.8" cy="13.8" rx="3.4" ry="1.5" fill="#33333d" />
           <path d="M 4.6 -4 L 1.2 -4 Q 0.4 2 1 6 Q 1.6 9 1.3 12 L 4.8 13.6 L 5.6 11 Q 6.2 7 5.8 4 Q 5.4 0 4.6 -4 Z" fill={pants} />
           <ellipse cx="4.8" cy="13.8" rx="3.4" ry="1.5" fill="#3a3a44" />
@@ -222,16 +222,16 @@ export function AvatarFigure({
             <circle cx="-24" cy="-31.5" r="2.6" fill={skin} />
           </g>
           <g className="nt-arm-r nt-o">
-            <line x1={torsoX + torsoW - 1} y1={shoulderY} x2="1" y2="-34" stroke={darken(sleeve, 12)} strokeWidth="5" strokeLinecap="round" />
+            <line x1={torsoX + torsoW - 1} y1={shoulderY} x2="1" y2="-34" stroke={darken(sleeve, 7)} strokeWidth="5" strokeLinecap="round" />
             <circle cx="0" cy="-34.5" r="2.6" fill={darken(skin, 10)} />
           </g>
         </g>
       ) : (
         <g>
           <line x1={torsoX} y1={shoulderY} x2={torsoX - 2.5} y2="-9" stroke={sleeve} strokeWidth="5" strokeLinecap="round" />
-          <line x1={torsoX + torsoW} y1={shoulderY} x2={torsoX + torsoW + 2.5} y2="-9" stroke={darken(sleeve, 12)} strokeWidth="5" strokeLinecap="round" />
-          <circle cx={torsoX - 3} cy="-7" r="2" fill={darken(skin, 12)} />
-          <circle cx={torsoX + torsoW + 3} cy="-7" r="2" fill={darken(skin, 18)} />
+          <line x1={torsoX + torsoW} y1={shoulderY} x2={torsoX + torsoW + 2.5} y2="-9" stroke={darken(sleeve, 7)} strokeWidth="5" strokeLinecap="round" />
+          <circle cx={torsoX - 3} cy="-7" r="2" fill={darken(skin, 8)} />
+          <circle cx={torsoX + torsoW + 3} cy="-7" r="2" fill={darken(skin, 12)} />
         </g>
       )}
 
