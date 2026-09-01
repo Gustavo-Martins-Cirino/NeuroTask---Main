@@ -50,7 +50,10 @@ const AMBIENTS: Ambient[] = [
   { id: "transparent", name: "Transparente", bg: "bg-background/60 backdrop-blur-xl", mode: "themed", clock: false },
   { id: "black", name: "Preto", bg: "bg-neutral-950", mode: "dark", clock: false },
   { id: "gray", name: "Cinza", bg: "bg-neutral-700", mode: "dark", clock: false },
-  { id: "light", name: "Claro", bg: "bg-neutral-100", mode: "light", clock: false },
+  // "Claro" era `bg-neutral-100` (#f5f5f5) ao lado de "Branco" (#ffffff): na tela
+  // cheia, a mesma cor com dois nomes. Agora é um papel quente — a diferença
+  // entre os dois vira TEMPERATURA, que se enxerga, e não meio ponto de brilho.
+  { id: "light", name: "Papel", bg: "bg-[#f2ece1]", mode: "light", clock: false },
   { id: "white", name: "Branco", bg: "bg-white", mode: "light", clock: false },
   { id: "clock", name: "Relógio", bg: "bg-neutral-950", mode: "dark", clock: true },
   ...GRADIENT_PRESETS.map((g) => ({

@@ -225,13 +225,15 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Confirmados aqui, com prova**
 
-- [ ] **Dois sons do mixer não existem.** `public/sounds/vinyl.mp3` e `oldies.mp3` estão
-      declarados em `components/sound-mixer.tsx` e **não estão no repositório** — clicar não
-      faz nada. Ele notou o vinil; o "Oldies · Rádio antigo" tem o mesmo problema e ninguém
-      tinha visto. Os outros 25 estão todos lá.
-- [ ] **"Claro" e "Branco" do Modo Foco são a mesma coisa.** `bg-neutral-100` (#f5f5f5) contra
-      `bg-white` (#ffffff): numa tela cheia, indistinguíveis. Duas opções que fazem a mesma
-      coisa gastam a lista sem oferecer escolha.
+> **Sons mortos: resolvidos (29/08).** `vinyl.mp3` e `oldies.mp3` estavam declarados e não
+> existiam no repositório — o botão aparecia e clicar não fazia nada. O Gustavo notou o vinil;
+> o "Oldies · Rádio antigo" tinha o mesmo problema sem ninguém ter visto. Os dois saíram da
+> lista, e `lib/sound-mixer-arquivos.test.ts` vigia as DUAS pontas: som sem arquivo quebra o
+> teste, e arquivo sem som na lista também (peso morto no bundle). **Para trazê-los de volta**,
+> é pôr o mp3 em `public/sounds` e re-adicionar a linha — o teste passa a proteger.
+> **"Claro" × "Branco": resolvido (29/08).** Eram #f5f5f5 e #ffffff — a mesma cor com dois
+> nomes. O "Claro" virou **"Papel"**, um branco quente (#f2ece1). A diferença entre os dois
+> passa a ser TEMPERATURA, que se enxerga, em vez de meio ponto de brilho, que não.
 - [ ] **Ambiente "Transparente" não funciona.** `bg-background/60 backdrop-blur-xl` — investigar
       o que está por baixo, porque a ideia (ver o app desfocado atrás) não chega.
 - [ ] **Os óculos do bonequinho 2D estão grandes demais.** A haste sai de `hy - 6.5` e cruza o

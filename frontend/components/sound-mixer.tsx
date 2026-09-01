@@ -7,16 +7,20 @@ import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 import {
   CloudRain, Coffee, TreePine, Waves, Flame, Bird, Droplets, Snowflake, TrainFront, PlaneTakeoff, BookOpen, Rocket,
-  Piano, Music2, Skull, Castle, Headphones, GraduationCap, Brain, Wind, Radio, Disc3,
+  Piano, Music2, Skull, Castle, Headphones, GraduationCap, Brain, Wind,
   Volume2, Pause, Play, type LucideIcon,
 } from "lucide-react"
 
 type TrackDef = MixerTrackConfig & { category: SoundCategory; icon: LucideIcon }
 
+// Som declarado aqui PRECISA ter o arquivo em public/sounds — o botão aparece na
+// tela e clicar nele não faz absolutamente nada quando o arquivo falta. Aconteceu
+// com dois, "Vinil (chiado)" e "Oldies · Rádio antigo", que estavam na lista sem
+// nunca terem tido mp3. Saíram; para trazer de volta é pôr o arquivo e
+// re-adicionar a linha, e lib/sound-mixer-arquivos.test.ts vigia as duas pontas.
 const TRACKS: TrackDef[] = [
   // Sons ambientes (loop contínuo)
   { id: "rain", label: "Chuva", src: "/sounds/rain.mp3", category: "ambient", icon: CloudRain },
-  { id: "vinyl", label: "Vinil (chiado)", src: "/sounds/vinyl.mp3", category: "ambient", icon: Disc3 },
   { id: "cafe", label: "Cafeteria", src: "/sounds/cafe.mp3", category: "ambient", icon: Coffee },
   { id: "forest", label: "Floresta", src: "/sounds/forest.mp3", category: "ambient", icon: TreePine },
   { id: "waves", label: "Ondas do mar", src: "/sounds/waves.mp3", category: "ambient", icon: Waves },
@@ -37,7 +41,6 @@ const TRACKS: TrackDef[] = [
   { id: "lofi", label: "Lo-fi", src: "/sounds/lofi.mp3", category: "music", icon: Headphones },
   { id: "lofi2", label: "Lo-fi 2", src: "/sounds/lofi2.mp3", category: "music", icon: Headphones },
   { id: "chillhop", label: "Chillhop", src: "/sounds/chillhop.mp3", category: "music", icon: Music2 },
-  { id: "oldies", label: "Oldies · Rádio antigo", src: "/sounds/oldies.mp3", category: "music", icon: Radio },
   { id: "study", label: "Concentração", src: "/sounds/study.mp3", category: "music", icon: GraduationCap },
   { id: "study2", label: "Fluxo", src: "/sounds/study2.mp3", category: "music", icon: GraduationCap },
   { id: "study-music", label: "Imersão", src: "/sounds/study-music.mp3", category: "music", icon: GraduationCap },
