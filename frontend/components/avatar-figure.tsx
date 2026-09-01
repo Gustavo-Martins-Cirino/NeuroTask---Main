@@ -45,13 +45,17 @@ function Acessorios({ acess, hx, hy }: { acess: AvatarAccessories; hx: number; h
           <g>
             {[-1, 1].map((s) => (
               <g key={s}>
-                {/* haste diagonal, do alto para trás, terminando na orelha */}
+                {/* A haste corre RENTE à silhueta, não por cima do crânio.
+                    Antes ela saía de `hy - 6.5` e atravessava até a orelha: numa
+                    cabeça de raio 10 isso é um arco cruzando a cabeça inteira, e
+                    de longe lia como o óculos ser gigante. Óculos visto de
+                    costas quase não aparece — é essa a informação. */}
                 <path
-                  d={`M ${hx + s * 3.5} ${hy - 6.5} q ${s * 4.5} 1 ${s * 6.5} 6`}
-                  fill="none" stroke={aro} strokeWidth="1.6" strokeLinecap="round"
+                  d={`M ${hx + s * 6.6} ${hy - 4.4} q ${s * 2.6} 1.6 ${s * 3.4} 4.2`}
+                  fill="none" stroke={aro} strokeWidth="1.15" strokeLinecap="round"
                 />
                 {/* dobradiça junto à orelha — só a pontinha que passa da cabeça */}
-                <ellipse cx={hx + s * 9.6} cy={hy - 0.2} rx="1.4" ry="1.9" fill={aro} />
+                <ellipse cx={hx + s * 9.9} cy={hy + 0.2} rx="1.05" ry="1.5" fill={aro} />
               </g>
             ))}
           </g>

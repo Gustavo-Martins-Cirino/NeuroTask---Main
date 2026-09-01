@@ -236,9 +236,11 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > passa a ser TEMPERATURA, que se enxerga, em vez de meio ponto de brilho, que não.
 - [ ] **Ambiente "Transparente" não funciona.** `bg-background/60 backdrop-blur-xl` — investigar
       o que está por baixo, porque a ideia (ver o app desfocado atrás) não chega.
-- [ ] **Os óculos do bonequinho 2D estão grandes demais.** A haste sai de `hy - 6.5` e cruza o
-      alto do crânio até a orelha: numa cabeça de raio 10, é um arco atravessando a cabeça
-      inteira. O conceito (de costas se vê a haste, não a lente) está certo — o tamanho não.
+> **Óculos: resolvido (29/08).** O conceito estava certo (de costas se vê a haste, não a
+> lente) e o tamanho não: a haste saía de `hy - 6.5` e cruzava o alto de um crânio de raio 10.
+> Medido, ela ocupava **20% da área da cabeça**; agora corre rente à silhueta, começando a
+> 6,6 do centro em vez de 3,5, e ocupa **8%**. Óculos visto de costas quase não aparece — é
+> essa a informação que o desenho precisa dar.
 
 **Da lista dele, para reproduzir antes de mexer**
 
