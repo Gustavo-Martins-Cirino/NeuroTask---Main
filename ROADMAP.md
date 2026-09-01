@@ -724,6 +724,43 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > endereço dela no `user_metadata`, em chave própria — nunca em `avatar_url`, que o
 > Supabase reescreve a cada login social.
 
+#### Bonequinho 2D — polimento de costas
+
+> **Decisão (31/08): o boneco fica DE COSTAS.** Chegou um relatório de bugs lendo o
+> avatar 2D (`components/avatar-figure.tsx`) como se ele devesse ter rosto — mas ele é
+> ¾ traseiro **de propósito** (vemos a nuca, o cabelo e as costas), e a "orelha de ogro"
+> que o relatório acusava era o acessório de ÓCULOS desenhando a lente inteira, clara,
+> fora do crânio, no rosto que essa vista não tem. Virá-lo de frente foi **recusado**: o
+> desenho 2D só aparece como retrato (header/amigos) e na prévia do editor — nunca na
+> cena, que usa o `.glb` —, e dar rosto a ele custaria descasar do personagem 3D. O
+> caminho é polir o que é de costas, não inventar um rosto.
+>
+> **Resolvido (31/08):**
+> · **óculos** viram só a haste correndo até a orelha + a dobradiça que escapa da
+>   silhueta; a lente (que aponta para a frente) não é mais desenhada — fim da "orelha".
+> · **sombreamento esquerda/direita** com delta menor (perna 16→8, manga 12→7, mão
+>   18→12): a calça deixou de parecer dois azuis diferentes.
+> · **prévia do editor** centralizada no boneco (o viewBox mirava x=-9, o boneco fica em
+>   x≈1) e com a sombra sob os pés — não flutua mais no canto.
+> · **cena 3D do Escritório fixa (sticky)** ao rolar a loja em telas grandes: a prévia de
+>   como o item fica no escritório não sai mais de vista quando se olham os itens de baixo.
+> · **manga curta na camiseta** (o braço nu inteiro fazia ler como regata), **fones** em
+>   grafite que contrasta com o cabelo escuro e com arco passando POR CIMA dele, e a
+>   **nuca** com cantos arredondados + sombra de gola (era um quadrado que lia como glitch).
+>
+> **Não pude ver rodando** (sem `node_modules` no ambiente): são edições de geometria SVG,
+> conferidas no código, e a régua final é o build da Vercel + o olho do Gustavo no deploy.
+> Os óculos e as mangas são um chute geométrico — se destoarem, é ajuste fino, não redesenho.
+
+- [ ] **Silhueta própria por roupa e por cabelo.** As quatro roupas ainda são o mesmo
+      tronco com um detalhe fino que quase some no tamanho de render, e "cacheado" são 7
+      círculos chapados. Dar silhueta de verdade (gola, barra, capuz atrás da nuca;
+      contorno de cabelo em vez de bolinhas) é **redesenho, não ajuste** — fora do "só
+      polir", entra se o boneco continuar valendo o investimento.
+- [ ] **Seção de cor da calça no editor.** A calça é hardcoded (`#3b5378`); daria uma
+      linha de swatches igual à da roupa, com o lado de trás derivado da cor escolhida
+      (nunca uma segunda cor cravada, senão volta o problema dos dois azuis).
+
 #### Cor e camada visual — `214017.png` e `214418.png`
 
 Dois efeitos de fundo, e os dois pedem o mesmo cuidado: fundo que compete com o conteúdo
