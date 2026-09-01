@@ -179,13 +179,17 @@ export default function OfficePage() {
       </Header>
 
       <div className="flex-1 px-4 py-6 md:px-10">
-        <div className="mx-auto w-full max-w-5xl space-y-6">
+        {/* Em telas grandes a cena vira uma coluna FIXA à esquerda: rolar a loja
+            já não a empurra para fora da tela — e a prévia ao passar o mouse num
+            item continua visível. No celular segue empilhado (a cena inteira
+            grudada no topo comeria a tela pequena). */}
+        <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-2 lg:items-start">
           {/* Cena */}
           <motion.div
             ref={sceneWrapRef}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
+            className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm lg:sticky lg:top-20"
           >
             {loading ? (
               <div className="flex aspect-[480/340] items-center justify-center">
@@ -325,7 +329,7 @@ export default function OfficePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               {items.map((item, i) => {
                 const isOwned = owned.has(item.id)
                 const isEquipped = owned.get(item.id) === true
