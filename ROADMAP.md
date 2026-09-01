@@ -71,9 +71,26 @@ repositório:
 > dentro de callback com saída do componente e enche de falso positivo (tentei, deu doze).
 > Conferido que ela pega o bug real, reintroduzindo-o.
 >
-> **Fica aberto, e é menor**: com o banco fora, as telas mostram estado VAZIO em vez de dizer
-> que algo falhou. Quem abrir numa queda vê "Nenhuma tarefa" e pode achar que perdeu o que
-> tinha. Só Configurações avisa. Não é quebra, é recado faltando.
+> **O recado que faltava: resolvido (29/08).** Com o banco fora as telas mostravam estado
+> VAZIO — quem abrisse numa queda lia "Nenhuma tarefa" e concluía que tinha perdido tudo. Não
+> era quebra, era susto, e susto é o que faz voltar para o calendário de onde a pessoa veio.
+>
+> Entrou um aviso único no `AppShell` (`components/aviso-conexao.tsx`), alimentado por um
+> observador no `fetch` do cliente Supabase. **No cliente e não nas telas**: são oito telas com
+> consultas próprias, e avisar em cada uma seria oito chances de esquecer a nona. O observador
+> só ESCUTA — repassa resposta e relança erro exatamente como vieram.
+>
+> **Duas decisões, as duas com teste** (`lib/conexao.ts`): avisa na SEGUNDA falha seguida, não
+> na primeira, porque requisição isolada falha por motivo bobo o tempo todo e banner que pisca
+> sozinho ensina a ignorar banner; e **4xx não conta como queda** — 401 é sessão vencida, 403 é
+> permissão, 404 é linha que não existe, e todos são o servidor funcionando e dizendo não.
+> Anunciar "sem conexão" num 401 mandaria a pessoa reiniciar o roteador por um problema do app.
+>
+> O texto diz o que houve **e o que não houve**: "Seus dados estão a salvo" é a metade que
+> importa, porque sem ela a tela vazia por trás do aviso continua parecendo perda de dados.
+>
+> Conferido nos cinco cenários: banco de pé (sem aviso), 500 e rede fora (avisa), 401 e 404
+> (sem aviso).
 
 > **Varredura de tema claro (28/08): as oito telas, medindo contraste — está limpo.** Nenhum
 > texto abaixo do piso da WCAG (4,5:1, ou 3:1 no texto grande), em nenhuma das oito, em
