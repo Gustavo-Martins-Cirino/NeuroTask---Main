@@ -218,6 +218,46 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > **Uma armadilha ao conferir isso**: `shop_items` tem RLS `for select to authenticated`, então
 > uma consulta anônima devolve LISTA VAZIA em vez de erro — parece tabela vazia e não é.
 
+**Rodada de 29/08 — lista do Gustavo, usando o app no celular**
+
+> Levantada com o app na mão, e por isso mistura defeito de código com incômodo de uso. O
+> que já foi CONFERIDO no repositório está marcado; o resto é reprodução dele.
+
+**Confirmados aqui, com prova**
+
+- [ ] **Dois sons do mixer não existem.** `public/sounds/vinyl.mp3` e `oldies.mp3` estão
+      declarados em `components/sound-mixer.tsx` e **não estão no repositório** — clicar não
+      faz nada. Ele notou o vinil; o "Oldies · Rádio antigo" tem o mesmo problema e ninguém
+      tinha visto. Os outros 25 estão todos lá.
+- [ ] **"Claro" e "Branco" do Modo Foco são a mesma coisa.** `bg-neutral-100` (#f5f5f5) contra
+      `bg-white` (#ffffff): numa tela cheia, indistinguíveis. Duas opções que fazem a mesma
+      coisa gastam a lista sem oferecer escolha.
+- [ ] **Ambiente "Transparente" não funciona.** `bg-background/60 backdrop-blur-xl` — investigar
+      o que está por baixo, porque a ideia (ver o app desfocado atrás) não chega.
+- [ ] **Os óculos do bonequinho 2D estão grandes demais.** A haste sai de `hy - 6.5` e cruza o
+      alto do crânio até a orelha: numa cabeça de raio 10, é um arco atravessando a cabeça
+      inteira. O conceito (de costas se vê a haste, não a lente) está certo — o tamanho não.
+
+**Da lista dele, para reproduzir antes de mexer**
+
+- [ ] **O corpo masculino e o feminino são quase o mesmo** — "a feminina só está mais magra".
+      Silhueta precisa de mais que largura: ombro, quadril e proporção de tronco.
+- [ ] **Responsividade no celular de quatro ações**: enviar feedback, excluir tarefa, editar
+      tarefa e favoritar. A varredura de 28/08 mediu alvos de toque e vazamento de layout, mas
+      não ABRIU esses fluxos — provavelmente é diálogo ou menu que não cabe.
+- [ ] **Notificação de horas de sono com valor errado.** A conta de deitar/acordar vive em
+      `lib/backward-plan.ts` e tem teste; o erro deve estar em quem monta o TEXTO do aviso, ou
+      no fuso (ver a dívida do push, resolvida em 25/08).
+- [ ] **A IA não criou a tarefa, e "não consegue ver o mês".** Duas coisas separadas: a
+      ferramenta de criar falhando, e a data que chega no prompt. O `now` vai como
+      `toLocaleString("pt-BR")` — conferir o que a IA recebe de fato.
+- [ ] **O botão de "segurar para falar" é ruim, e ele quer outra ideia.** No celular tem
+      atraso, não responde ao toque (só troca de cor) e fica estático. Não é ajuste de estilo:
+      o gesto inteiro está em questão. Ideias a pesar: toque para começar/parar em vez de
+      segurar; detecção de silêncio encerrando sozinha; a onda sonora reagindo ao toque antes
+      mesmo de o microfone abrir (o atraso percebido é do `getUserMedia`, e um retorno visual
+      imediato o esconde).
+
 **Rodada de 28/08 — segunda passada do Gustavo na cena**
 
 > O que ele aprovou, e vale saber o que NÃO mexer: o piso, o sofá e os móveis novos.
