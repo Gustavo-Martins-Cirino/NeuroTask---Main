@@ -65,8 +65,12 @@ export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }:
         <div className="flex flex-col gap-4 sm:flex-row">
           {/* Preview ao vivo */}
           <div className="mx-auto flex w-36 shrink-0 items-center justify-center rounded-2xl border border-border/50 bg-gradient-to-b from-sky-100/60 to-sky-50/40 dark:from-slate-800 dark:to-slate-900">
-            <svg viewBox="-48 -62 78 96" className="h-44 w-32">
-              <ellipse cx="-8" cy="26" rx="26" ry="6" fill="#000" opacity="0.1" />
+            {/* viewBox centrado no boneco (que fica em x≈1, cabeça em -56 aos pés
+                em ~16), não em x=-9 como antes — aquilo empurrava tudo para a
+                direita e deixava uma faixa morta à esquerda. A sombra agora fica
+                sob os pés, e não solta no canto inferior. */}
+            <svg viewBox="-27 -58 57 80" className="h-44 w-32">
+              <ellipse cx="1" cy="16" rx="12" ry="2.8" fill="#000" opacity="0.16" />
               <AvatarFigure config={cfg} accessories={accessories} />
             </svg>
           </div>
