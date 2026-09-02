@@ -234,8 +234,21 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > **"Claro" × "Branco": resolvido (29/08).** Eram #f5f5f5 e #ffffff — a mesma cor com dois
 > nomes. O "Claro" virou **"Papel"**, um branco quente (#f2ece1). A diferença entre os dois
 > passa a ser TEMPERATURA, que se enxerga, em vez de meio ponto de brilho, que não.
-- [ ] **Ambiente "Transparente" não funciona.** `bg-background/60 backdrop-blur-xl` — investigar
-      o que está por baixo, porque a ideia (ver o app desfocado atrás) não chega.
+> **"Transparente": resolvido (29/08), e o Gustavo estava certo com número.** O CSS sempre
+> esteve correto (60% de tinta + blur 24px, aplicados). O problema é que a tinta é a MESMA COR
+> do fundo do app: 60% de `--background` sobre uma página `--background` dá a própria cor de
+> volta. **Medido: só 3% dos pixels diferiam de escolher "Preto"** — o ambiente existia no
+> código e não na tela.
+>
+> A tinta caiu para 35% (agora 15,6% de diferença, cinco vezes mais presença) e **o desfoque
+> cheio ficou**. Essa segunda metade é a decisão: baixar o desfoque junto deixava as tarefas
+> de trás LEGÍVEIS durante o foco, que é o oposto do que a tela existe para fazer. A
+> transparência tem que vir da tinta; o desfoque é o que separa "ver que o app está atrás" de
+> "ler o que está atrás".
+>
+> **Uma armadilha de medição**: testar sobre um fundo colorido (listras) dá aprovado —
+> qualquer transparência aparece ali. O teste honesto é sobre o fundo ESCURO do próprio app,
+> que é o que fica atrás na vida real.
 > **Óculos: resolvido (29/08).** O conceito estava certo (de costas se vê a haste, não a
 > lente) e o tamanho não: a haste saía de `hy - 6.5` e cruzava o alto de um crânio de raio 10.
 > Medido, ela ocupava **20% da área da cabeça**; agora corre rente à silhueta, começando a

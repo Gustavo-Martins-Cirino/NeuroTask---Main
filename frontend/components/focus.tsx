@@ -47,7 +47,15 @@ interface Ambient {
 // Os estáticos vêm primeiro e continuam sendo o padrão: os animados entram ao
 // lado, não no lugar. Quem achar o movimento distraente escolhe um dos de cima.
 const AMBIENTS: Ambient[] = [
-  { id: "transparent", name: "Transparente", bg: "bg-background/60 backdrop-blur-xl", mode: "themed", clock: false },
+  // A tinta é 35%, não 60%, e a diferença é o item inteiro: a 60% sobre o fundo
+  // do app — que é a MESMA cor — só 3% dos pixels diferiam de escolher "Preto".
+  // Ou seja, "Transparente" existia no código e não na tela. A 35% são 15,6%,
+  // cinco vezes mais presença, e aí ele lê como transparente.
+  //
+  // O desfoque CHEIO fica: é ele que separa "ver que o app está atrás" de "ler o
+  // que está atrás". Baixando o desfoque junto, as tarefas viravam legíveis
+  // durante o foco — o oposto do que esta tela existe para fazer.
+  { id: "transparent", name: "Transparente", bg: "bg-background/35 backdrop-blur-xl", mode: "themed", clock: false },
   { id: "black", name: "Preto", bg: "bg-neutral-950", mode: "dark", clock: false },
   { id: "gray", name: "Cinza", bg: "bg-neutral-700", mode: "dark", clock: false },
   // "Claro" era `bg-neutral-100` (#f5f5f5) ao lado de "Branco" (#ffffff): na tela
