@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { AvatarFigure } from "@/components/avatar-figure"
 import { Check, Headphones } from "lucide-react"
 import {
-  HAIR_STYLES, OUTFITS, SKIN_TONES, HAIR_COLORS, OUTFIT_COLORS, BODY_TYPES,
+  HAIR_STYLES, OUTFITS, SKIN_TONES, HAIR_COLORS, OUTFIT_COLORS, PANTS_COLORS, BODY_TYPES,
   type AvatarConfig,
 } from "@/lib/avatar"
+import { ternoMandaNaCalca } from "@/lib/avatar-calca"
 import { type AvatarAccessories } from "@/lib/avatar-accessories"
 
 interface AvatarEditorProps {
@@ -115,6 +116,21 @@ export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }:
                 ))}
               </div>
               <Swatches colors={OUTFIT_COLORS} value={cfg.outfitColor} onPick={(c) => setCfg({ ...cfg, outfitColor: c })} />
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Calça</p>
+              {/* Com terno, a calça sai do paletó — traje de dois tons não é
+                  traje. A linha continua visível, e não escondida, para a
+                  escolha voltar sozinha ao trocar de roupa. */}
+              <div className={cn(ternoMandaNaCalca(cfg.outfit) && "pointer-events-none opacity-40")}>
+                <Swatches colors={PANTS_COLORS} value={cfg.pantsColor} onPick={(c) => setCfg({ ...cfg, pantsColor: c })} />
+              </div>
+              {ternoMandaNaCalca(cfg.outfit) && (
+                <p className="text-[11px] leading-tight text-muted-foreground/70">
+                  No terno, a calça acompanha a cor do paletó.
+                </p>
+              )}
             </div>
 
             <button

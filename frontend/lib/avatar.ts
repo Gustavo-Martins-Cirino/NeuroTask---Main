@@ -20,12 +20,18 @@ export interface AvatarConfig {
   hairColor: string
   outfit: Outfit
   outfitColor: string
+  /** Cor da calça. Era cravada em `#3b5378` no desenho — ver lib/avatar-calca. */
+  pantsColor: string
   headphones: boolean
 }
 
 export const SKIN_TONES = ["#f4cfa8", "#e0a97e", "#c98a5e", "#9c6b43", "#6e4a2e"]
 export const HAIR_COLORS = ["#2f2a26", "#4a3a2c", "#8a5a2c", "#c9973c", "#b8b8c0", "#8a3a5a"]
 export const OUTFIT_COLORS = ["#3f6f8f", "#4a5568", "#7a4a8f", "#3f8f5f", "#b5563a", "#22252d"]
+// Tons de calça, não de camisa: jeans, preto, grafite, cáqui, oliva e marrom.
+// Repetir a paleta da roupa daria seis camisas nas pernas — e o roxo de camiseta
+// não é uma calça que alguém veste.
+export const PANTS_COLORS = ["#3b5378", "#22252d", "#4a5568", "#8a7a5c", "#3f4a3a", "#5c4535"]
 
 export const HAIR_STYLES: { value: HairStyle; label: string }[] = [
   { value: "curto", label: "Curto" },
@@ -55,6 +61,9 @@ export const DEFAULT_AVATAR: AvatarConfig = {
   hairColor: "#4a3a2c",
   outfit: "camiseta",
   outfitColor: "#3f6f8f",
+  // O mesmo azul que estava cravado no desenho: quem já tem avatar salvo não
+  // muda de calça por causa desta mudança.
+  pantsColor: "#3b5378",
   headphones: true,
 }
 
@@ -67,6 +76,7 @@ export function normalizeAvatar(raw: unknown): AvatarConfig {
     hairColor: typeof a.hairColor === "string" ? a.hairColor : DEFAULT_AVATAR.hairColor,
     outfit: OUTFITS.some((o) => o.value === a.outfit) ? (a.outfit as Outfit) : DEFAULT_AVATAR.outfit,
     outfitColor: typeof a.outfitColor === "string" ? a.outfitColor : DEFAULT_AVATAR.outfitColor,
+    pantsColor: typeof a.pantsColor === "string" ? a.pantsColor : DEFAULT_AVATAR.pantsColor,
     headphones: a.headphones !== false,
   }
 }

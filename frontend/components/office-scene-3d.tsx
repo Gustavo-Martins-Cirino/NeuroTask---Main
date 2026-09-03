@@ -19,6 +19,7 @@ import {
   type EscritorioExtras, type ParedeTipo, type PersonagemCores, type PisoTipo,
 } from "@/lib/office-model"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
+import { corDaCalca } from "@/lib/avatar-calca"
 import { faseDaHora, type FaseDoDia } from "@/lib/office-city"
 import { typingTap, typingRamp } from "@/lib/office-typing"
 import { rolagemDoCodigo, deslocamentoEm } from "@/lib/office-code-scroll"
@@ -143,6 +144,9 @@ function coresDoAvatar(avatar?: AvatarConfig | null): PersonagemCores {
     c.pele = avatar.skin
     c.cabelo = avatar.hairColor
     c.camisa = avatar.outfitColor
+    // A calça do 3D vinha de um cinza cravado no modelo: escolher jeans no
+    // editor mudava o bonequinho e não mudava o boneco da sala.
+    c.calca = corDaCalca(avatar)
   }
   return c
 }

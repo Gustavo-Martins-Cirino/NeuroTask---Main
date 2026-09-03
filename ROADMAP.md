@@ -914,9 +914,23 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
       círculos chapados. Dar silhueta de verdade (gola, barra, capuz atrás da nuca;
       contorno de cabelo em vez de bolinhas) é **redesenho, não ajuste** — fora do "só
       polir", entra se o boneco continuar valendo o investimento.
-- [ ] **Seção de cor da calça no editor.** A calça é hardcoded (`#3b5378`); daria uma
-      linha de swatches igual à da roupa, com o lado de trás derivado da cor escolhida
-      (nunca uma segunda cor cravada, senão volta o problema dos dois azuis).
+> **Cor da calça: entregue (29/08).** Linha de swatches no editor, com tons de CALÇA e não
+> os da camisa — jeans, preto, grafite, cáqui, oliva e marrom. Repetir a paleta da roupa
+> daria seis camisas nas pernas, e o roxo de camiseta não é uma calça que alguém veste.
+>
+> **A regra que sobra é o terno**: paletó de um tom com calça de outro não é traje, é
+> fantasia. Nele a calça sai do paletó, e a linha de swatches fica visível porém apagada,
+> com a explicação — escondê-la faria a escolha sumir sem dizer por quê, e ela precisa
+> voltar sozinha ao trocar de roupa.
+>
+> **Ela mora em `lib/avatar-calca.ts` e não no desenho**, porque vale para os DOIS bonecos:
+> o 3D da sala tinha um cinza cravado no modelo, então escolher jeans mudava o bonequinho do
+> editor e não mudava o boneco do Escritório. Agora os dois leem a mesma função.
+>
+> O lado de trás continua derivado da cor da frente, como o item pedia — nunca uma segunda
+> cor guardada, que foi como nasceram os dois azuis que não combinavam.
+>
+> Quem já tem avatar salvo não muda de calça: o padrão é o mesmo `#3b5378` que estava cravado.
 
 #### Cor e camada visual — `214017.png` e `214418.png`
 

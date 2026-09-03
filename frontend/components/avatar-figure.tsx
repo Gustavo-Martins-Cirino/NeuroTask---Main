@@ -1,4 +1,5 @@
 import { type AvatarConfig } from "@/lib/avatar"
+import { corDaCalca } from "@/lib/avatar-calca"
 import { type AvatarAccessories } from "@/lib/avatar-accessories"
 import { cn } from "@/lib/utils"
 
@@ -153,7 +154,9 @@ export function AvatarFigure({
 }) {
   const { body, skin, hairStyle, hairColor, outfit, outfitColor, headphones } = config
   const fem = body === "f"
-  const pants = outfit === "terno" ? darken(outfitColor, 18) : "#3b5378"
+  // A regra do terno (calça sai do paletó) mora em lib/avatar-calca, e não
+  // aqui: ela vale igual para o personagem 3D da cena.
+  const pants = corDaCalca(config)
   const sleeve = outfit === "camiseta" ? skin : outfitColor
   const hx = 1 // centro da cabeça (x)
   const hy = fem ? -39 : -40
