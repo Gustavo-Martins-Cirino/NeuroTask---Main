@@ -152,7 +152,11 @@ export function TaskCard({
                   "rounded-lg p-1.5 transition-colors",
                   task.is_favorite
                     ? "text-amber-400"
-                    : "text-muted-foreground opacity-0 hover:text-amber-400 group-hover:opacity-100"
+                    // Visível por padrão; some no repouso SÓ onde há mouse.
+                    // Antes era `opacity-0` sempre, revelado por group-hover:
+                    // num celular a estrela simplesmente não existia, e
+                    // favoritar virava uma função sem porta de entrada.
+                    : "text-muted-foreground hover:text-amber-400 com-mouse:opacity-0 com-mouse:group-hover:opacity-100"
                 )}
               >
                 <Star className={cn("h-4 w-4", task.is_favorite && "fill-current")} />
@@ -161,7 +165,10 @@ export function TaskCard({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100">
+              {/* Mesmo caso da estrela, e pior: este menu guarda EDITAR e
+                  EXCLUIR. No celular ele era invisível sempre — as duas ações
+                  existiam no código e não na tela. */}
+              <Button variant="ghost" size="icon" className="h-8 w-8 transition-opacity com-mouse:opacity-0 com-mouse:group-hover:opacity-100">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

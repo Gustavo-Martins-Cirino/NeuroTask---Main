@@ -536,7 +536,7 @@ export function FriendsSection() {
                   <button
                     type="button"
                     onClick={() => handleRemove(f)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground/50 opacity-0 transition-all hover:bg-accent hover:text-destructive group-hover:opacity-100"
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground/50 transition-all hover:bg-accent hover:text-destructive com-mouse:opacity-0 com-mouse:group-hover:opacity-100"
                     title="Desfazer amizade"
                   >
                     <X className="h-3 w-3" />

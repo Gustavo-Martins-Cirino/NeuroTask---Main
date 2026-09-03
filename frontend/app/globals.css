@@ -3,6 +3,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* "Só onde existe mouse."
+   Controle que aparece no hover — a estrela de favoritar, o "…" de editar e
+   excluir — é invisível num celular, porque hover não existe lá. E não é
+   questão de LARGURA: um notebook com tela sensível ao toque tem a janela
+   larga e o hover não confiável do mesmo jeito. A pergunta certa é sobre o
+   PONTEIRO, e é o que esta variante faz.
+   Uso: `opacity-100 com-mouse:opacity-0 com-mouse:group-hover:opacity-100`. */
+@custom-variant com-mouse (@media (hover: hover) and (pointer: fine));
+
 /* ---- Borda viva ----------------------------------------------------------
    O contorno que gira em volta da tela (referência:
    inspirações/Captura de tela 2026-08-07 214418.png). Na imagem parece parado

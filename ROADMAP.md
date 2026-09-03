@@ -276,9 +276,21 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 - [ ] **O corpo masculino e o feminino são quase o mesmo** — "a feminina só está mais magra".
       Silhueta precisa de mais que largura: ombro, quadril e proporção de tronco.
-- [ ] **Responsividade no celular de quatro ações**: enviar feedback, excluir tarefa, editar
-      tarefa e favoritar. A varredura de 28/08 mediu alvos de toque e vazamento de layout, mas
-      não ABRIU esses fluxos — provavelmente é diálogo ou menu que não cabe.
+> 🔴 **Três das quatro ações eram INVISÍVEIS no celular (31/08).** Não era diálogo apertado
+> como eu supus: a estrela de favoritar e o "…" que guarda **Editar e Excluir** nasciam
+> `opacity-0` e só apareciam no `group-hover`. Hover não existe em toque — e o `hover:` do
+> Tailwind é embrulhado em `@media (hover: hover)`, então a regra nunca dispara. As ações
+> existiam no código e não na tela. (O botão de feedback estava certo; o mesmo defeito também
+> pegava o remover-amigo em `friends-section`.)
+>
+> **A condição certa é o PONTEIRO, não a largura**, e virou a variante `com-mouse` em
+> `globals.css`: um notebook com tela sensível ao toque tem janela larga e hover não
+> confiável do mesmo jeito, então `md:` responderia à pergunta errada. Uso:
+> `opacity-100 com-mouse:opacity-0 com-mouse:group-hover:opacity-100`.
+>
+> Medido nos dois lados, emulando `hover`/`pointer` por CDP (o `emulateMediaFeatures` do
+> puppeteer não aceita esses dois): **no toque 3/3 estrelas e 3/3 menus visíveis; no mouse
+> 0/3 menus em repouso**, ou seja, o desktop continua limpo.
 - [ ] **Notificação de horas de sono com valor errado.** A conta de deitar/acordar vive em
       `lib/backward-plan.ts` e tem teste; o erro deve estar em quem monta o TEXTO do aviso, ou
       no fuso (ver a dívida do push, resolvida em 25/08).
