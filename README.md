@@ -49,7 +49,10 @@ inteira, não só a pergunta recusada),
 hora **locais**, que é onde um `toISOString()` distraído jogaria toda noite de trabalho
 para o dia seguinte),
 `foto-perfil` (o recorte quadrado central, o que se aceita e o carimbo anti-cache),
-`gamification` (anti-farm), `ics`, `iniciais` (nome → iniciais e cor do avatar),
+`gamification` (anti-farm), `ia-agora` (a data que a Neuro recebe: por extenso e em ISO,
+com o mês já delimitado — "28/08" obrigava o modelo a adivinhar dia/mês),
+`ia-duplicata` (quando a Neuro recusa criar por já existir: mesmo título E mesmo dia, com
+"na dúvida, cria" como critério de desempate), `ics`, `iniciais` (nome → iniciais e cor do avatar),
 `nivel-faixa`, `nota-cor` (a paleta das notas: guarda o nome e não o hex, e cor órfã
 vira "sem cor" em vez de erro), `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
 `revelacao-resposta` (a resposta da Neuro entrando escrita no chat: duração fixa e ritmo

@@ -106,6 +106,8 @@ frontend/
 │   ├── atalhos-neuro.ts      # Atalhos da Neuro IA: padrões, saneamento e tetos (puro)
 │   ├── enquete.ts            # Perguntas da enquete + quando perguntar e quando calar (puro)
 │   ├── nota-cor.ts           # Paleta das notas: guarda o nome, não o hex (puro)
+│   ├── ia-agora.ts           # A data/hora que a Neuro recebe: por extenso, ISO e mês delimitado (puro)
+│   ├── ia-duplicata.ts       # Quando a Neuro recusa criar tarefa: mesmo título E mesmo dia (puro)
 │   ├── telegram-fuso.ts      # De que parede o /hoje do bot fala: vínculo → push → padrão (puro)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)

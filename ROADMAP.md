@@ -303,9 +303,39 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > Agora, quando o primeiro bloco do dia seguinte É o sono, mede-se a duração DELE: o mesmo
 > caso passa a dizer 7,5h. Quatro testes seguram o cenário, inclusive o de quem dorme o
 > suficiente (nenhum aviso) e o de não repetir o mesmo aviso vindo de dois dias vizinhos.
-- [ ] **A IA não criou a tarefa, e "não consegue ver o mês".** Duas coisas separadas: a
-      ferramenta de criar falhando, e a data que chega no prompt. O `now` vai como
-      `toLocaleString("pt-BR")` — conferir o que a IA recebe de fato.
+> **A IA não criou a tarefa, e "não consegue ver o mês": resolvido (29/08).** Eram três
+> causas, e nenhuma era a ferramenta de criar falhando — ela funcionava e era o
+> anti-duplicata que a impedia de rodar.
+>
+> **1. "Não criou a tarefa" era o anti-duplicata.** A regra dizia que dois títulos eram o
+> mesmo quando um CONTINHA o outro (mínimo de seis caracteres). Isso transforma toda
+> especialização em duplicata: existindo "Estudar three.js", pedir "Estudar" era recusado;
+> existindo "Reunião", pedir "Reunião com o cliente" também. E a comparação não olhava data
+> nenhuma — "Academia" de terça bloqueava "Academia" de quinta, que num app de rotina é o
+> caso mais comum que existe. Agora conter só vale quando os dois têm quase o mesmo tamanho
+> (0,8), e o dia entra na conta (`lib/ia-duplicata.ts`).
+>
+> **O princípio que decidiu os empates: na dúvida, CRIA.** Tarefa duplicada se apaga num
+> toque; tarefa que nunca foi criada é uma promessa quebrada que some sem rastro, porque
+> quem pediu acha que está lá. Daí "agendar o que estava solto" não ser duplicata.
+>
+> **2. A data era ambígua.** O cliente mandava `toLocaleString("pt-BR")` — `"28/08/2026"` —
+> e o prompt pedia ISO 8601. Ler dia/mês ou mês/dia virava adivinhação, e quando o modelo
+> erra aí, erra calado. Agora quem monta a frase é o SERVIDOR, a partir do fuso que o
+> cliente já mandava: dia por extenso ("sexta-feira, 28 de agosto de 2026"), o mesmo
+> instante em ISO com fuso, e hoje/ontem/amanhã/semana/mês já calculados
+> (`lib/ia-agora.ts`). O `body.now` deixou de ser usado — duas telas o formatavam por conta
+> própria, e formato de data em dois lugares é como um deles fica diferente sem ninguém ver.
+>
+> **3. O mês não estava lá para ser visto.** A seção AGENDA injetada cobre 48h, e o prompt
+> mandava responder por ela "SEM chamar ferramentas de listagem". Perguntado sobre o mês, o
+> modelo respondia pela janela de dois dias — ou seja, dizia que não havia nada. É o pior
+> jeito de errar, porque soa como resposta e não como limitação. Agora a seção declara a
+> própria janela, e a regra manda chamar `list_time_blocks` para qualquer coisa além dela.
+>
+> **Um achado ao escrever os testes**: o comentário da regra antiga dizia pegar erro de
+> digitação "manhã" vs "manhão", mas o piso de seis caracteres já barrava esse par — ela
+> nunca fez o que o próprio comentário afirmava.
 - [ ] **O botão de "segurar para falar" é ruim, e ele quer outra ideia.** No celular tem
       atraso, não responde ao toque (só troca de cor) e fica estático. Não é ajuste de estilo:
       o gesto inteiro está em questão. Ideias a pesar: toque para começar/parar em vez de

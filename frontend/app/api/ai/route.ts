@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
+import { descreveAgora } from "@/lib/ia-agora"
+import { ehDuplicata, ehMesmoTitulo } from "@/lib/ia-duplicata"
 
 export const runtime = "nodejs"
 
@@ -11,7 +13,7 @@ interface ChatMessage {
 
 const BASE_PROMPT = `Você é a Neuro IA, assistente de produtividade do NeuroTask (tarefas, time blocking, gamificação). Português do Brasil, direta, calorosa, respostas curtas.
 
-AGENDA: a seção "AGENDA" abaixo traz os dados REAIS do usuário. Use-a como fonte da verdade para perguntas sobre o dia, blocos, tarefas e lembretes — responda direto por ela, SEM chamar ferramentas de listagem. Nunca invente itens; se não houver, diga "não encontrei". Atrasada = somente o que estiver listado como atrasado (nunca calcule por datas). Seja proativa: aponte conflitos e intervalos curtos que vir na agenda.
+AGENDA: a seção "AGENDA" abaixo traz os dados REAIS do usuário e cobre HOJE E AMANHÃ. Para perguntas dentro dessa janela, responda direto por ela, SEM chamar ferramentas de listagem. Para qualquer coisa ALÉM dela — "esta semana", "este mês", "dia 15", "que compromissos eu tenho" —, chame list_time_blocks antes de responder: a agenda abaixo NÃO tem esses dias, e responder por ela seria dizer que não há nada. Nunca invente itens; se não houver, diga "não encontrei". Atrasada = somente o que estiver listado como atrasado (nunca calcule por datas). Seja proativa: aponte conflitos e intervalos curtos que vir na agenda.
 
 AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
 - Proponha e pergunte "Posso confirmar?" ANTES de criar/editar/excluir; só aja após "sim" explícito. Nunca diga que fez sem chamar a ferramenta; nunca escreva sintaxe de ferramenta no texto.
@@ -147,7 +149,8 @@ const TOOLS = [
     type: "function",
     function: {
       name: "list_time_blocks",
-      description: "Lista blocos de tempo do usuário a partir de hoje.",
+      description:
+        "Lista TODOS os blocos de tempo do usuário a partir de ontem, sem limite de data para a frente. É a única forma de enxergar além de hoje e amanhã — use para perguntas sobre a semana, o mês ou um dia específico.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -257,26 +260,9 @@ function normalizeDT(v: unknown, tzMin: number): unknown {
   return v
 }
 
-// Normaliza título para comparação (minúsculas, sem acentos/pontuação)
-function normTitle(s: unknown): string {
-  return String(s ?? "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9 ]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-}
-
-// Títulos "iguais na prática" (pega erros de digitação tipo "manhã" vs "manhão")
-function similarTitles(a: string, b: string): boolean {
-  const na = normTitle(a)
-  const nb = normTitle(b)
-  if (!na || !nb) return false
-  if (na === nb) return true
-  if (na.length >= 6 && nb.length >= 6 && (na.includes(nb) || nb.includes(na))) return true
-  return false
-}
+// A comparação de títulos mudou de casa: virou `ehMesmoTitulo`, em
+// lib/ia-duplicata, com teste. Aqui ela era só uma continência de seis
+// caracteres, e transformava toda especialização em duplicata.
 
 // Formata hora local do usuário (o servidor pode estar em UTC)
 function fmtHM(d: Date, tzMin: number): string {
@@ -307,7 +293,7 @@ async function findSimilarSameDay(
   const GAP = 45 * 60 * 1000
   return (
     (sameDay ?? []).find((b) => {
-      if (!similarTitles(b.title, title)) return false
+      if (!ehMesmoTitulo(b.title, title)) return false
       const bs = new Date(b.start_time).getTime()
       const be = new Date(b.end_time).getTime()
       const overlap = start.getTime() < be && end.getTime() > bs
@@ -469,7 +455,13 @@ async function buildDayContext(supabase: SupabaseClient, tzMin: number): Promise
   const fb = (b: { title: string; start_time: string; end_time: string }) =>
     `${fmtHM(new Date(b.start_time), tzMin)}-${fmtHM(new Date(b.end_time), tzMin)} ${b.title}`
 
-  const parts = [`AGENDA (dados reais · hoje ${todayKey}, agora ${fmtHM(new Date(), tzMin)}):`]
+  // O cabeçalho diz a JANELA em voz alta. Sem isso o modelo tratava esta seção
+  // como "a agenda inteira" e respondia "não tem nada" para o mês — que é o
+  // pior jeito de errar, porque soa como resposta e não como limitação.
+  const parts = [
+    `AGENDA (dados reais · hoje ${todayKey}, agora ${fmtHM(new Date(), tzMin)}).`,
+    `ATENÇÃO: esta seção cobre SÓ hoje e amanhã. Para outros dias, chame list_time_blocks.`,
+  ]
   parts.push(`Blocos hoje: ${hoje.length ? hoje.map(fb).join("; ") : "nenhum"}`)
   if (amanha.length) parts.push(`Blocos amanhã: ${amanha.map(fb).join("; ")}`)
   parts.push(`Tarefas pendentes (${tasks.length}): ${tasks.slice(0, 12).map((t) => t.title).join(", ") || "nenhuma"}`)
@@ -492,13 +484,17 @@ async function executeTool(
     switch (name) {
       case "create_task": {
         const dueDate = normalizeDT(args.due_date, tzMin)
-        // Anti-duplicação: tarefa pendente com título igual/parecido já existe → não recria
+        // Anti-duplicação: mesma tarefa, no mesmo DIA. A regra antiga comparava
+        // só o título e por CONTINÊNCIA, então existindo "Estudar three.js"
+        // pedir "Estudar" era recusado — e "Academia" de terça bloqueava a de
+        // quinta. Na dúvida, cria: ver lib/ia-duplicata.
         const { data: existing } = await supabase
           .from("tasks")
-          .select("id, title")
+          .select("id, title, due_date")
           .not("status", "in", "(completed,cancelled)")
-          .limit(30)
-        const dupTask = (existing ?? []).find((t) => similarTitles(t.title, String(args.title ?? "")))
+          .limit(50)
+        const nova = { title: args.title, due_date: dueDate }
+        const dupTask = (existing ?? []).find((t) => ehDuplicata(nova, t, tzMin))
         if (dupTask) {
           return { ok: true, created: dupTask, note: `Já existe uma tarefa igual/parecida ("${dupTask.title}") — não criei outra.` }
         }
@@ -1070,9 +1066,11 @@ export async function POST(req: Request) {
   )
 
   let system = BASE_PROMPT
-  if (body.now) {
-    system += `\n\nData e hora atuais do usuário: ${body.now}. Use isso para resolver "hoje", "amanhã", horários, etc. Sempre forneça datas em ISO 8601.`
-  }
+  // A data é montada AQUI, a partir do fuso que o cliente manda — o `body.now`
+  // (um `toLocaleString("pt-BR")`) não é mais usado. "28/08/2026" obriga o
+  // modelo a adivinhar se é dia/mês ou mês/dia, e quando ele erra, erra calado.
+  // Ver lib/ia-agora.
+  system += `\n\n${descreveAgora(Date.now(), body.tz ?? 0)}`
   if (body.dayNotes?.trim()) {
     system += `\n\nAnotações do dia do usuário:\n"""\n${body.dayNotes.trim()}\n"""`
   }
