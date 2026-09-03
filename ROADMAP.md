@@ -291,9 +291,18 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > Medido nos dois lados, emulando `hover`/`pointer` por CDP (o `emulateMediaFeatures` do
 > puppeteer não aceita esses dois): **no toque 3/3 estrelas e 3/3 menus visíveis; no mouse
 > 0/3 menus em repouso**, ou seja, o desktop continua limpo.
-- [ ] **Notificação de horas de sono com valor errado.** A conta de deitar/acordar vive em
-      `lib/backward-plan.ts` e tem teste; o erro deve estar em quem monta o TEXTO do aviso, ou
-      no fuso (ver a dívida do push, resolvida em 25/08).
+> **Sono: resolvido (31/08), e o erro não era onde eu tinha chutado.** Não era o texto nem o
+> fuso: era a REGRA, e só aparece para quem **deita depois da meia-noite**.
+>
+> O bloco de sono de quem dorme 00:30 começa no dia SEGUINTE, então ele não é o "overnight"
+> do dia anterior — é o primeiro bloco do próximo. A regra do vão media então a distância
+> entre o último compromisso e a HORA DE DEITAR e chamava aquilo de sono. Reproduzido:
+> *"Entre 'Estudar three.js' (até 22:00) e 'Dormir' (às 00:30) sobram só **2,5h** — menos que
+> suas 8h de sono."* A pessoa dormia 7,5h; o número falava da noite antes de deitar.
+>
+> Agora, quando o primeiro bloco do dia seguinte É o sono, mede-se a duração DELE: o mesmo
+> caso passa a dizer 7,5h. Quatro testes seguram o cenário, inclusive o de quem dorme o
+> suficiente (nenhum aviso) e o de não repetir o mesmo aviso vindo de dois dias vizinhos.
 - [ ] **A IA não criou a tarefa, e "não consegue ver o mês".** Duas coisas separadas: a
       ferramenta de criar falhando, e a data que chega no prompt. O `now` vai como
       `toLocaleString("pt-BR")` — conferir o que a IA recebe de fato.

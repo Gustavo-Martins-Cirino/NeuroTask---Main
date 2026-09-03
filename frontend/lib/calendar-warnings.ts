@@ -89,14 +89,29 @@ export function computeWarnings(blocks: BlockLike[], sleepHours: number): Calend
     const overnight = dayBlocks.find((b) => isSleepBlock(b) && dayKey(b.end) !== k)
     const firstNext = nextBlocks.reduce((a, b) => (a.start <= b.start ? a : b))
 
+    const avisaSonoCurto = (b: B) => {
+      const durH = (b.end.getTime() - b.start.getTime()) / 3_600_000
+      if (durH + 0.25 >= sleepHours) return
+      out.push({
+        id: `sleep-short-${b.id}`,
+        text: `Seu bloco de sono (${fmt(b.start)}–${fmt(b.end)}) tem só ${hoursLabel(durH)} — abaixo das ${hoursLabel(sleepHours)} que você quer dormir.`,
+      })
+    }
+
     if (overnight) {
-      const durH = (overnight.end.getTime() - overnight.start.getTime()) / 3_600_000
-      if (durH + 0.25 < sleepHours) {
-        out.push({
-          id: `sleep-short-${overnight.id}`,
-          text: `Seu bloco de sono (${fmt(overnight.start)}–${fmt(overnight.end)}) tem só ${hoursLabel(durH)} — abaixo das ${hoursLabel(sleepHours)} que você quer dormir.`,
-        })
-      }
+      avisaSonoCurto(overnight)
+      continue
+    }
+
+    // Quem DEITA DEPOIS DA MEIA-NOITE tem o bloco de sono começando no dia
+    // seguinte, então ele não é "overnight" deste dia — é o primeiro bloco do
+    // próximo. Sem este caso, a regra do vão media a distância entre o último
+    // compromisso e a HORA DE DEITAR e chamava isso de sono: "Entre 'Estudar'
+    // (até 22:00) e 'Dormir' (às 00:30) sobram só 2,5h — menos que suas 8h de
+    // sono". A pessoa dormia 7,5h e o aviso falava de 2,5h; o número era a noite
+    // antes de deitar, que não é sono nenhum.
+    if (isSleepBlock(firstNext)) {
+      avisaSonoCurto(firstNext)
       continue
     }
 
@@ -112,5 +127,9 @@ export function computeWarnings(blocks: BlockLike[], sleepHours: number): Calend
     }
   }
 
-  return out.slice(0, 4)
+  // O mesmo bloco de sono pode ser alcançado por dois dias vizinhos (uma vez
+  // como "primeiro do dia seguinte", outra pelo próprio dia dele). Sem tirar o
+  // repetido, o mesmo aviso apareceria duas vezes.
+  const vistos = new Set<string>()
+  return out.filter((w) => !vistos.has(w.id) && vistos.add(w.id)).slice(0, 4)
 }

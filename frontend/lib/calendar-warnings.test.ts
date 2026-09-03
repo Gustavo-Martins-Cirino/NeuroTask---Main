@@ -115,3 +115,41 @@ describe("computeWarnings — robustez", () => {
     expect(computeWarnings(blocos, 8).length).toBeLessThanOrEqual(4)
   })
 })
+
+describe("sono que começa depois da meia-noite", () => {
+  // O bloco de sono de quem deita 00:30 começa no dia SEGUINTE, então ele não é
+  // o "overnight" do dia anterior — é o primeiro bloco do próximo. A regra do
+  // vão media a distância até a HORA DE DEITAR e chamava aquilo de sono.
+  const noite = [
+    bloco("estudo", "Estudar three.js", [2026, 8, 1, 20, 0], [2026, 8, 1, 22, 0]),
+    bloco("sono", "Dormir", [2026, 8, 2, 0, 30], [2026, 8, 2, 8, 0]),
+    bloco("aula", "Aula", [2026, 8, 2, 9, 0], [2026, 8, 2, 11, 0]),
+  ]
+
+  it("não chama de sono o vão entre o último compromisso e a hora de deitar", () => {
+    const textos = computeWarnings(noite, 8).map((w) => w.text).join(" | ")
+    // O bug dizia "sobram só 2,5h" — a noite ANTES de deitar.
+    expect(textos).not.toMatch(/2,5h/)
+    expect(textos).not.toMatch(/Entre .*Estudar.* e .*Dormir/)
+  })
+
+  it("mede o bloco de sono de verdade: 7,5h, e avisa por ser abaixo de 8h", () => {
+    const avisos = computeWarnings(noite, 8)
+    expect(avisos.map((w) => w.text).join(" ")).toMatch(/7,5h/)
+    expect(avisos.some((w) => w.id === "sleep-short-sono")).toBe(true)
+  })
+
+  it("dormindo o suficiente, não avisa nada", () => {
+    const dormeBem = [
+      bloco("estudo", "Estudar three.js", [2026, 8, 1, 20, 0], [2026, 8, 1, 22, 0]),
+      bloco("sono", "Dormir", [2026, 8, 2, 0, 0], [2026, 8, 2, 8, 30]),
+      bloco("aula", "Aula", [2026, 8, 2, 9, 0], [2026, 8, 2, 11, 0]),
+    ]
+    expect(computeWarnings(dormeBem, 8)).toEqual([])
+  })
+
+  it("não repete o mesmo aviso quando dois dias vizinhos alcançam o mesmo sono", () => {
+    const ids = computeWarnings(noite, 8).map((w) => w.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+})
