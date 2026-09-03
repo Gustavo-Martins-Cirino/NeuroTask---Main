@@ -29,7 +29,11 @@ import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
 import { fetchAvatar, saveAvatar, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
 
-const CATEGORY_ORDER: ShopCategory[] = ["decor", "movel", "setup", "cadeira", "parede", "piso", "chapeu", "oculos"]
+// A ordem conta uma história: primeiro o que dá vida à sala, depois o que a
+// mobilia, depois o que a acaba, e por último o que veste o boneco.
+const CATEGORY_ORDER: ShopCategory[] = [
+  "vida", "luz", "enfeite", "movel", "setup", "cadeira", "parede", "piso", "chapeu", "oculos",
+]
 
 export default function OfficePage() {
   const [loading, setLoading] = useState(true)
@@ -38,7 +42,7 @@ export default function OfficePage() {
   const [busyItem, setBusyItem] = useState<string | null>(null)
   // Sem aba "Tudo": com o catálogo deste tamanho, a lista única virava um
   // paredão sem informação. Uma categoria por vez.
-  const [filter, setFilter] = useState<ShopCategory>("decor")
+  const [filter, setFilter] = useState<ShopCategory>("vida")
 
   const [stats, setStats] = useState<OfficeStats | undefined>(undefined)
   const [avatarCfg, setAvatarCfg] = useState<AvatarConfig>(DEFAULT_AVATAR)
@@ -179,17 +183,21 @@ export default function OfficePage() {
       </Header>
 
       <div className="flex-1 px-4 py-6 md:px-10">
-        {/* Em telas grandes a cena vira uma coluna FIXA à esquerda: rolar a loja
-            já não a empurra para fora da tela — e a prévia ao passar o mouse num
-            item continua visível. No celular segue empilhado (a cena inteira
-            grudada no topo comeria a tela pequena). */}
-        <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-2 lg:items-start">
+        {/* A cena ocupa a LARGURA TODA, com a loja embaixo.
+            Ela já foi para uma coluna fixa à esquerda, com a loja ao lado, para
+            a prévia não sair da tela ao rolar. O Gustavo recusou: partida ao
+            meio, a sala fica pequena demais — e o Escritório é a recompensa do
+            app, não uma miniatura de apoio. O que resolvia o problema da prévia
+            resolve de outro jeito, sem encolher a cena: a loja é filtrada por
+            categoria e a maior delas cabe em quatro linhas, então rolar até o
+            fim quase não afasta a cena. */}
+        <div className="mx-auto w-full max-w-5xl space-y-6">
           {/* Cena */}
           <motion.div
             ref={sceneWrapRef}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm lg:sticky lg:top-20"
+            className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
           >
             {loading ? (
               <div className="flex aspect-[480/340] items-center justify-center">
@@ -329,7 +337,9 @@ export default function OfficePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {/* Quatro colunas de volta no desktop: sem a cena ao lado, a
+                largura sobra, e é o que mantém a lista curta. */}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
               {items.map((item, i) => {
                 const isOwned = owned.has(item.id)
                 const isEquipped = owned.get(item.id) === true

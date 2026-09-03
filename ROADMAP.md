@@ -218,6 +218,23 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > **Uma armadilha ao conferir isso**: `shop_items` tem RLS `for select to authenticated`, então
 > uma consulta anônima devolve LISTA VAZIA em vez de erro — parece tabela vazia e não é.
 
+> **A cena voltou a ocupar a largura toda (31/08), e a loja ganhou três seções.** A prévia 3D
+> tinha virado uma coluna FIXA à esquerda, com a loja ao lado — resolvia um problema real (ao
+> rolar a loja, a cena saía da tela e com ela a prévia de como o item ficaria). O Gustavo
+> recusou: partida ao meio a sala fica pequena demais, e **o Escritório é a recompensa do app,
+> não uma miniatura de apoio.**
+>
+> O problema da prévia foi resolvido por outro caminho, que era o que ele sugeriu: **segmentar
+> melhor**. `decor` tinha TREZE itens — de longe a maior lista e a única sem um nome que
+> dissesse o que havia dentro. Virou três, pelo que a coisa É, que é como quem compra procura:
+> **Plantas e bichos** (4), **Luz** (3) e **Enfeites** (6). Com isso e as 4 colunas de volta, a
+> maior categoria cabe em 4 linhas e a de entrada cabe em UMA — rolar quase não afasta a cena,
+> que era o motivo da coluna fixa.
+>
+> A categoria do banco não acompanha e não precisa: `shop_items.category` é gravada e nunca
+> lida — nem pela RPC de compra, nem pelo painel do dono. Quem decide filtro e exclusividade é
+> o `CATALOG` do código.
+
 **Rodada de 29/08 — lista do Gustavo, usando o app no celular**
 
 > Levantada com o app na mão, e por isso mistura defeito de código com incômodo de uso. O

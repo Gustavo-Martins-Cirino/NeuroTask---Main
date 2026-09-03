@@ -14,7 +14,20 @@ import { createClient } from "@/lib/supabase/client"
 // ocupa chão, tem silhueta e você desviaria dele para andar. Pendurar um quadro
 // é outra coisa, e misturar as duas na mesma lista fazia a loja parecer um
 // depósito.
-export type ShopCategory = "decor" | "movel" | "cadeira" | "setup" | "parede" | "piso" | "chapeu" | "oculos"
+//
+// Tirado o móvel, `decor` ainda ficou com TREZE itens — de longe a maior lista,
+// e a única sem um nome que diga o que tem dentro. Ela virou três, pelo que a
+// coisa É (que é como quem compra procura):
+//
+// · `vida`    — o que respira: plantas e bichos.
+// · `luz`     — o que acende: luminária, fita de LED, letreiro de neon.
+// · `enfeite` — o que se pendura ou se apoia: quadro, janela, relógio,
+//               prateleira, tapete, troféu.
+//
+// Nenhuma delas é exclusiva (ver EXCLUSIVE_CATEGORIES), igual `decor` era: dá
+// para ter as três plantas e os dois bichos ao mesmo tempo.
+export type ShopCategory =
+  | "vida" | "luz" | "enfeite" | "movel" | "cadeira" | "setup" | "parede" | "piso" | "chapeu" | "oculos"
 
 export interface ShopItem {
   id: string
@@ -28,7 +41,9 @@ export interface ShopItem {
 export const CATEGORY_LABELS: Record<ShopCategory, string> = {
   chapeu: "Chapéus",
   oculos: "Óculos",
-  decor: "Decoração",
+  vida: "Plantas e bichos",
+  luz: "Luz",
+  enfeite: "Enfeites",
   movel: "Móveis",
   cadeira: "Cadeira",
   setup: "Setup",
@@ -36,7 +51,7 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
   piso: "Piso",
 }
 
-// Slots exclusivos: equipar um desequipa os irmãos (decor é livre).
+// Slots exclusivos: equipar um desequipa os irmãos (vida, luz e enfeite são livres).
 // Chapéu e óculos são slots SEPARADOS de propósito — dá para usar os dois
 // juntos, e dentro de cada um só cabe uma peça (nada de dois chapéus).
 export const EXCLUSIVE_CATEGORIES: ShopCategory[] = ["cadeira", "setup", "parede", "piso", "chapeu", "oculos"]
@@ -51,25 +66,25 @@ export const CATALOG: ShopItem[] = [
   { id: "chapeu-capuz", name: "Capuz", price: 130, category: "chapeu", emoji: "🥷", desc: "Modo concentração, sem falar com ninguém" },
   { id: "chapeu-coroa", name: "Coroa dourada", price: 220, category: "chapeu", emoji: "👑", desc: "Para quem reina na rotina" },
   { id: "chapeu-aureola", name: "Auréola", price: 260, category: "chapeu", emoji: "😇", desc: "Paira acima da cabeça, acesa" },
-  { id: "planta-pequena", name: "Plantinha", price: 20, category: "decor", emoji: "🪴", desc: "Um toque de vida na mesa" },
-  { id: "luminaria", name: "Luminária", price: 30, category: "decor", emoji: "💡", desc: "Luz quentinha de canto" },
-  { id: "quadro-montanhas", name: "Quadro · Montanhas", price: 40, category: "decor", emoji: "🖼️", desc: "Paisagem pra respirar" },
-  { id: "tapete", name: "Tapete", price: 50, category: "decor", emoji: "🟫", desc: "Conforto sob os pés" },
-  { id: "planta-grande", name: "Planta grande", price: 60, category: "decor", emoji: "🌿", desc: "Uma costela-de-adão no canto" },
+  { id: "planta-pequena", name: "Plantinha", price: 20, category: "vida", emoji: "🪴", desc: "Um toque de vida na mesa" },
+  { id: "luminaria", name: "Luminária", price: 30, category: "luz", emoji: "💡", desc: "Luz quentinha de canto" },
+  { id: "quadro-montanhas", name: "Quadro · Montanhas", price: 40, category: "enfeite", emoji: "🖼️", desc: "Paisagem pra respirar" },
+  { id: "tapete", name: "Tapete", price: 50, category: "enfeite", emoji: "🟫", desc: "Conforto sob os pés" },
+  { id: "planta-grande", name: "Planta grande", price: 60, category: "vida", emoji: "🌿", desc: "Uma costela-de-adão no canto" },
   { id: "estante", name: "Estante de livros", price: 80, category: "movel", emoji: "📚", desc: "Sua biblioteca pessoal" },
   { id: "mesa-centro", name: "Mesa de centro", price: 70, category: "movel", emoji: "🪵", desc: "Com um livro e uma caneca em cima" },
   { id: "sofa", name: "Sofá", price: 170, category: "movel", emoji: "🛋️", desc: "Dois lugares encostados na parede" },
   { id: "poltrona", name: "Poltrona", price: 120, category: "movel", emoji: "🪑", desc: "Solta no chão, virada para a mesa" },
-  { id: "quadro-neon", name: "Neon \"focus\"", price: 90, category: "decor", emoji: "🔆", desc: "Letreiro neon na parede" },
-  { id: "janela-cidade", name: "Janela · Cidade", price: 100, category: "decor", emoji: "🌆", desc: "Vista para a cidade" },
-  { id: "pet-gato", name: "Gato de estimação", price: 120, category: "decor", emoji: "🐈", desc: "Companhia de produtividade" },
-  { id: "pet-cachorro", name: "Cachorro (Beagle)", price: 120, category: "decor", emoji: "🐕", desc: "Um beagle 3D que se mexe no tapete" },
-  { id: "trofeu", name: "Troféu dourado", price: 150, category: "decor", emoji: "🏆", desc: "Prova de que você chegou longe" },
+  { id: "quadro-neon", name: "Neon \"focus\"", price: 90, category: "luz", emoji: "🔆", desc: "Letreiro neon na parede" },
+  { id: "janela-cidade", name: "Janela · Cidade", price: 100, category: "enfeite", emoji: "🌆", desc: "Vista para a cidade" },
+  { id: "pet-gato", name: "Gato de estimação", price: 120, category: "vida", emoji: "🐈", desc: "Companhia de produtividade" },
+  { id: "pet-cachorro", name: "Cachorro (Beagle)", price: 120, category: "vida", emoji: "🐕", desc: "Um beagle 3D que se mexe no tapete" },
+  { id: "trofeu", name: "Troféu dourado", price: 150, category: "enfeite", emoji: "🏆", desc: "Prova de que você chegou longe" },
   { id: "cadeira-ergonomica", name: "Cadeira ergonômica", price: 60, category: "cadeira", emoji: "🪑", desc: "Adeus, dor nas costas" },
   { id: "cadeira-gamer", name: "Cadeira gamer", price: 130, category: "cadeira", emoji: "🎮", desc: "Vermelha e imponente" },
-  { id: "relogio", name: "Relógio de parede", price: 45, category: "decor", emoji: "🕙", desc: "O tempo passando na parede" },
-  { id: "prateleira", name: "Prateleira", price: 75, category: "decor", emoji: "🪟", desc: "Livros, vaso e caneca em cima" },
-  { id: "led-rgb", name: "Fita de LED RGB", price: 140, category: "decor", emoji: "🌈", desc: "Contorna o teto com cor" },
+  { id: "relogio", name: "Relógio de parede", price: 45, category: "enfeite", emoji: "🕙", desc: "O tempo passando na parede" },
+  { id: "prateleira", name: "Prateleira", price: 75, category: "enfeite", emoji: "🪟", desc: "Livros, vaso e caneca em cima" },
+  { id: "led-rgb", name: "Fita de LED RGB", price: 140, category: "luz", emoji: "🌈", desc: "Contorna o teto com cor" },
   { id: "setup-notebook", name: "Setup · Notebook", price: 90, category: "setup", emoji: "💻", desc: "Só o laptop, mesa limpa" },
   { id: "setup-duplo", name: "Setup · 2 monitores", price: 110, category: "setup", emoji: "🖥️", desc: "Produtividade em dobro" },
   { id: "setup-ultrawide", name: "Setup · Ultrawide", price: 200, category: "setup", emoji: "📺", desc: "O monitor dos sonhos" },
