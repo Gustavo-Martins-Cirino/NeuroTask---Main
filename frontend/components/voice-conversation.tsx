@@ -133,7 +133,7 @@ export function VoiceConversation({
   const [supported, setSupported] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [resting, setResting] = useState(false)
-  const [holding, setHolding] = useState(false)
+  const [ouvindo, setOuvindo] = useState(false)
 
   const phaseRef = useRef<Status>("idle")
   const messagesRef = useRef<Msg[]>([])
@@ -196,7 +196,7 @@ export function VoiceConversation({
     setSupported(true)
     setError(null)
     setResting(false)
-    setHolding(false)
+    setOuvindo(false)
     // Abre com o que já foi escrito: é a mesma conversa, só que agora falada.
     const herdado = historicoRef.current.filter((m) => m.content.trim())
     setHerdadas(herdado.length)
@@ -348,11 +348,13 @@ export function VoiceConversation({
     // ---- Caminho Whisper (Safari e navegadores sem SpeechRecognition) ----
     let mediaRec: MediaRecorder | null = null
     let mediaStream: MediaStream | null = null
+    /** Parou antes de o microfone abrir (dois toques rápidos). */
+    let abortarInicio = false
 
     async function startHoldWhisper() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        if (disposed) { stream.getTracks().forEach((t) => t.stop()); return }
+        if (disposed || abortarInicio) { stream.getTracks().forEach((t) => t.stop()); return }
         mediaStream = stream
         const chunks: Blob[] = []
         const mr = new MediaRecorder(stream)
@@ -373,7 +375,7 @@ export function VoiceConversation({
             if (data.text?.trim()) {
               onUtterance(data.text.trim())
             } else {
-              setMessages((m) => [...m, { role: "assistant", content: "Não consegui te ouvir — segura o botão e tenta de novo?" }])
+              setMessages((m) => [...m, { role: "assistant", content: "Não consegui te ouvir — toca no microfone e tenta de novo?" }])
               goIdle()
             }
           } catch {
@@ -382,17 +384,29 @@ export function VoiceConversation({
         }
         mediaRec = mr
         mr.start()
-        setHolding(true)
-        setPhase("listening")
-        setInterim("Gravando… solte para enviar")
+        setInterim("Gravando… toque de novo para enviar")
       } catch {
+        // A permissão foi negada ou o microfone não abriu: o botão volta ao
+        // lugar, senão ele fica aceso ouvindo o que ninguém está gravando.
+        setOuvindo(false)
+        goIdle()
         setError("Não foi possível acessar o microfone. Verifique a permissão do navegador.")
       }
     }
 
-    // Push-to-talk: captura só enquanto o botão é segurado
+    // Toque para começar, toque para enviar. Era "segurar", e segurar era ruim
+    // no celular por três motivos de uma vez: o dedo tapa a tela justo onde a
+    // transcrição aparece, soltar sem querer manda a frase pela metade, e não
+    // dá para falar uma frase longa sem cãibra.
     function startHold() {
       if (disposed || phaseRef.current === "thinking") return
+      // O estado entra ANTES de qualquer await. O atraso que se sentia no
+      // celular era o `getUserMedia`: no caminho do Whisper o botão só mudava
+      // depois que a permissão resolvia, então o toque parecia ignorado. Aqui
+      // ele responde na hora, e o microfone chega quando chegar.
+      abortarInicio = false
+      setOuvindo(true)
+      setPhase("listening")
       unlockSpeech() // toque real → destrava o TTS (mobile)
       interruptSpeech()
       if (USE_WHISPER) { startHoldWhisper(); return }
@@ -425,15 +439,17 @@ export function VoiceConversation({
         if (!disposed) onUtterance(text)
       }
       holdRec = r
-      setHolding(true)
-      setPhase("listening")
       try { r.start() } catch {}
     }
     function endHold() {
-      setHolding(false)
+      setOuvindo(false)
       if (USE_WHISPER) {
         setInterim("")
-        try { if (mediaRec && mediaRec.state !== "inactive") mediaRec.stop() } catch {}
+        // Tocar duas vezes rápido chega aqui antes de o microfone abrir. Sem
+        // esta marca, o stream chegaria depois e ficaria gravando sozinho, com
+        // o botão já apagado.
+        if (!mediaRec) { abortarInicio = true; goIdle(); return }
+        try { if (mediaRec.state !== "inactive") mediaRec.stop() } catch {}
         return
       }
       if (holdRec) { try { holdRec.stop() } catch {} }
@@ -448,7 +464,7 @@ export function VoiceConversation({
     }
 
     // Sem briefing automático: a Neuro não fala primeiro. Aqui "tentar de novo"
-    // é só sair do descanso — quem começa a conversa é quem segurar o microfone.
+    // é só sair do descanso — quem começa a conversa é quem tocar no microfone.
     retryRef.current = () => setResting(false)
 
     return () => {
@@ -461,12 +477,23 @@ export function VoiceConversation({
     }
   }, [open])
 
+  // Um toque começa a ouvir; o toque seguinte envia. O `ouvindo` mora num ref
+  // além do estado porque quem liga e desliga a escuta são funções presas ao
+  // efeito de abertura, e elas não enxergam o valor do render atual.
+  const ouvindoRef = useRef(false)
+  ouvindoRef.current = ouvindo
+  const alternarEscuta = () => {
+    if (status === "thinking") return
+    if (ouvindoRef.current) endHoldRef.current()
+    else startHoldRef.current()
+  }
+
   const statusLabel = resting
     ? "Descansando 😴"
-    : holding ? "Ouvindo…"
+    : ouvindo ? "Ouvindo…"
     : status === "thinking" ? "Pensando…"
     : status === "speaking" ? "Falando…"
-    : "Segure o microfone para falar"
+    : "Toque no microfone para falar"
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")
 
@@ -503,8 +530,8 @@ export function VoiceConversation({
   // A voz acabou (ou nem começou, se o TTS falhou) → o texto não pode ficar pela
   // metade esperando um relógio que já não corresponde a nada.
   useEffect(() => {
-    if (status === "idle" && !holding) setRevelado(Number.MAX_SAFE_INTEGER)
-  }, [status, holding])
+    if (status === "idle" && !ouvindo) setRevelado(Number.MAX_SAFE_INTEGER)
+  }, [status, ouvindo])
 
   useEffect(() => {
     const el = rolagemRef.current
@@ -521,7 +548,7 @@ export function VoiceConversation({
   }
 
   const needsConfirm =
-    !resting && !holding && status === "idle" && !!lastAssistant &&
+    !resting && !ouvindo && status === "idle" && !!lastAssistant &&
     /(posso confirmar|confirmar\?|confirma\?)/i.test(lastAssistant.content)
 
   return (
@@ -538,7 +565,7 @@ export function VoiceConversation({
         >
           {/* A onda fica no fundo do empilhamento; o conteúdo sobe por cima
               dela, senão a luz passaria por cima do X e do texto. */}
-          <OndaSonora estado={estadoDaOnda(status, holding)} />
+          <OndaSonora estado={estadoDaOnda(status, ouvindo)} />
 
           <button onClick={encerrar} aria-label="Encerrar conversa" className="absolute right-6 top-6 z-10 rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
             <X className="h-6 w-6" />
@@ -578,7 +605,7 @@ export function VoiceConversation({
                 })}
 
                 {/* O que está sendo dito agora, saindo escrito conforme sai da boca. */}
-                {holding && interim && (
+                {ouvindo && interim && (
                   <p className="self-end rounded-2xl bg-secondary/40 px-3.5 py-2 text-sm text-muted-foreground/70">
                     {interim}
                   </p>
@@ -630,34 +657,36 @@ export function VoiceConversation({
                     )}
                   </div>
 
-                  {/* Botão segurar-para-falar */}
+                  {/* Toque para falar, toque para enviar.
+                      O gesto responde no POINTERDOWN, não no clique: no celular
+                      o clique só chega depois de levantar o dedo, e a espera
+                      entre encostar e ver alguma coisa era metade da queixa de
+                      "não responde ao toque". */}
                   <button
                     onPointerDown={(e) => {
                       e.preventDefault()
-                      try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
-                      startHoldRef.current()
+                      alternarEscuta()
                     }}
-                    onPointerUp={(e) => {
-                      try { e.currentTarget.releasePointerCapture(e.pointerId) } catch {}
-                      endHoldRef.current()
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        alternarEscuta()
+                      }
                     }}
-                    onPointerCancel={() => endHoldRef.current()}
                     disabled={status === "thinking"}
-                    className={cnMic(holding, status === "thinking")}
-                    aria-label="Segure para falar"
+                    className={cnMic(ouvindo, status === "thinking")}
+                    aria-pressed={ouvindo}
+                    aria-label={ouvindo ? "Enviar o que você falou" : "Tocar para falar"}
                   >
-                    {holding && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500/40" />}
-                    <Mic className="relative h-7 w-7" />
+                    {ouvindo && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500/40" />}
+                    {ouvindo ? <Check className="relative h-7 w-7" /> : <Mic className="relative h-7 w-7" />}
                   </button>
 
                   <p className="mt-3 text-center text-xs text-muted-foreground/60">
-                    Segure o botão para falar e solte para enviar. Use fones para melhor resultado.
+                    {ouvindo
+                      ? "Pode falar à vontade. Toque de novo para enviar."
+                      : "Toque no microfone para falar. Use fones para melhor resultado."}
                   </p>
-                  {IS_SAFARI && (
-                    <p className="mt-1.5 text-center text-xs text-muted-foreground/50">
-                      No Safari, sua fala é transcrita quando você solta o botão.
-                    </p>
-                  )}
                 </>
               )}
             </div>
@@ -668,10 +697,13 @@ export function VoiceConversation({
   )
 }
 
-function cnMic(holding: boolean, disabled: boolean): string {
-  // Botão estático (não muda de tamanho/posição — o usuário segura ele)
-  const base = "relative mt-4 flex h-20 w-20 touch-none select-none items-center justify-center rounded-full text-white shadow-lg transition-colors"
+function cnMic(ouvindo: boolean, disabled: boolean): string {
+  // Ele encolhe um tiquinho ao ficar aceso. Era estático porque o dedo ficava
+  // em cima dele o tempo todo; com o toque, o dedo sai — e aí a mudança de
+  // tamanho é o retorno que diz "peguei".
+  const base =
+    "relative mt-4 flex h-20 w-20 touch-none select-none items-center justify-center rounded-full text-white shadow-lg transition-all duration-150 active:scale-95"
   if (disabled) return base + " bg-muted text-muted-foreground opacity-50"
-  if (holding) return base + " bg-red-500"
+  if (ouvindo) return base + " scale-95 bg-red-500"
   return base + " bg-primary hover:opacity-90"
 }

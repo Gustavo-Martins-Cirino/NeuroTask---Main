@@ -336,12 +336,27 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > **Um achado ao escrever os testes**: o comentário da regra antiga dizia pegar erro de
 > digitação "manhã" vs "manhão", mas o piso de seis caracteres já barrava esse par — ela
 > nunca fez o que o próprio comentário afirmava.
-- [ ] **O botão de "segurar para falar" é ruim, e ele quer outra ideia.** No celular tem
-      atraso, não responde ao toque (só troca de cor) e fica estático. Não é ajuste de estilo:
-      o gesto inteiro está em questão. Ideias a pesar: toque para começar/parar em vez de
-      segurar; detecção de silêncio encerrando sozinha; a onda sonora reagindo ao toque antes
-      mesmo de o microfone abrir (o atraso percebido é do `getUserMedia`, e um retorno visual
-      imediato o esconde).
+> **O botão de falar: trocado (29/08).** Segurar virou **tocar para começar, tocar para
+> enviar** — a primeira das ideias da lista.
+>
+> **Por que segurar era ruim, e não era estilo**: no celular o dedo tapa a tela justo onde a
+> transcrição aparece, soltar sem querer manda a frase pela metade, e não dá para falar uma
+> frase longa sem cãibra. Com o toque, o dedo sai da tela e a conversa fica visível enquanto
+> se fala.
+>
+> **O "atraso" tinha causa, e não era o gesto**: no caminho do Whisper (Safari e quem não
+> tem `SpeechRecognition`) o botão só mudava DEPOIS que o `getUserMedia` resolvia — ou seja,
+> depois da permissão. O estado agora entra antes de qualquer `await`: o botão acende no
+> toque e o microfone chega quando chegar. Foi a terceira ideia da lista, e ela custou uma
+> linha de ordem.
+>
+> **Dois toques rápidos ganharam saída**: parar antes de o microfone abrir marca o começo
+> como abortado, senão o stream chegava depois e gravava sozinho com o botão já apagado.
+>
+> **A detecção de silêncio ficou de fora, e é decisão.** Ela pediria abrir um segundo fluxo
+> de áudio no caminho do Chrome (que hoje usa só o `SpeechRecognition`, sem `getUserMedia`),
+> e encerrar sozinho em um navegador e não no outro é pior do que um toque igual em todos.
+> Com "toque para enviar" ela também deixa de ser necessária: o fim da fala já tem um gesto.
 
 **Rodada de 28/08 — segunda passada do Gustavo na cena**
 
