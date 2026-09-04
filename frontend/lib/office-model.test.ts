@@ -843,6 +843,66 @@ describe("bichos deitados", () => {
     const cao = caixaMundo(g, "Cama_Cachorro_Rolo")
     expect(gato.intersectsBox(cao)).toBe(false)
   })
+
+  // O cachorro era um GLB de um beagle EM PÉ, afundado no acolchoado para
+  // esconder as patas. Modelo rígido não deita: o que se via era um cachorro em
+  // pé dentro de um buraco. Agora ele é construído deitado, como o gato.
+  it("o cachorro é DEITADO: mais comprido que alto, como o gato", () => {
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    const corpo = caixaMundo(g, "Cachorro_Corpo").getSize(new Vector3())
+    expect(corpo.z).toBeLessThan(corpo.y)
+    expect(corpo.z).toBeLessThan(corpo.x * 1.2)
+  })
+
+  it("o cachorro apoia no forro da cama, nem afundado nem flutuando", () => {
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    const forro = caixaMundo(g, "Cama_Cachorro_Forro")
+    const corpo = caixaMundo(g, "Cachorro_Corpo")
+    expect(corpo.min.z).toBeGreaterThan(forro.min.z)
+    expect(corpo.min.z).toBeLessThan(forro.max.z + 0.05)
+  })
+
+  it("a cabeça fica BAIXA e apoiada — cabeça erguida é bicho esperando, não dormindo", () => {
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    const cabeca = caixaMundo(g, "Cachorro_Cabeca")
+    const corpo = caixaMundo(g, "Cachorro_Corpo")
+    expect(cabeca.max.z).toBeLessThanOrEqual(corpo.max.z + 0.02)
+  })
+
+  it("o focinho descansa em cima das patas", () => {
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    const focinho = caixaMundo(g, "Cachorro_Focinho")
+    const pata = caixaMundo(g, "Cachorro_Pata_Direita")
+    expect(focinho.min.z).toBeGreaterThan(pata.min.z)
+    expect(focinho.max.y).toBeGreaterThan(caixaMundo(g, "Cachorro_Cabeca").max.y)
+  })
+
+  it("as orelhas caem ao lado da cabeça, e são longas — é a marca da raça", () => {
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    const cabeca = caixaMundo(g, "Cachorro_Cabeca")
+    for (const suf of ["Direita", "Esquerda"] as const) {
+      const orelha = caixaMundo(g, `Cachorro_Orelha_${suf}`)
+      const tam = orelha.getSize(new Vector3())
+      expect(tam.y).toBeGreaterThan(tam.x) // comprida, não redonda
+      expect(orelha.min.z).toBeLessThan(cabeca.getCenter(new Vector3()).z) // caindo
+    }
+  })
+
+  it("o cachorro cabe DENTRO da cama, sem transbordar o rolo", () => {
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    const rolo = caixaMundo(g, "Cama_Cachorro_Rolo")
+    for (const n of pecas(g, "Cachorro_")) {
+      const p = caixaMundo(g, n)
+      expect(p.min.x).toBeGreaterThan(rolo.min.x - 0.02)
+      expect(p.max.x).toBeLessThan(rolo.max.x + 0.02)
+      expect(p.min.y).toBeGreaterThan(rolo.min.y - 0.02)
+      expect(p.max.y).toBeLessThan(rolo.max.y + 0.02)
+    }
+  })
+
+  it("sem comprar, não sobra peça de cachorro na sala", () => {
+    expect(pecas(buildEscritorio(), "Cachorro_")).toHaveLength(0)
+  })
 })
 
 describe("orçamento da cena", () => {

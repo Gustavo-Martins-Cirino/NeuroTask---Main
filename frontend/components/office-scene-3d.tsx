@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { ContactShadows, Environment, Lightformer, OrthographicCamera, useGLTF } from "@react-three/drei"
+import { ContactShadows, Environment, Lightformer, OrthographicCamera } from "@react-three/drei"
 import { ACESFilmicToneMapping, Box3, Color, DoubleSide, Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, type DirectionalLight, type Material, type MeshStandardMaterial, type OrthographicCamera as ThreeOrthoCam } from "three"
 import {
   fitOrthoCamera, apontarCamera, azimuteApos, centroDoConteudo, passoDoGiro,
@@ -163,74 +163,12 @@ function visualDoAvatar(avatar?: AvatarConfig | null): PersonagemVisual {
   return c
 }
 
-// Sala em metros (Z-up) dentro de <group rotation={[-π/2,0,0]} scale={4}>:
-// um ponto (x,y,z) da sala vira (4x, 4z, −4y) no mundo. O beagle é GLB, então
-// vive fora do grupo e usa coordenadas de mundo já convertidas.
-function PetBeagle({ recuo = 0 }: { recuo?: number }) {
-  const { scene } = useGLTF("/models/pet-beagle.glb")
-  const ref = useRef<Group>(null)
-  const dog = useMemo(() => {
-    const c = scene.clone(true)
-    const h0 = new Box3().setFromObject(c).getSize(new Vector3()).y || 1
-    c.scale.setScalar(1.6 / h0) // ~0.4 m de altura na escala da sala
-    // De barriga para BAIXO, não de lado. Tombado 90° o corpo lia como bicho
-    // morto — o Gustavo apontou, e é o risco de deitar um modelo rígido: de lado,
-    // as quatro patas apontam para a mesma direção, o que só acontece com bicho
-    // desacordado.
-    //
-    // O truque é outro, e mais simples: o modelo é um cachorro EM PÉ, e um
-    // cachorro deitado de barriga para baixo é o mesmo corpo com as pernas
-    // dobradas embaixo. Afundando as patas no acolchoado, o rolo da cama esconde
-    // exatamente o pedaço que deveria estar dobrado.
-    c.rotation.set(0, Math.PI * 0.15, 0)
-    c.updateMatrixWorld(true)
-    const caixa = new Box3().setFromObject(c)
-    const centro = caixa.getCenter(new Vector3())
-    const altura = caixa.max.y - caixa.min.y
-    // Medido da caixa e não chutado: o modelo é de terceiro e a origem dele não é
-    // promessa nenhuma. A perna de um beagle é cerca de um terço da altura.
-    c.position.set(-centro.x, -caixa.min.y - altura * 0.33, -centro.z)
-    const brown = new Color("#a4703c")
-    c.traverse((o) => {
-      const m = o as Mesh
-      if (!m.isMesh) return
-      m.castShadow = true
-      // Pelo fosco: sem toon, o beagle passa a receber a luz como o resto da sala.
-      const tint = (mat: Material): Material => {
-        const cl = (mat as MeshStandardMaterial).clone()
-        if (!cl.map) cl.color = brown
-        cl.roughness = 0.9
-        cl.metalness = 0
-        return cl
-      }
-      m.material = Array.isArray(m.material) ? m.material.map(tint) : tint(m.material)
-    })
-    return c
-  }, [scene])
-  // Ele fica DEITADO na caminha, e só respira.
-  //
-  // Foram duas rodadas até aqui, e a lição é a mesma das duas vezes: bicho
-  // parado que se mexe no eixo lê como objeto de vitrine, não como bicho. A
-  // primeira versão pulava sem parar (flutuava); a segunda parou de pular mas
-  // continuou girando o corpo — o Gustavo acertou a imagem: "parece aquele
-  // frango rodando no mercado". Cachorro deitado não gira, não pula, respira.
-  //
-  // A respiração é escala, não altura: o corpo incha um triz e volta, com as
-  // patas onde estão. O tombo para o lado é o que dá o deitado sem plataforma de
-  // animação — e a caminha embaixo é o que faz a pose ler como escolha.
-  useFrame((state) => {
-    if (!ref.current) return
-    const t = state.clock.elapsedTime
-    const folego = 1 + Math.sin(t * 1.6) * 0.018
-    ref.current.scale.set(1, folego, folego)
-  })
-  return (
-    <group ref={ref} position={[-3.4, 0.22, -4 * (0.25 + recuo)]}>
-      <primitive object={dog} />
-    </group>
-  )
-}
-useGLTF.preload("/models/pet-beagle.glb")
+// O beagle deixou de ser um GLB. Ele era o único bicho de fora da sala — modelo
+// rígido de um cachorro EM PÉ, afundado no acolchoado para esconder as patas —
+// e por isso vivia em coordenadas de mundo, com escala e pose calculadas na mão.
+// Agora ele é construído deitado, dentro da sala, como o gato (ver
+// lib/office-model). Some junto: o carregamento do arquivo, o preload e o caso
+// especial de coordenadas.
 
 const CONFETTI_N = 36
 
@@ -643,8 +581,6 @@ function Scene({
       <group rotation={[-Math.PI / 2, 0, 0]} scale={4}>
         <Confete startRef={festaRef} recuo={recuoDaSala(nivel)} />
       </group>
-      {equipped?.has("pet-cachorro") && <PetBeagle recuo={recuoDaSala(nivel)} />}
-
       {/* Duas camadas: uma ampla e suave (ambiente) + uma justa e mais escura
           logo sob os móveis (contato) — assenta tudo no chão sem virar borrão. */}
       <ContactShadows position={[0, 0.02, -4 * (0.9 + recuoDaSala(nivel))]} opacity={0.28} scale={22} blur={3.0} far={9} />

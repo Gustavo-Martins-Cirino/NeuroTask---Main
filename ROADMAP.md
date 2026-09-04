@@ -990,6 +990,27 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > Os fones entram por ÚLTIMO, e é a ordem certa: na vida real o arco passa por cima do boné e
 > das hastes do óculos. É a mesma ordem do bonequinho 2D.
 
+> **O cachorro deita de verdade (30/08).** O Gustavo mandou a foto: o gato enrodilhado na
+> caminha e o beagle em pé dentro da dele. A causa era estrutural — ele era o único bicho que
+> não fazia parte da sala. Um **GLB de um cachorro EM PÉ**, afundado no acolchoado para
+> esconder as patas, vivendo em coordenadas de mundo com escala e pose calculadas na mão.
+>
+> **Modelo rígido não deita**, e as duas tentativas anteriores mostraram os dois jeitos de
+> errar: tombado de lado, as quatro patas apontam para o mesmo lugar (bicho desacordado); de
+> barriga para baixo, sobra um cachorro em pé dentro de um buraco. Agora ele é CONSTRUÍDO na
+> pose, como o gato — corpo achatado, cabeça baixa, focinho apoiado nas patas, orelhas longas
+> caindo ao lado, rabo contornando o corpo.
+>
+> **Some junto o caso especial inteiro**: o arquivo GLB, o `useGLTF`, o preload e o
+> componente que existia só para ele. O beagle era o último objeto da cena fora da sala.
+>
+> O corpo corre no eixo Y de propósito: a câmera olha quase de frente para ele, então é nessa
+> direção que o comprimento aparece — no eixo X ele ficaria visto de topo, encurtado.
+>
+> O `public/models/pet-beagle.glb` ficou sem uso. Não foi apagado de propósito: a pasta é um
+> estoque de modelos candidatos (tem lobo, cadeira e dois FBX que ninguém importa), e nada
+> ali é baixado sem alguém pedir. Apagar é decisão do Gustavo.
+
 #### Cor e camada visual — `214017.png` e `214418.png`
 
 Dois efeitos de fundo, e os dois pedem o mesmo cuidado: fundo que compete com o conteúdo

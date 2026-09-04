@@ -1324,7 +1324,51 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     g.add(cyl(`${nome}_Forro`, anel + tubo * 0.4, tubo * 0.8, [x, y, tubo * 0.55], mDentro, undefined, undefined))
   }
 
-  if (extras.camaCachorro) camaDePet("Cama_Cachorro", -0.85, 0.25 + dy, 0.42, [0.36, 0.4, 0.52])
+  // Cachorro DEITADO na caminha, do mesmo jeito que o gato — e pela mesma razão
+  // que o gato ficou bom: ele é construído na pose, não posado depois.
+  //
+  // Antes era um GLB de um beagle EM PÉ, afundado no acolchoado para esconder as
+  // patas. Modelo rígido não deita: tombado de lado as quatro patas apontam para
+  // o mesmo lugar (bicho desacordado), e de barriga para baixo sobra um cachorro
+  // em pé dentro de um buraco — que é o que se via.
+  //
+  // O corpo corre no eixo Y de propósito: a câmera olha quase de frente para ele
+  // (ver lib/office-camera), então é nessa direção que o comprimento aparece. No
+  // eixo X o cachorro ficaria visto de topo, encurtado.
+  if (extras.camaCachorro) {
+    const x = -0.85, y = 0.25 + dy
+    camaDePet("Cama_Cachorro", x, y, 0.42, [0.36, 0.4, 0.52])
+    const mPelo = tmat([0.66, 0.46, 0.28], 0, "tecido")
+    const mManta = tmat([0.24, 0.19, 0.16], 0, "tecido")
+    const mBranco = tmat([0.9, 0.88, 0.84], 0, "tecido")
+    const mFocinho = tmat([0.12, 0.1, 0.1], 0, "plastico")
+    // Topo do forro da caminha: o corpo apoia AQUI, não no piso.
+    const z = 0.1
+
+    g.add(sph("Cachorro_Corpo", 0.15, [x, y - 0.02, z + 0.07], mPelo, [1, 1.5, 0.62]))
+    // A manta escura das costas — é ela que diz "beagle" e não "cachorro marrom".
+    g.add(sph("Cachorro_Manta", 0.13, [x, y - 0.05, z + 0.1], mManta, [0.92, 1.15, 0.36]))
+    g.add(sph("Cachorro_Cabeca", 0.088, [x, y + 0.185, z + 0.07], mPelo, [1, 1.1, 0.95]))
+    // Focinho comprido e claro, apoiado nas patas: cabeça no chão é o que separa
+    // "deitado" de "sentado esperando".
+    g.add(sph("Cachorro_Focinho", 0.048, [x, y + 0.265, z + 0.045], mBranco, [0.82, 1.35, 0.72]))
+    g.add(sph("Cachorro_Nariz", 0.019, [x, y + 0.318, z + 0.052], mFocinho))
+    for (const lado of [1, -1]) {
+      const suf = lado === 1 ? "Direita" : "Esquerda"
+      // Orelha longa e caída ao lado da cabeça — a marca da raça, e o que
+      // impede o bicho de ler como gato grande.
+      g.add(sph(`Cachorro_Orelha_${suf}`, 0.052, [x + lado * 0.078, y + 0.165, z + 0.022], mManta, [0.42, 1.25, 1]))
+      // Patas da frente, estendidas sob o focinho.
+      g.add(sph(`Cachorro_Pata_${suf}`, 0.042, [x + lado * 0.052, y + 0.245, z + 0.012], mBranco, [0.85, 1.4, 0.5]))
+    }
+    // O rabo contorna o corpo, como o do gato: apontado para cima ele viraria
+    // uma antena, e antena é pose de bicho acordado.
+    g.add(cabo("Cachorro_Rabo", [
+      [x, y - 0.2, z + 0.06],
+      [x + 0.12, y - 0.235, z + 0.03],
+      [x + 0.2, y - 0.15, z + 0.025],
+    ], 0.024, mPelo))
+  }
 
   if (extras.gato) {
     const mPelo = tmat([0.85, 0.54, 0.25], 0, "tecido")
