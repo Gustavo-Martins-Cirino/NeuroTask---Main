@@ -1420,3 +1420,113 @@ describe("céu: a cor vem do degradê, não do material", () => {
     expect(mat.color.b).toBe(1)
   })
 })
+
+// O editor de avatar decide estilo de cabelo e fones, e o boneco da sala
+// ignorava os dois: quem escolhia cacheado com fones via uma coisa na prévia do
+// editor e um boneco de cabelo liso e orelha nua na cadeira.
+describe("o boneco 3D veste o que o editor escolheu", () => {
+  const comVisual = (visual: Parameters<typeof buildPersonagem>[2], acess = {}) => {
+    const p = buildPersonagem(undefined, acess, visual)
+    p.updateMatrixWorld(true)
+    return p
+  }
+  const caixa = (p: Group, nome: string) => new Box3().setFromObject(malha(p, nome), true)
+
+  it("sem pedir nada, nada de novo aparece — o padrão continua o de antes", () => {
+    const p = comVisual({})
+    expect(pecas(p, "Fone_")).toHaveLength(0)
+    expect(pecas(p, "Cacho_")).toHaveLength(0)
+    expect(pecas(p, "Coque")).toHaveLength(0)
+  })
+
+  it("fones: a concha fica NA orelha e sobra para fora — é o que a câmera pega", () => {
+    const p = comVisual({ fones: true })
+    const orelha = caixa(p, "Orelha_Direita")
+    const concha = caixa(p, "Fone_Concha_Direito")
+    expect(concha.max.x).toBeGreaterThan(orelha.max.x)
+    // E ela cobre a orelha em altura, senão fica um disco solto ao lado da cabeça.
+    expect(concha.min.z).toBeLessThan(orelha.getCenter(new Vector3()).z)
+    expect(concha.max.z).toBeGreaterThan(orelha.getCenter(new Vector3()).z)
+  })
+
+  it("fones: o arco passa POR CIMA do cabelo, não por dentro dele", () => {
+    const p = comVisual({ fones: true })
+    expect(caixa(p, "Fone_Arco").max.z).toBeGreaterThan(caixa(p, "Cabelo").max.z - 0.01)
+  })
+
+  it("fones: com chapéu, o arco continua existindo — na vida real ele passa por cima", () => {
+    const p = comVisual({ fones: true }, { chapeu: "bone" })
+    expect(pecas(p, "Fone_")).toHaveLength(5) // arco + 2 conchas + 2 almofadas
+  })
+
+  it("cacheado: os cachos ficam NA superfície do cabelo, nem soltos nem enterrados", () => {
+    const p = comVisual({ cabelo: "cacheado" })
+    const cachos = pecas(p, "Cacho_")
+    expect(cachos.length).toBeGreaterThan(8)
+    const cabelo = caixa(p, "Cabelo")
+    for (const nome of cachos) {
+      const c = caixa(p, nome).getCenter(new Vector3())
+      // Dentro da caixa do cabelo (não flutuando ao lado da cabeça)…
+      expect(c.x).toBeGreaterThan(cabelo.min.x - 0.04)
+      expect(c.x).toBeLessThan(cabelo.max.x + 0.04)
+      // …e na metade de cima: cacho na nuca de baixo fica dentro da gola.
+      expect(c.z).toBeGreaterThan(CABECA.z - 0.06)
+    }
+  })
+
+  it("cacheado: os cachos não caem sobre o rosto", () => {
+    const p = comVisual({ cabelo: "cacheado" })
+    const olho = caixa(p, "Olho_Direito")
+    for (const nome of pecas(p, "Cacho_")) {
+      const c = caixa(p, nome)
+      // Só os que estão na FRENTE da cabeça contam: os da nuca têm y pequeno e
+      // nunca chegam perto do rosto.
+      const naFrente = c.getCenter(new Vector3()).y > CABECA.y
+      if (naFrente && c.max.z > olho.min.z && c.min.z < olho.max.z) {
+        expect(c.min.z).toBeGreaterThan(olho.max.z - 0.01)
+      }
+    }
+  })
+
+  it("coque: fica atrás e em cima, fora do caminho do chapéu", () => {
+    const p = comVisual({ cabelo: "coque" })
+    const coque = caixa(p, "Coque").getCenter(new Vector3())
+    expect(coque.y).toBeLessThan(CABECA.y) // atrás da cabeça
+    expect(coque.z).toBeGreaterThan(CABECA.z) // e acima do centro dela
+  })
+
+  it("longo: desce pela nuca em direção ao ombro — é o que muda a silhueta de trás", () => {
+    const p = comVisual({ cabelo: "longo" })
+    const longo = caixa(p, "Cabelo_Longo")
+    const cranio = caixa(p, "Cabeca")
+    expect(longo.min.z).toBeLessThan(cranio.min.z)
+    expect(longo.getCenter(new Vector3()).y).toBeLessThan(CABECA.y) // atrás
+  })
+
+  it("franja: cai na testa, e acima dos olhos", () => {
+    const p = comVisual({ cabelo: "franja" })
+    const franja = caixa(p, "Franja")
+    const olho = caixa(p, "Olho_Direito")
+    expect(franja.min.z).toBeGreaterThan(olho.max.z - 0.02)
+    expect(franja.max.y).toBeGreaterThan(CABECA.y) // à frente
+  })
+
+  it("raspado: cabelo sem volume — a casca encolhe em vez de sumir", () => {
+    const raspado = caixa(comVisual({ cabelo: "raspado" }), "Cabelo")
+    const curto = caixa(comVisual({ cabelo: "curto" }), "Cabelo")
+    expect(raspado.max.z).toBeLessThan(curto.max.z)
+    expect(raspado.max.z).toBeGreaterThan(caixa(comVisual({}), "Cabeca").max.z)
+  })
+
+  it("nenhum estilo cobre o rosto", () => {
+    const estilos = ["curto", "franja", "cacheado", "longo", "coque", "raspado"] as const
+    const rosto = new Box3(
+      new Vector3(-0.075, CABECA.y + 0.09, 1.23),
+      new Vector3(0.075, CABECA.y + 0.22, 1.29)
+    )
+    for (const cabelo of estilos) {
+      const p = comVisual({ cabelo })
+      for (const v of verticesDe(p, "Cabelo")) expect(rosto.containsPoint(v)).toBe(false)
+    }
+  })
+})

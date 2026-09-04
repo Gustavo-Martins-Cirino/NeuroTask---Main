@@ -1368,6 +1368,19 @@ export interface PersonagemCores {
 // do bonequinho 2D — ver lib/avatar-accessories.
 export type PersonagemAcessorios = AvatarAccessories
 
+/**
+ * O que o EDITOR de avatar decide e o boneco da sala ignorava.
+ *
+ * O bonequinho 2D já desenhava estilo de cabelo e fones; o personagem 3D só
+ * recebia cores. Quem escolhia cacheado e fones via as duas coisas na prévia do
+ * editor e um boneco de cabelo liso e orelha nua na cadeira — o editor
+ * prometendo o que a cena não entregava.
+ */
+export interface PersonagemVisual {
+  cabelo?: "curto" | "franja" | "cacheado" | "longo" | "coque" | "raspado"
+  fones?: boolean
+}
+
 const CENTRO_Y = 0.9
 
 /** Prefixo do grupo que a cena gira para o boneco digitar (sufixo = o lado). */
@@ -1415,6 +1428,15 @@ const CABELO_INCLINACAO = D(47.5)
 /** Onde um chapéu encosta: o topo do CABELO, não o do crânio. */
 export const TOPO_DO_CABELO = CABELO_CENTRO[2] + CABELO_R
 
+/**
+ * Onde a borda da calota cruza a testa — a linha do cabelo.
+ *
+ * Ela não é desenhada: nasce do encontro das duas superfícies. Mas quem
+ * acrescenta cabelo na FRENTE (cacho, franja) precisa do número, senão a peça
+ * nova desce abaixo dela e cai sobre os olhos.
+ */
+export const LINHA_DO_CABELO = 1.32
+
 // Pose do braço em PONTOS (x é espelhado pelo lado; y/z valem para os dois).
 // O teclado ocupa y ∈ [1.26, 1.38] com o topo em z=0.83, então a mão pousa em
 // y=1.29 e paira 2 cm acima das teclas — a tecladinha de office-typing encosta
@@ -1425,7 +1447,11 @@ const OMBRO: [number, number, number] = [0.175, CENTRO_Y, 1.0]        // fora do
 const COTOVELO: [number, number, number] = [0.16, CENTRO_Y + 0.15, 0.8]
 const MAO: [number, number, number] = [0.09, CENTRO_Y + 0.39, 0.9]    // dentro das teclas
 
-export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAcessorios = {}): Group {
+export function buildPersonagem(
+  cores: PersonagemCores = {},
+  acess: PersonagemAcessorios = {},
+  visual: PersonagemVisual = {}
+): Group {
   const g = new Group()
   const mPele = tmat(cores.pele ?? [0.94, 0.76, 0.62], 0, "pele")
   const mCam = tmat(cores.camisa ?? [0.25, 0.55, 0.78], 0, "tecido")
@@ -1450,8 +1476,76 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
   g.add(cyl("Pescoco", 0.058, 0.09, [0, CENTRO_Y, 1.115], mPele))
 
   g.add(sph("Cabeca", CABECA_R, CABECA_CENTRO, mPele, CABECA_ESC))
-  // A calota pende para trás: a borda passa alta na testa e desce pela nuca.
-  g.add(calota("Cabelo", CABELO_R, CABELO_ABERTURA, CABELO_CENTRO, mCab, [CABELO_INCLINACAO, 0, 0], CABELO_ESC))
+
+  // ---- Cabelo por estilo ----
+  //
+  // A calota continua sendo a base de todos: ela é o que veste o crânio. Cada
+  // estilo acrescenta o que muda a SILHUETA — a mesma régua do bonequinho 2D,
+  // porque de longe é o contorno que se lê, não o penteado.
+  //
+  // O "raspado" é o único que mexe na base: cabelo raspado não tem volume, tem
+  // cor sobre a cabeça, então a casca encolhe e quase encosta no crânio.
+  const estilo = visual.cabelo ?? "curto"
+  const raspado = estilo === "raspado"
+  const rCabelo = raspado ? CABELO_R - 0.008 : CABELO_R
+  g.add(calota("Cabelo", rCabelo, CABELO_ABERTURA, CABELO_CENTRO, mCab, [CABELO_INCLINACAO, 0, 0], CABELO_ESC))
+
+  const eixoCabelo = [0, -Math.sin(CABELO_INCLINACAO), Math.cos(CABELO_INCLINACAO)]
+
+  if (estilo === "cacheado") {
+    // Em 3D a bolinha É o cacho: aqui ela tem volume e sombra, ao contrário do
+    // 2D, onde sete discos chapados viravam mancha. Espalhadas pela casca em
+    // ângulo dourado, elas não formam fileira.
+    const anguloDourado = Math.PI * (3 - Math.sqrt(5))
+    const c = Math.cos(CABELO_INCLINACAO)
+    const s = Math.sin(CABELO_INCLINACAO)
+    let n = 0
+    for (let i = 0; i < 22; i++) {
+      const t = (i + 0.5) / 22
+      const theta = Math.acos(1 - t * 1.1)
+      const phi = anguloDourado * i
+      const local = [
+        Math.sin(theta) * Math.cos(phi),
+        Math.sin(theta) * Math.sin(phi),
+        Math.cos(theta),
+      ]
+      // Do eixo da calota (inclinado) para o mundo: gira em X, como a malha.
+      const p: V3 = [
+        CABELO_CENTRO[0] + local[0] * rCabelo * CABELO_ESC[0],
+        CABELO_CENTRO[1] + (local[1] * c - local[2] * s) * rCabelo,
+        CABELO_CENTRO[2] + (local[1] * s + local[2] * c) * rCabelo,
+      ]
+      // O corte é pela ALTURA no mundo, e não pelo ângulo na calota: ela pende
+      // para trás, então o mesmo ângulo dá alturas muito diferentes na testa e
+      // na nuca. E o limite é ASSIMÉTRICO, como a borda do cabelo já é: na
+      // frente ele para na linha do cabelo (senão o cacho cai sobre os olhos),
+      // atrás pode descer até o começo da nuca (senão sobra crânio pelado).
+      const naFrente = p[1] > CENTRO_Y
+      if (p[2] < (naFrente ? LINHA_DO_CABELO : CABECA_CENTRO[2] - 0.01)) continue
+      g.add(sph(`Cacho_${n++}`, 0.026, p, mCab))
+    }
+  }
+
+  if (estilo === "coque") {
+    // Atrás e em cima, como no 2D — e fora do caminho de qualquer chapéu.
+    const d = rCabelo + 0.035
+    g.add(sph("Coque", 0.055, [
+      0,
+      CABELO_CENTRO[1] + eixoCabelo[1] * d - 0.03,
+      CABELO_CENTRO[2] + eixoCabelo[2] * d,
+    ], mCab))
+  }
+
+  if (estilo === "longo") {
+    // A massa que cai pela nuca até o ombro. É o estilo que mais muda a
+    // silhueta vista de trás, que é justamente de onde a câmera olha.
+    g.add(sph("Cabelo_Longo", 0.125, [0, CENTRO_Y - 0.075, 1.13], mCab, [1, 0.62, 1.5]))
+  }
+
+  if (estilo === "franja") {
+    // Uma mecha caindo na testa, à frente da borda da calota.
+    g.add(box("Franja", [0.16, 0.05, 0.055], [0, CENTRO_Y + 0.085, 1.325], mCab, [D(-24), 0, 0]))
+  }
 
   // O rosto de perfil: a câmera olha o boneco quase de lado (ver lib/office-camera),
   // então nariz e orelhas aparecem mais do que olhos e boca.
@@ -1674,6 +1768,36 @@ export function buildPersonagem(cores: PersonagemCores = {}, acess: PersonagemAc
       g.add(box(`Oculos_Haste_${suf}`, [0.014, 0.13, 0.014], [lado * 0.118, CENTRO_Y + 0.07, zOlhos + 0.012], mAro))
     }
     g.add(box("Oculos_Ponte", [0.045, 0.016, 0.016], [0, yLente, zOlhos + 0.018], mAro))
+  }
+
+  // ---- Fones ----
+  //
+  // Por ÚLTIMO, e é a ordem certa: na vida real o arco do headphone passa por
+  // cima do boné e das hastes do óculos, nunca por baixo. É a mesma ordem do
+  // bonequinho 2D.
+  //
+  // Eles são o acessório que mais aparece nesta câmera: a concha fica bem na
+  // lateral da cabeça, que é o lado que se vê. Quem tinha "fones on" no editor
+  // via um boneco de orelha nua na cadeira.
+  if (visual.fones) {
+    const mFone = tmat([0.14, 0.14, 0.17], 0, "plastico")
+    const mAlmofada = tmat([0.09, 0.09, 0.11], 0, "tecido")
+    // O arco passa por cima do cabelo, e não do crânio: com chapéu ele sobe
+    // junto, senão sumiria dentro do boné.
+    const arco = new Mesh(new TorusGeometry(0.15, 0.014, 8, 24, Math.PI), mFone)
+    arco.name = "Fone_Arco"
+    arco.position.set(0, CENTRO_Y - 0.012, TOPO_DO_CABELO - 0.135)
+    // O torus nasce no plano XY; em pé no plano XZ ele vira o arco sobre a
+    // cabeça, de orelha a orelha.
+    arco.rotation.set(D(90), 0, 0)
+    arco.castShadow = true
+    g.add(arco)
+    for (const lado of [1, -1]) {
+      const suf = lado === 1 ? "Direito" : "Esquerdo"
+      // A concha encosta na orelha (x ≈ ±0.122) e sobra um pouco para fora.
+      g.add(cyl(`Fone_Concha_${suf}`, 0.055, 0.032, [lado * 0.152, CENTRO_Y - 0.012, 1.258], mFone, [0, D(90), 0]))
+      g.add(cyl(`Fone_Almofada_${suf}`, 0.045, 0.016, [lado * 0.134, CENTRO_Y - 0.012, 1.258], mAlmofada, [0, D(90), 0]))
+    }
   }
 
   return g

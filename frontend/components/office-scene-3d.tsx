@@ -16,7 +16,7 @@ import {
 import { useTheme } from "next-themes"
 import {
   buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO,
-  type EscritorioExtras, type ParedeTipo, type PersonagemCores, type PisoTipo,
+  type EscritorioExtras, type ParedeTipo, type PersonagemCores, type PersonagemVisual, type PisoTipo,
 } from "@/lib/office-model"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { corDaCalca } from "@/lib/avatar-calca"
@@ -147,6 +147,18 @@ function coresDoAvatar(avatar?: AvatarConfig | null): PersonagemCores {
     // A calça do 3D vinha de um cinza cravado no modelo: escolher jeans no
     // editor mudava o bonequinho e não mudava o boneco da sala.
     c.calca = corDaCalca(avatar)
+  }
+  return c
+}
+
+// O que o editor decide e o boneco da sala ignorava: estilo de cabelo e fones.
+// O bonequinho 2D já desenhava os dois, então quem escolhia cacheado com fones
+// via uma coisa na prévia e outra na cadeira.
+function visualDoAvatar(avatar?: AvatarConfig | null): PersonagemVisual {
+  const c: PersonagemVisual = {}
+  if (avatar) {
+    c.cabelo = avatar.hairStyle
+    c.fones = avatar.headphones
   }
   return c
 }
@@ -344,7 +356,7 @@ function CartoonOffice({
   )
   const person = useMemo(
     () => {
-      return buildPersonagem(coresDoAvatar(avatar), acessoriosEquipados(equipped))
+      return buildPersonagem(coresDoAvatar(avatar), acessoriosEquipados(equipped), visualDoAvatar(avatar))
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [avatar, equipKey]

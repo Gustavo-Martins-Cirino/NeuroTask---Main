@@ -970,6 +970,26 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 >
 > Quem já tem avatar salvo não muda de calça: o padrão é o mesmo `#3b5378` que estava cravado.
 
+> **O boneco da sala passa a vestir o que o editor escolheu (30/08).** O Gustavo comparou o
+> avatar dele com o boneco na cadeira: cabelo cacheado e fones no editor, cabelo liso e
+> orelha nua na cena. `buildPersonagem` só recebia CORES — estilo de cabelo e fones nunca
+> chegaram lá. O bonequinho 2D desenhava os dois desde sempre, então o editor prometia o que
+> a cena não entregava.
+>
+> Entrou um terceiro parâmetro (`PersonagemVisual`) com cabelo e fones. Os seis estilos
+> ganharam volume próprio: cacho (bolinhas na casca — em 3D a bolinha É o cacho, ao
+> contrário do 2D, onde disco chapado vira mancha), coque, cabelo longo caindo pela nuca,
+> franja, e o raspado encolhendo a casca em vez de sumir com ela.
+>
+> **Um detalhe que quase passou**: o corte de onde cabe cacho é ASSIMÉTRICO, como a borda do
+> cabelo já era. A calota pende para trás, então o mesmo ângulo dá alturas muito diferentes
+> na testa e na nuca — com um corte único, ou sobrava crânio pelado atrás ou caía cacho sobre
+> os olhos. O teste pegou os dois casos. Daí nasceu `LINHA_DO_CABELO`, que é onde a borda
+> cruza a testa: quem acrescenta cabelo na frente precisa desse número.
+>
+> Os fones entram por ÚLTIMO, e é a ordem certa: na vida real o arco passa por cima do boné e
+> das hastes do óculos. É a mesma ordem do bonequinho 2D.
+
 #### Cor e camada visual — `214017.png` e `214418.png`
 
 Dois efeitos de fundo, e os dois pedem o mesmo cuidado: fundo que compete com o conteúdo
