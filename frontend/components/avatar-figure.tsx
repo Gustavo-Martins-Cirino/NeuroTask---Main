@@ -1,5 +1,6 @@
 import { type AvatarConfig } from "@/lib/avatar"
 import { corDaCalca } from "@/lib/avatar-calca"
+import { caminhoDoQuadrilSentado, caminhoDoTronco, silhuetaDe } from "@/lib/avatar-silhueta"
 import { type AvatarAccessories } from "@/lib/avatar-accessories"
 import { cn } from "@/lib/utils"
 
@@ -153,16 +154,20 @@ export function AvatarFigure({
   seated?: boolean
 }) {
   const { body, skin, hairStyle, hairColor, outfit, outfitColor, headphones } = config
-  const fem = body === "f"
   // A regra do terno (calça sai do paletó) mora em lib/avatar-calca, e não
   // aqui: ela vale igual para o personagem 3D da cena.
   const pants = corDaCalca(config)
   const sleeve = outfit === "camiseta" ? skin : outfitColor
   const hx = 1 // centro da cabeça (x)
-  const hy = fem ? -39 : -40
-  const shoulderY = fem ? -26 : -27
-  const torsoW = fem ? 20 : 24
-  const torsoX = fem ? -9 : -11
+  // As medidas do corpo saem de lib/avatar-silhueta. Elas eram o MESMO desenho
+  // em V nas duas versões, uma só mais estreita que a outra — daí "a feminina
+  // só está mais magra". Agora a diferença é de forma: V contra ampulheta.
+  const sil = silhuetaDe(body)
+  const hy = sil.cabecaY
+  const shoulderY = sil.peitoY
+  // O braço sai do ponto mais LARGO do tronco, que é onde ficaria a axila.
+  const ombroEsq = hx - sil.peitoL
+  const ombroDir = hx + sil.peitoL
 
   return (
     <g>
@@ -197,7 +202,7 @@ export function AvatarFigure({
 
           {/* quadril — preenche a folga entre o bumbum (y≈1) e a
               almofada (y≈14.5): é o que acaba com o "flutuando" */}
-          <path d="M -9 1 Q -10 8 -8 15 L 8 15 Q 10 8 9 1 Z" fill={darken(pants, 6)} />
+          <path d={caminhoDoQuadrilSentado(sil, hx)} fill={darken(pants, 6)} />
 
           {/* perna próxima (mais clara): coxa → joelho → canela → pé */}
           <polyline
@@ -225,48 +230,42 @@ export function AvatarFigure({
       {working ? (
         <g>
           <g className="nt-arm-l nt-o">
-            <line x1={torsoX + 1} y1={shoulderY} x2="-23" y2="-31" stroke={sleeve} strokeWidth="5" strokeLinecap="round" />
+            <line x1={ombroEsq + 1} y1={shoulderY} x2="-23" y2="-31" stroke={sleeve} strokeWidth="5" strokeLinecap="round" />
             <circle cx="-24" cy="-31.5" r="2.6" fill={skin} />
           </g>
           <g className="nt-arm-r nt-o">
-            <line x1={torsoX + torsoW - 1} y1={shoulderY} x2="1" y2="-34" stroke={darken(sleeve, 7)} strokeWidth="5" strokeLinecap="round" />
+            <line x1={ombroDir - 1} y1={shoulderY} x2="1" y2="-34" stroke={darken(sleeve, 7)} strokeWidth="5" strokeLinecap="round" />
             <circle cx="0" cy="-34.5" r="2.6" fill={darken(skin, 10)} />
           </g>
         </g>
       ) : (
         <g>
-          <line x1={torsoX} y1={shoulderY} x2={torsoX - 2.5} y2="-9" stroke={sleeve} strokeWidth="5" strokeLinecap="round" />
-          <line x1={torsoX + torsoW} y1={shoulderY} x2={torsoX + torsoW + 2.5} y2="-9" stroke={darken(sleeve, 7)} strokeWidth="5" strokeLinecap="round" />
-          <circle cx={torsoX - 3} cy="-7" r="2" fill={darken(skin, 8)} />
-          <circle cx={torsoX + torsoW + 3} cy="-7" r="2" fill={darken(skin, 12)} />
+          <line x1={ombroEsq} y1={shoulderY} x2={ombroEsq - 2.5} y2="-9" stroke={sleeve} strokeWidth="5" strokeLinecap="round" />
+          <line x1={ombroDir} y1={shoulderY} x2={ombroDir + 2.5} y2="-9" stroke={darken(sleeve, 7)} strokeWidth="5" strokeLinecap="round" />
+          <circle cx={ombroEsq - 3} cy="-7" r="2" fill={darken(skin, 8)} />
+          <circle cx={ombroDir + 3} cy="-7" r="2" fill={darken(skin, 12)} />
           {/* manga curta: sem ela, o braço nu inteiro fazia a camiseta ler como
               regata. Cobre só o topo do braço, um fio mais grossa para "vestir" */}
           {outfit === "camiseta" && (
             <>
-              <line x1={torsoX} y1={shoulderY - 0.5} x2={torsoX - 1} y2="-19.5" stroke={outfitColor} strokeWidth="5.6" strokeLinecap="round" />
-              <line x1={torsoX + torsoW} y1={shoulderY - 0.5} x2={torsoX + torsoW + 1} y2="-19.5" stroke={darken(outfitColor, 7)} strokeWidth="5.6" strokeLinecap="round" />
+              <line x1={ombroEsq} y1={shoulderY - 0.5} x2={ombroEsq - 1} y2="-19.5" stroke={outfitColor} strokeWidth="5.6" strokeLinecap="round" />
+              <line x1={ombroDir} y1={shoulderY - 0.5} x2={ombroDir + 1} y2="-19.5" stroke={darken(outfitColor, 7)} strokeWidth="5.6" strokeLinecap="round" />
             </>
           )}
         </g>
       )}
 
-      {/* tronco de costas */}
-      <path
-        d={
-          fem
-            ? `M ${torsoX} -28 q 0 -5 5 -5 h 10 q 5 0 5 5 l 1.5 20 q 0.5 9 -6 9 h -11 q -6.5 0 -6 -9 z`
-            : `M ${torsoX} -28 q 0 -5 5 -5 h 14 q 5 0 5 5 l 0.5 21 q 0 8 -6 8 h -13 q -6 0 -6 -8 z`
-        }
-        fill={outfitColor}
-      />
+      {/* tronco de costas — o contorno sai das medidas, e é ele que separa as
+          duas silhuetas: V no masculino, ampulheta no feminino. */}
+      <path d={caminhoDoTronco(sil, hx)} fill={outfitColor} />
       {outfit === "moletom" && (
         <path d={`M ${hx - 7} -32 q 8 6 16 0 l -1.5 9 q -6.5 4 -13 0 z`} fill={darken(outfitColor, 20)} />
       )}
       {outfit === "jaqueta" && (
         <g>
           <line x1={hx + 1} y1="-31" x2={hx + 1} y2="-2" stroke={darken(outfitColor, 26)} strokeWidth="2" />
-          <line x1={torsoX + 1.5} y1="-24" x2={torsoX + 3.5} y2="-2" stroke={darken(outfitColor, 18)} strokeWidth="1.6" />
-          <line x1={torsoX + torsoW - 1.5} y1="-24" x2={torsoX + torsoW - 3.5} y2="-2" stroke={darken(outfitColor, 18)} strokeWidth="1.6" />
+          <line x1={ombroEsq + 1.5} y1="-24" x2={ombroEsq + 3.5} y2="-2" stroke={darken(outfitColor, 18)} strokeWidth="1.6" />
+          <line x1={ombroDir - 1.5} y1="-24" x2={ombroDir - 3.5} y2="-2" stroke={darken(outfitColor, 18)} strokeWidth="1.6" />
         </g>
       )}
       {outfit === "terno" && (
@@ -280,7 +279,9 @@ export function AvatarFigure({
           a cabeça É o cabelo (pele só no pescoço). Sem rosto possível. */}
       {/* nuca: cantos arredondados (era um quadrado de cantos vivos, que lia como
           recorte/glitch) + sombra da gola na base, para não sair direto da cabeça */}
-      <rect x={hx - 3.5} y={hy + 6} width="7" height="7" rx="2.4" fill={darken(skin, 8)} />
+      {/* pescoço: acompanha o ombro, senão a cabeça sai de um tronco estreito
+          por um pescoço de lenhador. */}
+      <rect x={hx - sil.pescocoL} y={hy + 6} width={sil.pescocoL * 2} height="7" rx="2.4" fill={darken(skin, 8)} />
       <ellipse cx={hx} cy={hy + 12.5} rx="5" ry="1.7" fill="#000" opacity="0.14" />
       {hairStyle === "raspado" ? (
         <g>

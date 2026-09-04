@@ -274,8 +274,30 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Da lista dele, para reproduzir antes de mexer**
 
-- [ ] **O corpo masculino e o feminino são quase o mesmo** — "a feminina só está mais magra".
-      Silhueta precisa de mais que largura: ombro, quadril e proporção de tronco.
+> **Corpo masculino e feminino: resolvido (29/08).** A queixa estava certa e dava para
+> medir: os dois troncos eram o MESMO desenho em V (largo na axila, estreito no quadril),
+> um com 24 de largura e outro com 20. Escalar não muda silhueta, muda tamanho.
+>
+> **O que separa as duas de longe são três relações, e nenhuma é largura** (`lib/avatar-silhueta.ts`):
+> o ombro contra o quadril (V no masculino, ampulheta no feminino, onde o quadril passa o
+> ombro), a cintura (quase inexistente num, o aperto que dá forma no outro) e a linha do
+> ombro (quadrada e alta contra estreita e um pouco mais baixa). O pescoço acompanha o
+> ombro — senão a cabeça sai de um tronco estreito por um pescoço de lenhador.
+>
+> **Um detalhe de curva que decidia o resultado**: numa quadrática, o ponto do meio não é o
+> de controle — fica em (P0 + 2C + P2)/4. Usar a cintura como controle direto deixava o
+> aperto pela metade, e a forma voltava a ser um V de lado reto. `controleQuePassaPor`
+> inverte a conta, e o teste avalia a curva em t=0,5 para cobrar que ela passe pela cintura.
+>
+> **O teste que vale mais é o que compara RAZÕES**: se as duas fossem o mesmo desenho em
+> dois tamanhos, ombro/quadril, cintura/quadril e ombro/cintura seriam iguais nas duas. Ele
+> cobra que difiram — é a queixa do Gustavo escrita como asserção.
+>
+> O quadril sentado saiu da mesma medida do tronco: com o número cravado de antes, o quadril
+> largo do corpo feminino terminaria num bumbum de outra largura e a emenda apareceria.
+>
+> **O boneco 3D da sala continua sem tipo de corpo** — `buildPersonagem` não recebe `body`.
+> Fica anotado: de longe e quase de perfil ele pesa menos, mas a incoerência existe.
 > 🔴 **Três das quatro ações eram INVISÍVEIS no celular (31/08).** Não era diálogo apertado
 > como eu supus: a estrela de favoritar e o "…" que guarda **Editar e Excluir** nasciam
 > `opacity-0` e só apareciam no `group-hover`. Hover não existe em toque — e o `hover:` do
