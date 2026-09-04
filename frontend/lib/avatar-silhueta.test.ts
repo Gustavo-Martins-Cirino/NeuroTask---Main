@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import {
-  SILHUETAS, caminhoDoQuadrilSentado, caminhoDoTronco, controleQuePassaPor,
+  SILHUETAS, caminhoDaGolaLevantada, caminhoDoCapuz, caminhoDoQuadrilSentado, caminhoDoTronco,
+  controleQuePassaPor, silhuetaComRoupa,
   pontoDaQuadratica, silhuetaDe,
 } from "./avatar-silhueta"
 
@@ -107,5 +108,83 @@ describe("caminhoDoQuadrilSentado", () => {
 
   it("o quadril feminino é mais largo que o masculino também sentado", () => {
     expect(f.quadrilL).toBeGreaterThan(m.quadrilL)
+  })
+})
+
+describe("a roupa muda a silhueta, não só a cor", () => {
+  it("a camiseta é a régua: ela não mexe em nada", () => {
+    // É contra ela que as outras três se leem. Se ela também engordasse, não
+    // haveria base de comparação.
+    expect(silhuetaComRoupa(m, "camiseta")).toEqual(m)
+  })
+
+  it("o terno tem o ombro mais largo das quatro — é a ombreira", () => {
+    const ombros = (["camiseta", "moletom", "jaqueta", "terno"] as const)
+      .map((r) => silhuetaComRoupa(m, r).ombroL)
+    expect(Math.max(...ombros)).toBe(silhuetaComRoupa(m, "terno").ombroL)
+  })
+
+  it("o moletom some com a cintura — peça larga faz isso com quem a veste", () => {
+    const largo = silhuetaComRoupa(f, "moletom")
+    const justo = silhuetaComRoupa(f, "camiseta")
+    expect(largo.cinturaL / largo.quadrilL).toBeGreaterThan(justo.cinturaL / justo.quadrilL)
+  })
+
+  it("a jaqueta encorpa o tronco e para na barra: o quadril quase não muda", () => {
+    const j = silhuetaComRoupa(m, "jaqueta")
+    expect(j.peitoL - m.peitoL).toBeGreaterThan(j.quadrilL - m.quadrilL)
+  })
+
+  it("as quatro dão contornos DIFERENTES, no mesmo corpo", () => {
+    // O defeito antigo: as quatro eram o mesmo tronco com um detalhe fino por
+    // dentro, que some no tamanho em que o boneco é desenhado.
+    const paths = new Set(
+      (["camiseta", "moletom", "jaqueta", "terno"] as const)
+        .map((r) => caminhoDoTronco(silhuetaComRoupa(m, r)))
+    )
+    expect(paths.size).toBe(4)
+  })
+
+  it("roupa desconhecida cai na camiseta em vez de quebrar", () => {
+    for (const v of [null, undefined, "toga", 42]) {
+      expect(silhuetaComRoupa(m, v)).toEqual(m)
+    }
+  })
+
+  it("nenhuma roupa inverte a silhueta do corpo", () => {
+    // Engordar não pode transformar o V masculino em ampulheta nem o contrário.
+    for (const r of ["camiseta", "moletom", "jaqueta", "terno"] as const) {
+      expect(silhuetaComRoupa(m, r).peitoL).toBeGreaterThan(silhuetaComRoupa(m, r).quadrilL)
+      expect(silhuetaComRoupa(f, r).quadrilL).toBeGreaterThan(silhuetaComRoupa(f, r).cinturaL)
+    }
+  })
+})
+
+describe("capuz e gola", () => {
+  it("o capuz passa da linha do ombro — por dentro ele sumiria", () => {
+    const d = caminhoDoCapuz(m, 1)
+    const xs = [...d.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((x) => Number(x[1]))
+    expect(Math.max(...xs)).toBeGreaterThan(1 + m.ombroL)
+    expect(Math.min(...xs)).toBeLessThan(1 - m.ombroL)
+  })
+
+  it("o capuz sobe acima do ombro, que é onde o olho pega o contorno", () => {
+    const d = caminhoDoCapuz(m, 1)
+    const ys = [...d.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((x) => Number(x[2]))
+    expect(Math.min(...ys)).toBeLessThan(m.ombroY)
+  })
+
+  it("a gola da jaqueta são dois cantos, e os dois passam do ombro para cima", () => {
+    const d = caminhoDaGolaLevantada(m, 1)
+    expect((d.match(/M /g) ?? []).length).toBe(2)
+    const ys = [...d.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((x) => Number(x[2]))
+    expect(Math.min(...ys)).toBeLessThan(m.ombroY)
+  })
+
+  it("os dois saem sem NaN em qualquer corpo", () => {
+    for (const s of [m, f]) {
+      expect(caminhoDoCapuz(s)).not.toContain("NaN")
+      expect(caminhoDaGolaLevantada(s)).not.toContain("NaN")
+    }
   })
 })

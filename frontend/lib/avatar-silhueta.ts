@@ -81,6 +81,48 @@ export function pontoDaQuadratica(p0: number, c: number, p2: number, t: number):
   return u * u * p0 + 2 * u * t * c + t * t * p2
 }
 
+// ---- A roupa muda a silhueta, não só a cor ----
+//
+// As quatro roupas eram o MESMO tronco com um detalhe fino por dentro: uma
+// listra de zíper, um V de gola. No tamanho em que o boneco aparece na cena
+// esses traços somem, e as quatro viram a mesma blusa em quatro cores.
+//
+// O que sobrevive ao tamanho é o CONTORNO. Cada roupa mexe nas medidas antes de
+// o tronco ser desenhado: o terno tem ombro estruturado, o moletom é folgado no
+// corpo inteiro, a jaqueta encorpa o ombro sem alargar o quadril, e a camiseta é
+// a régua — ela não mexe em nada, e é contra ela que as outras se leem.
+
+export type RoupaDoCorpo = "camiseta" | "moletom" | "jaqueta" | "terno"
+
+interface AjusteDeRoupa {
+  ombro: number
+  peito: number
+  cintura: number
+  quadril: number
+}
+
+const AJUSTES: Record<RoupaDoCorpo, AjusteDeRoupa> = {
+  camiseta: { ombro: 0, peito: 0, cintura: 0, quadril: 0 },
+  // Moletom é folgado: engrossa tudo e some com a cintura, que é justamente o
+  // que uma peça larga faz com a silhueta de quem a veste.
+  moletom: { ombro: 0.8, peito: 1.4, cintura: 2.2, quadril: 1.2 },
+  // Jaqueta encorpa o tronco e para na barra — quadril de fora.
+  jaqueta: { ombro: 1.2, peito: 1.2, cintura: 1, quadril: 0.2 },
+  // Terno tem ombreira: a linha do ombro é a mais larga e a mais reta das quatro.
+  terno: { ombro: 2.2, peito: 1, cintura: 0.6, quadril: 0.4 },
+}
+
+export function silhuetaComRoupa(s: Silhueta, roupa: unknown): Silhueta {
+  const a = AJUSTES[(roupa as RoupaDoCorpo)] ?? AJUSTES.camiseta
+  return {
+    ...s,
+    ombroL: s.ombroL + a.ombro,
+    peitoL: s.peitoL + a.peito,
+    cinturaL: s.cinturaL + a.cintura,
+    quadrilL: s.quadrilL + a.quadril,
+  }
+}
+
 /** O contorno do tronco visto de costas, do ombro ao quadril. */
 export function caminhoDoTronco(s: Silhueta, cx = 1): string {
   const dir = controleQuePassaPor(cx + s.peitoL, cx + s.quadrilL, cx + s.cinturaL)
@@ -96,6 +138,43 @@ export function caminhoDoTronco(s: Silhueta, cx = 1): string {
     `L ${cx - s.quadrilL} ${s.quadrilY}`,
     // E o lado esquerdo de volta.
     `Q ${esq} ${s.cinturaY} ${cx - s.peitoL} ${s.peitoY}`,
+    "Z",
+  ].join(" ")
+}
+
+/**
+ * O capuz caído atrás da nuca — a silhueta que só o moletom tem.
+ *
+ * Ele sai POR FORA da linha do ombro de propósito. Desenhado por dentro do
+ * tronco (como era antes, uma mancha mais escura), some no tamanho da cena: o
+ * que se enxerga de longe é o contorno mudar, não a cor mudar.
+ */
+export function caminhoDoCapuz(s: Silhueta, cx = 1, pescocoY = -34): string {
+  const L = s.ombroL + 2.6
+  return [
+    `M ${cx - L} ${s.ombroY + 1.5}`,
+    `Q ${cx - L - 0.8} ${pescocoY - 4} ${cx} ${pescocoY - 5.2}`,
+    `Q ${cx + L + 0.8} ${pescocoY - 4} ${cx + L} ${s.ombroY + 1.5}`,
+    `Q ${cx} ${s.ombroY + 5} ${cx - L} ${s.ombroY + 1.5}`,
+    "Z",
+  ].join(" ")
+}
+
+/**
+ * A gola levantada da jaqueta: dois cantos que passam do ombro, junto ao
+ * pescoço. É pouco pano, mas é pano ACIMA da linha do ombro — e é isso que o
+ * olho pega antes de qualquer detalhe interno.
+ */
+export function caminhoDaGolaLevantada(s: Silhueta, cx = 1): string {
+  const L = s.ombroL
+  return [
+    `M ${cx - L} ${s.ombroY + 0.5}`,
+    `L ${cx - L * 0.42} ${s.ombroY - 3.4}`,
+    `L ${cx - L * 0.3} ${s.ombroY + 0.5}`,
+    "Z",
+    `M ${cx + L} ${s.ombroY + 0.5}`,
+    `L ${cx + L * 0.42} ${s.ombroY - 3.4}`,
+    `L ${cx + L * 0.3} ${s.ombroY + 0.5}`,
     "Z",
   ].join(" ")
 }

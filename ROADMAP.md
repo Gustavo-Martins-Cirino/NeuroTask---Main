@@ -931,11 +931,27 @@ sobrou a ideia (espiral de Fibonacci, repulsão pelo cursor), não uma linha.
 > conferidas no código, e a régua final é o build da Vercel + o olho do Gustavo no deploy.
 > Os óculos e as mangas são um chute geométrico — se destoarem, é ajuste fino, não redesenho.
 
-- [ ] **Silhueta própria por roupa e por cabelo.** As quatro roupas ainda são o mesmo
-      tronco com um detalhe fino que quase some no tamanho de render, e "cacheado" são 7
-      círculos chapados. Dar silhueta de verdade (gola, barra, capuz atrás da nuca;
-      contorno de cabelo em vez de bolinhas) é **redesenho, não ajuste** — fora do "só
-      polir", entra se o boneco continuar valendo o investimento.
+> **Silhueta por roupa e por cabelo: feita (29/08).** O item avisava que era redesenho e
+> não ajuste — foi, e o critério que guiou tudo é um só: **o que sobrevive ao tamanho é o
+> CONTORNO**, não o detalhe interno. No tamanho em que o boneco aparece na cena, uma listra
+> de zíper e um V de gola somem, e as quatro roupas viram a mesma blusa em quatro cores.
+>
+> Por isso a roupa entra nas MEDIDAS, antes de o tronco ser desenhado
+> (`silhuetaComRoupa`): terno com ombreira (o ombro mais largo das quatro), moletom folgado
+> que some com a cintura, jaqueta que encorpa o tronco e para na barra com o quadril de
+> fora, e a camiseta como régua — ela não mexe em nada, e é contra ela que as outras se
+> leem. O capuz do moletom e a gola da jaqueta saem POR FORA da linha do ombro; por dentro,
+> como estavam, eles sumiam.
+>
+> **O cacheado deixou de ser sete discos soltos** e virou um contorno único de borda
+> ondulada (`lib/avatar-cabelo.ts`). O que faz cabelo cacheado ler como cabelo é a borda,
+> não bolinhas: sete círculos da mesma cor viram uma mancha com caroços, com um vinco onde
+> dois se encostam. O raio de cada arquinho sai da geometria do arco — (c²/4 + h²)/2h —, e
+> chutá-lo achata o cacho ou o estoura em bico.
+>
+> **Dois testes que valem mais que os outros**: as quatro roupas têm de gerar quatro
+> contornos DIFERENTES no mesmo corpo (era exatamente o defeito), e nenhuma pode inverter a
+> silhueta do corpo — engordar não transforma o V masculino em ampulheta.
 > **Cor da calça: entregue (29/08).** Linha de swatches no editor, com tons de CALÇA e não
 > os da camisa — jeans, preto, grafite, cáqui, oliva e marrom. Repetir a paleta da roupa
 > daria seis camisas nas pernas, e o roxo de camiseta não é uma calça que alguém veste.

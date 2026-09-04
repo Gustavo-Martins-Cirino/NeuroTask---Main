@@ -1,6 +1,10 @@
 import { type AvatarConfig } from "@/lib/avatar"
 import { corDaCalca } from "@/lib/avatar-calca"
-import { caminhoDoQuadrilSentado, caminhoDoTronco, silhuetaDe } from "@/lib/avatar-silhueta"
+import {
+  caminhoDaGolaLevantada, caminhoDoCapuz, caminhoDoQuadrilSentado, caminhoDoTronco,
+  silhuetaComRoupa, silhuetaDe,
+} from "@/lib/avatar-silhueta"
+import { caminhoDeCachos } from "@/lib/avatar-cabelo"
 import { type AvatarAccessories } from "@/lib/avatar-accessories"
 import { cn } from "@/lib/utils"
 
@@ -162,7 +166,10 @@ export function AvatarFigure({
   // As medidas do corpo saem de lib/avatar-silhueta. Elas eram o MESMO desenho
   // em V nas duas versões, uma só mais estreita que a outra — daí "a feminina
   // só está mais magra". Agora a diferença é de forma: V contra ampulheta.
-  const sil = silhuetaDe(body)
+  // A roupa entra nas MEDIDAS, antes de o tronco ser desenhado: as quatro eram
+  // o mesmo tronco com um detalhe fino por dentro, e detalhe fino some no
+  // tamanho em que o boneco aparece na cena. O que sobrevive é o contorno.
+  const sil = silhuetaComRoupa(silhuetaDe(body), outfit)
   const hy = sil.cabecaY
   const shoulderY = sil.peitoY
   // O braço sai do ponto mais LARGO do tronco, que é onde ficaria a axila.
@@ -258,14 +265,22 @@ export function AvatarFigure({
       {/* tronco de costas — o contorno sai das medidas, e é ele que separa as
           duas silhuetas: V no masculino, ampulheta no feminino. */}
       <path d={caminhoDoTronco(sil, hx)} fill={outfitColor} />
+      {/* Capuz caído atrás da nuca: a silhueta que só o moletom tem. Antes era
+          uma mancha mais escura DENTRO do tronco, que some de longe. */}
       {outfit === "moletom" && (
-        <path d={`M ${hx - 7} -32 q 8 6 16 0 l -1.5 9 q -6.5 4 -13 0 z`} fill={darken(outfitColor, 20)} />
+        <path d={caminhoDoCapuz(sil, hx)} fill={darken(outfitColor, 16)} />
       )}
       {outfit === "jaqueta" && (
         <g>
+          {/* Gola levantada: pouco pano, mas pano ACIMA do ombro. */}
+          <path d={caminhoDaGolaLevantada(sil, hx)} fill={darken(outfitColor, 22)} />
+          {/* Barra elástica — a jaqueta acaba aqui, e o quadril fica de fora. */}
+          <rect
+            x={hx - sil.quadrilL} y={sil.quadrilY - 3.2}
+            width={sil.quadrilL * 2} height="3.2" rx="1.2"
+            fill={darken(outfitColor, 18)}
+          />
           <line x1={hx + 1} y1="-31" x2={hx + 1} y2="-2" stroke={darken(outfitColor, 26)} strokeWidth="2" />
-          <line x1={ombroEsq + 1.5} y1="-24" x2={ombroEsq + 3.5} y2="-2" stroke={darken(outfitColor, 18)} strokeWidth="1.6" />
-          <line x1={ombroDir - 1.5} y1="-24" x2={ombroDir - 3.5} y2="-2" stroke={darken(outfitColor, 18)} strokeWidth="1.6" />
         </g>
       )}
       {outfit === "terno" && (
@@ -302,16 +317,11 @@ export function AvatarFigure({
           <path d={`M ${hx + 11} ${hy} q 1.5 6 -1 9.5 q -2 -5 1 -9.5 z`} />
         </g>
       )}
+      {/* Cacheado: um contorno ÚNICO de borda ondulada, e não sete discos
+          soltos. Sete círculos da mesma cor viravam uma mancha com caroços no
+          tamanho de render, com um vinco onde dois se encostavam. */}
       {hairStyle === "cacheado" && (
-        <g fill={hairColor}>
-          <circle cx={hx - 7} cy={hy - 5} r="5.5" />
-          <circle cx={hx + 1} cy={hy - 9} r="6" />
-          <circle cx={hx + 8} cy={hy - 4} r="5.5" />
-          <circle cx={hx - 9} cy={hy + 3} r="4.5" />
-          <circle cx={hx + 10} cy={hy + 3} r="4.5" />
-          <circle cx={hx - 3} cy={hy + 8} r="4" />
-          <circle cx={hx + 4} cy={hy + 8} r="4" />
-        </g>
+        <path d={caminhoDeCachos(hx, hy, 10, 9, 2.4)} fill={hairColor} />
       )}
       {hairStyle === "longo" && (
         <path d={`M ${hx - 8} ${hy + 3} q -2.5 15 0.5 23 q 7 3.5 15 0 q 3 -8 0.5 -23 q -8 4 -16 0 z`} fill={hairColor} />

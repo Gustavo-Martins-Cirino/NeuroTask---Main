@@ -42,8 +42,9 @@ Antes do primeiro login, rode os SQLs em [supabase/](supabase/) — ver
 `pnpm test` (Vitest) cobre os módulos **determinísticos** de `lib/` — os que decidem
 datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `avatar-accessories`,
 `avatar-calca` (a cor da calça e a regra do terno, que vale no bonequinho 2D e no boneco 3D),
-`avatar-silhueta` (as duas silhuetas do corpo — o teste compara RAZÕES, porque o defeito
-antigo era serem o mesmo desenho em dois tamanhos),
+`avatar-cabelo` (o contorno ondulado do cabelo cacheado, que era sete discos soltos),
+`avatar-silhueta` (as duas silhuetas do corpo e o que cada roupa faz com elas — o teste
+compara RAZÕES, porque o defeito antigo era serem o mesmo desenho em dois tamanhos),
 `backward-plan`, `calendar-feed`, `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
 `enquete` (quando perguntar e quando ficar quieto — e que "agora não" cala a enquete

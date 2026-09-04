@@ -86,7 +86,8 @@ frontend/
 │   ├── shop.ts               # Catálogo/estado da loja do Escritório (preços no banco)
 │   ├── avatar-accessories.ts # Item da loja → chapéu/óculos (puro; usado pelo 2D e pelo 3D)
 │   ├── avatar-calca.ts       # Cor da calça + a regra do terno (puro; 2D e 3D leem a mesma)
-│   ├── avatar-silhueta.ts    # Medidas do corpo M/F: V contra ampulheta, não largura (puro)
+│   ├── avatar-silhueta.ts    # Medidas do corpo M/F + o que cada roupa faz com elas (puro)
+│   ├── avatar-cabelo.ts      # Contorno ondulado do cabelo cacheado (puro)
 │   ├── routine-insights.ts   # Rotina aprendida: sugestões determinísticas de rotina
 │   ├── admin.ts              # Agregações do painel do dono (puro, sem Supabase)
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
