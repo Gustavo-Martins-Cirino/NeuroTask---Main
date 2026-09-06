@@ -905,6 +905,64 @@ describe("bichos deitados", () => {
   })
 })
 
+describe("dois itens não podem ocupar o mesmo lugar", () => {
+  // O relógio atravessando o quadro (25/08) não foi achado por teste: foi o
+  // Gustavo que viu. Isto é a rede que faltava — e ela varre TODOS os níveis,
+  // porque a sala cresce em degraus e boa parte dos itens tem posição fixa.
+  //
+  // Cada item da loja é um grupo de malhas com o mesmo prefixo. Peças do mesmo
+  // item se encostam de propósito; peças de itens DIFERENTES, não.
+  const TUDO: EscritorioExtras = {
+    janela: true, tapete: true, plantaPequena: true, plantaGrande: true, luminaria: true,
+    estante: true, sofa: true, poltrona: true, mesaCentro: true, quadro: true, neon: true,
+    trofeu: true, gato: true, camaCachorro: true, setup: "duplo", relogio: true,
+    prateleira: true, ledRgb: true,
+  }
+
+  const GRUPOS = [
+    "Quadro_", "Relogio_", "Janela_", "Neon_", "Prateleira_", "Estante_", "Sofa_",
+    "Poltrona_", "MesaCentro_", "Tapete", "Planta_Grande_", "Planta_Pequena_",
+    "Gato_", "Cama_Gato_", "Cama_Cachorro_", "Trofeu_", "Luminaria_", "Led_",
+  ]
+
+  /** Pares que se tocam por projeto — o bicho fica NA cama, a cama fica NO tapete. */
+  const COMBINA = new Set(["Cama_Gato_|Gato_", "Cama_Gato_|Tapete", "Tapete|Cama_Gato_", "Gato_|Cama_Gato_"])
+
+  function caixaDoGrupo(g: Group, prefixo: string): Box3 | null {
+    const caixa = new Box3()
+    let achou = false
+    g.updateMatrixWorld(true)
+    g.traverse((o) => {
+      if (!(o as Mesh).isMesh || !o.name.startsWith(prefixo)) return
+      achou = true
+      caixa.union(new Box3().setFromObject(o))
+    })
+    return achou ? caixa : null
+  }
+
+  /** Quanto duas caixas se enfiam uma na outra. Positivo = cruzam nos 3 eixos. */
+  function invasao(a: Box3, b: Box3): number {
+    const eixo = (i: "x" | "y" | "z") => Math.min(a.max[i], b.max[i]) - Math.max(a.min[i], b.min[i])
+    return Math.min(eixo("x"), eixo("y"), eixo("z"))
+  }
+
+  it.each([1, 3, 5, 8])("com tudo comprado, nível %i", (nivel) => {
+    const g = buildEscritorio({ nivel, extras: TUDO, cadeira: "gamer" })
+    const caixas = GRUPOS.map((p) => [p, caixaDoGrupo(g, p)] as const).filter(([, c]) => c) as [string, Box3][]
+    const batidas: string[] = []
+    for (let i = 0; i < caixas.length; i++) {
+      for (let j = i + 1; j < caixas.length; j++) {
+        const [na, a] = caixas[i]
+        const [nb, b] = caixas[j]
+        if (COMBINA.has(`${na}|${nb}`)) continue
+        // 2 cm de tolerância: encostar é uma coisa, atravessar é outra.
+        if (invasao(a, b) > 0.02) batidas.push(`${na} × ${nb} (${invasao(a, b).toFixed(3)})`)
+      }
+    }
+    expect(batidas).toEqual([])
+  })
+})
+
 describe("orçamento da cena", () => {
   const malhasDe = (g: Group) => {
     let n = 0

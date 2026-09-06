@@ -617,6 +617,28 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Vida na cena**
 
+> **Varredura de colisão entre itens, em todos os níveis (01/09).** O relógio atravessando o
+> quadro (25/08) não foi achado por teste — foi o Gustavo que viu. Esta é a rede que faltava:
+> monta a sala com TUDO comprado nos quatro tamanhos (níveis 1, 3, 5 e 8) e cruza a caixa de
+> cada item com a de todos os outros. Está em `office-model.test.ts`.
+>
+> **A sala crescer não quebra nada** — o resultado é idêntico nos quatro níveis, porque a
+> zona de trabalho recua junto com a parede. Sobraram três contatos, todos de escala
+> centimétrica, e dois eram de verdade:
+>
+> · a **plantinha** da mesa entrava 4,6 cm no caixilho da janela (ela ficava em x=0,45 e a
+>   janela ocupa de 0,40 a 1,70) — foi para x=0,24;
+> · o **troféu** ficava sob o braço articulado da luminária, e a cúpula descia 2,4 cm dentro
+>   da taça. Mover só em x não resolvia, porque a cúpula avança até x=−0,18: o que libera é
+>   sair em Y, e ele foi para o canto da frente da mesa.
+>
+> O terceiro (a cama do gato sobre o tapete) é de projeto e está na lista de pares que podem
+> se tocar.
+>
+> **Uma armadilha de medição que quase virou bug inventado**: agrupar por prefixo `Planta_`
+> junta a planta do CHÃO com a da MESA numa caixa só, que cobre a mesa inteira e "colide" com
+> tudo. Foram três falsos positivos até separar por item.
+
 - [ ] **Calibrar o realismo com uso real.** A troca pra PBR foi validada em render headless,
       não no olho de quem usa. Ajustar rugosidade/luz conforme o feedback: o alvo é "3D de
       verdade", nem plástico de desenho nem foto.

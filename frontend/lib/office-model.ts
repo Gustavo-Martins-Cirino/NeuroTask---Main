@@ -993,7 +993,9 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     )
   }
   if (extras.plantaGrande) planta(g, "Planta_Grande", [-S + 0.5, S - 0.55, 0], 1.15)
-  if (extras.plantaPequena) planta(g, "Planta_Pequena", [0.45, 1.78 + dy, TAMPO_Z], 0.34)
+  // x=0.24 e não 0.45: a janela ocupa x de 0,40 a 1,70 na parede do fundo, e a
+  // plantinha em 0,45 encostava nela — as folhas entravam 4,6 cm no caixilho.
+  if (extras.plantaPequena) planta(g, "Planta_Pequena", [0.24, 1.78 + dy, TAMPO_Z], 0.34)
 
   // Luminária de arquiteto: haste reta + cúpula espetada não sustentavam mais a
   // cena depois do relógio e da prateleira. Agora o braço é ARTICULADO (duas
@@ -1239,7 +1241,11 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
 
   if (extras.trofeu) {
     const ouro = tmat([0.91, 0.72, 0.23], 0.15, "brilhante")
-    const x = -0.58, y = 1.32 + dy
+    // Canto da FRENTE-esquerda da mesa. Em -0,58 o troféu ficava sob o braço
+    // articulado da luminária, e a cúpula descia 2,4 cm dentro da taça; mover
+    // só em x não resolvia, porque a cúpula avança até x=-0,18. O que libera é
+    // sair em Y: ela ocupa de 1,38 para trás, e aqui o troféu fica na frente.
+    const x = -0.66, y = 1.29 + dy
     g.add(box("Trofeu_Base", [0.1, 0.1, 0.03], [x, y, TAMPO_Z + 0.015], tmat([0.29, 0.21, 0.14])))
     g.add(cyl("Trofeu_Haste", 0.014, 0.06, [x, y, TAMPO_Z + 0.06], ouro))
     g.add(cyl("Trofeu_Taca", 0.028, 0.09, [x, y, TAMPO_Z + 0.135], ouro, undefined, 0.07))
