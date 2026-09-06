@@ -127,6 +127,31 @@ repositório:
 > **Uma regressão minha, pega na segunda passada**: com as bolinhas maiores, "8 itens
 > conquistados" virou "8…". A frase passou a ocupar a linha inteira no celular.
 
+> 🔴 **O "enviar feedback" no celular abria 66px FORA da tela (06/09).** Era o item da sua
+> lista que ainda não tinha sido resolvido, e não era aperto de layout: medido num 390×844, a
+> borda esquerda do painel caía em **-66px**. O campo de escrever e o botão "Problema"
+> começavam em -53 — cortados, e sem rolagem possível, porque o pai tem `overflow-hidden`.
+>
+> A causa é geométrica: o painel é ancorado pela DIREITA no ícone, e o ícone não está na
+> borda da tela — tem o tema e o avatar depois dele. Sobram 286px à esquerda para um painel
+> de 352. No desktop nunca apareceu porque lá sobra espaço de sobra.
+>
+> **A saída óbvia era `fixed`, e ela seria uma armadilha**: o cabeçalho tem `backdrop-blur`, e
+> `backdrop-filter` faz do elemento o bloco de contenção dos filhos `fixed` — o painel não
+> escaparia para a viewport, e a correção pareceria funcionar por acidente do cabeçalho ser
+> largo. Então o painel continua ancorado no ícone e só ESCORREGA para a direita o que falta
+> (`lib/painel-ancorado.ts`, com teste). A medida sai no clique, não num efeito depois de
+> montar: o framer captura a caixa no primeiro quadro para o morph, e um ajuste atrasado
+> viraria um pulo lateral no meio da animação. E vai em `right`, não em `transform`, que é o
+> que o framer usa para animar.
+>
+> Junto, os alvos de toque do painel, que estavam no mesmo erro dos botões "Comprar": o ✕
+> tinha 28px e os três tipos 30. Foram para 36 no celular, mantendo 28/30 no mouse. Alvos
+> abaixo de 32px no painel, a 390: de 4 para **zero**.
+>
+> Conferido depois em 390, 768 e 1280: painel inteiro na tela nos três, sem rolagem
+> horizontal, morph ainda animando e o desktop sem mudança nenhuma.
+
 > **Varredura do guia de boas-vindas (06/09): o guia passou, e atrás dele havia um bug.**
 > O guia foi aberto como conta nova em 390×844 e em 1280×900: os quatro passos cabem nos
 > dois, sem rolagem horizontal e sem corte.

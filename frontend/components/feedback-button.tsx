@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { MessageSquarePlus, Loader2, Bug, Lightbulb, MessageCircle, X } from "lucide-react"
 import { toast } from "sonner"
 import { colunaFaltante, envioSemColuna, explicaErro, MAX_TENTATIVAS } from "@/lib/feedback"
+import { ancorarPainel, LARGURA_PAINEL, type CaixaAncorada } from "@/lib/painel-ancorado"
 
 // Botão de feedback dentro do app (Fase 5 — fechar o ciclo). Grava junto a ROTA
 // atual e o COMMIT (via /api/version) pra dar pra reproduzir o que a pessoa viu.
@@ -51,6 +52,27 @@ export function FeedbackButton() {
   const semMovimento = useReducedMotion()
   const supabase = createClient()
   const caixa = useRef<HTMLDivElement>(null)
+  const [ancora, setAncora] = useState<CaixaAncorada>({ largura: LARGURA_PAINEL, deslocamento: 0 })
+
+  // A medida sai NO CLIQUE, e não num efeito depois de montar: o framer captura
+  // a caixa do painel no primeiro quadro para animar o morph, e um ajuste que
+  // chegasse depois viraria um pulo lateral no meio da animação.
+  const medir = () => {
+    const r = caixa.current?.getBoundingClientRect()
+    if (r) setAncora(ancorarPainel(r.right, document.documentElement.clientWidth))
+  }
+
+  const abrir = () => {
+    medir()
+    setOpen(true)
+  }
+
+  // Girar o telefone com o painel aberto muda a conta inteira.
+  useEffect(() => {
+    if (!open) return
+    window.addEventListener("resize", medir)
+    return () => window.removeEventListener("resize", medir)
+  }, [open])
 
   // Sem diálogo, fechar passa a ser responsabilidade nossa: Esc e clique fora.
   // O `pointerdown` (e não `click`) fecha antes de o alvo processar o clique —
@@ -147,7 +169,7 @@ export function FeedbackButton() {
           <motion.button
             key="gatilho"
             layoutId={MORPH}
-            onClick={() => setOpen(true)}
+            onClick={abrir}
             title="Enviar feedback"
             aria-expanded={false}
             // `borderRadius` no style, e não numa classe: durante o morph o
@@ -168,9 +190,13 @@ export function FeedbackButton() {
             layoutId={MORPH}
             role="dialog"
             aria-label="Enviar feedback"
-            style={{ borderRadius: 16 }}
+            // `right` negativo empurra o painel para fora do botão, que é o
+            // que o traz de volta para dentro da tela no celular. Vai no style e
+            // não numa classe porque o valor é medido — e não em `transform`,
+            // que é justamente o que o framer usa para animar o morph.
+            style={{ borderRadius: 16, width: ancora.largura, right: -ancora.deslocamento }}
             transition={transicao}
-            className="absolute right-0 top-0 z-50 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden border border-border/60 bg-popover shadow-xl"
+            className="absolute top-0 z-50 overflow-hidden border border-border/60 bg-popover shadow-xl"
           >
             {/* O conteúdo entra depois que a superfície já tem quase o tamanho
                 final. Aparecendo junto, ele é desenhado dentro de um retângulo
@@ -186,7 +212,7 @@ export function FeedbackButton() {
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="-mr-1 flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className="-mr-1 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:h-7 sm:w-7"
                 >
                   <X className="h-4 w-4" />
                   <span className="sr-only">Fechar</span>
@@ -200,7 +226,7 @@ export function FeedbackButton() {
                     type="button"
                     onClick={() => setKind(k.value)}
                     className={cn(
-                      "flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-1.5 text-xs font-medium transition-colors",
+                      "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border text-xs font-medium transition-colors sm:h-auto sm:py-1.5",
                       kind === k.value
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border/50 text-muted-foreground hover:border-border"
@@ -226,7 +252,7 @@ export function FeedbackButton() {
                 <p className="flex-1 text-[11px] leading-tight text-muted-foreground/70">
                   Vai junto: a tela atual e a versão do app.
                 </p>
-                <Button type="submit" size="sm" disabled={loading || !message.trim()}>
+                <Button type="submit" size="sm" className="h-9 sm:h-8" disabled={loading || !message.trim()}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Enviar
                 </Button>
