@@ -127,6 +127,30 @@ repositório:
 > **Uma regressão minha, pega na segunda passada**: com as bolinhas maiores, "8 itens
 > conquistados" virou "8…". A frase passou a ocupar a linha inteira no celular.
 
+> **Varredura do guia de boas-vindas (06/09): o guia passou, e atrás dele havia um bug.**
+> O guia foi aberto como conta nova em 390×844 e em 1280×900: os quatro passos cabem nos
+> dois, sem rolagem horizontal e sem corte.
+>
+> ⚠️ **Nenhuma varredura anterior tinha visto UI que depende de usuário logado**, e isso
+> agora está claro: o cliente SSR do Supabase lê a sessão de um COOKIE, e sem ele nem chega a
+> chamar `/auth/v1/user`. Toda tela abria, nada acusava erro — e o que só aparece para quem
+> tem sessão (este guia, entre outros) simplesmente não montava. Forjar o cookie
+> `sb-<ref>-auth-token` (`"base64-" + base64(JSON.stringify(sessao))`) é o que destranca.
+>
+> 🔴 **O achado: "Boa tarde, pai".** A saudação do dashboard chamava pelo pedaço do e-mail
+> alguém que se chama Carlos — enquanto o avatar, na MESMA tela, mostrava "CC" certinho. São
+> duas chaves em `user_metadata` e ninguém escolheu isso: o cadastro por e-mail grava `name`,
+> Google e GitHub gravam `full_name`. Dashboard e Configurações liam só `name`.
+>
+> Como o login social entrou nesta semana, isso valia para **todo mundo que entrasse por
+> Google ou GitHub** — e o campo Nome, em Configurações, nascia vazio para essas pessoas,
+> como se o app tivesse perdido o nome delas.
+>
+> Virou `lib/nome-usuario.ts` (com teste), lida pelos três lugares. A ordem é decisão, não
+> acaso: **o nome que a pessoa escolheu vence o do provedor**. O cabeçalho fazia o contrário
+> (`full_name || name`), e por ali editar o nome nas Configurações não surtia efeito — a tela
+> gravava `name` e o cabeçalho continuava lendo `full_name`.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

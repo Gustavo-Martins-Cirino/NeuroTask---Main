@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useTheme } from "next-themes"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { nomeDeExibicao } from "@/lib/nome-usuario"
 import { motion } from "framer-motion"
 import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Send, CalendarSync, CalendarClock } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
@@ -251,7 +252,9 @@ export default function SettingsPage() {
     setMounted(true)
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        const n = user.user_metadata?.name || ""
+        // Sem ler `full_name`, o campo nascia vazio para quem entrou por Google ou
+        // GitHub — e parecia que o app tinha perdido o nome da pessoa.
+        const n = nomeDeExibicao(user.user_metadata, null)
         setName(n)
         setInitialName(n)
         setEmail(user.email ?? "")

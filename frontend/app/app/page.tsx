@@ -7,6 +7,7 @@ import { MetricasDashboard } from "@/components/metricas-dashboard"
 import { Enquete } from "@/components/enquete"
 import { SplitGreeting } from "@/components/split-greeting"
 import { saudacaoPorHora } from "@/lib/saudacao"
+import { primeiroNome } from "@/lib/nome-usuario"
 import { Calendar, CheckSquare, Bot, ArrowRight, Clock, Target, ListTodo, LayoutDashboard, Bell, Brain } from "lucide-react"
 import { fetchActivityInsights, type ActivityInsight } from "@/lib/activity-log"
 import Link from "next/link"
@@ -98,7 +99,7 @@ export default function DashboardPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          setUserName(user.user_metadata?.name || user.email?.split("@")[0] || "")
+          setUserName(primeiroNome(user.user_metadata, user.email))
         }
       } finally {
         setPerfilPronto(true)

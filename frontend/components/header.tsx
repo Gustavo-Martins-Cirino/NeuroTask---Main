@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { nomeDeExibicao } from "@/lib/nome-usuario"
 import { Moon, Sun, LogOut, User } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
@@ -48,7 +49,9 @@ export function Header({ title, icon, children }: HeaderProps) {
         const meta = user.user_metadata ?? {}
         setUser({
           email: user.email,
-          name: meta.full_name || meta.name || user.email?.split("@")[0],
+          // A mesma cascata do resto do app: quem editou o nome nas Configurações
+          // vence o que o provedor mandou (ver lib/nome-usuario).
+          name: nomeDeExibicao(meta, user.email),
           foto: meta.foto_perfil || meta.avatar_url || meta.picture || null,
           modo: parseAvatarModo(meta.avatar_modo),
         })

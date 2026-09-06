@@ -29,7 +29,8 @@ describe("iniciaisDoNome", () => {
   })
 
   it("o header manda a parte do e-mail quando não há nome", () => {
-    // header.tsx: user_metadata.name || email.split("@")[0]
+    // O último recurso da cascata de lib/nome-usuario: sem `name` nem
+    // `full_name`, sobra o pedaço do e-mail antes do @.
     expect(iniciaisDoNome("cirinogustavom")).toBe("CI")
     expect(iniciaisDoNome("gustavo.cirino")).toBe("GC")
     expect(iniciaisDoNome("ana_paula")).toBe("AP")
