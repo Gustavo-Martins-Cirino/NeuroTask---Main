@@ -617,6 +617,21 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 
 **Vida na cena**
 
+> **Varredura de conteúdo extremo (01/09): título comprido, palavra sem espaço, nome longo.**
+> Cinco telas, em 390px e 1280px, com o que uma pessoa produz sem querer — um título colado de
+> um e-mail, um nome de arquivo sem espaço nenhum, um nome de pessoa comprido. **Nenhuma tela
+> transbordou**, e as Notas tratam bem os dois casos (trunca com "…" na lista, quebra no
+> corpo). Dois defeitos na tela de Tarefas:
+>
+> · **O título da tela virava "Taref…" no celular.** O rótulo "Nova tarefa" disputava a linha
+>   com o `<h1>` e ganhava — o nome da própria tela ficava ilegível para caber um botão que o
+>   ícone já explica. No celular sobrou só o "+", e "Tarefas" cabe até em 320px.
+> · **Nome de arquivo era cortado na borda do cartão**, sem reticências e sem aviso de que
+>   havia mais texto. E o conserto tem duas partes: `break-words` sozinho NÃO resolve, porque
+>   item de flex tem `min-width: auto` e se recusa a encolher abaixo da palavra inteira —
+>   transborda antes de tentar quebrar. É o `min-w-0` que devolve a ele o direito de encolher.
+>   Só com os dois a palavra quebra (3 linhas em 390px, 5 em 320px).
+
 > **Varredura de colisão entre itens, em todos os níveis (01/09).** O relógio atravessando o
 > quadro (25/08) não foi achado por teste — foi o Gustavo que viu. Esta é a rede que faltava:
 > monta a sala com TUDO comprado nos quatro tamanhos (níveis 1, 3, 5 e 8) e cruza a caixa de

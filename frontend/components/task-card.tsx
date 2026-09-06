@@ -139,7 +139,15 @@ export function TaskCard({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h3 className={cn("font-medium text-foreground", isCompleted && "text-muted-foreground line-through")}>
+          {/* Título sem espaço nenhum — um nome de arquivo, um link colado —
+              era CORTADO na borda do cartão, sem reticências e sem aviso de que
+              havia mais texto.
+              São DUAS classes, e `break-words` sozinho não resolve: item de flex
+              tem `min-width: auto`, então ele se recusa a encolher abaixo da
+              palavra inteira e transborda ANTES de tentar quebrar. O `min-w-0`
+              é o que devolve a ele o direito de encolher; só então a quebra
+              acontece. */}
+          <h3 className={cn("min-w-0 break-words font-medium text-foreground", isCompleted && "text-muted-foreground line-through")}>
             {task.title}
           </h3>
 

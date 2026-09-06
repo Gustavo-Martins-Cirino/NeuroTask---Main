@@ -383,9 +383,14 @@ export default function TasksPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header title="Tarefas" icon={<ListTodo className="h-4 w-4" />}>
-        <Button onClick={() => setDialogOpen(true)} size="sm" className="ml-2">
-          <Plus className="mr-1.5 h-4 w-4" />
-          Nova tarefa
+        {/* Só o ícone no celular. O rótulo disputava a linha com o título da
+            tela e ganhava: numa largura de 390px, "Tarefas" aparecia como
+            "Taref…" — o nome da própria tela ilegível para caber um botão que
+            o ícone já explica. */}
+        <Button onClick={() => setDialogOpen(true)} size="sm" className="ml-2 shrink-0">
+          <Plus className="h-4 w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">Nova tarefa</span>
+          <span className="sr-only sm:hidden">Nova tarefa</span>
         </Button>
       </Header>
 
