@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { formatTime, formatClock, formatHourMinute } from "@/lib/time-format"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight, CalendarDays, ChevronDown, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, CalendarDays, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
 import { fetchRoutine, type RoutineProfile } from "@/lib/routine"
 import { computeWarnings } from "@/lib/calendar-warnings"
 import { alvoDeScroll, partidaDoScroll } from "@/lib/calendar-scroll"
@@ -850,6 +850,8 @@ export default function CalendarPage() {
           >
             <button
               onClick={() => setPanelOpen((o) => !o)}
+              aria-expanded={panelOpen}
+              title={panelOpen ? "Recolher painel" : "Expandir painel"}
               className="flex w-full items-center justify-between p-4"
             >
               <AnimatePresence initial={false}>
@@ -864,7 +866,11 @@ export default function CalendarPage() {
                   </motion.span>
                 )}
               </AnimatePresence>
-              <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", !panelOpen && "-rotate-90")} />
+              {/* O painel encolhe em LARGURA (300 → 56), não em altura: seta para
+                  baixo prometia uma sanfona que não existe. Aberto mostra "<",
+                  que é para onde a folga vai — o calendário ganha o espaço. */}
+              <ChevronLeft className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", !panelOpen && "rotate-180")} />
+              <span className="sr-only">{panelOpen ? "Recolher painel contextual" : "Expandir painel contextual"}</span>
             </button>
 
             <AnimatePresence initial={false}>

@@ -127,6 +127,38 @@ repositório:
 > **Uma regressão minha, pega na segunda passada**: com as bolinhas maiores, "8 itens
 > conquistados" virou "8…". A frase passou a ocupar a linha inteira no celular.
 
+> **O cachorro virou cachorro (06/09), e a medição disse por quê ele era um pão.** O Gustavo
+> viu "não está parecendo muito um cachorro". O rolo da caminha tem topo em **z=0,182**, e
+> focinho (0,180), orelhas (0,174) e patas (0,133) terminavam TODAS abaixo disso: tudo que
+> identifica um cachorro estava escondido dentro da própria cama, e o que sobrava na tela era
+> a elipse lisa do corpo. A manta escura das costas tinha topo em 0,247 contra 0,263 do corpo
+> — estava DENTRO do bicho, e por isso ele era bege liso de ponta a ponta.
+>
+> A regra que ficou: **o que diz "cachorro" mora acima da linha do rolo.** Cabeça, focinho,
+> nariz, olhos, orelhas e patas foram para fora dela; a manta subiu acima do lombo; entraram
+> olhos, peito branco, coxa (a elipse perfeita era metade do problema) e ponta branca no rabo.
+> A cabeça saiu para o lado −Y, o mais perto da câmera: no +Y víamos a nuca.
+>
+> **Dois testes precisaram mudar, e eram eles que amarravam o pãozinho.** `cabeca.max.z <=
+> corpo.max.z + 0.02` obrigava a cabeça a caber dentro da silhueta do corpo — o que separa
+> deitado de sentado não é a cabeça enterrada, é ela não subir num pescoço, então o limite
+> virou proporcional (menos de meia cabeça acima do lombo). E `focinho.max.y > cabeca.max.y`
+> assumia o bicho virado para +Y; com a cabeça do outro lado, a comparação inverteu.
+>
+> Entraram duas redes novas: **toda peça que identifica o cachorro tem de passar do topo do
+> rolo**, e **a manta tem de aparecer por cima do corpo**. São exatamente os dois erros deste
+> caso — nenhum teste os pegava, porque todos olhavam relações entre peças do bicho e nenhum
+> perguntava se a peça era VISÍVEL.
+>
+> Conferido em render de verdade (WebGL, não simulação em canvas 2D — ver a armadilha do
+> ROADMAP), em close e no tamanho que ele tem na tela do app.
+
+> **A seta do Painel Contextual apontava para o lado errado (06/09).** O painel do calendário
+> encolhe em LARGURA (300 → 56 px), e a seta era `ChevronDown`: prometia uma sanfona que não
+> existe. Virou `ChevronLeft` — aberto mostra "<", que é para onde a folga vai (o calendário
+> ganha o espaço), e recolhido gira 180° para "＞". Ganhou junto `aria-expanded` e um rótulo,
+> que não tinha nenhum.
+
 > 🔴 **O "enviar feedback" no celular abria 66px FORA da tela (06/09).** Era o item da sua
 > lista que ainda não tinha sido resolvido, e não era aperto de layout: medido num 390×844, a
 > borda esquerda do painel caía em **-66px**. O campo de escrever e o botão "Problema"

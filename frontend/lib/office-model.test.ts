@@ -862,11 +862,37 @@ describe("bichos deitados", () => {
     expect(corpo.min.z).toBeLessThan(forro.max.z + 0.05)
   })
 
-  it("a cabeça fica BAIXA e apoiada — cabeça erguida é bicho esperando, não dormindo", () => {
+  // Esta regra já foi `cabeca.max.z <= corpo.max.z + 0.02`, e foi ELA que fez o
+  // bicho virar um pãozinho: com a cabeça obrigada a caber dentro da silhueta do
+  // corpo, sobrava uma elipse lisa. O que separa "deitado" de "sentado" não é a
+  // cabeça estar enterrada — é ela não subir numa coluna de pescoço. Então o
+  // limite passou a ser proporcional: pode erguer, mas menos que meia cabeça.
+  it("a cabeça descansa, não sobe em pescoço — deitado, não sentado", () => {
     const g = buildEscritorio({ extras: { camaCachorro: true } })
     const cabeca = caixaMundo(g, "Cachorro_Cabeca")
     const corpo = caixaMundo(g, "Cachorro_Corpo")
-    expect(cabeca.max.z).toBeLessThanOrEqual(corpo.max.z + 0.02)
+    const alturaCabeca = cabeca.getSize(new Vector3()).z
+    expect(cabeca.max.z).toBeLessThan(corpo.max.z + alturaCabeca * 0.5)
+  })
+
+  // A rede que faltava, e que teria pego o pãozinho no dia em que ele nasceu.
+  // O rolo da cama sobe até z≈0,18: focinho, orelhas e patas terminavam TODAS
+  // abaixo disso, escondidas dentro da própria caminha. O corpo aparecia, o
+  // resto não, e o que sobrava era um pão.
+  it("o que diz 'cachorro' fica ACIMA do rolo da cama", () => {
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    const rolo = caixaMundo(g, "Cama_Cachorro_Rolo")
+    for (const n of ["Cachorro_Cabeca", "Cachorro_Focinho", "Cachorro_Nariz",
+                     "Cachorro_Olho_Direita", "Cachorro_Orelha_Direita", "Cachorro_Pata_Direita"]) {
+      expect(caixaMundo(g, n).max.z, n).toBeGreaterThan(rolo.max.z + 0.01)
+    }
+  })
+
+  // A manta tinha topo em 0,247 contra 0,263 do corpo: estava DENTRO do bicho.
+  // Por isso ele era bege liso — a cor que diz "beagle" não chegava à superfície.
+  it("a manta das costas aparece por cima do corpo, não dentro dele", () => {
+    const g = buildEscritorio({ extras: { camaCachorro: true } })
+    expect(caixaMundo(g, "Cachorro_Manta").max.z).toBeGreaterThan(caixaMundo(g, "Cachorro_Corpo").max.z)
   })
 
   it("o focinho descansa em cima das patas", () => {
@@ -874,7 +900,9 @@ describe("bichos deitados", () => {
     const focinho = caixaMundo(g, "Cachorro_Focinho")
     const pata = caixaMundo(g, "Cachorro_Pata_Direita")
     expect(focinho.min.z).toBeGreaterThan(pata.min.z)
-    expect(focinho.max.y).toBeGreaterThan(caixaMundo(g, "Cachorro_Cabeca").max.y)
+    // O cachorro olha para −Y (o lado mais PERTO da câmera; no +Y víamos a
+    // nuca), então "à frente da cabeça" é y MENOR — era o contrário antes.
+    expect(focinho.min.y).toBeLessThan(caixaMundo(g, "Cachorro_Cabeca").min.y)
   })
 
   it("as orelhas caem ao lado da cabeça, e são longas — é a marca da raça", () => {
