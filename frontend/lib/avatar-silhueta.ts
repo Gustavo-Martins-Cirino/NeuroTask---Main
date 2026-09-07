@@ -195,3 +195,92 @@ export function caminhoDoQuadrilSentado(s: Silhueta, cx = 1, ateY = 15): string 
     "Z",
   ].join(" ")
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// O MESMO tronco, em metros, para o boneco 3D da sala
+// ─────────────────────────────────────────────────────────────────────────
+//
+// O boneco da sala não tinha tipo de corpo NENHUM: o tronco era um `box` reto
+// de 32 cm por 24, igual para todo mundo. Quem escolhia o corpo feminino no
+// editor via o masculino sentado na cadeira — a mesma incoerência que o cabelo
+// e os fones já tiveram.
+//
+// E não bastava dar uma silhueta ao feminino: o masculino também não tinha
+// nenhuma. Uma caixa reta não é um V, é uma caixa. Por isso os DOIS passam a
+// sair daqui, das mesmas três relações que o bonequinho 2D usa — ombro contra
+// quadril, a cintura, e a linha do ombro.
+//
+// A âncora é o PEITO MASCULINO: ele vale exatamente a meia-largura que o tronco
+// da sala já tinha (0,16 m). Assim o ponto mais largo do boneco não se mexe, e
+// com ele ficam parados a cabeça, a cadeira e o alcance do braço até o teclado.
+
+/** Meia-largura do tronco masculino no peito, em metros — o que a sala já tinha. */
+export const PEITO_M_METROS = 0.16
+
+/** Metros por unidade do `viewBox` do bonequinho 2D. */
+export const METRO_POR_UNIDADE = PEITO_M_METROS / SILHUETAS.m.peitoL
+
+/**
+ * A folga entre a lateral do peito e o centro da bola do ombro.
+ *
+ * Hoje o ombro está em 0,175 e o peito em 0,16. A folga é o que sobra, e ela
+ * tem de ser mantida: é ela que faz a bola do ombro encostar no tronco em vez
+ * de flutuar ao lado dele quando o peito for mais estreito.
+ */
+export const FOLGA_DO_OMBRO = 0.015
+
+/** Fundo do tronco dividido pela largura, no peito. Mantém a proporção de hoje. */
+const FUNDO_POR_LARGURA = 0.12 / PEITO_M_METROS
+
+export interface NivelDoTronco {
+  /** Altura em z, no espaço do boneco. */
+  z: number
+  /** Meia-largura (eixo X). */
+  meiaLargura: number
+  /** Meia-profundidade (eixo Y). */
+  meioFundo: number
+}
+
+export interface TroncoTresD {
+  /** Do quadril ao ombro, de baixo para cima. */
+  niveis: [NivelDoTronco, NivelDoTronco, NivelDoTronco, NivelDoTronco]
+  /** X do centro da bola do ombro. */
+  xDoOmbro: number
+}
+
+/** Base e topo do tronco em z — o envelope não muda com o tipo de corpo. */
+export const TRONCO_Z_BASE = 0.65
+export const TRONCO_Z_TOPO = 1.07
+
+function nivel(z: number, meiaLargura: number): NivelDoTronco {
+  return { z, meiaLargura, meioFundo: meiaLargura * FUNDO_POR_LARGURA }
+}
+
+/**
+ * O tronco 3D do tipo de corpo pedido.
+ *
+ * As alturas saem das mesmas coordenadas do 2D, reescaladas para caber entre
+ * `TRONCO_Z_BASE` e `TRONCO_Z_TOPO`. O corpo feminino tem a linha do ombro um
+ * pouco mais baixa que o masculino, e é essa reescala que preserva isso: a
+ * distância entre ombro e quadril não é a mesma nos dois desenhos.
+ *
+ * O fundo acompanha a largura em cada nível. Um tronco que afina de frente e
+ * continua com a mesma espessura de lado vira uma tábua de perfil — e é
+ * justamente de perfil que a câmera olha o boneco.
+ */
+export function troncoTresD(corpo: unknown): TroncoTresD {
+  const s = silhuetaDe(corpo)
+  const alcance = s.quadrilY - s.ombroY
+  const altura = TRONCO_Z_TOPO - TRONCO_Z_BASE
+  const zDe = (y: number) => TRONCO_Z_TOPO - ((y - s.ombroY) / alcance) * altura
+  const m = (u: number) => u * METRO_POR_UNIDADE
+  return {
+    niveis: [
+      nivel(zDe(s.quadrilY), m(s.quadrilL)),
+      nivel(zDe(s.cinturaY), m(s.cinturaL)),
+      nivel(zDe(s.peitoY), m(s.peitoL)),
+      nivel(zDe(s.ombroY), m(s.ombroL)),
+    ],
+    xDoOmbro: m(s.peitoL) + FOLGA_DO_OMBRO,
+  }
+}

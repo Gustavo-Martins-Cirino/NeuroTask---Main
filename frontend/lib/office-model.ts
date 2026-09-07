@@ -29,6 +29,7 @@ import {
   type Material,
 } from "three"
 import type { AvatarAccessories } from "./avatar-accessories"
+import { troncoTresD, type NivelDoTronco, type TipoDeCorpo } from "./avatar-silhueta"
 import { texturaCimento, texturaRipado, texturaTijolo, type Cor, type Padrao } from "./office-textura"
 import { distribuirNaParede } from "./office-parede"
 import { PALETA_CIDADE, type FaseDoDia } from "./office-city"
@@ -88,6 +89,32 @@ function cyl(name: string, raio: number, alt: number, pos: V3, material: Materia
   m.name = name
   m.position.set(...pos)
   if (rot) m.rotation.set(...rot)
+  m.castShadow = true
+  m.receiveShadow = true
+  return m
+}
+
+/**
+ * Caixa que AFINA de baixo para cima.
+ *
+ * O `box` do three não afina, e é o afunilamento que separa um V de uma
+ * ampulheta — sem ele todo corpo é a mesma tábua, que era exatamente o caso do
+ * tronco do boneco. Sai de um cilindro de QUATRO lados: girado 45°, as quatro
+ * faces ficam paralelas aos eixos e o cilindro vira uma caixa. A razão entre os
+ * raios de topo e base é o afunilamento; a escala depois transforma o quadrado
+ * em retângulo.
+ */
+function caixaAfunilada(name: string, base: NivelDoTronco, topo: NivelDoTronco, x: number, y: number, material: Material): Mesh {
+  // Num prisma de 4 lados o "raio" vai até o VÉRTICE, e a meia-largura da face
+  // é ele vezes cos(45°). Construindo com meia-face 1, a escala vira a medida.
+  const RAIO = Math.SQRT2
+  const geo = new CylinderGeometry(RAIO * (topo.meiaLargura / base.meiaLargura), RAIO, topo.z - base.z, 4, 1)
+  geo.rotateY(Math.PI / 4)
+  geo.rotateX(Math.PI / 2)
+  geo.scale(base.meiaLargura, base.meioFundo, 1)
+  const m = new Mesh(geo, material)
+  m.name = name
+  m.position.set(x, y, (base.z + topo.z) / 2)
   m.castShadow = true
   m.receiveShadow = true
   return m
@@ -1458,6 +1485,9 @@ export type PersonagemAcessorios = AvatarAccessories
 export interface PersonagemVisual {
   cabelo?: "curto" | "franja" | "cacheado" | "longo" | "coque" | "raspado"
   fones?: boolean
+  /** Tipo de corpo escolhido no editor. Sem ele, o masculino — que é o que a
+   *  sala já mostrava para todo mundo. */
+  corpo?: TipoDeCorpo
 }
 
 const CENTRO_Y = 0.9
@@ -1522,6 +1552,17 @@ export const LINHA_DO_CABELO = 1.32
 // no fundo do movimento e não atravessa. Antes a mão parava em y=1.16, z=0.82:
 // 16 cm ATRÁS do teclado e ao lado dele (x=0.2, fora dos ±0.16 das teclas). O
 // boneco não deixava de digitar por falta de animação — ele nem alcançava.
+/**
+ * O quanto o quadril sentado passa da base do tronco.
+ *
+ * Sentado o quadril se espalha, então ele é um pouco mais largo que a silhueta
+ * em pé — mas pouco. A primeira tentativa preservou o NÚMERO antigo (0,155)
+ * contra uma base de tronco que tinha encolhido para 0,128, e o que apareceu
+ * foi um degrau de 2,7 cm de cada lado. O que precisa ser preservado é a
+ * relação, não a medida.
+ */
+const FOLGA_DO_QUADRIL_SENTADO = 0.012
+
 const OMBRO: [number, number, number] = [0.175, CENTRO_Y, 1.0]        // fora do torso (±0.16)
 const COTOVELO: [number, number, number] = [0.16, CENTRO_Y + 0.15, 0.8]
 const MAO: [number, number, number] = [0.09, CENTRO_Y + 0.39, 0.9]    // dentro das teclas
@@ -1547,8 +1588,24 @@ export function buildPersonagem(
   // direto do canto da caixa. Aprofundar já tira metade do "achatado"; o resto é
   // o ombro, que agora é uma bola entre o tronco e o braço — sem ela o braço é um
   // palito espetado numa quina, e nenhuma espessura de braço conserta isso.
-  g.add(box("Quadril", [0.31, 0.25, 0.19], [0, CENTRO_Y, 0.555], mCal))
-  g.add(box("Torso", [0.32, 0.24, 0.42], [0, CENTRO_Y, 0.86], mCam))
+  // O tronco sai da MESMA silhueta do bonequinho 2D (lib/avatar-silhueta): três
+  // trechos afunilados, do quadril ao ombro. Antes era uma caixa reta de 32×24,
+  // igual para todo mundo — quem escolhia o corpo feminino no editor via o
+  // masculino na cadeira, e o masculino, por sua vez, não era um V, era uma
+  // tábua. O peito masculino continua valendo 0,16, que é o que a sala já
+  // tinha: é a âncora que mantém cabeça, cadeira e alcance do braço parados.
+  const tronco = troncoTresD(visual.corpo)
+  const [nQuadril, nCintura, nPeito, nOmbro] = tronco.niveis
+  // Sentado, o quadril se espalha para além da silhueta em pé. A folga é a que
+  // o boneco já tinha (0,155 contra 0,128), preservada como distância para o
+  // masculino não mudar e o feminino herdar o quadril mais largo.
+  g.add(box("Quadril", [(nQuadril.meiaLargura + FOLGA_DO_QUADRIL_SENTADO) * 2, 0.25, 0.19], [0, CENTRO_Y, 0.555], mCal))
+  const torso = new Group()
+  torso.name = "Torso"
+  torso.add(caixaAfunilada("Torso_Baixo", nQuadril, nCintura, 0, CENTRO_Y, mCam))
+  torso.add(caixaAfunilada("Torso_Meio", nCintura, nPeito, 0, CENTRO_Y, mCam))
+  torso.add(caixaAfunilada("Torso_Alto", nPeito, nOmbro, 0, CENTRO_Y, mCam))
+  g.add(torso)
   // Pescoço de PELE, com a gola da camisa por cima: antes ele era da cor da
   // camisa, então a cabeça saía direto de um tubo de tecido.
   g.add(cyl("Gola", 0.082, 0.035, [0, CENTRO_Y, 1.078], mCam))
@@ -1644,10 +1701,13 @@ export function buildPersonagem(
 
   for (const lado of [1, -1]) {
     const suf = lado === 1 ? "Direito" : "Esquerdo"
-    const ombro: V3 = [lado * OMBRO[0], OMBRO[1], OMBRO[2]]
-    const cotovelo: V3 = [lado * COTOVELO[0], COTOVELO[1], COTOVELO[2]]
+    // Ombro e cotovelo recuam junto com o peito; a MÃO não, porque ela está
+    // apoiada no teclado e o teclado não anda com o tipo de corpo.
+    const recuo = OMBRO[0] - tronco.xDoOmbro
+    const ombro: V3 = [lado * (OMBRO[0] - recuo), OMBRO[1], OMBRO[2]]
+    const cotovelo: V3 = [lado * (COTOVELO[0] - recuo), COTOVELO[1], COTOVELO[2]]
     const mao: V3 = [lado * MAO[0], MAO[1], MAO[2]]
-    g.add(sph(`Ombro_${suf}`, 0.06, [lado * 0.166, CENTRO_Y, 1.005], mCam))
+    g.add(sph(`Ombro_${suf}`, 0.06, [lado * (0.166 - recuo), CENTRO_Y, 1.005], mCam))
     g.add(segmento(`Braco_${suf}`, ombro, cotovelo, 0.05, mCam))
     // Antebraço e mão num grupo com origem no COTOVELO: girar esse grupo em X
     // é exatamente o gesto de digitar (a mão sobe e desce em arco). É por este

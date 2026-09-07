@@ -377,8 +377,34 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > O quadril sentado saiu da mesma medida do tronco: com o número cravado de antes, o quadril
 > largo do corpo feminino terminaria num bumbum de outra largura e a emenda apareceria.
 >
-> **O boneco 3D da sala continua sem tipo de corpo** — `buildPersonagem` não recebe `body`.
-> Fica anotado: de longe e quase de perfil ele pesa menos, mas a incoerência existe.
+> **O boneco da sala ganhou tipo de corpo (06/09) — e o masculino também não tinha um.** O
+> item anotado aqui era "o 3D ignora o `body` do editor". Ao abrir, o buraco era maior: o
+> tronco da sala era um `box` reto de 32×24 para todo mundo. Não faltava só o feminino;
+> **faltava silhueta**, e uma caixa reta não é um V, é uma caixa.
+>
+> Os dois passaram a sair da MESMA `lib/avatar-silhueta` que o bonequinho 2D usa — três
+> trechos afunilados, do quadril ao ombro, com as alturas reescaladas para o envelope do 3D.
+> O peito masculino continua valendo 0,16, que é o que a sala já tinha: é a âncora que mantém
+> cabeça, cadeira e alcance do braço parados. O `box` do three não afina, então entrou
+> `caixaAfunilada` — um cilindro de quatro lados girado 45°, que vira uma caixa que estreita.
+>
+> **Duas correções que só apareceram porque foram medidas:**
+>
+> · **Um degrau de 2,7 cm no quadril.** Ao preservar o NÚMERO antigo do quadril sentado
+>   (0,155) contra uma base de tronco que encolheu para 0,128, criei uma prateleira que não
+>   existia antes. O que precisava ser preservado era a RELAÇÃO — a folga virou 0,012.
+> · **A bola do ombro ficou para trás.** Ela estava cravada em 0,166 enquanto a junta do braço
+>   recuava com o peito: num tronco mais estreito, flutuaria ao lado do corpo. O primeiro
+>   teste que escrevi não pegou — cobrar "encosta no tronco e sobra para fora" é satisfeito
+>   por uma bola grande mesmo fora de lugar. O que prende é a DIFERENÇA entre os dois corpos
+>   ser igual à diferença entre os dois peitos.
+>
+> A mão NÃO recua: ela está no teclado, e o teclado não anda com o tipo de corpo. Só ombro e
+> cotovelo se movem. Há teste — e ele só passou depois de resolver as matrizes de mundo: a
+> mão mora dentro do pivô do antebraço, e medi-la sem isso devolve a posição relativa ao
+> cotovelo, que muda de propósito.
+>
+> Conferido em render nos dois corpos, no ângulo da câmera do app e de frente.
 > 🔴 **Três das quatro ações eram INVISÍVEIS no celular (31/08).** Não era diálogo apertado
 > como eu supus: a estrela de favoritar e o "…" que guarda **Editar e Excluir** nasciam
 > `opacity-0` e só apareciam no `group-hover`. Hover não existe em toque — e o `hover:` do

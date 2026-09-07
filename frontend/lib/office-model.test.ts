@@ -502,6 +502,59 @@ describe("móveis: poltrona e mesa de centro", () => {
 describe("corpo do boneco", () => {
   const caixa = (nome: string) => new Box3().setFromObject(malha(boneco({}), nome), true)
 
+  // O boneco da sala não tinha tipo de corpo NENHUM: o tronco era um `box` reto
+  // de 32×24, igual para todo mundo. Quem escolhia o corpo feminino no editor
+  // via o masculino sentado na cadeira — e o masculino, por sua vez, não era um
+  // V, era uma tábua. Os dois passaram a sair de lib/avatar-silhueta.
+  describe("o tronco tem tipo de corpo, e a diferença é de FORMA", () => {
+    const largura = (corpo: "m" | "f", peca: string) =>
+      new Box3()
+        .setFromObject(malha(buildPersonagem({}, {}, { corpo }), peca), true)
+        .getSize(new Vector3()).x
+
+    it("no masculino o alto do tronco é o mais largo — é um V", () => {
+      expect(largura("m", "Torso_Alto")).toBeGreaterThan(largura("m", "Torso_Baixo"))
+    })
+
+    it("no feminino é a base — o quadril passa o ombro, e vira ampulheta", () => {
+      expect(largura("f", "Torso_Baixo")).toBeGreaterThan(largura("f", "Torso_Alto"))
+    })
+
+    it("sem tipo de corpo, o boneco é o masculino — que é o que a sala mostrava", () => {
+      const semTipo = new Box3().setFromObject(malha(buildPersonagem(), "Torso"), true)
+      const masculino = new Box3().setFromObject(malha(buildPersonagem({}, {}, { corpo: "m" }), "Torso"), true)
+      expect(semTipo.getSize(new Vector3()).x).toBeCloseTo(masculino.getSize(new Vector3()).x, 6)
+    })
+
+    it("a bola do ombro RECUA junto com o peito", () => {
+      // A primeira versão deixou a bola cravada em 0,166 enquanto a junta do
+      // braço recuava: num tronco mais estreito ela flutuaria ao lado do corpo.
+      // Cobrar só "encosta e sobra" não pegava isso — a bola grande satisfazia
+      // as duas pontas mesmo fora de lugar. O que prende é a DIFERENÇA.
+      const centroDoOmbro = (corpo: "m" | "f") =>
+        new Box3()
+          .setFromObject(malha(buildPersonagem({}, {}, { corpo }), "Ombro_Direito"), true)
+          .getCenter(new Vector3()).x
+      const recuoDaBola = centroDoOmbro("m") - centroDoOmbro("f")
+      const recuoDoPeito = (largura("m", "Torso_Alto") - largura("f", "Torso_Alto")) / 2
+      expect(recuoDaBola).toBeCloseTo(recuoDoPeito, 6)
+      expect(recuoDaBola).toBeGreaterThan(0.02)
+    })
+
+    it("a mão não sai do teclado quando o corpo muda", () => {
+      // Ombro e cotovelo recuam com o peito; a mão fica, porque o teclado fica.
+      //
+      // A mão mora DENTRO do pivô do antebraço, então medi-la sem atualizar as
+      // matrizes devolve a posição relativa ao cotovelo — que muda de propósito.
+      // `caixaMundo` é quem resolve o mundo antes de medir.
+      const mao = (corpo: "m" | "f") =>
+        caixaMundo(buildPersonagem({}, {}, { corpo }), "Mao_Direito").getCenter(new Vector3())
+      expect(mao("f").x).toBeCloseTo(mao("m").x, 6)
+      expect(mao("f").y).toBeCloseTo(mao("m").y, 6)
+      expect(mao("f").z).toBeCloseTo(mao("m").z, 6)
+    })
+  })
+
   it("o tronco não é uma tábua: o fundo acompanha a largura", () => {
     // Era 32 cm de largura por 20 de fundo. De perfil — que é de onde a câmera
     // olha — uma tábua dessas some.

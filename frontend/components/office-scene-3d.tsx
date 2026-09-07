@@ -151,14 +151,17 @@ function coresDoAvatar(avatar?: AvatarConfig | null): PersonagemCores {
   return c
 }
 
-// O que o editor decide e o boneco da sala ignorava: estilo de cabelo e fones.
-// O bonequinho 2D já desenhava os dois, então quem escolhia cacheado com fones
-// via uma coisa na prévia e outra na cadeira.
+// O que o editor decide e o boneco da sala ignorava: estilo de cabelo, fones e
+// TIPO DE CORPO. O bonequinho 2D já desenhava os três, então quem escolhia
+// cacheado com fones — ou o corpo feminino — via uma coisa na prévia e outra na
+// cadeira. O corpo era o que faltava: o tronco da sala era uma caixa reta,
+// igual para todo mundo.
 function visualDoAvatar(avatar?: AvatarConfig | null): PersonagemVisual {
   const c: PersonagemVisual = {}
   if (avatar) {
     c.cabelo = avatar.hairStyle
     c.fones = avatar.headphones
+    c.corpo = avatar.body
   }
   return c
 }

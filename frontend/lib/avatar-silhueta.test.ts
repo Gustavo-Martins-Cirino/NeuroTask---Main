@@ -3,6 +3,7 @@ import {
   SILHUETAS, caminhoDaGolaLevantada, caminhoDoCapuz, caminhoDoQuadrilSentado, caminhoDoTronco,
   controleQuePassaPor, silhuetaComRoupa,
   pontoDaQuadratica, silhuetaDe,
+  troncoTresD, FOLGA_DO_OMBRO, TRONCO_Z_BASE, TRONCO_Z_TOPO,
 } from "./avatar-silhueta"
 
 const { m, f } = SILHUETAS
@@ -186,5 +187,72 @@ describe("capuz e gola", () => {
       expect(caminhoDoCapuz(s)).not.toContain("NaN")
       expect(caminhoDaGolaLevantada(s)).not.toContain("NaN")
     }
+  })
+})
+
+describe("troncoTresD — o boneco 3D da sala lê a mesma silhueta", () => {
+  const m = troncoTresD("m")
+  const f = troncoTresD("f")
+  const [quadrilM, cinturaM, peitoM, ombroM] = m.niveis
+  const [quadrilF, cinturaF, peitoF, ombroF] = f.niveis
+
+  it("o peito masculino é EXATAMENTE o tronco que a sala já tinha", () => {
+    // A âncora do encaixe. Se este número andar, a cabeça, a cadeira e o
+    // alcance do braço até o teclado andam junto — e nada disso foi pedido.
+    expect(peitoM.meiaLargura).toBeCloseTo(0.16, 6)
+    expect(peitoM.meioFundo).toBeCloseTo(0.12, 6)
+  })
+
+  it("a bola do ombro encosta no tronco nos dois corpos", () => {
+    // Ela não pode flutuar ao lado de um peito mais estreito.
+    expect(m.xDoOmbro - peitoM.meiaLargura).toBeCloseTo(FOLGA_DO_OMBRO, 6)
+    expect(f.xDoOmbro - peitoF.meiaLargura).toBeCloseTo(FOLGA_DO_OMBRO, 6)
+    expect(m.xDoOmbro).toBeCloseTo(0.175, 6)
+  })
+
+  it("masculino é V: o peito é o ponto mais largo, e passa o quadril", () => {
+    expect(peitoM.meiaLargura).toBeGreaterThan(quadrilM.meiaLargura)
+    expect(peitoM.meiaLargura).toBeGreaterThan(cinturaM.meiaLargura)
+  })
+
+  it("feminino é ampulheta: o quadril alcança o peito e a cintura aperta", () => {
+    expect(quadrilF.meiaLargura).toBeGreaterThan(peitoF.meiaLargura)
+    expect(cinturaF.meiaLargura).toBeLessThan(quadrilF.meiaLargura * 0.8)
+  })
+
+  it("o que separa os dois são RAZÕES, não tamanho", () => {
+    // Se fossem o mesmo desenho em duas escalas, estas três seriam iguais.
+    // É a queixa do Gustavo sobre o 2D, cobrada agora também no 3D.
+    const razoes = (t: typeof m) => {
+      const [q, c, p] = t.niveis
+      return [p.meiaLargura / q.meiaLargura, c.meiaLargura / q.meiaLargura, p.meiaLargura / c.meiaLargura]
+    }
+    const rm = razoes(m), rf = razoes(f)
+    for (let i = 0; i < 3; i++) expect(Math.abs(rm[i] - rf[i])).toBeGreaterThan(0.1)
+  })
+
+  it("o tronco não muda de envelope: os dois vão do mesmo chão ao mesmo teto", () => {
+    for (const t of [m, f]) {
+      expect(t.niveis[0].z).toBeCloseTo(TRONCO_Z_BASE, 6)
+      expect(t.niveis[3].z).toBeCloseTo(TRONCO_Z_TOPO, 6)
+    }
+  })
+
+  it("os níveis sobem em ordem, sem inversão", () => {
+    for (const t of [m, f]) {
+      for (let i = 1; i < 4; i++) expect(t.niveis[i].z).toBeGreaterThan(t.niveis[i - 1].z)
+    }
+  })
+
+  it("o fundo acompanha a largura — tronco que afina só de frente vira tábua", () => {
+    for (const n of [...m.niveis, ...f.niveis]) {
+      expect(n.meioFundo / n.meiaLargura).toBeCloseTo(0.12 / 0.16, 6)
+    }
+  })
+
+  it("a linha do ombro do corpo feminino é mais baixa que a do masculino", () => {
+    // A terceira relação da silhueta: ombro quadrado e alto contra estreito e
+    // um pouco mais baixo. Sai da reescala das alturas, não de um número solto.
+    expect(peitoF.z).toBeLessThan(peitoM.z)
   })
 })
