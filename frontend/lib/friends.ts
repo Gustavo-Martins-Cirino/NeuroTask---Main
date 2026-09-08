@@ -1,4 +1,9 @@
 import { createClient } from "@/lib/supabase/client"
+import { faixasDoDia, fundir, type BlocoBruto, type FaixaOcupada } from "@/lib/faixas-ocupadas"
+
+// Apelidos históricos: friends-section e invite-dialog importam BusyRange daqui.
+export type BusyRange = FaixaOcupada
+type ScheduleRow = BlocoBruto
 
 // Amigos (Fase 3 — social). Toda leitura sensível passa por RPCs no banco
 // (friends.sql) que validam amizade aceita + flags de privacidade.
@@ -162,61 +167,9 @@ export async function removeFriendship(friendshipId: string): Promise<void> {
 }
 
 // ---- Agenda do amigo: só HORÁRIOS (nunca títulos) ----
-export interface BusyRange {
-  start: Date
-  end: Date
-}
-
-interface ScheduleRow {
-  start_time: string
-  end_time: string
-  is_recurring: boolean
-  recurrence_rule: string | null
-}
-
-// Expande os blocos para as faixas ocupadas de um DIA (fuso local)
-function expandBusyForDay(rows: ScheduleRow[], dayStart: Date): BusyRange[] {
-  const dayEnd = new Date(dayStart.getTime() + 24 * 3_600_000)
-  const ranges: BusyRange[] = []
-
-  for (const r of rows) {
-    const s = new Date(r.start_time)
-    const e = new Date(r.end_time)
-    if (!r.is_recurring) {
-      if (e > dayStart && s < dayEnd) {
-        ranges.push({ start: s < dayStart ? dayStart : s, end: e > dayEnd ? dayEnd : e })
-      }
-      continue
-    }
-    // Recorrentes simples (sem cruzar meia-noite): ocorrência do dia
-    if (s > dayEnd) continue
-    const dow = dayStart.getDay() // 0=dom
-    const okToday =
-      r.recurrence_rule === "daily" ||
-      (r.recurrence_rule === "weekdays" && dow >= 1 && dow <= 5) ||
-      (r.recurrence_rule === "weekly" && dow === s.getDay())
-    if (!okToday) continue
-    const occStart = new Date(dayStart)
-    occStart.setHours(s.getHours(), s.getMinutes(), 0, 0)
-    const durMs = e.getTime() - s.getTime()
-    if (durMs <= 0 || durMs > 24 * 3_600_000) continue
-    const occEnd = new Date(Math.min(occStart.getTime() + durMs, dayEnd.getTime()))
-    ranges.push({ start: occStart, end: occEnd })
-  }
-
-  // Ordena e funde sobreposições
-  ranges.sort((a, b) => a.start.getTime() - b.start.getTime())
-  const merged: BusyRange[] = []
-  for (const r of ranges) {
-    const last = merged[merged.length - 1]
-    if (last && r.start <= last.end) {
-      if (r.end > last.end) last.end = r.end
-    } else {
-      merged.push({ ...r })
-    }
-  }
-  return merged
-}
+// A expansão dos blocos em faixas ocupadas mora em lib/faixas-ocupadas.ts:
+// a agenda pública usa a MESMA conta, e ela não pode importar este arquivo
+// (aqui dentro vive o cliente do navegador).
 
 const SCHEDULE_ERRORS: Record<string, string> = {
   NAO_SAO_AMIGOS: "Vocês ainda não são amigos.",
@@ -236,7 +189,7 @@ export async function fetchFriendBusyToday(friendId: string): Promise<{ ranges?:
     const known = Object.keys(SCHEDULE_ERRORS).find((k) => error.message.includes(k))
     return { error: known ? SCHEDULE_ERRORS[known] : error.message }
   }
-  return { ranges: expandBusyForDay((data ?? []) as ScheduleRow[], startOfDay()) }
+  return { ranges: faixasDoDia((data ?? []) as ScheduleRow[], startOfDay()) }
 }
 
 // ---- Horários livres dos DOIS (Amigos v3, 100% determinístico) ----
@@ -249,20 +202,6 @@ export interface FreeSlot {
 
 const WINDOW_START_HOUR = 7
 const WINDOW_END_HOUR = 23
-
-function mergeRanges(ranges: BusyRange[]): BusyRange[] {
-  const sorted = [...ranges].sort((a, b) => a.start.getTime() - b.start.getTime())
-  const merged: BusyRange[] = []
-  for (const r of sorted) {
-    const last = merged[merged.length - 1]
-    if (last && r.start <= last.end) {
-      if (r.end > last.end) last.end = new Date(r.end)
-    } else {
-      merged.push({ start: new Date(r.start), end: new Date(r.end) })
-    }
-  }
-  return merged
-}
 
 // Arredonda para a próxima marca de 30 min — proposta de horário "redondo"
 function ceilToHalfHour(d: Date): Date {
@@ -284,7 +223,7 @@ function freeSlotsForDay(busy: BusyRange[], dayStart: Date, durationMinutes: num
   if (cursor < windowStart) cursor = new Date(windowStart)
 
   const gaps: FreeSlot[] = []
-  for (const b of mergeRanges(busy)) {
+  for (const b of fundir(busy)) {
     if (b.end <= cursor) continue
     if (b.start > cursor) {
       const end = b.start < windowEnd ? new Date(b.start) : new Date(windowEnd)
@@ -314,7 +253,7 @@ async function fetchMyBusyForDay(dayStart: Date): Promise<BusyRange[]> {
     .select("start_time, end_time, is_recurring, recurrence_rule")
     .or(`is_recurring.eq.true,end_time.gte.${dayStart.toISOString()}`)
     .lte("start_time", dayEnd.toISOString())
-  return expandBusyForDay((data ?? []) as ScheduleRow[], dayStart)
+  return faixasDoDia((data ?? []) as ScheduleRow[], dayStart)
 }
 
 export async function suggestCommonFreeSlots(
@@ -330,7 +269,7 @@ export async function suggestCommonFreeSlots(
     return { error: known ? SCHEDULE_ERRORS[known] : error.message }
   }
   const dayStart = startOfDay(day)
-  const friendBusy = expandBusyForDay((data ?? []) as ScheduleRow[], dayStart)
+  const friendBusy = faixasDoDia((data ?? []) as ScheduleRow[], dayStart)
   const myBusy = await fetchMyBusyForDay(dayStart)
   return { slots: freeSlotsForDay([...friendBusy, ...myBusy], dayStart, durationMinutes, max) }
 }

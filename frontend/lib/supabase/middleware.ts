@@ -44,13 +44,18 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Redirect to login if not authenticated and trying to access protected routes
+  // Redirect to login if not authenticated and trying to access protected routes.
+  // `/agenda/<token>` é público de propósito: quem abre o link compartilhado não
+  // tem conta aqui, e mandá-lo para o login transformaria o compartilhamento
+  // numa tela de cadastro. O token secreto é a credencial (ver
+  // supabase/agenda_publica.sql), e a página só mostra horários — nunca títulos.
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/signup') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/reset-password') &&
+    !request.nextUrl.pathname.startsWith('/agenda/') &&
     request.nextUrl.pathname !== '/'
   ) {
     const url = request.nextUrl.clone()

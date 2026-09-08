@@ -135,6 +135,7 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 | `/app/office` | Escritório — cena 3D (R3F) viva + loja cosmética (moedas via XP) |
 | `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório (em 3D) |
 | `/app/settings` | Configurações (rotina, push, tema, Telegram) |
+| `/agenda/[token]` | **Pública, sem login** — agenda compartilhada com quem não usa o app. Mostra SÓ faixas ocupadas (a consulta nem pede título). O token é a credencial; o proxy libera `/agenda/` de propósito (`lib/supabase/middleware.ts`) |
 | `/admin` | Painel do dono — feedbacks, usuários, erros e uso. Server component: quem não é `OWNER_EMAIL` recebe `notFound()`. Fora de `/app` (sem dock) e sem link na navegação |
 
 ## Integrações externas (Fase 4)

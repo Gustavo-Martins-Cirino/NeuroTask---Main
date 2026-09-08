@@ -1555,7 +1555,21 @@ Nenhum é pré-requisito de nada, e nenhum vale sozinho. O critério para tirar 
       (só-leitura) já existe — Configurações → "Assinar no Google/Outlook", rota
       `/api/calendar/[token]` (token secreto por usuário). O que falta é escrita nos dois
       sentidos, que traz OAuth e conflito de sincronização — só se houver demanda real.
-- [ ] **Compartilhamento** de agenda para fora da base de amigos.
+> **Compartilhamento para fora da base de amigos: resolvido (08/09).** O app já dizia
+> "ocupado/livre" entre amigos, mas isso exige conta, amizade aceita e a flag ligada — e
+> combinar horário com um cliente, um professor ou a tia não passa por nada disso. O que as
+> pessoas fazem hoje é mandar print do calendário.
+>
+> Agora Configurações → **"Compartilhar meus horários"** gera um link (`/agenda/<token>`) que
+> abre sem conta. Ele mostra **só as faixas ocupadas** dos próximos 7, 14 ou 30 dias: título,
+> local, link e com quem não são nem lidos do banco — o que a consulta não pede não vaza por
+> engano, nem se a tela mudar depois. Mesmo desenho do feed .ics (token de 128 bits como
+> credencial, revogar = apagar a linha), e o proxy precisou liberar o caminho: sem isso o
+> link caía no login e o compartilhamento virava tela de cadastro.
+>
+> A conta das faixas saiu de dentro de `lib/friends.ts` — que importa o cliente do navegador e
+> por isso não servia numa rota de servidor — para `lib/faixas-ocupadas.ts`, puro e com 20
+> testes. Uma regra só, dois consumidores: a agenda do amigo e a pública.
 
 ### Mensageiros
 
