@@ -21,6 +21,7 @@ import { useTimeFormat } from "@/hooks/use-time-format"
 import { formatTime, formatClock } from "@/lib/time-format"
 import { faixaDoNivel } from "@/lib/nivel-faixa"
 import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
+import { useDicionario } from "@/hooks/use-idioma"
 
 function localDateKey() {
   const d = new Date()
@@ -63,6 +64,7 @@ const item = {
 }
 
 export default function DashboardPage() {
+  const traducao = useDicionario()
   const timeFormat = useTimeFormat()
   const [stats, setStats] = useState<Stats>({
     totalTasks: 0,
@@ -188,7 +190,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Início" icon={<LayoutDashboard className="h-4 w-4" />} />
+      <Header title={traducao.telas.inicio} icon={<LayoutDashboard className="h-4 w-4" />} />
 
       <div className="flex-1 px-4 py-8 md:px-10">
         <div className="mx-auto w-full max-w-5xl space-y-10">

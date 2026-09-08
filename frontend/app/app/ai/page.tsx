@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useDicionario } from "@/hooks/use-idioma"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { Bot, ArrowUp, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
@@ -82,6 +83,7 @@ function usaMovimentoReduzido() {
 const TUDO = Number.MAX_SAFE_INTEGER
 
 export default function AiPage() {
+  const traducao = useDicionario()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -439,7 +441,7 @@ export default function AiPage() {
     <div className="relative flex min-h-screen flex-col">
       {/* A conversa ao vivo saiu daqui: virou o botão redondo da barra de
           digitação, como na referência (inspirações/…202826.png). */}
-      <Header title="Neuro IA" icon={<Bot className="h-4 w-4" />}>
+      <Header title={traducao.telas.neuroIa} icon={<Bot className="h-4 w-4" />}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">

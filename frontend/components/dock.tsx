@@ -19,56 +19,26 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useFocus } from "@/components/focus"
+import { useDicionario } from "@/hooks/use-idioma"
+import type { Dicionario } from "@/lib/i18n"
 
-const navItems = [
-  {
-    icon: LayoutDashboard,
-    label: "Dashboard",
-    href: "/app",
-  },
-  {
-    icon: Calendar,
-    label: "Calendário",
-    href: "/app/calendar",
-  },
-  {
-    icon: CheckSquare,
-    label: "Tarefas",
-    href: "/app/tasks",
-  },
-  {
-    icon: Star,
-    label: "Favoritos",
-    href: "/app/favorites",
-  },
-  {
-    icon: FileText,
-    label: "Notas",
-    href: "/app/notes",
-  },
-  {
-    icon: Bot,
-    label: "Neuro IA",
-    href: "/app/ai",
-  },
-  {
-    icon: Armchair,
-    label: "Escritório",
-    href: "/app/office",
-  },
-  {
-    icon: Users,
-    label: "Amigos",
-    href: "/app/friends",
-  },
+// O item guarda a CHAVE do dicionário, não o texto: assim o rótulo acompanha o
+// idioma sem o dock precisar saber qual é.
+type ChaveDeTela = keyof Dicionario["telas"]
+
+const navItems: { icon: typeof LayoutDashboard; chave: ChaveDeTela; href: string }[] = [
+  { icon: LayoutDashboard, chave: "inicioNav", href: "/app" },
+  { icon: Calendar, chave: "calendario", href: "/app/calendar" },
+  { icon: CheckSquare, chave: "tarefas", href: "/app/tasks" },
+  { icon: Star, chave: "favoritos", href: "/app/favorites" },
+  { icon: FileText, chave: "notas", href: "/app/notes" },
+  { icon: Bot, chave: "neuroIa", href: "/app/ai" },
+  { icon: Armchair, chave: "escritorio", href: "/app/office" },
+  { icon: Users, chave: "amigos", href: "/app/friends" },
 ]
 
-const bottomItems = [
-  {
-    icon: Settings,
-    label: "Configurações",
-    href: "/app/settings",
-  },
+const bottomItems: { icon: typeof Settings; chave: ChaveDeTela; href: string }[] = [
+  { icon: Settings, chave: "configuracoes", href: "/app/settings" },
 ]
 
 const labelMotion = {
@@ -79,6 +49,7 @@ const labelMotion = {
 }
 
 export function Dock() {
+  const d = useDicionario()
   const pathname = usePathname()
   const [expanded, setExpanded] = useState(false)
   const { openFocus } = useFocus()
@@ -86,6 +57,7 @@ export function Dock() {
   const allItems = [...navItems, ...bottomItems]
 
   const renderItem = (item: (typeof allItems)[number]) => {
+    const rotulo = d.telas[item.chave]
     const isActive =
       pathname === item.href ||
       (item.href !== "/app" && pathname.startsWith(item.href))
@@ -115,7 +87,7 @@ export function Dock() {
               {...labelMotion}
               className="relative z-10 whitespace-nowrap text-sm font-medium"
             >
-              {item.label}
+              {rotulo}
             </motion.span>
           )}
         </AnimatePresence>
@@ -124,6 +96,7 @@ export function Dock() {
   }
 
   const renderMobileItem = (item: (typeof allItems)[number]) => {
+    const rotulo = d.telas[item.chave]
     const isActive =
       pathname === item.href ||
       (item.href !== "/app" && pathname.startsWith(item.href))
@@ -131,7 +104,7 @@ export function Dock() {
       <Link
         key={item.href}
         href={item.href}
-        aria-label={item.label}
+        aria-label={rotulo}
         className={cn(
           "relative flex h-14 flex-1 items-center justify-center transition-colors",
           isActive ? "text-primary" : "text-muted-foreground"

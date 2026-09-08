@@ -13,6 +13,7 @@ import { FileText, Plus, Trash2, Loader2, Check, Star, Palette, Ban } from "luci
 import { toast } from "sonner"
 import { CORES_DE_NOTA, corDeNota, fundoDaNota, tarjaDaNota } from "@/lib/nota-cor"
 import { colunaFaltante } from "@/lib/feedback"
+import { useDicionario } from "@/hooks/use-idioma"
 
 type SaveState = "idle" | "saving" | "saved"
 
@@ -21,6 +22,7 @@ function stripHtml(html: string): string {
 }
 
 export default function NotesPage() {
+  const traducao = useDicionario()
   const [notes, setNotes] = useState<Note[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -137,7 +139,7 @@ export default function NotesPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Notas" icon={<FileText className="h-4 w-4" />} />
+      <Header title={traducao.telas.notas} icon={<FileText className="h-4 w-4" />} />
 
       <div className="flex flex-1 flex-col gap-4 px-3 py-4 md:flex-row md:px-6">
         {/* Lista */}

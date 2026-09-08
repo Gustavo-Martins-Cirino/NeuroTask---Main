@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useDicionario } from "@/hooks/use-idioma"
 import { Header } from "@/components/header"
 import { ErrorsPanel } from "@/components/errors-panel"
 import { AgendaIo } from "@/components/agenda-io"
@@ -100,6 +101,7 @@ function Section({ icon, title, description, children }: {
 }
 
 export default function SettingsPage() {
+  const traducao = useDicionario()
   const supabase = createClient()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
@@ -279,7 +281,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Configurações" icon={<Settings className="h-4 w-4" />} />
+      <Header title={traducao.telas.configuracoes} icon={<Settings className="h-4 w-4" />} />
 
       <div className="flex-1 px-4 py-8 md:px-6">
         <div className="mx-auto w-full max-w-2xl space-y-5">

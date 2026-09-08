@@ -10,8 +10,10 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Star, ListTodo, FileText, Loader2, ArrowRight } from "lucide-react"
 import { fundoDaNota, tarjaDaNota } from "@/lib/nota-cor"
+import { useDicionario } from "@/hooks/use-idioma"
 
 export default function FavoritesPage() {
+  const traducao = useDicionario()
   const [tasks, setTasks] = useState<Task[]>([])
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,7 +46,7 @@ export default function FavoritesPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Favoritos" icon={<Star className="h-4 w-4" />} />
+      <Header title={traducao.telas.favoritos} icon={<Star className="h-4 w-4" />} />
 
       <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 md:px-6">
         {loading ? (

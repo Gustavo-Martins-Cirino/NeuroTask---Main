@@ -57,6 +57,39 @@ describe("dicionários — o que varia realmente varia", () => {
   })
 })
 
+describe("nomes das telas", () => {
+  for (const [nome, d] of IDIOMAS) {
+    it(`${nome}: nenhuma tela sem nome`, () => {
+      for (const [chave, texto] of Object.entries(d.telas)) {
+        expect(texto.trim(), `telas.${chave} vazio`).not.toBe("")
+      }
+    })
+  }
+
+  it("as telas mudam de idioma", () => {
+    expect(en.telas.tarefas).not.toBe(pt.telas.tarefas)
+    expect(en.telas.escritorio).not.toBe(pt.telas.escritorio)
+    expect(en.telas.configuracoes).not.toBe(pt.telas.configuracoes)
+    expect(en.telas.inicio).not.toBe(pt.telas.inicio)
+  })
+
+  // O teste espelhado do de cima: nome próprio traduzido é erro, não zelo.
+  it("nome de produto NÃO se traduz", () => {
+    expect(en.telas.neuroIa).toBe("Neuro IA")
+    expect(pt.telas.neuroIa).toBe("Neuro IA")
+  })
+
+  it("\"Dashboard\" já era inglês, e segue igual nos dois", () => {
+    expect(en.telas.inicioNav).toBe(pt.telas.inicioNav)
+  })
+
+  // O app chama o mesmo lugar de dois nomes (dock x título). A tradução expôs
+  // isso; o teste registra que é conhecido, para não parecer descuido depois.
+  it("o dashboard tem dois nomes de propósito", () => {
+    expect(pt.telas.inicio).not.toBe(pt.telas.inicioNav)
+  })
+})
+
 describe("de onde vem o idioma", () => {
   it("região manda no app", () => {
     expect(idiomaDaRegiao("BR")).toBe("pt")

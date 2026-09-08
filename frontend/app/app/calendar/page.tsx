@@ -16,6 +16,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, Plus, Trash2, Clock, Repeat, T
 import { fetchRoutine, type RoutineProfile } from "@/lib/routine"
 import { computeWarnings } from "@/lib/calendar-warnings"
 import { alvoDeScroll, partidaDoScroll } from "@/lib/calendar-scroll"
+import { useDicionario } from "@/hooks/use-idioma"
 
 type ViewMode = "dia" | "semana" | "mes" | "ano"
 
@@ -90,6 +91,7 @@ interface DragState {
 }
 
 export default function CalendarPage() {
+  const traducao = useDicionario()
   const timeFormat = useTimeFormat()
   const [view, setView] = useState<ViewMode>("semana")
   const escolheuAVisao = useRef(false)
@@ -481,7 +483,7 @@ export default function CalendarPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Meu Dia · Time Blocking" icon={<CalendarDays className="h-4 w-4" />} />
+      <Header title={traducao.telas.calendarioTitulo} icon={<CalendarDays className="h-4 w-4" />} />
 
       <div className="flex flex-1 flex-col">
         {/* Toolbar */}

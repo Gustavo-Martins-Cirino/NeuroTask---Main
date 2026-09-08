@@ -28,6 +28,7 @@ import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
 import { fetchOfficeStats, type OfficeStats } from "@/lib/office-stats"
 import { fetchAvatar, saveAvatar, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
+import { useDicionario } from "@/hooks/use-idioma"
 
 // A ordem conta uma história: primeiro o que dá vida à sala, depois o que a
 // mobilia, depois o que a acaba, e por último o que veste o boneco.
@@ -36,6 +37,7 @@ const CATEGORY_ORDER: ShopCategory[] = [
 ]
 
 export default function OfficePage() {
+  const traducao = useDicionario()
   const [loading, setLoading] = useState(true)
   const [coins, setCoins] = useState(0)
   const [owned, setOwned] = useState<Map<string, boolean>>(new Map())
@@ -175,7 +177,7 @@ export default function OfficePage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Escritório" icon={<Armchair className="h-4 w-4" />}>
+      <Header title={traducao.telas.escritorio} icon={<Armchair className="h-4 w-4" />}>
         <span className="ml-2 flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
           <Coins className="h-3.5 w-3.5" />
           <span className="tabular-nums">{coins}</span>

@@ -27,6 +27,7 @@ import {
 import { SortableContext, rectSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useLenis } from "lenis/react"
+import { useDicionario } from "@/hooks/use-idioma"
 
 const GENERAL = "__general__"
 
@@ -67,6 +68,7 @@ function SortableTask({ id, className, children }: { id: string; className?: str
 }
 
 export default function TasksPage() {
+  const traducao = useDicionario()
   const [tasks, setTasks] = useState<Task[]>([])
   const [lists, setLists] = useState<TaskList[]>([])
   const [loading, setLoading] = useState(true)
@@ -382,7 +384,7 @@ export default function TasksPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header title="Tarefas" icon={<ListTodo className="h-4 w-4" />}>
+      <Header title={traducao.telas.tarefas} icon={<ListTodo className="h-4 w-4" />}>
         {/* Só o ícone no celular. O rótulo disputava a linha com o título da
             tela e ganhava: numa largura de 390px, "Tarefas" aparecia como
             "Taref…" — o nome da própria tela ilegível para caber um botão que

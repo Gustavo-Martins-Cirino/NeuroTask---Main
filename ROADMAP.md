@@ -1401,12 +1401,24 @@ vira ruído.
 > aqui, e a preferência de quem compartilhou não diz nada sobre ele. Ali o padrão é inglês, e
 > não português — insistir no idioma que já falhou é o palpite pior.
 
-- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (20 testes em
+> **A moldura já passou (08/09).** Segunda fatia: o **dock** e os **títulos das nove telas**.
+> A ordem não foi arbitrária — se o idioma sai da região, e a região se troca em
+> Configurações, então o caminho até lá tinha de estar traduzido primeiro; senão quem não lê
+> português nunca chega ao botão que resolve isso. Os itens do dock passaram a guardar a
+> CHAVE do dicionário em vez do texto.
+>
+> Duas coisas que a tradução expôs, e que ficaram registradas em teste em vez de "arrumadas"
+> por conta: o app chama o dashboard de **dois nomes** ("Dashboard" no dock, "Início" no
+> título), e **"Neuro IA" é nome próprio** — há um teste garantindo que ele NÃO se traduz,
+> que é o erro oposto e mais fácil de cometer numa varredura.
+
+- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (26 testes em
       `lib/i18n.test.ts`, incluindo o que a interface não pega: texto vazio, plural que não
-      muda e frase igual nos dois idiomas — "traduzir" sem traduzir). O que falta é volume:
-      dashboard, tarefas, calendário, Escritório, Neuro IA e o resto de Configurações
-      continuam com português cravado no JSX. É trabalho de dias, e melhor feito por área,
-      uma de cada vez, para cada fatia poder ser conferida no olho antes da seguinte.
+      muda e frase igual nos dois idiomas — "traduzir" sem traduzir). O que falta é o miolo
+      das telas: dashboard, tarefas, calendário, Escritório, Neuro IA e o resto de
+      Configurações (12 seções) continuam com português cravado no JSX. É trabalho de dias, e
+      melhor feito por área, uma de cada vez, para cada fatia poder ser conferida no olho
+      antes da seguinte.
       Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de
       fato: **região e formato**, nunca "idioma".
       Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar

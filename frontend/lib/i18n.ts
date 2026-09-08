@@ -41,6 +41,32 @@ export interface Dicionario {
     /** Quando o dono não tem nome público, é assim que o rodapé o chama. */
     donoAnonimo: string
   }
+  /**
+   * Os nomes das telas — a moldura que aparece em toda página (dock e título
+   * no topo).
+   *
+   * O app chama o dashboard de **dois nomes**: "Dashboard" no dock e "Início"
+   * no título. A tradução expôs isso; unificar seria mudar o que a tela diz, e
+   * isso é decisão de produto, não de tradução. Ficam as duas chaves, e a
+   * escolha continua de quem desenha.
+   *
+   * "Neuro IA" é nome próprio: não traduz em idioma nenhum.
+   */
+  telas: {
+    inicio: string
+    /** O mesmo lugar, como o dock o chama. */
+    inicioNav: string
+    calendario: string
+    /** No topo da tela o calendário tem nome longo; no dock, curto. */
+    calendarioTitulo: string
+    tarefas: string
+    favoritos: string
+    notas: string
+    neuroIa: string
+    escritorio: string
+    amigos: string
+    configuracoes: string
+  }
   compartilhar: {
     explicacao: string
     mostrarProximos: string
@@ -73,6 +99,19 @@ export const pt: Dicionario = {
     rodape: (dono) =>
       `${dono} compartilhou só os horários. O que ocupa cada faixa — título, local ou com quem — nunca sai do app.`,
     donoAnonimo: "Esta pessoa",
+  },
+  telas: {
+    inicio: "Início",
+    inicioNav: "Dashboard",
+    calendario: "Calendário",
+    calendarioTitulo: "Meu Dia · Time Blocking",
+    tarefas: "Tarefas",
+    favoritos: "Favoritos",
+    notas: "Notas",
+    neuroIa: "Neuro IA",
+    escritorio: "Escritório",
+    amigos: "Amigos",
+    configuracoes: "Configurações",
   },
   compartilhar: {
     explicacao:
@@ -107,6 +146,19 @@ export const en: Dicionario = {
     rodape: (dono) =>
       `${dono} shared only the hours. What fills each slot — title, place or with whom — never leaves the app.`,
     donoAnonimo: "This person",
+  },
+  telas: {
+    inicio: "Home",
+    inicioNav: "Dashboard",
+    calendario: "Calendar",
+    calendarioTitulo: "My Day · Time Blocking",
+    tarefas: "Tasks",
+    favoritos: "Favorites",
+    notas: "Notes",
+    neuroIa: "Neuro IA",
+    escritorio: "Office",
+    amigos: "Friends",
+    configuracoes: "Settings",
   },
   compartilhar: {
     explicacao:
