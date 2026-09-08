@@ -56,9 +56,7 @@ export default function FavoritesPage() {
         ) : empty ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Star className="h-12 w-12 text-muted-foreground/40" />
-            <p className="mt-4 text-muted-foreground">
-              Nada favoritado ainda. Toque na ⭐ de uma tarefa ou nota para vê-la aqui.
-            </p>
+            <p className="mt-4 text-muted-foreground">{traducao.favoritos.vazio}</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -66,10 +64,10 @@ export default function FavoritesPage() {
               <section>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    <ListTodo className="h-4 w-4" /> Tarefas ({tasks.length})
+                    <ListTodo className="h-4 w-4" /> {traducao.favoritos.tarefas(tasks.length)}
                   </h2>
                   <Link href="/app/tasks" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                    Ver todas <ArrowRight className="h-3 w-3" />
+                    {traducao.favoritos.verTodas} <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
                 <div className="space-y-2">
@@ -86,7 +84,7 @@ export default function FavoritesPage() {
                         <span className={cn("truncate text-sm font-medium", t.status === "completed" && "line-through text-muted-foreground")}>
                           {t.title}
                         </span>
-                        <button onClick={() => unfavTask(t.id)} aria-label="Remover dos favoritos" className="shrink-0 text-amber-400 transition-transform hover:scale-110">
+                        <button onClick={() => unfavTask(t.id)} aria-label={traducao.favoritos.remover} className="shrink-0 text-amber-400 transition-transform hover:scale-110">
                           <Star className="h-4 w-4 fill-current" />
                         </button>
                       </motion.div>
@@ -100,10 +98,10 @@ export default function FavoritesPage() {
               <section>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    <FileText className="h-4 w-4" /> Notas ({notes.length})
+                    <FileText className="h-4 w-4" /> {traducao.favoritos.notas(notes.length)}
                   </h2>
                   <Link href="/app/notes" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                    Ver todas <ArrowRight className="h-3 w-3" />
+                    {traducao.favoritos.verTodas} <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -124,12 +122,12 @@ export default function FavoritesPage() {
                           <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={{ background: tarjaDaNota(n.color) }} />
                         )}
                         <div className="flex items-start justify-between gap-2">
-                          <span className="truncate text-sm font-medium">{n.title.trim() || "Sem título"}</span>
-                          <button onClick={() => unfavNote(n.id)} aria-label="Remover dos favoritos" className="shrink-0 text-amber-400 transition-transform hover:scale-110">
+                          <span className="truncate text-sm font-medium">{n.title.trim() || traducao.favoritos.notaSemTitulo}</span>
+                          <button onClick={() => unfavNote(n.id)} aria-label={traducao.favoritos.remover} className="shrink-0 text-amber-400 transition-transform hover:scale-110">
                             <Star className="h-4 w-4 fill-current" />
                           </button>
                         </div>
-                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{n.content.replace(/<[^>]+>/g, " ").trim() || "Vazia"}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{n.content.replace(/<[^>]+>/g, " ").trim() || traducao.favoritos.notaVazia}</p>
                       </motion.div>
                     ))}
                   </AnimatePresence>

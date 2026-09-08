@@ -2,6 +2,8 @@ import { REGIAO_DEFAULT, regiaoDoFormato, type Regiao } from "@/lib/regiao"
 import { type TimeFormat } from "@/lib/time-format"
 import { type ChaveSaudacao } from "@/lib/saudacao"
 import { type ChaveFaixa } from "@/lib/nivel-faixa"
+import { type Repeticao } from "@/lib/task-recurrence"
+import { type TaskPriority } from "@/lib/types"
 
 // Tradução do app — a primeira fatia.
 //
@@ -199,6 +201,112 @@ export interface Dicionario {
     erroCacheSchema: string
     erroPermissao: string
   }
+  tarefas: {
+    nova: string
+    criar: string
+    salvar: string
+    cancelar: string
+    vazio: string
+    /** As listas: a de sempre, as criadas, e o balaio de órfãs. */
+    listaGeral: string
+    listaOutras: string
+    novaLista: string
+    nomeDaLista: string
+    excluirLista: string
+    /** O filtro por data, no alto da lista. */
+    escopos: { hoje: string; proximos: string; todos: string }
+    vazioHoje: string
+    vazioProximos: string
+    vazioTodos: string
+    concluidas: (n: number) => string
+    erroSemTabelaListas: string
+    erroExcluir: string
+    erroRepeticao: string
+    toastRecorrente: string
+    toastRecorrenteDetalhe: (data: string) => string
+    toastSemXp: string
+    toastSemXpDetalhe: (minutos: number) => string
+    /**
+     * "Repete: diariamente" — a minúscula no meio da frase é decisão de CADA
+     * idioma, não do código que chama. Em português e inglês o rótulo desce
+     * para minúscula; em alemão, onde substantivo é maiúsculo, quem escrever o
+     * `de` simplesmente não faz isso.
+     */
+    toastRepete: (rotulo: string) => string
+    toastNaoRepete: string
+    /** Os nomes das repetições. A chave vem de lib/task-recurrence. */
+    repeticao: {
+      naoRepete: string
+      diariamente: string
+      semanalmente: string
+      mensalmente: string
+      anualmente: string
+      aCadaNDias: (dias: number) => string
+      /** A opção do menu, quando ainda não há número escolhido. */
+      aCadaNDiasVazio: string
+    }
+    prioridades: Record<TaskPriority, string>
+    cartao: {
+      concluir: string
+      marcarPendente: string
+      favoritar: string
+      desfavoritar: string
+      editar: string
+      excluir: string
+      repetir: string
+      atrasada: string
+      faltamMinutos: (n: number) => string
+      faltamHoras: (n: number) => string
+      faltamDias: (n: number) => string
+      entrar: string
+      copiarLinkReuniao: string
+      toastLinkReuniao: string
+      emAndamento: string
+      iniciar: string
+    }
+    dialogo: {
+      editarTitulo: string
+      novaTitulo: string
+      tituloPlaceholder: string
+      descricaoPlaceholder: string
+      prioridade: string
+      tempoEstimado: string
+      personalizarTempo: string
+      vencimento: string
+      semData: string
+      hoje: string
+      amanha: string
+      emNDias: (n: number) => string
+      emXDias: string
+      data: string
+      reuniao: string
+      opcional: string
+      linkPlaceholder: string
+      copiarLink: string
+      toastLinkCopiado: string
+      horario: string
+      horarioDoCompromisso: string
+      escolher: string
+      limpar: string
+      semDataVale: (hora: string) => string
+      localPlaceholder: string
+      adicionarLocal: string
+      repetir: string
+      personalizado: string
+      aCadaNDias: (dias: number) => string
+      avancaSozinho: string
+      precisaLogin: string
+    }
+  }
+  favoritos: {
+    vazio: string
+    tarefas: (n: number) => string
+    notas: (n: number) => string
+    verTodas: string
+    remover: string
+    notaSemTitulo: string
+    notaVazia: string
+  }
 }
 
 export const pt: Dicionario = {
@@ -290,7 +398,7 @@ export const pt: Dicionario = {
       regiao: "Região",
       regioes: { BR: "Brasil", US: "Estados Unidos" },
       regiaoAjuda:
-        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento: a moldura e o compartilhamento de agenda já acompanham; o resto ainda está em português.",
+        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda faltam o calendário, as notas, os amigos, o Escritório e a Neuro IA.",
     },
     rotina: {
       titulo: "Rotina",
@@ -372,6 +480,104 @@ export const pt: Dicionario = {
     erroCacheSchema:
       "A tabela existe, mas a API do Supabase ainda não a enxerga (cache do schema). Espere alguns segundos e recarregue.",
     erroPermissao: "Sem permissão (RLS). Confira se as policies do agenda_publica.sql foram criadas.",
+  },
+  tarefas: {
+    nova: "Nova tarefa",
+    criar: "Criar tarefa",
+    salvar: "Salvar",
+    cancelar: "Cancelar",
+    vazio: "Nenhuma tarefa por aqui. Que tal adicionar uma?",
+    listaGeral: "Geral",
+    listaOutras: "Outras",
+    novaLista: "Nova lista",
+    nomeDaLista: "Nome da lista",
+    excluirLista: "Excluir lista",
+    escopos: { hoje: "Hoje", proximos: "Próximos", todos: "Todos" },
+    vazioHoje: "Nada para hoje. 🎉",
+    vazioProximos: "Nada nos próximos dias.",
+    vazioTodos: "Nenhuma tarefa.",
+    concluidas: (n) => `Concluídas (${n})`,
+    erroSemTabelaListas:
+      "A tabela de listas ainda não existe. Rode supabase/task_lists.sql no Supabase.",
+    erroExcluir: "Não consegui excluir a tarefa.",
+    erroRepeticao: "Não consegui mudar a repetição agora.",
+    toastRecorrente: "Tarefa recorrente concluída! 🔁",
+    toastRecorrenteDetalhe: (data) => `Próxima ocorrência: ${data}`,
+    toastSemXp: "Concluída — sem XP desta vez 😉",
+    toastSemXpDetalhe: (minutos) =>
+      `Tarefas criadas há menos de ${minutos} min não geram XP.`,
+    toastRepete: (rotulo) => `Repete: ${rotulo.toLowerCase()}`,
+    toastNaoRepete: "Não repete mais",
+    repeticao: {
+      naoRepete: "Não repete",
+      diariamente: "Diariamente",
+      semanalmente: "Semanalmente",
+      mensalmente: "Mensalmente",
+      anualmente: "Anualmente",
+      aCadaNDias: (dias) => `A cada ${dias} ${dias === 1 ? "dia" : "dias"}`,
+      aCadaNDiasVazio: "A cada N dias…",
+    },
+    prioridades: { low: "Baixa", medium: "Média", high: "Alta", urgent: "Urgente" },
+    cartao: {
+      concluir: "Concluir tarefa",
+      marcarPendente: "Marcar como pendente",
+      favoritar: "Adicionar aos favoritos",
+      desfavoritar: "Remover dos favoritos",
+      editar: "Editar",
+      excluir: "Excluir",
+      repetir: "Repetir",
+      atrasada: "Atrasada",
+      faltamMinutos: (n) => `faltam ${n} min`,
+      faltamHoras: (n) => `faltam ${n} h`,
+      faltamDias: (n) => `${n === 1 ? "falta" : "faltam"} ${n} ${n === 1 ? "dia" : "dias"}`,
+      entrar: "Entrar",
+      copiarLinkReuniao: "Copiar link da reunião",
+      toastLinkReuniao: "Link da reunião copiado!",
+      emAndamento: "Em andamento",
+      iniciar: "Iniciar",
+    },
+    dialogo: {
+      editarTitulo: "Editar tarefa",
+      novaTitulo: "Nova tarefa",
+      tituloPlaceholder: "O que precisa ser feito?",
+      descricaoPlaceholder: "Descrição (opcional)",
+      prioridade: "Prioridade",
+      tempoEstimado: "Tempo estimado",
+      personalizarTempo: "Personalizar",
+      vencimento: "Vencimento",
+      semData: "Sem data",
+      hoje: "Hoje",
+      amanha: "Amanhã",
+      emNDias: (n) => `em ${n} ${n === 1 ? "dia" : "dias"}`,
+      emXDias: "Em X dias",
+      data: "Data",
+      reuniao: "Reunião",
+      opcional: "Opcional",
+      linkPlaceholder: "Cole o link — Meet, Zoom, Teams…",
+      copiarLink: "Copiar link",
+      toastLinkCopiado: "Link copiado!",
+      horario: "Horário",
+      horarioDoCompromisso: "Horário do compromisso",
+      escolher: "Escolher",
+      limpar: "limpar",
+      semDataVale: (hora) => `Sem data escolhida — vale para hoje às ${hora}.`,
+      localPlaceholder: "Local — sala, endereço…",
+      adicionarLocal: "Adicionar local (presencial)",
+      repetir: "Repetir",
+      personalizado: "Personalizado",
+      aCadaNDias: (dias) => `a cada ${dias} ${dias === 1 ? "dia" : "dias"}`,
+      avancaSozinho: "Ao concluir, o prazo avança automaticamente para a próxima ocorrência.",
+      precisaLogin: "Você precisa estar logado",
+    },
+  },
+  favoritos: {
+    vazio: "Nada favoritado ainda. Toque na ⭐ de uma tarefa ou nota para vê-la aqui.",
+    tarefas: (n) => `Tarefas (${n})`,
+    notas: (n) => `Notas (${n})`,
+    verTodas: "Ver todas",
+    remover: "Remover dos favoritos",
+    notaSemTitulo: "Sem título",
+    notaVazia: "Vazia",
   },
 }
 
@@ -464,7 +670,7 @@ export const en: Dicionario = {
       regiao: "Region",
       regioes: { BR: "Brazil", US: "United States" },
       regiaoAjuda:
-        "Sets how times are shown and which language the app speaks. Translation is under way: the app frame and schedule sharing already follow it; the rest is still in Portuguese.",
+        "Sets how times are shown and which language the app speaks. Translation is under way — the calendar, notes, friends, the Office and Neuro IA are still to come.",
     },
     rotina: {
       titulo: "Routine",
@@ -547,12 +753,140 @@ export const en: Dicionario = {
       "The table exists, but the Supabase API cannot see it yet (schema cache). Wait a few seconds and reload.",
     erroPermissao: "No permission (RLS). Check that the agenda_publica.sql policies were created.",
   },
+  tarefas: {
+    nova: "New task",
+    criar: "Create task",
+    salvar: "Save",
+    cancelar: "Cancel",
+    vazio: "No tasks here yet. How about adding one?",
+    listaGeral: "General",
+    listaOutras: "Other",
+    novaLista: "New list",
+    nomeDaLista: "List name",
+    excluirLista: "Delete list",
+    escopos: { hoje: "Today", proximos: "Upcoming", todos: "All" },
+    vazioHoje: "Nothing for today. 🎉",
+    vazioProximos: "Nothing in the coming days.",
+    vazioTodos: "No tasks.",
+    concluidas: (n) => `Completed (${n})`,
+    erroSemTabelaListas:
+      "The lists table doesn't exist yet. Run supabase/task_lists.sql in Supabase.",
+    erroExcluir: "I couldn't delete the task.",
+    erroRepeticao: "I couldn't change the repeat right now.",
+    toastRecorrente: "Recurring task completed! 🔁",
+    toastRecorrenteDetalhe: (data) => `Next occurrence: ${data}`,
+    toastSemXp: "Completed — no XP this time 😉",
+    toastSemXpDetalhe: (minutos) => `Tasks created less than ${minutos} min ago don't earn XP.`,
+    toastRepete: (rotulo) => `Repeats ${rotulo.toLowerCase()}`,
+    toastNaoRepete: "Doesn't repeat anymore",
+    repeticao: {
+      naoRepete: "Doesn't repeat",
+      diariamente: "Daily",
+      semanalmente: "Weekly",
+      mensalmente: "Monthly",
+      anualmente: "Yearly",
+      aCadaNDias: (dias) => `Every ${dias} ${dias === 1 ? "day" : "days"}`,
+      aCadaNDiasVazio: "Every N days…",
+    },
+    prioridades: { low: "Low", medium: "Medium", high: "High", urgent: "Urgent" },
+    cartao: {
+      concluir: "Complete task",
+      marcarPendente: "Mark as pending",
+      favoritar: "Add to favorites",
+      desfavoritar: "Remove from favorites",
+      editar: "Edit",
+      excluir: "Delete",
+      repetir: "Repeat",
+      atrasada: "Overdue",
+      faltamMinutos: (n) => `${n} min left`,
+      faltamHoras: (n) => `${n} h left`,
+      faltamDias: (n) => `${n} ${n === 1 ? "day" : "days"} left`,
+      entrar: "Join",
+      copiarLinkReuniao: "Copy meeting link",
+      toastLinkReuniao: "Meeting link copied!",
+      emAndamento: "In progress",
+      iniciar: "Start",
+    },
+    dialogo: {
+      editarTitulo: "Edit task",
+      novaTitulo: "New task",
+      tituloPlaceholder: "What needs to be done?",
+      descricaoPlaceholder: "Description (optional)",
+      prioridade: "Priority",
+      tempoEstimado: "Estimated time",
+      personalizarTempo: "Custom",
+      vencimento: "Due",
+      semData: "No date",
+      hoje: "Today",
+      amanha: "Tomorrow",
+      emNDias: (n) => `in ${n} ${n === 1 ? "day" : "days"}`,
+      emXDias: "In X days",
+      data: "Date",
+      reuniao: "Meeting",
+      opcional: "Optional",
+      linkPlaceholder: "Paste the link — Meet, Zoom, Teams…",
+      copiarLink: "Copy link",
+      toastLinkCopiado: "Link copied!",
+      horario: "Time",
+      horarioDoCompromisso: "Meeting time",
+      escolher: "Pick",
+      limpar: "clear",
+      semDataVale: (hora) => `No date chosen — it applies to today at ${hora}.`,
+      localPlaceholder: "Place — room, address…",
+      adicionarLocal: "Add a place (in person)",
+      repetir: "Repeat",
+      personalizado: "Custom",
+      aCadaNDias: (dias) => `every ${dias} ${dias === 1 ? "day" : "days"}`,
+      avancaSozinho: "On completion, the due date moves to the next occurrence by itself.",
+      precisaLogin: "You need to be signed in",
+    },
+  },
+  favoritos: {
+    vazio: "Nothing favorited yet. Tap the ⭐ on a task or note to see it here.",
+    tarefas: (n) => `Tasks (${n})`,
+    notas: (n) => `Notes (${n})`,
+    verTodas: "See all",
+    remover: "Remove from favorites",
+    notaSemTitulo: "Untitled",
+    notaVazia: "Empty",
+  },
 }
 
 const DICIONARIOS: Record<Idioma, Dicionario> = { pt, en }
 
 export function dicionario(idioma: Idioma): Dicionario {
   return DICIONARIOS[idioma] ?? DICIONARIOS[IDIOMA_DEFAULT]
+}
+
+/**
+ * Uma repetição virando texto. Mora aqui, e não em lib/task-recurrence, porque
+ * é a única metade da repetição que depende do idioma — o módulo de datas
+ * decide QUAL repetição é, este decide como ela se diz.
+ */
+export function textoDaRepeticao(d: Dicionario, r: Repeticao): string {
+  return r.chave === "aCadaNDias"
+    ? d.tarefas.repeticao.aCadaNDias(r.dias ?? 1)
+    : d.tarefas.repeticao[r.chave]
+}
+
+/**
+ * As iniciais dos sete dias, começando no domingo — o cabeçalho do calendário
+ * de escolher data.
+ *
+ * Sai do `Intl` em vez de uma lista escrita à mão porque a lista à mão estava
+ * ERRADA em qualquer idioma que não o português: `["D","S","T","Q","Q","S","S"]`
+ * é uma constante que ninguém lembraria de traduzir. Em pt-BR o Intl devolve
+ * exatamente essas sete letras; em en-US, "S M T W T F S".
+ *
+ * O 4 de junho de 2023 é um domingo, e é só disso que a conta precisa.
+ */
+export function iniciaisDaSemana(locale: string): string[] {
+  const domingo = new Date(2023, 5, 4)
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(domingo)
+    d.setDate(domingo.getDate() + i)
+    return d.toLocaleDateString(locale, { weekday: "narrow" })
+  })
 }
 
 export function idiomaDaRegiao(regiao: Regiao): Idioma {

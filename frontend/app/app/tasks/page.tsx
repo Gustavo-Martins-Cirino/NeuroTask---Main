@@ -9,7 +9,7 @@ import { TaskDialog } from "@/components/task-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { useRealtime } from "@/hooks/use-realtime"
 import { awardXp, taskXpAmount, MIN_TASK_AGE_MIN } from "@/lib/gamification"
-import { nextFutureOccurrence, recurrenceLabel } from "@/lib/task-recurrence"
+import { nextFutureOccurrence, repeticaoDaRegra } from "@/lib/task-recurrence"
 import type { Task, TaskStatus, TaskList } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -27,7 +27,8 @@ import {
 import { SortableContext, rectSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { useLenis } from "lenis/react"
-import { useDicionario } from "@/hooks/use-idioma"
+import { useDicionario, useLocale } from "@/hooks/use-idioma"
+import { textoDaRepeticao } from "@/lib/i18n"
 
 const GENERAL = "__general__"
 
@@ -69,6 +70,7 @@ function SortableTask({ id, className, children }: { id: string; className?: str
 
 export default function TasksPage() {
   const traducao = useDicionario()
+  const locale = useLocale()
   const [tasks, setTasks] = useState<Task[]>([])
   const [lists, setLists] = useState<TaskList[]>([])
   const [loading, setLoading] = useState(true)
@@ -190,9 +192,7 @@ export default function TasksPage() {
     if (error) {
       console.error("Erro ao criar lista:", error)
       setListError(
-        error.message.includes("task_lists")
-          ? "A tabela de listas ainda não existe. Rode supabase/task_lists.sql no Supabase."
-          : error.message
+        error.message.includes("task_lists") ? traducao.tarefas.erroSemTabelaListas : error.message
       )
       return
     }
@@ -223,7 +223,7 @@ export default function TasksPage() {
     const { error } = await supabase.from("tasks").delete().eq("id", taskId)
     if (error) {
       console.error("Erro ao excluir tarefa:", error)
-      toast.error("Não consegui excluir a tarefa.", { description: error.message })
+      toast.error(traducao.tarefas.erroExcluir, { description: error.message })
       return
     }
     fetchTasks()
@@ -244,8 +244,10 @@ export default function TasksPage() {
           .eq("id", taskId)
         const recAmt = taskXpAmount(previous)
         if (recAmt > 0) awardXp(recAmt)
-        toast.success("Tarefa recorrente concluída! 🔁", {
-          description: `Próxima ocorrência: ${next.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })}`,
+        toast.success(traducao.tarefas.toastRecorrente, {
+          description: traducao.tarefas.toastRecorrenteDetalhe(
+            next.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })
+          ),
         })
         window.dispatchEvent(new Event("neurotask:tasks-changed"))
         fetchTasks()
@@ -261,8 +263,8 @@ export default function TasksPage() {
       if (status === "completed" && !wasCompleted) {
         if (amount > 0) awardXp(amount)
         else
-          toast.info("Concluída — sem XP desta vez 😉", {
-            description: `Tarefas criadas há menos de ${MIN_TASK_AGE_MIN} min não geram XP.`,
+          toast.info(traducao.tarefas.toastSemXp, {
+            description: traducao.tarefas.toastSemXpDetalhe(MIN_TASK_AGE_MIN),
           })
       } else if (status !== "completed" && wasCompleted && amount > 0) {
         awardXp(-amount)
@@ -288,10 +290,15 @@ export default function TasksPage() {
     const { error } = await supabase.from("tasks").update({ recurrence_rule: rule }).eq("id", task.id)
     if (error) {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, recurrence_rule: task.recurrence_rule } : t)))
-      toast.error("Não consegui mudar a repetição agora.")
+      toast.error(traducao.tarefas.erroRepeticao)
       return
     }
-    toast.success(rule ? `Repete: ${recurrenceLabel(rule)?.toLowerCase()}` : "Não repete mais")
+    const repeticao = repeticaoDaRegra(rule)
+    toast.success(
+      repeticao
+        ? traducao.tarefas.toastRepete(textoDaRepeticao(traducao, repeticao))
+        : traducao.tarefas.toastNaoRepete
+    )
   }
 
   const handleDialogClose = (open: boolean) => {
@@ -309,22 +316,22 @@ export default function TasksPage() {
   const activeScoped =
     scope === "all" ? active : scope === "upcoming" ? active.filter(isUpcoming) : active.filter((t) => !isUpcoming(t))
   const SCOPES: { key: Scope; label: string; count: number }[] = [
-    { key: "today", label: "Hoje", count: todayCount },
-    { key: "upcoming", label: "Próximos", count: upcomingCount },
-    { key: "all", label: "Todos", count: active.length },
+    { key: "today", label: traducao.tarefas.escopos.hoje, count: todayCount },
+    { key: "upcoming", label: traducao.tarefas.escopos.proximos, count: upcomingCount },
+    { key: "all", label: traducao.tarefas.escopos.todos, count: active.length },
   ]
 
   const groupsFor = (items: Task[]) => {
     const groups: { key: string; label: string; items: Task[] }[] = []
     const general = items.filter((t) => !t.list_id)
-    if (general.length) groups.push({ key: "__geral__", label: "Geral", items: general })
+    if (general.length) groups.push({ key: "__geral__", label: traducao.tarefas.listaGeral, items: general })
     for (const l of lists) {
       const its = items.filter((t) => t.list_id === l.id)
       if (its.length) groups.push({ key: l.id, label: l.name, items: its })
     }
     const known = new Set(lists.map((l) => l.id))
     const orphan = items.filter((t) => t.list_id && !known.has(t.list_id))
-    if (orphan.length) groups.push({ key: "__outras__", label: "Outras", items: orphan })
+    if (orphan.length) groups.push({ key: "__outras__", label: traducao.tarefas.listaOutras, items: orphan })
     return groups
   }
 
@@ -391,8 +398,8 @@ export default function TasksPage() {
             o ícone já explica. */}
         <Button onClick={() => setDialogOpen(true)} size="sm" className="ml-2 shrink-0">
           <Plus className="h-4 w-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">Nova tarefa</span>
-          <span className="sr-only sm:hidden">Nova tarefa</span>
+          <span className="hidden sm:inline">{traducao.tarefas.nova}</span>
+          <span className="sr-only sm:hidden">{traducao.tarefas.nova}</span>
         </Button>
       </Header>
 
@@ -402,7 +409,7 @@ export default function TasksPage() {
         <div className="mb-5 flex items-center justify-between gap-3">
           <div className="scrollbar-thin flex items-center gap-1.5 overflow-x-auto">
             <button onClick={() => setActiveList(GENERAL)} className={tabBtn(activeList === GENERAL)}>
-              Geral
+              {traducao.tarefas.listaGeral}
             </button>
             {lists.map((l) => (
               <button key={l.id} onClick={() => setActiveList(l.id)} className={tabBtn(activeList === l.id)}>
@@ -419,7 +426,7 @@ export default function TasksPage() {
                     if (e.key === "Enter") createList()
                     if (e.key === "Escape") { setCreatingList(false); setNewListName("") }
                   }}
-                  placeholder="Nome da lista"
+                  placeholder={traducao.tarefas.nomeDaLista}
                   className="h-8 w-32 text-sm"
                 />
                 <button onClick={createList} className="rounded-md p-1.5 text-emerald-500 hover:bg-accent">
@@ -435,14 +442,14 @@ export default function TasksPage() {
                 className="flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Nova lista
+                {traducao.tarefas.novaLista}
               </button>
             )}
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
             {activeListId && (
-              <button onClick={deleteActiveList} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" title="Excluir lista">
+              <button onClick={deleteActiveList} className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" title={traducao.tarefas.excluirLista}>
                 <Trash2 className="h-4 w-4" />
               </button>
             )}
@@ -472,9 +479,9 @@ export default function TasksPage() {
             {active.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <ListTodo className="h-12 w-12 text-muted-foreground/40" />
-                <p className="mt-4 text-muted-foreground">Nenhuma tarefa por aqui. Que tal adicionar uma?</p>
+                <p className="mt-4 text-muted-foreground">{traducao.tarefas.vazio}</p>
                 <Button onClick={() => setDialogOpen(true)} size="sm" className="mt-4">
-                  <Plus className="mr-1.5 h-4 w-4" /> Criar tarefa
+                  <Plus className="mr-1.5 h-4 w-4" /> {traducao.tarefas.criar}
                 </Button>
               </div>
             ) : (
@@ -506,7 +513,11 @@ export default function TasksPage() {
 
                 {activeScoped.length === 0 ? (
                   <p className="py-10 text-center text-sm text-muted-foreground">
-                    {scope === "today" ? "Nada para hoje. 🎉" : scope === "upcoming" ? "Nada nos próximos dias." : "Nenhuma tarefa."}
+                    {scope === "today"
+                      ? traducao.tarefas.vazioHoje
+                      : scope === "upcoming"
+                        ? traducao.tarefas.vazioProximos
+                        : traducao.tarefas.vazioTodos}
                   </p>
                 ) : activeList === GENERAL ? (
                   <div className="space-y-6">
@@ -551,7 +562,7 @@ export default function TasksPage() {
                   className="flex w-full items-center gap-2 border-t border-border/40 pt-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <ChevronRight className={cn("h-4 w-4 transition-transform", showCompleted && "rotate-90")} />
-                  Concluídas ({completed.length})
+                  {traducao.tarefas.concluidas(completed.length)}
                 </button>
                 <AnimatePresence initial={false}>
                   {showCompleted && (

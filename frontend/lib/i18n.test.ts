@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest"
-import { pt, en, dicionario, idiomaDaRegiao, idiomaDoFormato, idiomaDoNavegador, type Dicionario } from "./i18n"
+import {
+  pt, en, dicionario, idiomaDaRegiao, idiomaDoFormato, idiomaDoNavegador,
+  textoDaRepeticao, iniciaisDaSemana, LOCALE, type Dicionario,
+} from "./i18n"
+import { RECURRENCE_OPTIONS } from "./task-recurrence"
 
 // A falta de uma CHAVE já não compila (é o que a interface Dicionario compra).
 // O que a interface não pega, e estes testes pegam: dicionário que compila mas
@@ -179,5 +183,107 @@ describe("idiomaDoNavegador — quem abre um link público", () => {
   it("entrada ausente ou vazia não quebra", () => {
     expect(idiomaDoNavegador(undefined)).toBe("en")
     expect(idiomaDoNavegador([])).toBe("en")
+  })
+})
+
+
+describe("tarefas — as repetições", () => {
+  // A regressão que este bloco existe para pegar: alguém acrescenta uma opção
+  // em RECURRENCE_OPTIONS e esquece de nomeá-la no dicionário. O TypeScript não
+  // pega, porque a chave nova continua sendo uma ChaveRepeticaoFixa válida.
+  for (const [nome, d] of IDIOMAS) {
+    it(`${nome}: toda opção do formulário tem nome`, () => {
+      for (const o of RECURRENCE_OPTIONS) {
+        const texto = d.tarefas.repeticao[o.chave]
+        expect(typeof texto, `${o.value} sem nome`).toBe("string")
+        expect(texto.trim()).not.toBe("")
+      }
+    })
+
+    it(`${nome}: "a cada N dias" pluraliza`, () => {
+      expect(d.tarefas.repeticao.aCadaNDias(1)).not.toBe(d.tarefas.repeticao.aCadaNDias(2))
+      expect(d.tarefas.repeticao.aCadaNDias(3)).toContain("3")
+    })
+
+    it(`${nome}: textoDaRepeticao cobre as duas formas`, () => {
+      expect(textoDaRepeticao(d, { chave: "diariamente" })).toBe(d.tarefas.repeticao.diariamente)
+      expect(textoDaRepeticao(d, { chave: "aCadaNDias", dias: 5 })).toContain("5")
+    })
+
+    // Sem o `?? 1` isto viraria "a cada undefined dias" na tela.
+    it(`${nome}: "a cada N dias" sem número não vira frase quebrada`, () => {
+      const t = textoDaRepeticao(d, { chave: "aCadaNDias" })
+      expect(t).not.toContain("undefined")
+      expect(t).not.toContain("NaN")
+    })
+  }
+
+  it("as repetições mudam de idioma", () => {
+    expect(en.tarefas.repeticao.diariamente).not.toBe(pt.tarefas.repeticao.diariamente)
+    expect(en.tarefas.repeticao.aCadaNDias(3)).not.toBe(pt.tarefas.repeticao.aCadaNDias(3))
+  })
+})
+
+describe("tarefas — o resto da tela", () => {
+  for (const [nome, d] of IDIOMAS) {
+    it(`${nome}: os prazos do cartão pluralizam`, () => {
+      // "dia(s)" era o texto antigo — a fuga que evita escolher o plural.
+      expect(d.tarefas.cartao.faltamDias(1)).not.toContain("(")
+      expect(d.tarefas.cartao.faltamDias(1)).not.toBe(d.tarefas.cartao.faltamDias(2))
+    })
+
+    it(`${nome}: as frases com número carregam o número`, () => {
+      expect(d.tarefas.concluidas(7)).toContain("7")
+      expect(d.tarefas.toastSemXpDetalhe(15)).toContain("15")
+      expect(d.tarefas.dialogo.emNDias(4)).toContain("4")
+      expect(d.tarefas.dialogo.semDataVale("09:30")).toContain("09:30")
+      expect(d.favoritos.tarefas(3)).toContain("3")
+    })
+
+    // O toast diz "Repete: diariamente" — a minúscula é decisão do idioma, e o
+    // que ele NÃO pode fazer é engolir o rótulo.
+    it(`${nome}: o toast de repetição mostra o rótulo recebido`, () => {
+      expect(d.tarefas.toastRepete(d.tarefas.repeticao.semanalmente).toLowerCase()).toContain(
+        d.tarefas.repeticao.semanalmente.toLowerCase()
+      )
+    })
+  }
+
+  it("as duas telas mudam de idioma", () => {
+    expect(en.tarefas.vazio).not.toBe(pt.tarefas.vazio)
+    expect(en.tarefas.escopos.hoje).not.toBe(pt.tarefas.escopos.hoje)
+    expect(en.tarefas.prioridades.urgent).not.toBe(pt.tarefas.prioridades.urgent)
+    expect(en.favoritos.vazio).not.toBe(pt.favoritos.vazio)
+  })
+
+  // A mensagem de erro diz QUAL arquivo rodar; é a metade que resolve o
+  // problema, e traduzir o nome do arquivo o tornaria impossível de achar.
+  it("o nome do .sql sobrevive à tradução", () => {
+    expect(en.tarefas.erroSemTabelaListas).toContain("task_lists.sql")
+    expect(pt.tarefas.erroSemTabelaListas).toContain("task_lists.sql")
+  })
+})
+
+describe("iniciaisDaSemana", () => {
+  it("são sete, começando no domingo", () => {
+    expect(iniciaisDaSemana(LOCALE.pt)).toHaveLength(7)
+    expect(iniciaisDaSemana(LOCALE.en)).toHaveLength(7)
+  })
+
+  // O que a lista escrita à mão dizia — e continua certo em português.
+  it("português devolve as mesmas letras da lista antiga", () => {
+    expect(iniciaisDaSemana(LOCALE.pt)).toEqual(["D", "S", "T", "Q", "Q", "S", "S"])
+  })
+
+  it("inglês NÃO devolve as letras do português", () => {
+    expect(iniciaisDaSemana(LOCALE.en)).toEqual(["S", "M", "T", "W", "T", "F", "S"])
+  })
+
+  it("nenhuma inicial vem vazia", () => {
+    for (const locale of Object.values(LOCALE)) {
+      for (const inicial of iniciaisDaSemana(locale)) {
+        expect(inicial.trim()).not.toBe("")
+      }
+    }
   })
 })

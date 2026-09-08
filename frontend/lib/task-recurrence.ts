@@ -2,13 +2,40 @@
 // para a próxima ocorrência (estilo Todoist) em vez de encerrar a tarefa.
 // Regras: daily | weekly | monthly | yearly | every:N (a cada N dias)
 
-export const RECURRENCE_OPTIONS = [
-  { value: "none", label: "Não repete" },
-  { value: "daily", label: "Diariamente" },
-  { value: "weekly", label: "Semanalmente" },
-  { value: "monthly", label: "Mensalmente" },
-  { value: "yearly", label: "Anualmente" },
-] as const
+/**
+ * O tipo de repetição, pela CHAVE — o nome de cada uma vem do dicionário
+ * (lib/i18n). Este arquivo decide QUAL repetição é; como ela se diz é assunto
+ * do idioma, e um módulo puro de datas não tem por que saber disso.
+ */
+export type ChaveRepeticaoFixa =
+  | "naoRepete"
+  | "diariamente"
+  | "semanalmente"
+  | "mensalmente"
+  | "anualmente"
+
+/**
+ * As fixas mais a personalizada. A separação não é enfeite: a personalizada é
+ * a única que precisa de um NÚMERO para virar texto, e por isso o dicionário a
+ * guarda como função. Se `RECURRENCE_OPTIONS` a incluísse, `repeticao[chave]`
+ * devolveria "texto ou função" em todo lugar que só quer o texto.
+ */
+export type ChaveRepeticao = ChaveRepeticaoFixa | "aCadaNDias"
+
+export const RECURRENCE_OPTIONS: readonly { value: string; chave: ChaveRepeticaoFixa }[] = [
+  { value: "none", chave: "naoRepete" },
+  { value: "daily", chave: "diariamente" },
+  { value: "weekly", chave: "semanalmente" },
+  { value: "monthly", chave: "mensalmente" },
+  { value: "yearly", chave: "anualmente" },
+]
+
+/** Uma repetição já interpretada: a chave e, só em "aCadaNDias", o número. */
+export interface Repeticao {
+  chave: ChaveRepeticao
+  /** Quantos dias. Presente apenas quando a chave é "aCadaNDias". */
+  dias?: number
+}
 
 /**
  * O valor do formulário virando o que vai para o banco.
@@ -35,12 +62,18 @@ export function ehRepeticaoPersonalizada(rule: string | null | undefined): boole
   return typeof rule === "string" && /^every:\d+$/.test(rule)
 }
 
-export function recurrenceLabel(rule: string | null | undefined): string | null {
+/**
+ * A regra do banco virando repetição. `null` quando não repete — e "não
+ * repete" é ausência de regra, então "none" e regra desconhecida caem juntas
+ * aqui em vez de virarem a chave `naoRepete`: quem chama quer saber se HÁ
+ * repetição, e um selo dizendo "não repete" em cada cartão seria ruído.
+ */
+export function repeticaoDaRegra(rule: string | null | undefined): Repeticao | null {
   if (!rule) return null
-  const fixed = RECURRENCE_OPTIONS.find((o) => o.value === rule)
-  if (fixed && fixed.value !== "none") return fixed.label
+  const fixa = RECURRENCE_OPTIONS.find((o) => o.value === rule)
+  if (fixa && fixa.chave !== "naoRepete") return { chave: fixa.chave }
   const m = rule.match(/^every:(\d+)$/)
-  if (m) return `A cada ${m[1]} dia${Number(m[1]) > 1 ? "s" : ""}`
+  if (m) return { chave: "aCadaNDias", dias: Number(m[1]) }
   return null
 }
 

@@ -53,7 +53,11 @@ inteira, não só a pergunta recusada),
 hora **locais**, que é onde um `toISOString()` distraído jogaria toda noite de trabalho
 para o dia seguinte),
 `foto-perfil` (o recorte quadrado central, o que se aceita e o carimbo anti-cache),
-`gamification` (anti-farm), `ia-agora` (a data que a Neuro recebe: por extenso e em ISO,
+`gamification` (anti-farm),
+`i18n` (o dicionário pt/en: nenhum texto vazio, as duas línguas com as mesmas chaves, e a
+varredura que pega "tradução de fachada" — a frase que ficou igual nos dois idiomas) e
+`enfase` (o negrito dentro da frase traduzida, e que marca sobrando não quebra a tela),
+`ia-agora` (a data que a Neuro recebe: por extenso e em ISO,
 com o mês já delimitado — "28/08" obrigava o modelo a adivinhar dia/mês),
 `ia-duplicata` (quando a Neuro recusa criar por já existir: mesmo título E mesmo dia, com
 "na dúvida, cria" como critério de desempate), `ics`, `iniciais` (nome → iniciais e cor do avatar),
@@ -62,7 +66,9 @@ vira "sem cor" em vez de erro), `regiao` (região ↔ formato de hora, e a ida e
 `revelacao-resposta` (a resposta da Neuro entrando escrita no chat: duração fixa e ritmo
 saindo do tamanho — é o que impede uma resposta longa de levar meio minuto para aparecer),
 `routine-insights`, `saudacao`, `task-recurrence` (inclusive que "não repete" vira NULO e
-não a string "none", e que o que sai de `regraParaBanco` é lido por `nextOccurrence`), `telegram-commands`,
+não a string "none", que o que sai de `regraParaBanco` é lido por `nextOccurrence`, e que
+nenhuma opção carrega texto de interface — o nome de cada repetição mora no dicionário),
+`telegram-commands`,
 `telegram-fuso` (de que parede o `/hoje` do bot está falando — e que zero é fuso de
 verdade, não "ausente") e
 `time-format`. É onde a lógica sutil regride sem

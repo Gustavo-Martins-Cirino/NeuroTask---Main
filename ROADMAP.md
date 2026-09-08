@@ -1432,13 +1432,51 @@ vira ruído.
 > e en com as mesmas chaves, nenhum `§` sobrando em rótulo fixo). Ela vale para o que vier
 > depois sem ninguém precisar somar um teste por chave nova.
 
-- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (30 testes em
-      `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Falta o miolo das telas: dashboard,
-      tarefas, calendário, notas, favoritos, Escritório e Neuro IA. Faltam também os
-      componentes embutidos em Configurações, que têm texto próprio: `foto-perfil-campo`,
-      `calendar-feed`, `agenda-io`, `seletor-regiao` e o `errors-panel`. É trabalho de dias, e
-      melhor feito por área, uma de cada vez, para cada fatia poder ser conferida no olho
-      antes da seguinte.
+> **Tarefas e Favoritos passaram (08/09).** Quinta fatia: a tela de tarefas inteira, o
+> cartão, o diálogo de criar/editar e os Favoritos — que não usam o mesmo cartão, mas caem
+> na mesma leva porque a lista deles é curta e mora ao lado.
+>
+> **Um terceiro módulo puro falava português**, e é o mesmo caso das saudações e das faixas
+> de nível: `recurrenceLabel` devolvia "Diariamente" e "A cada 3 dias" de dentro de um
+> arquivo de datas. Virou `repeticaoDaRegra`, que devolve CHAVE — e "a cada N dias" carrega
+> o número junto, porque o plural é decisão de cada idioma.
+>
+> **Duas separações de tipo que valeram o trabalho.** As opções do formulário são só as
+> FIXAS (`ChaveRepeticaoFixa`): a personalizada é a única que precisa de um número para
+> virar texto, e no dicionário ela é função — sem a separação, `repeticao[chave]` devolveria
+> "texto ou função" em todo lugar que só quer o texto, e o `tsc` reclamava com razão. E
+> `repeticaoDaRegra("none")` devolve NULO em vez da chave `naoRepete`: "não repete" é
+> ausência de repetição, e a outra escolha poria um selo "Não repete" em quase todo cartão.
+>
+> **O seletor de data escondia sete letras cravadas**: `["D","S","T","Q","Q","S","S"]`, certas
+> em português e erradas em qualquer outro idioma — e do tipo que ninguém lembra de traduzir.
+> Agora saem do `Intl` pelo locale (`iniciaisDaSemana`), com teste cobrando que o inglês NÃO
+> devolva as letras do português. O mês do cabeçalho seguia `pt-BR` cravado, o mesmo defeito
+> que já tinha aparecido no dashboard e na lista do Telegram.
+>
+> **A minúscula do toast é decisão do idioma, não do código.** "Repete: diariamente" era
+> `recurrenceLabel(rule)?.toLowerCase()` na página. Quem baixa a caixa agora é cada `pt`/`en`
+> dentro da própria frase — em alemão, onde substantivo é maiúsculo, quem escrever o `de`
+> simplesmente não faz isso.
+>
+> Conferido no navegador, com o banco forjado, nas duas telas × dois idiomas × desktop e
+> 390px, mais o diálogo aberto nos quatro: sem erro de JS e sem rolagem horizontal em
+> nenhuma das doze combinações.
+
+- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (51 testes em
+      `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Já passaram: agenda pública, moldura
+      (dock e títulos), Configurações, dashboard, **Tarefas e Favoritos**. Falta o miolo de
+      **calendário, notas, amigos, Escritório e Neuro IA**. Faltam também os componentes
+      embutidos em Configurações, que têm texto próprio: `foto-perfil-campo`, `calendar-feed`,
+      `agenda-io` e o `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
+      infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada
+      fatia poder ser conferida no olho antes da seguinte.
+      **O calendário tem uma armadilha esperando**: `time-block-dialog.tsx` mantém um
+      `RECURRENCE_OPTIONS` PRÓPRIO, cópia do que era o de `lib/task-recurrence`. Traduzir um
+      sem olhar o outro deixa metade do app repetindo em inglês e a outra metade em
+      português — e a pergunta de verdade ali é se as duas listas deviam ser uma só.
+      A ajuda da região agora lista o que **falta**, não o que já foi: a lista do que falta
+      encolhe até sumir sozinha, e a outra envelhecia a cada fatia.
       Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de
       fato: **região e formato**, nunca "idioma".
       Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar

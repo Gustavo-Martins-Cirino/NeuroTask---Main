@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client"
 import { DatePicker } from "@/components/date-picker"
 import { TimeSelect } from "@/components/time-select"
 import { RECURRENCE_OPTIONS, regraParaBanco } from "@/lib/task-recurrence"
+import { useDicionario } from "@/hooks/use-idioma"
 import type { Task, TaskPriority } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { Loader2, ArrowDown, ArrowRight, ArrowUp, AlertCircle, Minus, Plus, Video, Copy, MapPin, ChevronDown, Check } from "lucide-react"
@@ -28,11 +29,13 @@ interface TaskDialogProps {
   onSuccess: () => void
 }
 
-const PRIORITIES: { value: TaskPriority; label: string; active: string; icon: React.ReactNode }[] = [
-  { value: "low", label: "Baixa", active: "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", icon: <ArrowDown className="h-3.5 w-3.5" /> },
-  { value: "medium", label: "Média", active: "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400", icon: <ArrowRight className="h-3.5 w-3.5" /> },
-  { value: "high", label: "Alta", active: "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400", icon: <ArrowUp className="h-3.5 w-3.5" /> },
-  { value: "urgent", label: "Urgente", active: "border-red-500 bg-red-500/10 text-red-600 dark:text-red-400", icon: <AlertCircle className="h-3.5 w-3.5" /> },
+// O nome de cada prioridade vem do dicionário (pelo `value`); cor e ícone não
+// mudam de idioma e ficam aqui.
+const PRIORITIES: { value: TaskPriority; active: string; icon: React.ReactNode }[] = [
+  { value: "low", active: "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", icon: <ArrowDown className="h-3.5 w-3.5" /> },
+  { value: "medium", active: "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400", icon: <ArrowRight className="h-3.5 w-3.5" /> },
+  { value: "high", active: "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400", icon: <ArrowUp className="h-3.5 w-3.5" /> },
+  { value: "urgent", active: "border-red-500 bg-red-500/10 text-red-600 dark:text-red-400", icon: <AlertCircle className="h-3.5 w-3.5" /> },
 ]
 
 const TIME_PRESETS = [
@@ -67,6 +70,7 @@ function meetingHost(url: string): string {
 }
 
 export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess }: TaskDialogProps) {
+  const traducao = useDicionario()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [priority, setPriority] = useState<TaskPriority>("medium")
@@ -164,7 +168,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      setError("Você precisa estar logado")
+      setError(traducao.tarefas.dialogo.precisaLogin)
       setLoading(false)
       return
     }
@@ -207,7 +211,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
       <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-[440px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{task ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
+            <DialogTitle>{task ? traducao.tarefas.dialogo.editarTitulo : traducao.tarefas.dialogo.novaTitulo}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
@@ -215,7 +219,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="O que precisa ser feito?"
+              placeholder={traducao.tarefas.dialogo.tituloPlaceholder}
               required
               className="h-11 text-base"
             />
@@ -223,14 +227,14 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descrição (opcional)"
+              placeholder={traducao.tarefas.dialogo.descricaoPlaceholder}
               rows={2}
               className="h-16 w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring/50"
             />
 
             {/* Prioridade */}
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Prioridade</Label>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{traducao.tarefas.dialogo.prioridade}</Label>
               <div className="grid grid-cols-4 gap-2">
                 {PRIORITIES.map((p) => (
                   <button
@@ -243,7 +247,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                     )}
                   >
                     {p.icon}
-                    {p.label}
+                    {traducao.tarefas.prioridades[p.value]}
                   </button>
                 ))}
               </div>
@@ -251,7 +255,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
 
             {/* Tempo estimado */}
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Tempo estimado</Label>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{traducao.tarefas.dialogo.tempoEstimado}</Label>
               <div className="flex flex-wrap items-center gap-2">
                 {TIME_PRESETS.map((t) => (
                   <button
@@ -273,7 +277,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                     <Minus className="h-3 w-3" />
                   </button>
                   <span className="min-w-12 text-center text-xs font-medium">
-                    {isCustomTime ? fmtMinutes(estimated!) : estimated != null ? fmtMinutes(estimated) : "Personalizar"}
+                    {isCustomTime ? fmtMinutes(estimated!) : estimated != null ? fmtMinutes(estimated) : traducao.tarefas.dialogo.personalizarTempo}
                   </span>
                   <button
                     type="button"
@@ -288,11 +292,11 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
 
             {/* Vencimento */}
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Vencimento</Label>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{traducao.tarefas.dialogo.vencimento}</Label>
               <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => setDueMode("none")} className={cn(chipBase, dueMode === "none" ? chipOn : chipOff)}>Sem data</button>
-                <button type="button" onClick={() => setDueMode("today")} className={cn(chipBase, dueMode === "today" ? chipOn : chipOff)}>Hoje</button>
-                <button type="button" onClick={() => setDueMode("tomorrow")} className={cn(chipBase, dueMode === "tomorrow" ? chipOn : chipOff)}>Amanhã</button>
+                <button type="button" onClick={() => setDueMode("none")} className={cn(chipBase, dueMode === "none" ? chipOn : chipOff)}>{traducao.tarefas.dialogo.semData}</button>
+                <button type="button" onClick={() => setDueMode("today")} className={cn(chipBase, dueMode === "today" ? chipOn : chipOff)}>{traducao.tarefas.dialogo.hoje}</button>
+                <button type="button" onClick={() => setDueMode("tomorrow")} className={cn(chipBase, dueMode === "tomorrow" ? chipOn : chipOff)}>{traducao.tarefas.dialogo.amanha}</button>
 
                 {/* Personalizar dias com stepper */}
                 <div className={cn("flex items-center gap-1 rounded-full border px-1 py-0.5", dueMode === "days" ? chipOn : chipOff)}>
@@ -300,14 +304,14 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                     <Minus className="h-3 w-3" />
                   </button>
                   <button type="button" onClick={() => setDueMode("days")} className="min-w-16 text-center text-xs font-medium">
-                    {dueMode === "days" ? `em ${days} dia${days > 1 ? "s" : ""}` : "Em X dias"}
+                    {dueMode === "days" ? traducao.tarefas.dialogo.emNDias(days) : traducao.tarefas.dialogo.emXDias}
                   </button>
                   <button type="button" onClick={() => { setDueMode("days"); setDays((d) => d + 1) }} className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-accent">
                     <Plus className="h-3 w-3" />
                   </button>
                 </div>
 
-                <button type="button" onClick={() => setDueMode("date")} className={cn(chipBase, dueMode === "date" ? chipOn : chipOff)}>Data</button>
+                <button type="button" onClick={() => setDueMode("date")} className={cn(chipBase, dueMode === "date" ? chipOn : chipOff)}>{traducao.tarefas.dialogo.data}</button>
               </div>
               {dueMode === "date" && (
                 <DatePicker value={customDate} onChange={setCustomDate} />
@@ -322,11 +326,11 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                 className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
               >
                 <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Video className="h-4 w-4" /> Reunião
+                  <Video className="h-4 w-4" /> {traducao.tarefas.dialogo.reuniao}
                 </span>
                 <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
                   <span className="truncate text-xs text-muted-foreground">
-                    {meetingUrl ? meetingHost(meetingUrl) : location ? location : meetingTime ? `às ${meetingTime}` : "Opcional"}
+                    {meetingUrl ? meetingHost(meetingUrl) : location ? location : meetingTime ? traducao.inicio.as(meetingTime) : traducao.tarefas.dialogo.opcional}
                   </span>
                   <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", meetingOpen && "rotate-180")} />
                 </span>
@@ -338,7 +342,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                     <Input
                       value={meetingUrl}
                       onChange={(e) => setMeetingUrl(e.target.value)}
-                      placeholder="Cole o link — Meet, Zoom, Teams…"
+                      placeholder={traducao.tarefas.dialogo.linkPlaceholder}
                       className="h-9 flex-1 text-sm"
                       inputMode="url"
                     />
@@ -349,10 +353,10 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                         await navigator.clipboard.writeText(meetingUrl.trim())
                         setCopied(true)
                         setTimeout(() => setCopied(false), 1500)
-                        toast.success("Link copiado!")
+                        toast.success(traducao.tarefas.dialogo.toastLinkCopiado)
                       }}
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40"
-                      title="Copiar link"
+                      title={traducao.tarefas.dialogo.copiarLink}
                     >
                       {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
                     </button>
@@ -360,23 +364,23 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
 
                   {/* Horário */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Horário</span>
+                    <span className="text-xs text-muted-foreground">{traducao.tarefas.dialogo.horario}</span>
                     <div className="w-36">
                       <TimeSelect
-                        label="Horário do compromisso"
+                        label={traducao.tarefas.dialogo.horarioDoCompromisso}
                         value={meetingTime}
                         onChange={setMeetingTime}
-                        vazioRotulo="Escolher"
+                        vazioRotulo={traducao.tarefas.dialogo.escolher}
                       />
                     </div>
                     {meetingTime && (
                       <button type="button" onClick={() => setMeetingTime("")} className="text-xs text-muted-foreground hover:text-foreground">
-                        limpar
+                        {traducao.tarefas.dialogo.limpar}
                       </button>
                     )}
                   </div>
                   {meetingTime && dueMode === "none" && (
-                    <p className="text-[11px] text-muted-foreground/70">Sem data escolhida — vale para hoje às {meetingTime}.</p>
+                    <p className="text-[11px] text-muted-foreground/70">{traducao.tarefas.dialogo.semDataVale(meetingTime)}</p>
                   )}
 
                   {/* Local (presencial), discreto */}
@@ -386,7 +390,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                       <Input
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        placeholder="Local — sala, endereço…"
+                        placeholder={traducao.tarefas.dialogo.localPlaceholder}
                         className="h-9 flex-1 text-sm"
                       />
                     </div>
@@ -396,7 +400,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                       onClick={() => setShowLocation(true)}
                       className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      <MapPin className="h-3.5 w-3.5" /> Adicionar local (presencial)
+                      <MapPin className="h-3.5 w-3.5" /> {traducao.tarefas.dialogo.adicionarLocal}
                     </button>
                   )}
                 </div>
@@ -405,7 +409,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
 
             {/* Repetição */}
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Repetir</Label>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">{traducao.tarefas.dialogo.repetir}</Label>
               <div className="flex flex-wrap items-center gap-2">
                 {RECURRENCE_OPTIONS.map((o) => (
                   <button
@@ -414,7 +418,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                     onClick={() => setRecurrence(o.value)}
                     className={cn(chipBase, recurrence === o.value ? chipOn : chipOff)}
                   >
-                    {o.label}
+                    {traducao.tarefas.repeticao[o.chave]}
                   </button>
                 ))}
                 {/* Personalizado: a cada N dias */}
@@ -427,7 +431,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
                     <Minus className="h-3 w-3" />
                   </button>
                   <button type="button" onClick={() => setRecurrence("every")} className="min-w-20 text-center text-xs font-medium">
-                    {recurrence === "every" ? `a cada ${everyDays} dia${everyDays > 1 ? "s" : ""}` : "Personalizado"}
+                    {recurrence === "every" ? traducao.tarefas.dialogo.aCadaNDias(everyDays) : traducao.tarefas.dialogo.personalizado}
                   </button>
                   <button
                     type="button"
@@ -440,7 +444,7 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
               </div>
               {recurrence !== "none" && (
                 <p className="text-[11px] text-muted-foreground/70">
-                  Ao concluir, o prazo avança automaticamente para a próxima ocorrência.
+                  {traducao.tarefas.dialogo.avancaSozinho}
                 </p>
               )}
             </div>
@@ -449,10 +453,10 @@ export function TaskDialog({ open, onOpenChange, task, listId = null, onSuccess 
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{traducao.tarefas.cancelar}</Button>
             <Button type="submit" disabled={loading || !title.trim()}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {task ? "Salvar" : "Criar tarefa"}
+              {task ? traducao.tarefas.salvar : traducao.tarefas.criar}
             </Button>
           </DialogFooter>
         </form>

@@ -25,9 +25,11 @@ import {
   Video, Copy, MapPin,
 } from "lucide-react"
 import {
-  RECURRENCE_OPTIONS, ehRepeticaoPersonalizada, recurrenceLabel, regraParaBanco,
+  RECURRENCE_OPTIONS, ehRepeticaoPersonalizada, repeticaoDaRegra, regraParaBanco,
 } from "@/lib/task-recurrence"
 import { marcarOrigemDaMoeda } from "@/lib/coin-flight"
+import { useDicionario } from "@/hooks/use-idioma"
+import { textoDaRepeticao, type Dicionario } from "@/lib/i18n"
 import { toast } from "sonner"
 
 interface TaskCardProps {
@@ -40,15 +42,17 @@ interface TaskCardProps {
   onRecurrenceChange?: (task: Task, rule: string | null) => void
 }
 
-const priorityConfig: Record<TaskPriority, { label: string; color: string; icon: React.ReactNode }> = {
-  low: { label: "Baixa", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", icon: <ArrowDown className="h-3 w-3" /> },
-  medium: { label: "Média", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400", icon: <ArrowRight className="h-3 w-3" /> },
-  high: { label: "Alta", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400", icon: <ArrowUp className="h-3 w-3" /> },
-  urgent: { label: "Urgente", color: "bg-red-500/10 text-red-600 dark:text-red-400", icon: <AlertCircle className="h-3 w-3" /> },
+// A cor e o ícone da prioridade — o NOME dela vem do dicionário. Cor e ícone
+// não mudam de idioma, então continuam aqui.
+const priorityConfig: Record<TaskPriority, { color: string; icon: React.ReactNode }> = {
+  low: { color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", icon: <ArrowDown className="h-3 w-3" /> },
+  medium: { color: "bg-blue-500/10 text-blue-600 dark:text-blue-400", icon: <ArrowRight className="h-3 w-3" /> },
+  high: { color: "bg-amber-500/10 text-amber-600 dark:text-amber-400", icon: <ArrowUp className="h-3 w-3" /> },
+  urgent: { color: "bg-red-500/10 text-red-600 dark:text-red-400", icon: <AlertCircle className="h-3 w-3" /> },
 }
 
 // Progresso e rótulo do prazo
-function dueInfo(task: Task) {
+function dueInfo(task: Task, d: Dicionario) {
   if (!task.due_date) return null
   const due = new Date(task.due_date).getTime()
   const created = new Date(task.created_at).getTime()
@@ -59,13 +63,13 @@ function dueInfo(task: Task) {
 
   let label: string
   if (overdue) {
-    label = "Atrasada"
+    label = d.tarefas.cartao.atrasada
   } else {
     const ms = due - now
     const mins = Math.round(ms / 60_000)
-    if (mins < 60) label = `faltam ${mins} min`
-    else if (mins < 60 * 24) label = `faltam ${Math.round(mins / 60)} h`
-    else label = `faltam ${Math.round(mins / 60 / 24)} dia(s)`
+    if (mins < 60) label = d.tarefas.cartao.faltamMinutos(mins)
+    else if (mins < 60 * 24) label = d.tarefas.cartao.faltamHoras(Math.round(mins / 60))
+    else label = d.tarefas.cartao.faltamDias(Math.round(mins / 60 / 24))
   }
 
   const color = overdue
@@ -83,10 +87,12 @@ export function TaskCard({
   task, onEdit, onDelete, onStatusChange, onToggleFavorite, onRecurrenceChange,
 }: TaskCardProps) {
   const [confetti, setConfetti] = useState(false)
+  const traducao = useDicionario()
   const priority = priorityConfig[task.priority]
   const isCompleted = task.status === "completed"
   const isInProgress = task.status === "in_progress"
-  const due = dueInfo(task)
+  const due = dueInfo(task, traducao)
+  const repeticao = repeticaoDaRegra(task.recurrence_rule)
 
   const toggleComplete = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!isCompleted) {
@@ -120,7 +126,7 @@ export function TaskCard({
       <div className="relative mt-0.5">
         <button
           onClick={toggleComplete}
-          aria-label={isCompleted ? "Marcar como pendente" : "Concluir tarefa"}
+          aria-label={isCompleted ? traducao.tarefas.cartao.marcarPendente : traducao.tarefas.cartao.concluir}
           className={cn(
             "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
             isCompleted
@@ -155,7 +161,7 @@ export function TaskCard({
             {onToggleFavorite && (
               <button
                 onClick={() => onToggleFavorite(task)}
-                aria-label={task.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                aria-label={task.is_favorite ? traducao.tarefas.cartao.desfavoritar : traducao.tarefas.cartao.favoritar}
                 className={cn(
                   "rounded-lg p-1.5 transition-colors",
                   task.is_favorite
@@ -183,7 +189,7 @@ export function TaskCard({
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onEdit(task)}>
                 <Pencil className="mr-2 h-4 w-4" />
-                Editar
+                {traducao.tarefas.cartao.editar}
               </DropdownMenuItem>
 
               {/* Repetição sem abrir o diálogo. Ela entra AQUI, e não como um
@@ -195,7 +201,7 @@ export function TaskCard({
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Repeat className="mr-2 h-4 w-4" />
-                    Repetir
+                    {traducao.tarefas.cartao.repetir}
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuSubContent>
@@ -205,7 +211,7 @@ export function TaskCard({
                           checked={(task.recurrence_rule ?? "none") === o.value}
                           onCheckedChange={() => onRecurrenceChange(task, regraParaBanco(o.value))}
                         >
-                          {o.label}
+                          {traducao.tarefas.repeticao[o.chave]}
                         </DropdownMenuCheckboxItem>
                       ))}
                       {/* "A cada N dias" não cabe num menu — o número se escolhe
@@ -218,9 +224,9 @@ export function TaskCard({
                         checked={ehRepeticaoPersonalizada(task.recurrence_rule)}
                         onCheckedChange={() => onEdit(task)}
                       >
-                        {ehRepeticaoPersonalizada(task.recurrence_rule)
-                          ? recurrenceLabel(task.recurrence_rule)
-                          : "A cada N dias…"}
+                        {ehRepeticaoPersonalizada(task.recurrence_rule) && repeticao
+                          ? textoDaRepeticao(traducao, repeticao)
+                          : traducao.tarefas.repeticao.aCadaNDiasVazio}
                       </DropdownMenuCheckboxItem>
                     </DropdownMenuSubContent>
                   </DropdownMenuPortal>
@@ -230,7 +236,7 @@ export function TaskCard({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onDelete(task.id)} className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                Excluir
+                {traducao.tarefas.cartao.excluir}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -246,7 +252,7 @@ export function TaskCard({
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className={cn("text-xs", priority.color)}>
             {priority.icon}
-            <span className="ml-1">{priority.label}</span>
+            <span className="ml-1">{traducao.tarefas.prioridades[task.priority]}</span>
           </Badge>
 
           {task.estimated_minutes && (
@@ -258,10 +264,10 @@ export function TaskCard({
             </Badge>
           )}
 
-          {task.recurrence_rule && recurrenceLabel(task.recurrence_rule) && (
+          {repeticao && (
             <Badge variant="secondary" className="bg-primary/10 text-xs text-primary">
               <Repeat className="mr-1 h-3 w-3" />
-              {recurrenceLabel(task.recurrence_rule)}
+              {textoDaRepeticao(traducao, repeticao)}
             </Badge>
           )}
 
@@ -275,14 +281,14 @@ export function TaskCard({
                 className="flex items-center gap-1 py-0.5 pl-2 pr-1.5 transition-colors hover:bg-violet-500/15"
               >
                 <Video className="h-3 w-3" />
-                Entrar
+                {traducao.tarefas.cartao.entrar}
               </a>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(task.meeting_url!)
-                  toast.success("Link da reunião copiado!")
+                  toast.success(traducao.tarefas.cartao.toastLinkReuniao)
                 }}
-                aria-label="Copiar link da reunião"
+                aria-label={traducao.tarefas.cartao.copiarLinkReuniao}
                 className="border-l border-violet-500/20 py-1 pl-1.5 pr-2 transition-colors hover:bg-violet-500/15"
               >
                 <Copy className="h-3 w-3" />
@@ -312,12 +318,12 @@ export function TaskCard({
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
                   </span>
-                  Em andamento
+                  {traducao.tarefas.cartao.emAndamento}
                 </>
               ) : (
                 <>
                   <Play className="h-3 w-3" />
-                  Iniciar
+                  {traducao.tarefas.cartao.iniciar}
                 </>
               )}
             </button>

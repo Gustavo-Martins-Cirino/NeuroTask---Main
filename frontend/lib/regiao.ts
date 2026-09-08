@@ -2,10 +2,10 @@ import { type TimeFormat } from "./time-format"
 
 // Região do usuário — hoje, só Brasil e Estados Unidos.
 //
-// O nome importa: isto é **região e formato de hora**, nunca "idioma". O app
-// inteiro está em português cravado no JSX, e uma bandeira que prometesse
-// tradução estaria mentindo. Traduzir de verdade é extrair cada string para um
-// dicionário — outro trabalho, muito maior.
+// O nome importa: isto é **região e formato de hora**, nunca "idioma". A
+// tradução existe (lib/i18n) e avança por área — mas enquanto sobrar uma tela
+// em português, uma bandeira que prometesse "idioma" estaria prometendo demais.
+// O rótulo passa a dizer "idioma" no dia em que a última área entrar.
 //
 // **Não há armazenamento próprio de propósito.** A região é DERIVADA do formato
 // de hora que já mora no localStorage (hooks/use-time-format): com duas regiões

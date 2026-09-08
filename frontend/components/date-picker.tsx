@@ -4,8 +4,8 @@ import { maiusculaInicial } from "@/lib/texto"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-
-const WEEKDAYS = ["D", "S", "T", "Q", "Q", "S", "S"]
+import { useLocale } from "@/hooks/use-idioma"
+import { iniciaisDaSemana } from "@/lib/i18n"
 
 function toKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
@@ -18,6 +18,11 @@ export function DatePicker({
   value: string // "YYYY-MM-DD"
   onChange: (v: string) => void
 }) {
+  const locale = useLocale()
+  // As iniciais saem do locale. Como lista escrita à mão elas estavam certas em
+  // português e erradas em qualquer outro idioma — e ninguém lembraria de
+  // traduzir sete letras soltas no alto de um arquivo.
+  const WEEKDAYS = iniciaisDaSemana(locale)
   const selected = value ? new Date(value + "T00:00:00") : null
   const [month, setMonth] = useState(() => {
     const base = selected ?? new Date()
@@ -48,7 +53,7 @@ export function DatePicker({
           <ChevronLeft className="h-4 w-4" />
         </button>
         <span className="text-sm font-medium">
-          {maiusculaInicial(month.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }))}
+          {maiusculaInicial(month.toLocaleDateString(locale, { month: "long", year: "numeric" }))}
         </span>
         <button type="button" onClick={() => shiftMonth(1)} className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
           <ChevronRight className="h-4 w-4" />

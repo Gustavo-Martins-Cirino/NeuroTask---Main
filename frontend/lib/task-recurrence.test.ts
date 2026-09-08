@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
 import {
-  recurrenceLabel, nextOccurrence, nextFutureOccurrence, regraParaBanco, ehRepeticaoPersonalizada,
+  repeticaoDaRegra, nextOccurrence, nextFutureOccurrence, regraParaBanco, ehRepeticaoPersonalizada,
+  RECURRENCE_OPTIONS,
 } from "./task-recurrence"
 
 // Recorrência mexe com o prazo da tarefa depois de concluída. Um erro aqui não
@@ -8,24 +9,37 @@ import {
 
 const iso = (d: Date | null) => d?.toISOString().slice(0, 10)
 
-describe("recurrenceLabel", () => {
-  it("traduz as regras fixas", () => {
-    expect(recurrenceLabel("daily")).toBe("Diariamente")
-    expect(recurrenceLabel("weekly")).toBe("Semanalmente")
-    expect(recurrenceLabel("monthly")).toBe("Mensalmente")
-    expect(recurrenceLabel("yearly")).toBe("Anualmente")
+describe("repeticaoDaRegra", () => {
+  it("as regras fixas viram a chave delas", () => {
+    expect(repeticaoDaRegra("daily")).toEqual({ chave: "diariamente" })
+    expect(repeticaoDaRegra("weekly")).toEqual({ chave: "semanalmente" })
+    expect(repeticaoDaRegra("monthly")).toEqual({ chave: "mensalmente" })
+    expect(repeticaoDaRegra("yearly")).toEqual({ chave: "anualmente" })
   })
 
-  it("every:N vira texto com plural correto", () => {
-    expect(recurrenceLabel("every:1")).toBe("A cada 1 dia")
-    expect(recurrenceLabel("every:3")).toBe("A cada 3 dias")
+  it("every:N carrega o número junto — o plural é do dicionário", () => {
+    expect(repeticaoDaRegra("every:1")).toEqual({ chave: "aCadaNDias", dias: 1 })
+    expect(repeticaoDaRegra("every:3")).toEqual({ chave: "aCadaNDias", dias: 3 })
   })
 
-  it("ausência de regra e regras inválidas não têm rótulo", () => {
-    expect(recurrenceLabel(null)).toBeNull()
-    expect(recurrenceLabel(undefined)).toBeNull()
-    expect(recurrenceLabel("none")).toBeNull()
-    expect(recurrenceLabel("toda terça")).toBeNull()
+  it("ausência de regra e regras inválidas não viram repetição", () => {
+    expect(repeticaoDaRegra(null)).toBeNull()
+    expect(repeticaoDaRegra(undefined)).toBeNull()
+    expect(repeticaoDaRegra("toda terça")).toBeNull()
+  })
+
+  // "none" é ausência de repetição, e não a repetição chamada "não repete".
+  // Devolver { chave: "naoRepete" } aqui poria um selo "Não repete" em todo
+  // cartão que não repete — que é a maioria deles.
+  it('"none" é ausência de repetição, não uma repetição', () => {
+    expect(repeticaoDaRegra("none")).toBeNull()
+  })
+
+  // O módulo puro não fala idioma nenhum: quem traduz é lib/i18n.
+  it("nenhuma opção carrega texto de interface", () => {
+    for (const o of RECURRENCE_OPTIONS) {
+      expect(Object.keys(o).sort()).toEqual(["chave", "value"])
+    }
   })
 })
 
@@ -116,7 +130,7 @@ describe("nextFutureOccurrence", () => {
 describe("regraParaBanco", () => {
   it('"não repete" vira NULO, e não a string "none"', () => {
     // Tarefa que não repete não tem regra nenhuma. Gravar "none" faria
-    // recurrenceLabel devolver null e nextOccurrence não achar a regra — um
+    // repeticaoDaRegra devolver null e nextOccurrence não achar a regra — um
     // estado que parece certo na tela e é lixo no banco.
     expect(regraParaBanco("none")).toBeNull()
     expect(regraParaBanco("")).toBeNull()

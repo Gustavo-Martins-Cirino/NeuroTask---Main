@@ -79,6 +79,7 @@ frontend/
 │   ├── theme-provider.tsx
 │   └── ui/                   # Componentes shadcn gerados
 ├── hooks/                    # use-mobile · use-realtime · use-sound-mixer · use-time-format
+│                             # use-idioma (o idioma da interface, derivado da região)
 │                             # use-office-bg · use-office-celebration (I/O das prefs/festa do Escritório)
 ├── lib/
 │   ├── supabase/             # client.ts · server.ts · middleware.ts (helper de updateSession)
@@ -93,6 +94,9 @@ frontend/
 │   ├── reminders.ts          # REMINDER_COLORS (paleta dos lembretes)
 │   ├── time-format.ts        # 12h/24h — puro; o I/O mora em hooks/use-time-format
 │   ├── regiao.ts             # Brasil/EUA → formato de hora (puro; derivado, sem storage próprio)
+│   ├── i18n.ts               # Dicionário pt/en à mão: interface, não string solta (puro)
+│   ├── enfase.tsx            # Negrito DENTRO de frase traduzida, marcado por § (puro)
+│   ├── task-recurrence.ts    # Repetição da tarefa: regra → chave + próxima ocorrência (puro)
 │   ├── foto-perfil.ts        # Recorte quadrado, limites e caminho da foto (puro)
 │   ├── dashboard-metricas.ts # As 3 perguntas de "Seus números" (puro; dia/semana/hora locais)
 │   ├── avatar.ts             # I/O do retrato: bonequinho + envio/remoção da foto
@@ -172,6 +176,19 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   motivo não é economia: o `<Canvas>` do ShaderGradient é o que **não** entra no ticker
   único, e abriria um segundo `requestAnimationFrame` concorrendo com a cena 3D.
 - Fonte: Geist (sans) + Geist Mono.
+- **Idioma: dicionário à mão em `lib/i18n.ts`, não biblioteca.** São dois idiomas (pt/en) num
+  app client-side — o que uma biblioteca resolve não é problema aqui, e o que ela cobra é: a
+  chave em string solta erra calada no dia em que alguém renomeia. O contrato é uma
+  `interface Dicionario`, então **falta de chave não compila**. Frase que varia (nome, plural)
+  é **função**, não concatenação no JSX: em inglês a ordem das palavras muda.
+- **Módulo puro não fala idioma.** Quando `lib/` precisa nomear algo que aparece na tela, ele
+  devolve **chave** e o dicionário devolve o texto — é assim em `saudacao`, `nivel-faixa`,
+  `regiao` e `task-recurrence`. O idioma dentro do app sai da região (`hooks/use-idioma`),
+  que já sai do formato de hora; em `/agenda/<token>` sai do navegador de quem abre.
+- **A tradução avança por área, e ainda não terminou.** Já passaram: agenda pública, dock e
+  títulos, Configurações, dashboard, Tarefas e Favoritos. Faltam calendário, notas, amigos,
+  Escritório e Neuro IA — o ROADMAP tem a lista e as armadilhas. Enquanto sobrar tela em
+  português, o seletor diz **"região e formato"**, nunca "idioma".
 
 ## Funcionalidades da IA (Neuro IA)
 
