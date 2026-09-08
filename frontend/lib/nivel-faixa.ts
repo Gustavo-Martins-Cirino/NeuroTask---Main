@@ -8,19 +8,22 @@
 // Agora a diferenciação existe, mas em ÁREA PEQUENA: um ponto colorido num selo
 // que, no resto, usa os tokens do tema. Cor como acento, não como fundo.
 
+/** O degrau, pela CHAVE — o nome de cada um vem do dicionário (lib/i18n). */
+export type ChaveFaixa = "comecando" | "emRitmo" | "constante" | "avancado" | "veterano" | "lendario"
+
 export interface Faixa {
-  nome: string
+  chave: ChaveFaixa
   /** Cor do ponto. Croma contido de propósito: convive com a paleta do app. */
   cor: string
 }
 
 const FAIXAS: { min: number; faixa: Faixa }[] = [
-  { min: 1, faixa: { nome: "Começando", cor: "#8b93a7" } },
-  { min: 3, faixa: { nome: "Em ritmo", cor: "#5b8fc9" } },
-  { min: 5, faixa: { nome: "Constante", cor: "#4f9e8f" } },
-  { min: 8, faixa: { nome: "Avançado", cor: "#8b7bc4" } },
-  { min: 12, faixa: { nome: "Veterano", cor: "#c2915a" } },
-  { min: 18, faixa: { nome: "Lendário", cor: "#c47ba0" } },
+  { min: 1, faixa: { chave: "comecando", cor: "#8b93a7" } },
+  { min: 3, faixa: { chave: "emRitmo", cor: "#5b8fc9" } },
+  { min: 5, faixa: { chave: "constante", cor: "#4f9e8f" } },
+  { min: 8, faixa: { chave: "avancado", cor: "#8b7bc4" } },
+  { min: 12, faixa: { chave: "veterano", cor: "#c2915a" } },
+  { min: 18, faixa: { chave: "lendario", cor: "#c47ba0" } },
 ]
 
 export function faixaDoNivel(nivel: number): Faixa {

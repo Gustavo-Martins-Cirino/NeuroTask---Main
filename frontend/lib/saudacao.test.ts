@@ -3,22 +3,22 @@ import { saudacaoPorHora, staggerDasLetras, DURACAO_MAXIMA_S, STAGGER_BASE_S } f
 
 describe("saudacaoPorHora", () => {
   it("cobre as três faixas do dia", () => {
-    expect(saudacaoPorHora(0)).toBe("Bom dia")
-    expect(saudacaoPorHora(11)).toBe("Bom dia")
-    expect(saudacaoPorHora(12)).toBe("Boa tarde")
-    expect(saudacaoPorHora(17)).toBe("Boa tarde")
-    expect(saudacaoPorHora(18)).toBe("Boa noite")
-    expect(saudacaoPorHora(23)).toBe("Boa noite")
+    expect(saudacaoPorHora(0)).toBe("bomDia")
+    expect(saudacaoPorHora(11)).toBe("bomDia")
+    expect(saudacaoPorHora(12)).toBe("boaTarde")
+    expect(saudacaoPorHora(17)).toBe("boaTarde")
+    expect(saudacaoPorHora(18)).toBe("boaNoite")
+    expect(saudacaoPorHora(23)).toBe("boaNoite")
   })
 
   it("a virada é no ponto certo, não uma hora depois", () => {
-    expect(saudacaoPorHora(11.9)).toBe("Bom dia")
-    expect(saudacaoPorHora(12.1)).toBe("Boa tarde")
+    expect(saudacaoPorHora(11.9)).toBe("bomDia")
+    expect(saudacaoPorHora(12.1)).toBe("boaTarde")
   })
 
   it("hora impossível não quebra a tela — cai num cumprimento neutro", () => {
     for (const h of [-1, 24, 99, NaN, Infinity]) {
-      expect(saudacaoPorHora(h)).toBe("Olá")
+      expect(saudacaoPorHora(h)).toBe("ola")
     }
   })
 })

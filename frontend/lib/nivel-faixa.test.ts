@@ -3,20 +3,20 @@ import { faixaDoNivel } from "./nivel-faixa"
 
 describe("faixaDoNivel", () => {
   it("nível 1 pega o primeiro degrau", () => {
-    expect(faixaDoNivel(1).nome).toBe("Começando")
+    expect(faixaDoNivel(1).chave).toBe("comecando")
   })
 
   it("a faixa muda de verdade ao subir de degrau", () => {
-    expect(faixaDoNivel(1).nome).not.toBe(faixaDoNivel(8).nome)
-    expect(faixaDoNivel(8).nome).not.toBe(faixaDoNivel(20).nome)
+    expect(faixaDoNivel(1).chave).not.toBe(faixaDoNivel(8).chave)
+    expect(faixaDoNivel(8).chave).not.toBe(faixaDoNivel(20).chave)
   })
 
   it("nível acima do último degrau fica no topo, não volta pro começo", () => {
-    expect(faixaDoNivel(999).nome).toBe("Lendário")
+    expect(faixaDoNivel(999).chave).toBe("lendario")
   })
 
   it("nível inválido ou abaixo de 1 cai no primeiro degrau", () => {
-    for (const n of [0, -5, NaN]) expect(faixaDoNivel(n).nome).toBe("Começando")
+    for (const n of [0, -5, NaN]) expect(faixaDoNivel(n).chave).toBe("comecando")
   })
 
   it("toda faixa tem uma cor hex — é ela que vira o ponto do selo", () => {

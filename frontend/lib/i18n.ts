@@ -1,5 +1,7 @@
 import { REGIAO_DEFAULT, regiaoDoFormato, type Regiao } from "@/lib/regiao"
 import { type TimeFormat } from "@/lib/time-format"
+import { type ChaveSaudacao } from "@/lib/saudacao"
+import { type ChaveFaixa } from "@/lib/nivel-faixa"
 
 // Tradução do app — a primeira fatia.
 //
@@ -69,6 +71,38 @@ export interface Dicionario {
     escritorio: string
     amigos: string
     configuracoes: string
+  }
+  inicio: {
+    /** Saudação: a hora escolhe a chave (lib/saudacao), aqui vira texto. */
+    saudacoes: Record<ChaveSaudacao, string>
+    /** Nome do degrau de nível; a chave vem de lib/nivel-faixa. */
+    faixas: Record<ChaveFaixa, string>
+    nivel: (n: number, faixa: string) => string
+    pendentes: (quantas: number, percentual: number) => string
+    tudoEmDia: string
+    metricas: { tarefas: string; concluidas: string; pendentes: string; blocosHoje: string }
+    agora: string
+    ate: (hora: string) => string
+    depois: (titulo: string, hora: string) => string
+    proximoBloco: string
+    as: (hora: string) => string
+    semBlocos: string
+    planejarODia: string
+    tarefasDeHoje: string
+    semTarefasHoje: string
+    autoconhecimento: string
+    planejadoReal: (planejado: number, real: number) => string
+    emDia: string
+    aMais: (minutos: number) => string
+    autoconhecimentoRodape: string
+    lembretes: string
+    verTodas: string
+    verNoCalendario: string
+    acoes: {
+      calendario: { titulo: string; desc: string }
+      tarefas: { titulo: string; desc: string }
+      neuro: { titulo: string; desc: string }
+    }
   }
   configuracoes: {
     perfil: {
@@ -190,6 +224,50 @@ export const pt: Dicionario = {
     escritorio: "Escritório",
     amigos: "Amigos",
     configuracoes: "Configurações",
+  },
+  inicio: {
+    saudacoes: { ola: "Olá", bomDia: "Bom dia", boaTarde: "Boa tarde", boaNoite: "Boa noite" },
+    faixas: {
+      comecando: "Começando",
+      emRitmo: "Em ritmo",
+      constante: "Constante",
+      avancado: "Avançado",
+      veterano: "Veterano",
+      lendario: "Lendário",
+    },
+    nivel: (n, faixa) => `Nível ${n} · ${faixa}`,
+    pendentes: (quantas, percentual) =>
+      `Você tem ${quantas} ${quantas === 1 ? "tarefa pendente" : "tarefas pendentes"}. ${percentual}% concluído.`,
+    tudoEmDia: "Tudo em dia. Que tal planejar algo novo?",
+    metricas: {
+      tarefas: "Tarefas",
+      concluidas: "Concluídas",
+      pendentes: "Pendentes",
+      blocosHoje: "Blocos hoje",
+    },
+    agora: "Agora",
+    ate: (hora) => `até ${hora}`,
+    depois: (titulo, hora) => `Depois: ${titulo} às ${hora}`,
+    proximoBloco: "Próximo bloco",
+    as: (hora) => `às ${hora}`,
+    semBlocos: "Nenhum bloco pela frente hoje.",
+    planejarODia: "Planejar o dia",
+    tarefasDeHoje: "Tarefas de hoje",
+    semTarefasHoje: "Nada com prazo para hoje. 🎉",
+    autoconhecimento: "Autoconhecimento",
+    planejadoReal: (planejado, real) => `planejado ${planejado}min · real ~${real}min`,
+    emDia: "em dia",
+    aMais: (minutos) => `+${minutos}min`,
+    autoconhecimentoRodape:
+      "Calculado dos seus check-ins — responda \u201cConcluí\u201d quando um bloco terminar.",
+    lembretes: "Lembretes de hoje",
+    verTodas: "Ver todas",
+    verNoCalendario: "Ver no calendário",
+    acoes: {
+      calendario: { titulo: "Calendário", desc: "Organize seu tempo com blocos de foco" },
+      tarefas: { titulo: "Tarefas", desc: "Gerencie e priorize suas atividades" },
+      neuro: { titulo: "Neuro IA", desc: "Insights e sugestões inteligentes" },
+    },
   },
   configuracoes: {
     perfil: {
@@ -319,6 +397,50 @@ export const en: Dicionario = {
     escritorio: "Office",
     amigos: "Friends",
     configuracoes: "Settings",
+  },
+  inicio: {
+    saudacoes: { ola: "Hello", bomDia: "Good morning", boaTarde: "Good afternoon", boaNoite: "Good evening" },
+    faixas: {
+      comecando: "Starting out",
+      emRitmo: "Getting going",
+      constante: "Steady",
+      avancado: "Advanced",
+      veterano: "Veteran",
+      lendario: "Legendary",
+    },
+    nivel: (n, faixa) => `Level ${n} · ${faixa}`,
+    pendentes: (quantas, percentual) =>
+      `You have ${quantas} ${quantas === 1 ? "task pending" : "tasks pending"}. ${percentual}% done.`,
+    tudoEmDia: "All caught up. How about planning something new?",
+    metricas: {
+      tarefas: "Tasks",
+      concluidas: "Done",
+      pendentes: "Pending",
+      blocosHoje: "Blocks today",
+    },
+    agora: "Now",
+    ate: (hora) => `until ${hora}`,
+    depois: (titulo, hora) => `Next: ${titulo} at ${hora}`,
+    proximoBloco: "Next block",
+    as: (hora) => `at ${hora}`,
+    semBlocos: "Nothing else scheduled today.",
+    planejarODia: "Plan the day",
+    tarefasDeHoje: "Today\u2019s tasks",
+    semTarefasHoje: "Nothing due today. 🎉",
+    autoconhecimento: "Know yourself",
+    planejadoReal: (planejado, real) => `planned ${planejado}min · actual ~${real}min`,
+    emDia: "on point",
+    aMais: (minutos) => `+${minutos}min`,
+    autoconhecimentoRodape:
+      "Worked out from your check-ins — answer \u201cDone\u201d when a block ends.",
+    lembretes: "Today\u2019s reminders",
+    verTodas: "See all",
+    verNoCalendario: "See in calendar",
+    acoes: {
+      calendario: { titulo: "Calendar", desc: "Organise your time with focus blocks" },
+      tarefas: { titulo: "Tasks", desc: "Manage and prioritise what you have to do" },
+      neuro: { titulo: "Neuro IA", desc: "Insights and smart suggestions" },
+    },
   },
   configuracoes: {
     perfil: {

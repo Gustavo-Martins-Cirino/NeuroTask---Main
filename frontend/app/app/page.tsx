@@ -21,7 +21,7 @@ import { useTimeFormat } from "@/hooks/use-time-format"
 import { formatTime, formatClock } from "@/lib/time-format"
 import { faixaDoNivel } from "@/lib/nivel-faixa"
 import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
-import { useDicionario } from "@/hooks/use-idioma"
+import { useDicionario, useLocale } from "@/hooks/use-idioma"
 
 function localDateKey() {
   const d = new Date()
@@ -65,6 +65,7 @@ const item = {
 
 export default function DashboardPage() {
   const traducao = useDicionario()
+  const locale = useLocale()
   const timeFormat = useTimeFormat()
   const [stats, setStats] = useState<Stats>({
     totalTasks: 0,
@@ -158,7 +159,7 @@ export default function DashboardPage() {
     fetchData()
   }, [supabase])
 
-  const today = new Date().toLocaleDateString("pt-BR", {
+  const today = new Date().toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -169,16 +170,16 @@ export default function DashboardPage() {
     : 0
 
   const metrics = [
-    { label: "Tarefas", value: stats.totalTasks, icon: ListTodo, color: "text-foreground" },
-    { label: "Concluídas", value: stats.completedTasks, icon: Target, color: "text-emerald-500" },
-    { label: "Pendentes", value: stats.pendingTasks, icon: Clock, color: "text-amber-500" },
-    { label: "Blocos hoje", value: stats.todayBlocks, icon: Calendar, color: "text-primary" },
+    { label: traducao.inicio.metricas.tarefas, value: stats.totalTasks, icon: ListTodo, color: "text-foreground" },
+    { label: traducao.inicio.metricas.concluidas, value: stats.completedTasks, icon: Target, color: "text-emerald-500" },
+    { label: traducao.inicio.metricas.pendentes, value: stats.pendingTasks, icon: Clock, color: "text-amber-500" },
+    { label: traducao.inicio.metricas.blocosHoje, value: stats.todayBlocks, icon: Calendar, color: "text-primary" },
   ]
 
   const actions = [
-    { href: "/app/calendar", title: "Calendário", desc: "Organize seu tempo com blocos de foco", icon: Calendar, color: "primary" },
-    { href: "/app/tasks", title: "Tarefas", desc: "Gerencie e priorize suas atividades", icon: CheckSquare, color: "emerald" },
-    { href: "/app/ai", title: "Neuro IA", desc: "Insights e sugestões inteligentes", icon: Bot, color: "cyan" },
+    { href: "/app/calendar", title: traducao.inicio.acoes.calendario.titulo, desc: traducao.inicio.acoes.calendario.desc, icon: Calendar, color: "primary" },
+    { href: "/app/tasks", title: traducao.inicio.acoes.tarefas.titulo, desc: traducao.inicio.acoes.tarefas.desc, icon: CheckSquare, color: "emerald" },
+    { href: "/app/ai", title: traducao.inicio.acoes.neuro.titulo, desc: traducao.inicio.acoes.neuro.desc, icon: Bot, color: "cyan" },
   ]
 
   const orderedReminders = [...reminders].sort((a, b) => {
@@ -206,18 +207,18 @@ export default function DashboardPage() {
                   único acento, o resto vem dos tokens do tema. */}
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                 <span className="h-1.5 w-1.5 rounded-full" style={{ background: faixaDoNivel(nivel).cor }} />
-                Nível {nivel} · {faixaDoNivel(nivel).nome}
+                {traducao.inicio.nivel(nivel, traducao.inicio.faixas[faixaDoNivel(nivel).chave])}
               </span>
             </div>
             <SplitGreeting
-              texto={`${saudacaoPorHora(new Date().getHours())}${userName ? `, ${userName}` : ""}`}
+              texto={`${traducao.inicio.saudacoes[saudacaoPorHora(new Date().getHours())]}${userName ? `, ${userName}` : ""}`}
               pronto={perfilPronto}
               className="text-3xl font-bold tracking-tight text-foreground md:text-4xl"
             />
             <p className="text-muted-foreground">
               {stats.pendingTasks > 0
-                ? `Você tem ${stats.pendingTasks} ${stats.pendingTasks === 1 ? "tarefa pendente" : "tarefas pendentes"}. ${completionRate}% concluído.`
-                : "Tudo em dia. Que tal planejar algo novo?"}
+                ? traducao.inicio.pendentes(stats.pendingTasks, completionRate)
+                : traducao.inicio.tudoEmDia}
             </p>
           </motion.div>
 
@@ -255,7 +256,7 @@ export default function DashboardPage() {
           >
             <div className="rounded-2xl border border-border/40 bg-card/50 p-5 backdrop-blur-sm">
               <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                <Clock className="h-4 w-4" /> Agora
+                <Clock className="h-4 w-4" /> {traducao.inicio.agora}
               </h3>
               {(() => {
                 const nowMs = Date.now()
@@ -268,10 +269,10 @@ export default function DashboardPage() {
                   return (
                     <div className="mt-3">
                       <p className="font-semibold text-foreground">{current.title}</p>
-                      <p className="text-sm text-muted-foreground">até {fmt(current.end_time)}</p>
+                      <p className="text-sm text-muted-foreground">{traducao.inicio.ate(fmt(current.end_time))}</p>
                       {next && (
                         <p className="mt-2 text-xs text-muted-foreground/70">
-                          Depois: {next.title} às {fmt(next.start_time)}
+                          {traducao.inicio.depois(next.title, fmt(next.start_time))}
                         </p>
                       )}
                     </div>
@@ -279,20 +280,20 @@ export default function DashboardPage() {
                 if (next)
                   return (
                     <div className="mt-3">
-                      <p className="text-sm text-muted-foreground">Próximo bloco</p>
+                      <p className="text-sm text-muted-foreground">{traducao.inicio.proximoBloco}</p>
                       <p className="font-semibold text-foreground">{next.title}</p>
-                      <p className="text-sm text-muted-foreground">às {fmt(next.start_time)}</p>
+                      <p className="text-sm text-muted-foreground">{traducao.inicio.as(fmt(next.start_time))}</p>
                     </div>
                   )
                 return (
                   <div className="mt-3">
-                    <p className="text-sm text-muted-foreground">Nenhum bloco pela frente hoje.</p>
+                    <p className="text-sm text-muted-foreground">{traducao.inicio.semBlocos}</p>
                     <Link
                       href="/app/calendar"
                       className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
                     >
                       <Calendar className="h-3.5 w-3.5" />
-                      Planejar o dia
+                      {traducao.inicio.planejarODia}
                     </Link>
                   </div>
                 )
@@ -302,14 +303,14 @@ export default function DashboardPage() {
             <div className="rounded-2xl border border-border/40 bg-card/50 p-5 backdrop-blur-sm">
               <div className="flex items-center justify-between">
                 <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  <ListTodo className="h-4 w-4" /> Tarefas de hoje
+                  <ListTodo className="h-4 w-4" /> {traducao.inicio.tarefasDeHoje}
                 </h3>
                 <Link href="/app/tasks" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                  Ver todas <ArrowRight className="h-3 w-3" />
+                  {traducao.inicio.verTodas} <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
               {todayTasks.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">Nada com prazo para hoje. 🎉</p>
+                <p className="mt-3 text-sm text-muted-foreground">{traducao.inicio.semTarefasHoje}</p>
               ) : (
                 <ul className="mt-3 space-y-1.5">
                   {todayTasks.map((t) => (
@@ -357,7 +358,7 @@ export default function DashboardPage() {
               className="rounded-2xl border border-border/40 bg-card/50 p-5 backdrop-blur-sm"
             >
               <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                <Brain className="h-4 w-4" /> Autoconhecimento
+                <Brain className="h-4 w-4" /> {traducao.inicio.autoconhecimento}
               </h3>
               <ul className="mt-3 space-y-2">
                 {insights.map((i) => {
@@ -366,7 +367,7 @@ export default function DashboardPage() {
                     <li key={i.title} className="flex items-center gap-2 text-sm">
                       <span className="min-w-0 flex-1 truncate text-foreground">{i.title}</span>
                       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        planejado {i.avgPlanned}min · real ~{i.avgActual}min
+                        {traducao.inicio.planejadoReal(i.avgPlanned, i.avgActual)}
                       </span>
                       <span
                         className={cn(
@@ -374,14 +375,14 @@ export default function DashboardPage() {
                           diff > 5 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                         )}
                       >
-                        {diff > 0 ? `+${diff}min` : "em dia"}
+                        {diff > 0 ? traducao.inicio.aMais(diff) : traducao.inicio.emDia}
                       </span>
                     </li>
                   )
                 })}
               </ul>
               <p className="mt-3 text-[11px] text-muted-foreground/60">
-                Calculado dos seus check-ins — responda "Concluí" quando um bloco terminar.
+                {traducao.inicio.autoconhecimentoRodape}
               </p>
             </motion.div>
           )}
@@ -394,10 +395,10 @@ export default function DashboardPage() {
             >
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Bell className="h-4 w-4" /> Lembretes de hoje
+                  <Bell className="h-4 w-4" /> {traducao.inicio.lembretes}
                 </h3>
                 <Link href="/app/calendar" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                  Ver no calendário <ArrowRight className="h-3 w-3" />
+                  {traducao.inicio.verNoCalendario} <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
               <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm">
