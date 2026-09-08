@@ -1380,10 +1380,35 @@ vira ruído.
 > bandeiras são SVG, não emoji: o Windows não tem glifo para bandeira e 🇧🇷 vira o texto
 > "BR", o oposto do que a referência queria.
 
-- [ ] **Traduzir o app é outro item, e é grande.** A bandeira sugere idioma, mas o app
-      inteiro está em português cravado no meio do JSX. Trocar de verdade quer dizer extrair
-      cada string para um dicionário — trabalho de dias, não de tarde. Enquanto isso não
-      acontecer, o seletor diz o que faz de fato: **região e formato**, nunca "idioma".
+> **A infraestrutura existe, e uma área inteira já passou por ela (08/09).** `lib/i18n.ts`
+> traz o dicionário; a **agenda compartilhada** foi convertida das duas pontas, de propósito,
+> porque é a única feature que exercita as duas origens de idioma que o app tem.
+>
+> **Dicionário à mão, não biblioteca.** O que elas resolvem (arquivo por locale, negociação no
+> servidor, plural eslavo) não é problema com dois idiomas num app client-side. O que cobram é
+> caro: chave em string solta, que erra calada quando alguém renomeia. Aqui o contrato é uma
+> `interface Dicionario` — **falta de chave não compila**, e o `en` só passa se tiver tudo que
+> o `pt` tem.
+>
+> **Frase que varia é função, não concatenação.** `"Os próximos " + n + " dias"` é justamente o
+> que impede traduzir: em inglês a ordem muda. Cada frase com nome ou plural é uma função, e
+> cada idioma escreve a sua.
+>
+> **Duas origens de idioma, e elas são diferentes de propósito.** Dentro do app
+> (`hooks/use-idioma.ts`), vem da região — que já é derivada do formato de hora, então nada
+> novo é guardado e não existe o estado em que a bandeira diz uma coisa e o texto diz outra.
+> Em `/agenda/<token>`, vem do **navegador de quem abre**: quem recebe o link não tem conta
+> aqui, e a preferência de quem compartilhou não diz nada sobre ele. Ali o padrão é inglês, e
+> não português — insistir no idioma que já falhou é o palpite pior.
+
+- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (20 testes em
+      `lib/i18n.test.ts`, incluindo o que a interface não pega: texto vazio, plural que não
+      muda e frase igual nos dois idiomas — "traduzir" sem traduzir). O que falta é volume:
+      dashboard, tarefas, calendário, Escritório, Neuro IA e o resto de Configurações
+      continuam com português cravado no JSX. É trabalho de dias, e melhor feito por área,
+      uma de cada vez, para cada fatia poder ser conferida no olho antes da seguinte.
+      Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de
+      fato: **região e formato**, nunca "idioma".
       Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar
       24h como o Brasil, a derivação acima deixa de servir e a região passa a ser o dado
       guardado, com o formato saindo dela.

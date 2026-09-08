@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { CalendarClock, Lock } from "lucide-react"
 import { agendaDosProximosDias, type BlocoBruto, type DiaDaAgenda } from "@/lib/faixas-ocupadas"
+import { dicionario, idiomaDoNavegador, type Dicionario } from "@/lib/i18n"
 
 // A metade visível da agenda compartilhada (/agenda/<token>).
 //
@@ -14,6 +15,11 @@ import { agendaDosProximosDias, type BlocoBruto, type DiaDaAgenda } from "@/lib/
 //
 // Os blocos chegam sem título de propósito (ver a página que monta isto): daqui
 // não haveria como vazar, mesmo que alguém mudasse este arquivo.
+//
+// O IDIOMA sai do navegador de quem abre, e não da região de quem compartilhou:
+// quem recebe o link não tem conta aqui, e a preferência do dono não diz nada
+// sobre ele. Pelo mesmo motivo do cálculo das faixas, só depois de montar —
+// `navigator` não existe no servidor.
 
 const fmtHora = (d: Date) =>
   new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(d)
@@ -37,9 +43,11 @@ export function AgendaPublicaView({
 }) {
   const [agenda, setAgenda] = useState<DiaDaAgenda[] | null>(null)
   const [fuso, setFuso] = useState("")
+  const [d, setD] = useState<Dicionario>(() => dicionario("pt"))
 
   useEffect(() => {
     setAgenda(agendaDosProximosDias(blocos, new Date(), dias))
+    setD(dicionario(idiomaDoNavegador(navigator.languages ?? [navigator.language])))
     try {
       setFuso(new Intl.DateTimeFormat().resolvedOptions().timeZone ?? "")
     } catch {
@@ -47,7 +55,7 @@ export function AgendaPublicaView({
     }
   }, [blocos, dias])
 
-  const dono = nome ?? "Esta pessoa"
+  const dono = nome ?? d.agenda.donoAnonimo
 
   return (
     <div className="min-h-screen bg-background px-4 py-10">
@@ -57,17 +65,17 @@ export function AgendaPublicaView({
             <CalendarClock className="h-5 w-5" />
           </span>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Horários ocupados {nome ? `de ${nome}` : ""}
+            {d.agenda.titulo(nome)}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Os próximos {dias} {dias === 1 ? "dia" : "dias"}. O que não está marcado aqui está livre.
-            {fuso && <> Horários no fuso <span className="font-medium text-foreground">{fuso}</span>.</>}
+            {d.agenda.periodo(dias)}
+            {fuso && <> {d.agenda.fuso(fuso)}</>}
           </p>
         </header>
 
         {agenda === null ? (
           <p className="rounded-2xl border border-border/40 bg-card/50 px-4 py-8 text-center text-sm text-muted-foreground">
-            Carregando a agenda…
+            {d.agenda.carregando}
           </p>
         ) : (
           <ul className="space-y-2.5">
@@ -80,12 +88,12 @@ export function AgendaPublicaView({
                   {fmtDia(dia)}
                   {ehHoje(dia) && (
                     <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
-                      hoje
+                      {d.agenda.hoje}
                     </span>
                   )}
                 </p>
                 {faixas.length === 0 ? (
-                  <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">Livre o dia todo</p>
+                  <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{d.agenda.livreODiaTodo}</p>
                 ) : (
                   <ul className="mt-2 flex flex-wrap gap-1.5">
                     {faixas.map((f) => (
@@ -105,10 +113,7 @@ export function AgendaPublicaView({
 
         <p className="flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground/70">
           <Lock className="mt-0.5 h-3 w-3 shrink-0" />
-          <span>
-            {dono} compartilhou só os horários. O que ocupa cada faixa — título, local ou com quem —
-            nunca sai do app.
-          </span>
+          <span>{d.agenda.rodape(dono)}</span>
         </p>
       </div>
     </div>
