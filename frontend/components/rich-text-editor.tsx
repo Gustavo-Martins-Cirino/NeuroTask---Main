@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
+import { useDicionario } from "@/hooks/use-idioma"
 import {
   Bold, Italic, Underline, List, ListOrdered, Heading,
   Undo2, Redo2, Palette, Minus, Plus, X,
@@ -15,32 +16,41 @@ interface RichTextEditorProps {
 
 // Paleta estilo Notion: cores de texto + fundos translúcidos que ficam
 // legíveis tanto no tema claro quanto no escuro (o texto mantém a cor do tema)
-const TEXT_COLORS = [
-  { label: "Padrão", value: "" },
-  { label: "Vermelho", value: "#ef4444" },
-  { label: "Laranja", value: "#f97316" },
-  { label: "Amarelo", value: "#eab308" },
-  { label: "Verde", value: "#22c55e" },
-  { label: "Azul", value: "#3b82f6" },
-  { label: "Roxo", value: "#8b5cf6" },
-  { label: "Rosa", value: "#ec4899" },
+//
+// A `chave` é o nome no dicionário; o `label` saiu. "Padrão" e "Sem fundo" têm
+// chave própria porque não são cor: são a AUSÊNCIA de uma, e cada idioma diz
+// isso do jeito dele.
+type ChavePaleta = "vermelho" | "laranja" | "amarelo" | "verde" | "azul" | "roxo" | "rosa"
+
+const TEXT_COLORS: { chave: ChavePaleta | null; value: string }[] = [
+  { chave: null, value: "" },
+  { chave: "vermelho", value: "#ef4444" },
+  { chave: "laranja", value: "#f97316" },
+  { chave: "amarelo", value: "#eab308" },
+  { chave: "verde", value: "#22c55e" },
+  { chave: "azul", value: "#3b82f6" },
+  { chave: "roxo", value: "#8b5cf6" },
+  { chave: "rosa", value: "#ec4899" },
 ]
-const BG_COLORS = [
-  { label: "Sem fundo", value: "transparent" },
-  { label: "Amarelo", value: "rgba(234,179,8,0.32)" },
-  { label: "Laranja", value: "rgba(249,115,22,0.30)" },
-  { label: "Verde", value: "rgba(34,197,94,0.28)" },
-  { label: "Azul", value: "rgba(59,130,246,0.28)" },
-  { label: "Roxo", value: "rgba(139,92,246,0.30)" },
-  { label: "Rosa", value: "rgba(236,72,153,0.28)" },
+const BG_COLORS: { chave: ChavePaleta | null; value: string }[] = [
+  { chave: null, value: "transparent" },
+  { chave: "amarelo", value: "rgba(234,179,8,0.32)" },
+  { chave: "laranja", value: "rgba(249,115,22,0.30)" },
+  { chave: "verde", value: "rgba(34,197,94,0.28)" },
+  { chave: "azul", value: "rgba(59,130,246,0.28)" },
+  { chave: "roxo", value: "rgba(139,92,246,0.30)" },
+  { chave: "rosa", value: "rgba(236,72,153,0.28)" },
 ]
-const SIZES = [
-  { label: "P", size: "2", cls: "text-xs" },
-  { label: "M", size: "3", cls: "text-sm" },
-  { label: "G", size: "5", cls: "text-base" },
+
+// P/M/G é português. A letra vem do dicionário — em inglês são S/M/L.
+const SIZES: { chave: "pequeno" | "medio" | "grande"; size: string; cls: string }[] = [
+  { chave: "pequeno", size: "2", cls: "text-xs" },
+  { chave: "medio", size: "3", cls: "text-sm" },
+  { chave: "grande", size: "5", cls: "text-base" },
 ]
 
 export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  const editor = useDicionario().notas.editor
   const ref = useRef<HTMLDivElement>(null)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const selectedImgRef = useRef<HTMLImageElement | null>(null)
@@ -137,14 +147,14 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-0.5 border-b border-border/40 px-3 py-2">
-        <Btn onClick={() => exec("undo")} label="Desfazer (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Btn>
-        <Btn onClick={() => exec("redo")} label="Refazer (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Btn>
+        <Btn onClick={() => exec("undo")} label={editor.desfazer}><Undo2 className="h-4 w-4" /></Btn>
+        <Btn onClick={() => exec("redo")} label={editor.refazer}><Redo2 className="h-4 w-4" /></Btn>
 
         <span className="mx-1 h-5 w-px bg-border/60" />
 
-        <Btn onClick={() => exec("bold")} label="Negrito"><Bold className="h-4 w-4" /></Btn>
-        <Btn onClick={() => exec("italic")} label="Itálico"><Italic className="h-4 w-4" /></Btn>
-        <Btn onClick={() => exec("underline")} label="Sublinhado"><Underline className="h-4 w-4" /></Btn>
+        <Btn onClick={() => exec("bold")} label={editor.negrito}><Bold className="h-4 w-4" /></Btn>
+        <Btn onClick={() => exec("italic")} label={editor.italico}><Italic className="h-4 w-4" /></Btn>
+        <Btn onClick={() => exec("underline")} label={editor.sublinhado}><Underline className="h-4 w-4" /></Btn>
 
         <span className="mx-1 h-5 w-px bg-border/60" />
 
@@ -152,7 +162,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           <button
             key={s.size}
             type="button"
-            title={`Tamanho ${s.label}`}
+            title={editor.tamanhoDica(editor.tamanhos[s.chave])}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => exec("fontSize", s.size)}
             className={cn("flex h-8 w-8 items-center justify-center rounded-lg font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground", s.cls)}
@@ -160,18 +170,18 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
             A
           </button>
         ))}
-        <Btn onClick={() => exec("formatBlock", "<h2>")} label="Título"><Heading className="h-4 w-4" /></Btn>
+        <Btn onClick={() => exec("formatBlock", "<h2>")} label={editor.titulo}><Heading className="h-4 w-4" /></Btn>
 
         <span className="mx-1 h-5 w-px bg-border/60" />
 
-        <Btn onClick={() => exec("insertUnorderedList")} label="Lista"><List className="h-4 w-4" /></Btn>
-        <Btn onClick={() => exec("insertOrderedList")} label="Lista numerada"><ListOrdered className="h-4 w-4" /></Btn>
+        <Btn onClick={() => exec("insertUnorderedList")} label={editor.lista}><List className="h-4 w-4" /></Btn>
+        <Btn onClick={() => exec("insertOrderedList")} label={editor.listaNumerada}><ListOrdered className="h-4 w-4" /></Btn>
 
         <span className="mx-1 h-5 w-px bg-border/60" />
 
         {/* Cores (estilo Notion: texto + fundo num só menu) */}
         <div className="relative">
-          <Btn onClick={() => setPaletteOpen((o) => !o)} label="Cores" active={paletteOpen}>
+          <Btn onClick={() => setPaletteOpen((o) => !o)} label={editor.cores} active={paletteOpen}>
             <Palette className="h-4 w-4" />
           </Btn>
           {paletteOpen && (
@@ -180,13 +190,13 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
               className="absolute left-0 top-9 z-20 w-56 space-y-2.5 rounded-xl border border-border/50 bg-popover p-3 shadow-lg"
             >
               <div>
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Cor do texto</p>
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{editor.corDoTexto}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {TEXT_COLORS.map((c) => (
                     <button
-                      key={c.label}
+                      key={c.chave ?? "padrao"}
                       type="button"
-                      title={c.label}
+                      title={c.chave ? editor.paleta[c.chave] : editor.corPadrao}
                       onClick={() => execStyled("foreColor", c.value || "inherit")}
                       className="flex h-6 w-6 items-center justify-center rounded-md border border-border/40 text-xs font-bold transition-transform hover:scale-110"
                       style={c.value ? { color: c.value } : undefined}
@@ -197,13 +207,13 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
                 </div>
               </div>
               <div>
-                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Fundo (marca-texto)</p>
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{editor.fundoMarcaTexto}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {BG_COLORS.map((c) => (
                     <button
-                      key={c.label}
+                      key={c.chave ?? "sem-fundo"}
                       type="button"
-                      title={c.label}
+                      title={c.chave ? editor.paleta[c.chave] : editor.semFundo}
                       onClick={() => execStyled("hiliteColor", c.value)}
                       className="flex h-6 w-6 items-center justify-center rounded-md border border-border/40 text-xs transition-transform hover:scale-110"
                       style={{ backgroundColor: c.value === "transparent" ? undefined : c.value }}
@@ -221,20 +231,20 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
       {/* Controles da imagem selecionada */}
       {imgPct !== null && (
         <div className="flex items-center gap-1.5 border-b border-border/40 bg-accent/30 px-3 py-1.5 text-xs text-muted-foreground">
-          <span className="font-medium">Imagem</span>
+          <span className="font-medium">{editor.imagem}</span>
           <span className="mx-1 h-4 w-px bg-border/60" />
-          <button type="button" onClick={() => resizeImg(-10)} title="Diminuir" className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground">
+          <button type="button" onClick={() => resizeImg(-10)} title={editor.diminuir} className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground">
             <Minus className="h-3.5 w-3.5" />
           </button>
           <span className="min-w-10 text-center font-semibold tabular-nums">{imgPct}%</span>
-          <button type="button" onClick={() => resizeImg(10)} title="Aumentar" className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground">
+          <button type="button" onClick={() => resizeImg(10)} title={editor.aumentar} className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground">
             <Plus className="h-3.5 w-3.5" />
           </button>
           <button type="button" onClick={setImgFull} className="rounded-md px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground">
             100%
           </button>
           <button type="button" onClick={clearImgSelection} className="ml-auto rounded-md px-2 py-0.5 transition-colors hover:bg-accent hover:text-foreground">
-            Concluir
+            {editor.concluir}
           </button>
         </div>
       )}

@@ -14,6 +14,7 @@ import { toast } from "sonner"
 import { CORES_DE_NOTA, corDeNota, fundoDaNota, tarjaDaNota } from "@/lib/nota-cor"
 import { colunaFaltante } from "@/lib/feedback"
 import { useDicionario } from "@/hooks/use-idioma"
+import { enfatizar } from "@/lib/enfase"
 
 type SaveState = "idle" | "saving" | "saved"
 
@@ -110,8 +111,8 @@ export default function NotesPage() {
     setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, color: antes } : n)))
     toast.error(
       colunaFaltante(error)
-        ? "A tabela de notas ainda não tem a coluna de cor. Rode supabase/notas_cor.sql no Supabase."
-        : "Não consegui salvar a cor agora."
+        ? traducao.notas.erroSemColunaCor
+        : traducao.notas.erroSalvarCor
     )
   }
 
@@ -149,7 +150,7 @@ export default function NotesPage() {
             className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02]"
           >
             <Plus className="h-4 w-4" />
-            Nova nota
+            {traducao.notas.nova}
           </button>
 
           <div ref={listaRef} style={mascaraLista} className="scrollbar-thin max-h-48 flex-1 space-y-1 overflow-y-auto md:max-h-none">
@@ -159,7 +160,7 @@ export default function NotesPage() {
               </div>
             ) : notes.length === 0 ? (
               <p className="px-3 py-8 text-center text-sm text-muted-foreground">
-                Nenhuma nota ainda. Clique em <b>Nova nota</b> para começar a escrever.
+                {enfatizar(traducao.notas.vazio)}
               </p>
             ) : (
               <AnimatePresence initial={false}>
@@ -175,11 +176,26 @@ export default function NotesPage() {
                     // tabela de dados, e Tailwind não gera classe para valor que
                     // ele não vê no código.
                     style={{ background: activeId === n.id ? undefined : fundoDaNota(n.color) }}
+                    // A nota selecionada era `bg-accent` CHEIO. O `--accent`
+                    // deste tema é um verde saturado e o mesmo nos dois temas,
+                    // enquanto o texto continuava em `--foreground` e
+                    // `--muted-foreground`, que são escolhidos contra o FUNDO da
+                    // página. Medido: no escuro o título ficava em 2,48:1 e a
+                    // prévia em 1,13:1 — abaixo do piso da WCAG (4,5:1), e 1,13
+                    // é a mesma luminosidade do fundo, ou seja, texto invisível.
+                    // No claro a prévia dava 2,10:1.
+                    //
+                    // Trocar por `text-accent-foreground` não resolve: esse token
+                    // é BRANCO no tema claro (2,87:1 sobre o mesmo verde) e preto
+                    // no escuro — o par só funciona em metade dos casos.
+                    // A saída é o verde entrar como VÉU: o texto volta a ficar
+                    // sobre o fundo da página, que é contra o que ele foi
+                    // escolhido, e a seleção continua visível pela borda.
                     className={cn(
                       "group relative flex w-full flex-col overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-colors",
                       activeId === n.id
-                        ? "border-primary/40 bg-accent"
-                        : "border-border/40 hover:border-border hover:bg-accent/50"
+                        ? "border-primary/60 bg-accent/15"
+                        : "border-border/40 hover:border-border hover:bg-accent/10"
                     )}
                   >
                     {/* A tarja é o que se acha de relance numa lista — o véu
@@ -192,10 +208,10 @@ export default function NotesPage() {
                       />
                     )}
                     <span className="truncate text-sm font-medium">
-                      {n.title.trim() || "Sem título"}
+                      {n.title.trim() || traducao.notas.semTitulo}
                     </span>
                     <span className="truncate text-xs text-muted-foreground">
-                      {stripHtml(n.content) || "Vazia"}
+                      {stripHtml(n.content) || traducao.notas.vazia}
                     </span>
                   </motion.button>
                 ))}
@@ -230,12 +246,12 @@ export default function NotesPage() {
                   <AnimatePresence mode="wait">
                     {saveState === "saving" && (
                       <motion.span key="s" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Salvando…
+                        <Loader2 className="h-3 w-3 animate-spin" /> {traducao.notas.salvando}
                       </motion.span>
                     )}
                     {saveState === "saved" && (
                       <motion.span key="d" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1 text-emerald-500">
-                        <Check className="h-3 w-3" /> Salvo
+                        <Check className="h-3 w-3" /> {traducao.notas.salvo}
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -247,7 +263,7 @@ export default function NotesPage() {
                   <div ref={paletaRef} className="relative">
                     <button
                       onClick={() => setPaletaAberta((v) => !v)}
-                      aria-label="Cor da nota"
+                      aria-label={traducao.notas.corDaNota}
                       aria-expanded={paletaAberta}
                       className="flex items-center rounded-lg p-2 text-muted-foreground transition-colors hover:text-foreground"
                     >
@@ -271,7 +287,7 @@ export default function NotesPage() {
                         >
                           <button
                             onClick={() => pintarNota(active.id, null)}
-                            title="Sem cor"
+                            title={traducao.notas.semCor}
                             className={cn(
                               "flex h-6 w-6 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:text-foreground",
                               !corDeNota(active.color) && "ring-2 ring-primary ring-offset-1 ring-offset-popover"
@@ -283,14 +299,14 @@ export default function NotesPage() {
                             <button
                               key={c.id}
                               onClick={() => pintarNota(active.id, c.id)}
-                              title={c.nome}
+                              title={traducao.notas.cores[c.id]}
                               style={{ background: c.cor }}
                               className={cn(
                                 "h-6 w-6 rounded-full transition-transform hover:scale-110",
                                 active.color === c.id && "ring-2 ring-primary ring-offset-1 ring-offset-popover"
                               )}
                             >
-                              <span className="sr-only">{c.nome}</span>
+                              <span className="sr-only">{traducao.notas.cores[c.id]}</span>
                             </button>
                           ))}
                         </motion.div>
@@ -299,13 +315,15 @@ export default function NotesPage() {
                   </div>
                   <button
                     onClick={() => toggleFavorite(active)}
-                    aria-label={active.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                    aria-label={active.is_favorite ? traducao.notas.desfavoritar : traducao.notas.favoritar}
                     className={cn("rounded-lg p-2 transition-colors", active.is_favorite ? "text-amber-400" : "text-muted-foreground hover:text-amber-400")}
                   >
                     <Star className={cn("h-4 w-4", active.is_favorite && "fill-current")} />
                   </button>
                   <button
                     onClick={() => deleteNote(active.id)}
+                    aria-label={traducao.notas.excluir}
+                    title={traducao.notas.excluir}
                     className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -316,22 +334,20 @@ export default function NotesPage() {
               <input
                 value={active.title}
                 onChange={(e) => patchActive({ title: e.target.value })}
-                placeholder="Título"
+                placeholder={traducao.notas.tituloPlaceholder}
                 className="bg-transparent px-5 pt-1 text-2xl font-bold outline-none placeholder:text-muted-foreground/40"
               />
               <RichTextEditor
                 key={active.id}
                 value={active.content}
                 onChange={(html) => patchActive({ content: html })}
-                placeholder="Comece a escrever..."
+                placeholder={traducao.notas.escrevaAqui}
               />
             </motion.div>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
               <FileText className="h-10 w-10 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">
-                Selecione uma nota ou crie uma nova.
-              </p>
+              <p className="text-sm text-muted-foreground">{traducao.notas.selecione}</p>
             </div>
           )}
         </main>

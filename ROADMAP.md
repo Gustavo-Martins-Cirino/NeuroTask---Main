@@ -1463,10 +1463,63 @@ vira ruído.
 > 390px, mais o diálogo aberto nos quatro: sem erro de JS e sem rolagem horizontal em
 > nenhuma das doze combinações.
 
-- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (51 testes em
+> **Notas passou (08/09), e atrás dela havia um texto invisível.** Sexta fatia: a lista, o
+> editor de texto rico e as duas paletas de cor. O `nota-cor` era o QUARTO módulo puro
+> falando português — guardava `nome: "Âmbar"` ao lado do oklch. O campo saiu: o `id` já era
+> a chave, e agora é uma união (`ChaveCorDeNota`), então o dicionário só compila se nomear
+> todas as seis. Cor nova sem nome vira erro de compilação em vez de um botão redondo sem
+> rótulo — que ninguém enxerga, porque o botão É a cor.
+>
+> **O P/M/G do editor é português.** Três letras soltas na barra de ferramentas, do mesmo
+> tipo das iniciais dos dias da semana: parecem neutras e não são. Em inglês são S/M/L.
+>
+> 🔴 **A nota selecionada tinha texto invisível, e não era coisa da tradução.** Ela usava
+> `bg-accent` CHEIO. O `--accent` deste tema é um verde saturado e o MESMO nos dois temas,
+> enquanto o texto seguia em `--foreground` e `--muted-foreground` — que são escolhidos
+> contra o fundo da PÁGINA, não contra um verde. Medido, compondo a transparência:
+>
+> | | título (14px) | prévia (12px) |
+> |---|---|---|
+> | escuro, antes | 2,48:1 | **1,13:1** |
+> | claro, antes | 6,91:1 | 2,10:1 |
+> | escuro, agora | 14,83:1 | 5,28:1 |
+> | claro, agora | 16,27:1 | 4,95:1 |
+>
+> 1,13:1 é a mesma luminosidade do fundo: a linha de prévia simplesmente não existia na
+> tela. **`text-accent-foreground` NÃO resolveria** — esse token é branco no claro (2,87:1
+> sobre o mesmo verde) e preto no escuro, então o par só acerta metade dos casos. O verde
+> passou a entrar como VÉU (`bg-accent/15`), com a seleção marcada pela borda: assim o texto
+> volta a ficar sobre o fundo contra o qual foi escolhido.
+>
+> **Por que a varredura de contraste de 28/08 não pegou**: ela abriu as oito telas, e este
+> par só aparece com uma nota SELECIONADA — ou seja, só com dado no banco. Tela vazia não
+> tem item selecionado.
+>
+> ⚠️ **Uma armadilha de medição, e ela custou uma rodada**: com fundo translúcido,
+> `getComputedStyle(...).backgroundColor` devolve a cor DECLARADA, não a que se vê. Medir
+> assim dava o verde cheio e dizia que o conserto não tinha funcionado. A medida honesta
+> sobe pelos ancestrais até um fundo opaco e compõe na ordem.
+
+- [ ] **O `--accent` é um verde saturado, e o app o usa como se fosse cinza.** Achado ao
+      medir a nota selecionada (acima). O token vale `oklch(0.65 0.18 160)` — o MESMO nos dois
+      temas — e `bg-accent` aparece como estado selecionado em pelo menos cinco lugares além
+      das notas: a pílula ativa do **dock**, o alternador lista/grade em **Tarefas**, o
+      **calendário** (`page.tsx:529`), a **Neuro IA** (`page.tsx:459`) e o
+      **time-block-dialog**. Onde há só ícone não há problema; onde há TEXTO, o par
+      `--accent`/`--accent-foreground` está trocado no tema claro — branco sobre esse verde dá
+      **2,87:1**, abaixo do piso. Os componentes do shadcn pareiam os dois corretamente
+      (`focus:bg-accent focus:text-accent-foreground`), então o defeito atinge todo menu e
+      todo `hover:bg-accent` do tema claro.
+      **Não foi mexido de propósito**: são duas saídas, e as duas são decisão de quem desenha
+      — inverter `--accent-foreground` do tema claro para escuro (uma linha, conserta tudo de
+      uma vez) ou separar os papéis, dando ao verde um token de marca e devolvendo ao
+      `--accent` o cinza sutil que o shadcn presume. Qualquer uma pede varredura de contraste
+      nas oito telas depois.
+
+- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (66 testes em
       `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Já passaram: agenda pública, moldura
-      (dock e títulos), Configurações, dashboard, **Tarefas e Favoritos**. Falta o miolo de
-      **calendário, notas, amigos, Escritório e Neuro IA**. Faltam também os componentes
+      (dock e títulos), Configurações, dashboard, Tarefas, Favoritos e **Notas**. Falta o
+      miolo de **calendário, amigos, Escritório e Neuro IA**. Faltam também os componentes
       embutidos em Configurações, que têm texto próprio: `foto-perfil-campo`, `calendar-feed`,
       `agenda-io` e o `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
       infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada
@@ -1475,8 +1528,9 @@ vira ruído.
       `RECURRENCE_OPTIONS` PRÓPRIO, cópia do que era o de `lib/task-recurrence`. Traduzir um
       sem olhar o outro deixa metade do app repetindo em inglês e a outra metade em
       português — e a pergunta de verdade ali é se as duas listas deviam ser uma só.
-      A ajuda da região agora lista o que **falta**, não o que já foi: a lista do que falta
-      encolhe até sumir sozinha, e a outra envelhecia a cada fatia.
+      A ajuda da região lista o que **falta**, não o que já foi: a lista do que falta encolhe
+      até sumir sozinha, e a outra envelhecia a cada fatia — é ela que muda a cada fatia
+      entregue.
       Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de
       fato: **região e formato**, nunca "idioma".
       Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar

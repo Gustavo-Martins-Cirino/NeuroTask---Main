@@ -4,6 +4,7 @@ import { type ChaveSaudacao } from "@/lib/saudacao"
 import { type ChaveFaixa } from "@/lib/nivel-faixa"
 import { type Repeticao } from "@/lib/task-recurrence"
 import { type TaskPriority } from "@/lib/types"
+import { type ChaveCorDeNota } from "@/lib/nota-cor"
 
 // Tradução do app — a primeira fatia.
 //
@@ -307,6 +308,69 @@ export interface Dicionario {
     notaSemTitulo: string
     notaVazia: string
   }
+  notas: {
+    nova: string
+    /**
+     * "Nenhuma nota ainda. Clique em §Nova nota§ para começar a escrever."
+     *
+     * O `§` marca o negrito (ver lib/enfase.tsx). Era `<b>Nova nota</b>` no meio
+     * do JSX — e é justamente o corte que prende a ordem das palavras do
+     * português: em inglês o nome do botão não cai no mesmo lugar da frase.
+     */
+    vazio: string
+    semTitulo: string
+    vazia: string
+    tituloPlaceholder: string
+    escrevaAqui: string
+    selecione: string
+    salvando: string
+    salvo: string
+    favoritar: string
+    desfavoritar: string
+    excluir: string
+    corDaNota: string
+    semCor: string
+    /** O nome de cada cor. A chave vem de lib/nota-cor. */
+    cores: Record<ChaveCorDeNota, string>
+    erroSemColunaCor: string
+    erroSalvarCor: string
+    editor: {
+      desfazer: string
+      refazer: string
+      negrito: string
+      italico: string
+      sublinhado: string
+      /**
+       * As três letras do tamanho — P/M/G em português, S/M/L em inglês. É o
+       * mesmo caso das iniciais dos dias da semana: letra solta que parece
+       * neutra e não é.
+       */
+      tamanhos: { pequeno: string; medio: string; grande: string }
+      tamanhoDica: (letra: string) => string
+      titulo: string
+      lista: string
+      listaNumerada: string
+      cores: string
+      corDoTexto: string
+      fundoMarcaTexto: string
+      corPadrao: string
+      semFundo: string
+      /** As cores do texto e do marca-texto — as duas paletas usam estes nomes. */
+      paleta: {
+        vermelho: string
+        laranja: string
+        amarelo: string
+        verde: string
+        azul: string
+        roxo: string
+        rosa: string
+      }
+      imagem: string
+      diminuir: string
+      aumentar: string
+      concluir: string
+    }
+  }
 }
 
 export const pt: Dicionario = {
@@ -579,6 +643,63 @@ export const pt: Dicionario = {
     notaSemTitulo: "Sem título",
     notaVazia: "Vazia",
   },
+  notas: {
+    nova: "Nova nota",
+    vazio: "Nenhuma nota ainda. Clique em §Nova nota§ para começar a escrever.",
+    semTitulo: "Sem título",
+    vazia: "Vazia",
+    tituloPlaceholder: "Título",
+    escrevaAqui: "Comece a escrever...",
+    selecione: "Selecione uma nota ou crie uma nova.",
+    salvando: "Salvando…",
+    salvo: "Salvo",
+    favoritar: "Adicionar aos favoritos",
+    desfavoritar: "Remover dos favoritos",
+    excluir: "Excluir nota",
+    corDaNota: "Cor da nota",
+    semCor: "Sem cor",
+    cores: {
+      ambar: "Âmbar",
+      coral: "Coral",
+      rosa: "Rosa",
+      violeta: "Violeta",
+      azul: "Azul",
+      verde: "Verde",
+    },
+    erroSemColunaCor:
+      "A tabela de notas ainda não tem a coluna de cor. Rode supabase/notas_cor.sql no Supabase.",
+    erroSalvarCor: "Não consegui salvar a cor agora.",
+    editor: {
+      desfazer: "Desfazer (Ctrl+Z)",
+      refazer: "Refazer (Ctrl+Y)",
+      negrito: "Negrito",
+      italico: "Itálico",
+      sublinhado: "Sublinhado",
+      tamanhos: { pequeno: "P", medio: "M", grande: "G" },
+      tamanhoDica: (letra) => `Tamanho ${letra}`,
+      titulo: "Título",
+      lista: "Lista",
+      listaNumerada: "Lista numerada",
+      cores: "Cores",
+      corDoTexto: "Cor do texto",
+      fundoMarcaTexto: "Fundo (marca-texto)",
+      corPadrao: "Padrão",
+      semFundo: "Sem fundo",
+      paleta: {
+        vermelho: "Vermelho",
+        laranja: "Laranja",
+        amarelo: "Amarelo",
+        verde: "Verde",
+        azul: "Azul",
+        roxo: "Roxo",
+        rosa: "Rosa",
+      },
+      imagem: "Imagem",
+      diminuir: "Diminuir",
+      aumentar: "Aumentar",
+      concluir: "Concluir",
+    },
+  },
 }
 
 export const en: Dicionario = {
@@ -849,6 +970,63 @@ export const en: Dicionario = {
     remover: "Remove from favorites",
     notaSemTitulo: "Untitled",
     notaVazia: "Empty",
+  },
+  notas: {
+    nova: "New note",
+    vazio: "No notes yet. Click §New note§ to start writing.",
+    semTitulo: "Untitled",
+    vazia: "Empty",
+    tituloPlaceholder: "Title",
+    escrevaAqui: "Start writing...",
+    selecione: "Pick a note, or create a new one.",
+    salvando: "Saving…",
+    salvo: "Saved",
+    favoritar: "Add to favorites",
+    desfavoritar: "Remove from favorites",
+    excluir: "Delete note",
+    corDaNota: "Note color",
+    semCor: "No color",
+    cores: {
+      ambar: "Amber",
+      coral: "Coral",
+      rosa: "Pink",
+      violeta: "Violet",
+      azul: "Blue",
+      verde: "Green",
+    },
+    erroSemColunaCor:
+      "The notes table has no color column yet. Run supabase/notas_cor.sql in Supabase.",
+    erroSalvarCor: "I couldn't save the color right now.",
+    editor: {
+      desfazer: "Undo (Ctrl+Z)",
+      refazer: "Redo (Ctrl+Y)",
+      negrito: "Bold",
+      italico: "Italic",
+      sublinhado: "Underline",
+      tamanhos: { pequeno: "S", medio: "M", grande: "L" },
+      tamanhoDica: (letra) => `Size ${letra}`,
+      titulo: "Heading",
+      lista: "List",
+      listaNumerada: "Numbered list",
+      cores: "Colors",
+      corDoTexto: "Text color",
+      fundoMarcaTexto: "Background (highlight)",
+      corPadrao: "Default",
+      semFundo: "No background",
+      paleta: {
+        vermelho: "Red",
+        laranja: "Orange",
+        amarelo: "Yellow",
+        verde: "Green",
+        azul: "Blue",
+        roxo: "Purple",
+        rosa: "Pink",
+      },
+      imagem: "Image",
+      diminuir: "Smaller",
+      aumentar: "Bigger",
+      concluir: "Done",
+    },
   },
 }
 

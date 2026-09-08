@@ -4,6 +4,7 @@ import {
   textoDaRepeticao, iniciaisDaSemana, LOCALE, type Dicionario,
 } from "./i18n"
 import { RECURRENCE_OPTIONS } from "./task-recurrence"
+import { CORES_DE_NOTA } from "./nota-cor"
 
 // A falta de uma CHAVE já não compila (é o que a interface Dicionario compra).
 // O que a interface não pega, e estes testes pegam: dicionário que compila mas
@@ -91,14 +92,35 @@ describe("dicionário inteiro", () => {
     expect(chaves(en)).toEqual(chaves(pt))
   })
 
+  // O § só faz sentido onde o componente chama `enfatizar`. A varredura não
+  // enxerga isso, então as frases fixas que legitimamente o usam ficam nomeadas
+  // aqui — e a lista é curta de propósito: cada entrada é uma promessa de que
+  // AQUELE texto passa por `enfatizar` na tela.
+  //
+  // As frases com ênfase que também levam um NOME (as sugestões de rotina) não
+  // entram: sendo funções, a varredura já não as alcança.
+  const COM_ENFASE = new Set(["notas.vazio"])
+
   it("nenhuma marca de ênfase sobra num texto fixo", () => {
-    // O § só faz sentido nas frases que passam por `enfatizar`; num rótulo solto
-    // ele apareceria cru na tela.
     for (const [, d] of IDIOMAS) {
       for (const [chave, valor] of folhas(d)) {
-        if (typeof valor === "string") {
+        if (typeof valor === "string" && !COM_ENFASE.has(chave)) {
           expect(valor, `${chave} tem § fora de uma frase com ênfase`).not.toContain("§")
         }
+      }
+    }
+  })
+
+  // O par é o que importa: marca ímpar não quebra a tela (o texto sai inteiro,
+  // sem negrito), mas é sempre um erro de digitação — e some sem ninguém ver.
+  it("onde há ênfase, as marcas vêm aos pares", () => {
+    for (const [nome, d] of IDIOMAS) {
+      for (const chave of COM_ENFASE) {
+        const valor = folhas(d).find(([k]) => k === chave)?.[1]
+        expect(typeof valor, `${nome}: ${chave} sumiu do dicionário`).toBe("string")
+        const marcas = (valor as string).split("§").length - 1
+        expect(marcas, `${nome}: ${chave} tem ${marcas} marcas`).toBeGreaterThan(0)
+        expect(marcas % 2, `${nome}: ${chave} tem marca sobrando`).toBe(0)
       }
     }
   })
@@ -284,6 +306,75 @@ describe("iniciaisDaSemana", () => {
       for (const inicial of iniciaisDaSemana(locale)) {
         expect(inicial.trim()).not.toBe("")
       }
+    }
+  })
+})
+
+
+describe("notas", () => {
+  for (const [nome, d] of IDIOMAS) {
+    // O mesmo risco das opções de repetição: cor nova em CORES_DE_NOTA sem nome
+    // no dicionário vira um botão redondo sem rótulo nenhum — e como o botão é
+    // só a cor, ninguém percebe olhando.
+    it(`${nome}: toda cor da paleta tem nome`, () => {
+      for (const c of CORES_DE_NOTA) {
+        const texto = d.notas.cores[c.id]
+        expect(texto, `cor ${c.id} sem nome`).toBeTruthy()
+        expect(texto.trim()).not.toBe("")
+      }
+    })
+
+    // "Sem cor" e "Padrão" não são cores: são a ausência de uma. Confundi-las
+    // com um nome de cor é o erro fácil aqui.
+    it(`${nome}: a ausência de cor tem nome próprio`, () => {
+      const nomesDeCor = Object.values(d.notas.cores)
+      expect(nomesDeCor).not.toContain(d.notas.semCor)
+      expect(nomesDeCor).not.toContain(d.notas.editor.corPadrao)
+      expect(d.notas.editor.semFundo).not.toBe(d.notas.editor.corPadrao)
+    })
+
+    it(`${nome}: o tamanho da letra entra na dica`, () => {
+      const p = d.notas.editor.tamanhos.pequeno
+      expect(d.notas.editor.tamanhoDica(p)).toContain(p)
+    })
+
+    it(`${nome}: as três letras de tamanho são diferentes entre si`, () => {
+      const t = d.notas.editor.tamanhos
+      expect(new Set([t.pequeno, t.medio, t.grande]).size).toBe(3)
+    })
+  }
+
+  // P/M/G é português; S/M/L é inglês. Letra solta parece neutra e não é — foi
+  // o mesmo descuido das iniciais dos dias da semana.
+  it("as letras de tamanho mudam de idioma", () => {
+    expect(en.notas.editor.tamanhos.pequeno).toBe("S")
+    expect(pt.notas.editor.tamanhos.pequeno).toBe("P")
+    expect(en.notas.editor.tamanhos.grande).not.toBe(pt.notas.editor.tamanhos.grande)
+  })
+
+  it("a tela de notas muda de idioma", () => {
+    expect(en.notas.nova).not.toBe(pt.notas.nova)
+    expect(en.notas.selecione).not.toBe(pt.notas.selecione)
+    expect(en.notas.cores.ambar).not.toBe(pt.notas.cores.ambar)
+    expect(en.notas.editor.negrito).not.toBe(pt.notas.editor.negrito)
+  })
+
+  // O atalho é do teclado, não do idioma: Ctrl+Z é Ctrl+Z em qualquer lugar.
+  it("o atalho sobrevive à tradução", () => {
+    expect(en.notas.editor.desfazer).toContain("Ctrl+Z")
+    expect(pt.notas.editor.desfazer).toContain("Ctrl+Z")
+  })
+
+  it("o nome do .sql sobrevive à tradução", () => {
+    expect(en.notas.erroSemColunaCor).toContain("notas_cor.sql")
+    expect(pt.notas.erroSemColunaCor).toContain("notas_cor.sql")
+  })
+
+  // A frase vazia cita o botão pelo nome. Se um dos dois mudar sem o outro, a
+  // tela manda clicar num botão que não existe.
+  it("a tela vazia manda clicar no botão que existe", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(d.notas.vazio, `${nome}`).toContain(d.notas.nova)
     }
   })
 })

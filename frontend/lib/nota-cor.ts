@@ -11,20 +11,31 @@
 // um dia deixaria notas antigas apontando para uma cor que já não existe em
 // lugar nenhum — e não haveria como corrigi-las em bloco.
 
+/**
+ * O id de cada cor — que é também a CHAVE do nome dela no dicionário
+ * (lib/i18n). Não há um campo `nome` aqui de propósito: ele guardaria "Âmbar"
+ * cravado num arquivo que só entende de cor, e seria a quarta vez que um módulo
+ * puro fala português (as saudações, as faixas de nível e as repetições já
+ * passaram por isso).
+ *
+ * Sendo união e não `string`, o dicionário só compila se nomear TODAS — cor
+ * nova sem nome vira erro de compilação em vez de um botão sem rótulo.
+ */
+export type ChaveCorDeNota = "ambar" | "coral" | "rosa" | "violeta" | "azul" | "verde"
+
 export interface CorDeNota {
-  id: string
-  nome: string
+  id: ChaveCorDeNota
   /** Um oklch que se lê nos dois temas: nem quase-branco, nem quase-preto. */
   cor: string
 }
 
 export const CORES_DE_NOTA: readonly CorDeNota[] = [
-  { id: "ambar", nome: "Âmbar", cor: "oklch(0.76 0.15 75)" },
-  { id: "coral", nome: "Coral", cor: "oklch(0.7 0.17 25)" },
-  { id: "rosa", nome: "Rosa", cor: "oklch(0.72 0.15 350)" },
-  { id: "violeta", nome: "Violeta", cor: "oklch(0.68 0.16 295)" },
-  { id: "azul", nome: "Azul", cor: "oklch(0.68 0.14 245)" },
-  { id: "verde", nome: "Verde", cor: "oklch(0.72 0.15 155)" },
+  { id: "ambar", cor: "oklch(0.76 0.15 75)" },
+  { id: "coral", cor: "oklch(0.7 0.17 25)" },
+  { id: "rosa", cor: "oklch(0.72 0.15 350)" },
+  { id: "violeta", cor: "oklch(0.68 0.16 295)" },
+  { id: "azul", cor: "oklch(0.68 0.14 245)" },
+  { id: "verde", cor: "oklch(0.72 0.15 155)" },
 ]
 
 /**
@@ -34,10 +45,10 @@ export const CORES_DE_NOTA: readonly CorDeNota[] = [
  * (paleta mudou, dado editado à mão) tem de continuar abrindo — perder a nota
  * por causa da etiqueta dela seria trocar o essencial pelo enfeite.
  */
-export function saneiaCorDeNota(bruto: unknown): string | null {
+export function saneiaCorDeNota(bruto: unknown): ChaveCorDeNota | null {
   if (typeof bruto !== "string") return null
   const id = bruto.trim().toLowerCase()
-  return CORES_DE_NOTA.some((c) => c.id === id) ? id : null
+  return CORES_DE_NOTA.find((c) => c.id === id)?.id ?? null
 }
 
 export function corDeNota(id: unknown): CorDeNota | null {

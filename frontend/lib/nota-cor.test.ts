@@ -2,11 +2,19 @@ import { describe, it, expect } from "vitest"
 import { CORES_DE_NOTA, corDeNota, fundoDaNota, saneiaCorDeNota, tarjaDaNota, VEU } from "./nota-cor"
 
 describe("a paleta", () => {
-  it("tem id único e nome legível", () => {
+  it("tem id único, e o id serve de chave no dicionário", () => {
     expect(new Set(CORES_DE_NOTA.map((c) => c.id)).size).toBe(CORES_DE_NOTA.length)
     for (const c of CORES_DE_NOTA) {
       expect(c.id).toMatch(/^[a-z]+$/)
-      expect(c.nome.length).toBeGreaterThan(2)
+    }
+  })
+
+  // O nome de cada cor mora em lib/i18n. Um `nome` aqui seria "Âmbar" cravado
+  // num arquivo que só entende de cor — e apareceria em português para quem
+  // escolheu inglês.
+  it("nenhuma cor carrega texto de interface", () => {
+    for (const c of CORES_DE_NOTA) {
+      expect(Object.keys(c).sort()).toEqual(["cor", "id"])
     }
   })
 

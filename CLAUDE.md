@@ -112,7 +112,7 @@ frontend/
 │   ├── onda-sonora.ts        # De quem é a vez de falar → cor da onda (puro)
 │   ├── atalhos-neuro.ts      # Atalhos da Neuro IA: padrões, saneamento e tetos (puro)
 │   ├── enquete.ts            # Perguntas da enquete + quando perguntar e quando calar (puro)
-│   ├── nota-cor.ts           # Paleta das notas: guarda o nome, não o hex (puro)
+│   ├── nota-cor.ts           # Paleta das notas: guarda a chave, não o hex nem o nome (puro)
 │   ├── ia-agora.ts           # A data/hora que a Neuro recebe: por extenso, ISO e mês delimitado (puro)
 │   ├── ia-duplicata.ts       # Quando a Neuro recusa criar tarefa: mesmo título E mesmo dia (puro)
 │   ├── telegram-fuso.ts      # De que parede o /hoje do bot fala: vínculo → push → padrão (puro)
@@ -186,7 +186,7 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   `regiao` e `task-recurrence`. O idioma dentro do app sai da região (`hooks/use-idioma`),
   que já sai do formato de hora; em `/agenda/<token>` sai do navegador de quem abre.
 - **A tradução avança por área, e ainda não terminou.** Já passaram: agenda pública, dock e
-  títulos, Configurações, dashboard, Tarefas e Favoritos. Faltam calendário, notas, amigos,
+  títulos, Configurações, dashboard, Tarefas, Favoritos e Notas. Faltam calendário, amigos,
   Escritório e Neuro IA — o ROADMAP tem a lista e as armadilhas. Enquanto sobrar tela em
   português, o seletor diz **"região e formato"**, nunca "idioma".
 
