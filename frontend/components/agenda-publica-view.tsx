@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react"
 import { CalendarClock, Lock } from "lucide-react"
 import { agendaDosProximosDias, type BlocoBruto, type DiaDaAgenda } from "@/lib/faixas-ocupadas"
-import { dicionario, idiomaDoNavegador, type Dicionario } from "@/lib/i18n"
+import { maiusculaInicial } from "@/lib/texto"
+import { dicionario, idiomaDoNavegador, LOCALE, type Dicionario, type Idioma } from "@/lib/i18n"
 
 // A metade visível da agenda compartilhada (/agenda/<token>).
 //
@@ -47,7 +48,11 @@ export function AgendaPublicaView({
 
   useEffect(() => {
     setAgenda(agendaDosProximosDias(blocos, new Date(), dias))
-    setD(dicionario(idiomaDoNavegador(navigator.languages ?? [navigator.language])))
+    const idioma: Idioma = idiomaDoNavegador(navigator.languages ?? [navigator.language])
+    setD(dicionario(idioma))
+    // O documento nasce em pt-BR (o servidor não sabe quem vai abrir); aqui ele
+    // passa a dizer a verdade.
+    document.documentElement.lang = LOCALE[idioma]
     try {
       setFuso(new Intl.DateTimeFormat().resolvedOptions().timeZone ?? "")
     } catch {
@@ -84,8 +89,8 @@ export function AgendaPublicaView({
                 key={dia.toISOString()}
                 className="rounded-2xl border border-border/40 bg-card/50 p-4 backdrop-blur-sm"
               >
-                <p className="text-sm font-semibold capitalize text-foreground">
-                  {fmtDia(dia)}
+                <p className="text-sm font-semibold text-foreground">
+                  {maiusculaInicial(fmtDia(dia))}
                   {ehHoje(dia) && (
                     <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
                       {d.agenda.hoje}
