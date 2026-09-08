@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Bandeira } from "@/components/bandeira"
 import { REGIOES, regiaoDoFormato, formatoDaRegiao, infoDaRegiao } from "@/lib/regiao"
 import { useTimeFormat, setTimeFormat } from "@/hooks/use-time-format"
+import { useDicionario } from "@/hooks/use-idioma"
 
 // Seletor de região — a bandeira com a seta, e o painel que abre.
 // Referência: components/inspirações/202645.png e 202658.png.
@@ -21,6 +22,7 @@ import { useTimeFormat, setTimeFormat } from "@/hooks/use-time-format"
 
 export function SeletorRegiao() {
   const formato = useTimeFormat()
+  const d = useDicionario()
   const regiao = regiaoDoFormato(formato)
   const atual = infoDaRegiao(regiao)
   const [aberto, setAberto] = useState(false)
@@ -57,7 +59,7 @@ export function SeletorRegiao() {
         )}
       >
         <Bandeira regiao={regiao} />
-        <span className="flex-1 text-sm font-medium">{atual.nome}</span>
+        <span className="flex-1 text-sm font-medium">{d.configuracoes.aparencia.regioes[atual.nome]}</span>
         <span className="text-xs tabular-nums text-muted-foreground">{atual.exemplo}</span>
         <motion.span animate={{ rotate: aberto ? 180 : 0 }} transition={{ duration: 0.18 }}>
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -95,7 +97,7 @@ export function SeletorRegiao() {
                   )}
                 >
                   <Bandeira regiao={r.value} />
-                  <span className="flex-1 text-sm font-medium">{r.nome}</span>
+                  <span className="flex-1 text-sm font-medium">{d.configuracoes.aparencia.regioes[r.nome]}</span>
                   <span className="text-xs tabular-nums text-muted-foreground">{r.exemplo}</span>
                   {ativa && <Check className="h-4 w-4" />}
                 </button>

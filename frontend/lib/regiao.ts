@@ -18,16 +18,23 @@ export type Regiao = "BR" | "US"
 
 export interface RegiaoInfo {
   value: Regiao
-  /** O nome que a pessoa entende. É o rótulo do botão — "Brasil", não "24h". */
-  nome: string
+  /**
+   * O nome que a pessoa entende — a CHAVE dele, não o texto.
+   *
+   * Ficava "Brasil" e "Estados Unidos" cravados aqui, e isso aparecia em
+   * português mesmo para quem tinha escolhido inglês: o seletor de idioma era
+   * a única coisa da tela que não falava o idioma escolhido. O nome vive no
+   * dicionário (lib/i18n), como o das faixas de nível e o das saudações.
+   */
+  nome: Regiao
   formato: TimeFormat
   /** A mesma hora nos dois formatos, para a escolha se explicar sozinha. */
   exemplo: string
 }
 
 export const REGIOES: RegiaoInfo[] = [
-  { value: "BR", nome: "Brasil", formato: "24h", exemplo: "14:30" },
-  { value: "US", nome: "Estados Unidos", formato: "12h", exemplo: "2:30 PM" },
+  { value: "BR", nome: "BR", formato: "24h", exemplo: "14:30" },
+  { value: "US", nome: "US", formato: "12h", exemplo: "2:30 PM" },
 ]
 
 export const REGIAO_DEFAULT: Regiao = "BR"

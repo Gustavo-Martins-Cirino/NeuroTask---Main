@@ -121,6 +121,8 @@ export interface Dicionario {
       escuro: string
       sistema: string
       regiao: string
+      /** Nome de cada região — a chave vem de lib/regiao. */
+      regioes: Record<"BR" | "US", string>
       /** O que a região faz de fato — e a tradução mudou essa resposta. */
       regiaoAjuda: string
     }
@@ -286,6 +288,7 @@ export const pt: Dicionario = {
       escuro: "Escuro",
       sistema: "Sistema",
       regiao: "Região",
+      regioes: { BR: "Brasil", US: "Estados Unidos" },
       regiaoAjuda:
         "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento: a moldura e o compartilhamento de agenda já acompanham; o resto ainda está em português.",
     },
@@ -459,6 +462,7 @@ export const en: Dicionario = {
       escuro: "Dark",
       sistema: "System",
       regiao: "Region",
+      regioes: { BR: "Brazil", US: "United States" },
       regiaoAjuda:
         "Sets how times are shown and which language the app speaks. Translation is under way: the app frame and schedule sharing already follow it; the rest is still in Portuguese.",
     },

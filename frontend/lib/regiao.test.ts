@@ -27,8 +27,9 @@ describe("regiao ↔ formato de hora", () => {
 
 describe("infoDaRegiao", () => {
   it("devolve o nome que a pessoa entende, não o formato técnico", () => {
-    expect(infoDaRegiao("BR").nome).toBe("Brasil")
-    expect(infoDaRegiao("US").nome).toBe("Estados Unidos")
+    // O nome é uma CHAVE; o texto ("Brasil", "Brazil") vem do dicionário.
+    expect(infoDaRegiao("BR").nome).toBe("BR")
+    expect(infoDaRegiao("US").nome).toBe("US")
   })
 
   it("o exemplo mostrado é a MESMA hora nos dois formatos", () => {
