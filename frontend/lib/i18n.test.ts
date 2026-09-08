@@ -57,6 +57,49 @@ describe("dicionários — o que varia realmente varia", () => {
   })
 })
 
+// Varredura genérica: vale para o dicionário INTEIRO e continua valendo à
+// medida que ele cresce, sem ninguém precisar lembrar de somar um teste por
+// chave nova. É o contrário dos testes específicos abaixo, que existem para as
+// regras que uma varredura não enxerga (nome próprio, plural, ordem).
+function folhas(obj: unknown, caminho = ""): [string, unknown][] {
+  if (obj && typeof obj === "object") {
+    return Object.entries(obj as Record<string, unknown>).flatMap(([k, v]) =>
+      folhas(v, caminho ? `${caminho}.${k}` : k)
+    )
+  }
+  return [[caminho, obj]]
+}
+
+describe("dicionário inteiro", () => {
+  for (const [nome, d] of IDIOMAS) {
+    it(`${nome}: nenhum texto vazio em lugar nenhum`, () => {
+      for (const [chave, valor] of folhas(d)) {
+        if (typeof valor === "string") {
+          expect(valor.trim(), `${chave} está vazio`).not.toBe("")
+        }
+      }
+    })
+  }
+
+  it("pt e en têm exatamente as mesmas chaves", () => {
+    // O TypeScript já garante isso — mas só enquanto ninguém escrever `as any`.
+    const chaves = (d: Dicionario) => folhas(d).map(([k]) => k).sort()
+    expect(chaves(en)).toEqual(chaves(pt))
+  })
+
+  it("nenhuma marca de ênfase sobra num texto fixo", () => {
+    // O § só faz sentido nas frases que passam por `enfatizar`; num rótulo solto
+    // ele apareceria cru na tela.
+    for (const [, d] of IDIOMAS) {
+      for (const [chave, valor] of folhas(d)) {
+        if (typeof valor === "string") {
+          expect(valor, `${chave} tem § fora de uma frase com ênfase`).not.toContain("§")
+        }
+      }
+    }
+  })
+})
+
 describe("nomes das telas", () => {
   for (const [nome, d] of IDIOMAS) {
     it(`${nome}: nenhuma tela sem nome`, () => {

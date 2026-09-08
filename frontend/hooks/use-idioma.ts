@@ -1,7 +1,7 @@
 "use client"
 
 import { useTimeFormat } from "@/hooks/use-time-format"
-import { dicionario, idiomaDoFormato, type Dicionario, type Idioma } from "@/lib/i18n"
+import { dicionario, idiomaDoFormato, LOCALE, type Dicionario, type Idioma } from "@/lib/i18n"
 
 // O idioma DENTRO do app. Não guarda nada: pendura-se no formato de hora, que
 // já mora no localStorage e já vira região (lib/regiao.ts explica por quê).
@@ -17,4 +17,9 @@ export function useIdioma(): Idioma {
 
 export function useDicionario(): Dicionario {
   return dicionario(useIdioma())
+}
+
+/** O locale de data/hora do idioma atual — para toLocaleDateString e Intl. */
+export function useLocale(): string {
+  return LOCALE[useIdioma()]
 }

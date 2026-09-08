@@ -1412,11 +1412,31 @@ vira ruído.
 > título), e **"Neuro IA" é nome próprio** — há um teste garantindo que ele NÃO se traduz,
 > que é o erro oposto e mais fácil de cometer numa varredura.
 
-- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (26 testes em
-      `lib/i18n.test.ts`, incluindo o que a interface não pega: texto vazio, plural que não
-      muda e frase igual nos dois idiomas — "traduzir" sem traduzir). O que falta é o miolo
-      das telas: dashboard, tarefas, calendário, Escritório, Neuro IA e o resto de
-      Configurações (12 seções) continuam com português cravado no JSX. É trabalho de dias, e
+> **Configurações inteira passou (08/09).** Terceira fatia, e a maior: as 12 seções, ~50
+> frases. Três coisas saíram dela e servem as próximas:
+>
+> **Negrito dentro de frase traduzida** (`lib/enfase.tsx`). "Você fez **X** em 3 dias" tem
+> ênfase no meio, e a saída óbvia — quebrar em pedaços no JSX — é justamente a que impede
+> traduzir: os pedaços congelam a ordem das palavras do português. A frase fica inteira, uma
+> por idioma, com a ênfase marcada por `§` dentro dela. Marca ímpar não quebra a tela: o
+> texto sai completo, só sem negrito.
+>
+> **A data seguia `pt-BR` cravado.** Quem escolhesse inglês continuava lendo "14 de agosto".
+> Agora `LOCALE` sai do idioma e `useLocale()` entrega para `toLocaleDateString`.
+>
+> **Um texto virou mentira e foi corrigido**: a ajuda da região dizia "o idioma continua em
+> português". A própria tradução tornou isso falso. Agora ela diz o que é verdade hoje — que
+> a tradução está em andamento e quais partes já acompanham.
+>
+> Os testes ganharam uma **varredura genérica** do dicionário inteiro (nenhum texto vazio, pt
+> e en com as mesmas chaves, nenhum `§` sobrando em rótulo fixo). Ela vale para o que vier
+> depois sem ninguém precisar somar um teste por chave nova.
+
+- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (30 testes em
+      `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Falta o miolo das telas: dashboard,
+      tarefas, calendário, notas, favoritos, Escritório e Neuro IA. Faltam também os
+      componentes embutidos em Configurações, que têm texto próprio: `foto-perfil-campo`,
+      `calendar-feed`, `agenda-io`, `seletor-regiao` e o `errors-panel`. É trabalho de dias, e
       melhor feito por área, uma de cada vez, para cada fatia poder ser conferida no olho
       antes da seguinte.
       Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de

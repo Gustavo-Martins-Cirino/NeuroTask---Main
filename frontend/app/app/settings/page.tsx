@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useDicionario } from "@/hooks/use-idioma"
+import { useDicionario, useLocale } from "@/hooks/use-idioma"
+import { enfatizar } from "@/lib/enfase"
 import { Header } from "@/components/header"
 import { ErrorsPanel } from "@/components/errors-panel"
 import { AgendaIo } from "@/components/agenda-io"
@@ -27,10 +28,10 @@ import {
 } from "@/lib/routine"
 
 const themeOptions = [
-  { value: "light", label: "Claro", icon: Sun },
-  { value: "dark", label: "Escuro", icon: Moon },
-  { value: "system", label: "Sistema", icon: Monitor },
-]
+  { value: "light", chave: "claro", icon: Sun },
+  { value: "dark", chave: "escuro", icon: Moon },
+  { value: "system", chave: "sistema", icon: Monitor },
+] as const
 
 function RoutineField({
   label,
@@ -102,6 +103,7 @@ function Section({ icon, title, description, children }: {
 
 export default function SettingsPage() {
   const traducao = useDicionario()
+  const locale = useLocale()
   const supabase = createClient()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
@@ -137,14 +139,14 @@ export default function SettingsPage() {
     if (pushOn) {
       await disablePush()
       setPushOn(false)
-      toast("Notificações desativadas neste dispositivo.")
+      toast(traducao.configuracoes.notificacoes.toastDesativadas)
     } else {
       const err = await enablePush()
-      if (err) toast.error("Não deu para ativar", { description: err })
+      if (err) toast.error(traducao.configuracoes.notificacoes.erroAtivar, { description: err })
       else {
         setPushOn(true)
-        toast.success("Notificações ativadas! 🔔", {
-          description: "Lembretes e check-ins chegam mesmo com o app fechado.",
+        toast.success(traducao.configuracoes.notificacoes.toastAtivadas, {
+          description: traducao.configuracoes.notificacoes.toastAtivadasDetalhe,
         })
       }
     }
@@ -177,7 +179,7 @@ export default function SettingsPage() {
     const result = await generateTelegramCode()
     setTgBusy(false)
     if (!result) {
-      toast.error("Não deu para gerar o código", { description: "Tente novamente." })
+      toast.error(traducao.configuracoes.telegram.erroGerar, { description: traducao.configuracoes.telegram.tenteNovamente })
       return
     }
     setTgPairing(result)
@@ -233,7 +235,7 @@ export default function SettingsPage() {
     }
     ignoreSuggestion(s.key)
     setSuggestions((prev) => prev.filter((x) => x.key !== s.key))
-    toast.success("Rotina atualizada! ✨")
+    toast.success(traducao.configuracoes.rotina.toastAtualizada)
   }
 
   const dismissSuggestion = (s: RoutineSuggestion) => {
@@ -285,20 +287,20 @@ export default function SettingsPage() {
 
       <div className="flex-1 px-4 py-8 md:px-6">
         <div className="mx-auto w-full max-w-2xl space-y-5">
-          <Section icon={<User className="h-5 w-5" />} title="Perfil" description="Sua foto, nome e email">
+          <Section icon={<User className="h-5 w-5" />} title={traducao.configuracoes.perfil.titulo} description={traducao.configuracoes.perfil.descricao}>
             <div className="space-y-4">
               <FotoPerfilCampo nome={name || initialName} />
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Nome</label>
+                <label className="text-sm font-medium">{traducao.configuracoes.perfil.nome}</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Seu nome"
+                  placeholder={traducao.configuracoes.perfil.nomePlaceholder}
                   className="h-10 w-full rounded-lg border border-border/50 bg-transparent px-3 text-sm outline-none transition-colors focus:border-primary/40"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-sm font-medium">{traducao.configuracoes.perfil.email}</label>
                 <input
                   value={email}
                   disabled
@@ -311,12 +313,12 @@ export default function SettingsPage() {
                 className="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-40"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}
-                {saved ? "Salvo" : "Salvar"}
+                {saved ? traducao.configuracoes.perfil.salvo : traducao.configuracoes.perfil.salvar}
               </button>
             </div>
           </Section>
 
-          <Section icon={<Palette className="h-5 w-5" />} title="Aparência" description="Tema e região">
+          <Section icon={<Palette className="h-5 w-5" />} title={traducao.configuracoes.aparencia.titulo} description={traducao.configuracoes.aparencia.descricao}>
             {mounted && (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-2">
@@ -332,16 +334,16 @@ export default function SettingsPage() {
                         )}
                       >
                         <opt.icon className="h-5 w-5" />
-                        <span className="text-sm font-medium">{opt.label}</span>
+                        <span className="text-sm font-medium">{traducao.configuracoes.aparencia[opt.chave]}</span>
                       </button>
                     )
                   })}
                 </div>
 
                 <div className="space-y-2 border-t border-border/40 pt-4">
-                  <p className="text-sm font-medium">Região</p>
+                  <p className="text-sm font-medium">{traducao.configuracoes.aparencia.regiao}</p>
                   <p className="text-xs text-muted-foreground">
-                    Decide como as horas aparecem no app. O idioma continua em português.
+                    {traducao.configuracoes.aparencia.regiaoAjuda}
                   </p>
                   <SeletorRegiao />
                 </div>
@@ -351,13 +353,13 @@ export default function SettingsPage() {
 
           <Section
             icon={<Clock className="h-5 w-5" />}
-            title="Rotina"
-            description="Seus tempos pessoais — usados pelo planejamento e pelos avisos do calendário"
+            title={traducao.configuracoes.rotina.titulo}
+            description={traducao.configuracoes.rotina.descricao}
           >
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <RoutineField
-                  label="Sono desejado"
+                  label={traducao.configuracoes.rotina.sonoDesejado}
                   value={routine.sleep_hours}
                   suffix="h"
                   step={0.5}
@@ -372,9 +374,9 @@ export default function SettingsPage() {
                 className="flex w-full items-center justify-between gap-3 rounded-xl border border-border/50 p-3 text-left transition-colors hover:border-border"
               >
                 <span>
-                  <span className="block text-sm font-medium">Avisos inteligentes no calendário</span>
+                  <span className="block text-sm font-medium">{traducao.configuracoes.rotina.avisos}</span>
                   <span className="block text-xs text-muted-foreground">
-                    Sono curto antes de compromissos, telas perto da hora de dormir
+                    {traducao.configuracoes.rotina.avisosDetalhe}
                   </span>
                 </span>
                 <span
@@ -398,16 +400,13 @@ export default function SettingsPage() {
                 className="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-40"
               >
                 {routineSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : routineSaved ? <Check className="h-4 w-4" /> : null}
-                {routineSaved ? "Salvo" : "Salvar rotina"}
+                {routineSaved ? "Salvo" : traducao.configuracoes.rotina.salvar}
               </button>
 
               {/* Minhas atividades de rotina */}
               <div className="space-y-2 border-t border-border/40 pt-4">
-                <p className="text-sm font-medium">Minhas atividades</p>
-                <p className="text-xs text-muted-foreground">
-                  Atividades nomeadas com duração — viram blocos de 1 toque no calendário e alimentam
-                  o planejamento da Neuro. Ex.: &quot;Deslocamento → Trabalho&quot;, &quot;Se arrumar (evento)&quot;.
-                </p>
+                <p className="text-sm font-medium">{traducao.configuracoes.rotina.minhasAtividades}</p>
+                <p className="text-xs text-muted-foreground">{traducao.configuracoes.rotina.atividadesAjuda}</p>
 
                 {activities.length > 0 && (
                   <ul className="space-y-1.5 pt-1">
@@ -435,7 +434,7 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteActivity(a.id)}
-                          aria-label="Excluir atividade"
+                          aria-label={traducao.configuracoes.rotina.excluir}
                           className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -451,7 +450,7 @@ export default function SettingsPage() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleAddActivity() }}
-                    placeholder="Nome — ex.: Deslocamento → Trabalho"
+                    placeholder={traducao.configuracoes.rotina.nomePlaceholder}
                     className="h-9 w-full rounded-lg border border-border/50 bg-transparent px-3 text-sm outline-none transition-colors focus:border-primary/40"
                   />
                   <div className="flex flex-wrap items-center gap-2">
@@ -495,7 +494,7 @@ export default function SettingsPage() {
                     className="flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition-opacity disabled:opacity-40"
                   >
                     {addingActivity ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                    Adicionar atividade
+                    {traducao.configuracoes.rotina.adicionar}
                   </button>
                 </div>
 
@@ -511,24 +510,22 @@ export default function SettingsPage() {
                         className="flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2"
                       >
                         <span className="min-w-0 flex-1 text-xs leading-relaxed">
-                          {s.kind === "new" ? (
-                            <>
-                              Você fez <strong>{s.title}</strong> em {s.days} dias diferentes — salvar como
-                              atividade de {ACTIVITY_CATEGORIES.find((c) => c.value === s.category)?.label.toLowerCase() ?? s.category} de{" "}
-                              <strong>{s.minutes} min</strong>?
-                            </>
-                          ) : (
-                            <>
-                              Em <strong>{s.title}</strong> você leva ~<strong>{s.to} min</strong> na prática
-                              ({s.samples} check-ins), não {s.from} — ajustar?
-                            </>
-                          )}
+                          {s.kind === "new"
+                            ? enfatizar(
+                                traducao.configuracoes.rotina.sugestaoNova(
+                                  s.title,
+                                  s.days,
+                                  ACTIVITY_CATEGORIES.find((c) => c.value === s.category)?.label.toLowerCase() ?? s.category,
+                                  s.minutes
+                                )
+                              )
+                            : enfatizar(traducao.configuracoes.rotina.sugestaoAjuste(s.title, s.to, s.samples, s.from))}
                         </span>
                         <button
                           type="button"
                           onClick={() => acceptSuggestion(s)}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-85"
-                          title="Aceitar sugestão"
+                          title={traducao.configuracoes.rotina.aceitar}
                         >
                           <Check className="h-3.5 w-3.5" />
                         </button>
@@ -536,7 +533,7 @@ export default function SettingsPage() {
                           type="button"
                           onClick={() => dismissSuggestion(s)}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border/50 text-muted-foreground transition-colors hover:bg-accent"
-                          title="Ignorar"
+                          title={traducao.configuracoes.rotina.ignorar}
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -550,32 +547,32 @@ export default function SettingsPage() {
 
           <Section
             icon={<CalendarSync className="h-5 w-5" />}
-            title="Importar e exportar"
-            description="Traga sua agenda de outro calendário (.ics) ou leve a sua pra fora"
+            title={traducao.configuracoes.importarExportar.titulo}
+            description={traducao.configuracoes.importarExportar.descricao}
           >
             <AgendaIo />
           </Section>
 
           <Section
             icon={<CalendarClock className="h-5 w-5" />}
-            title="Assinar no Google/Outlook"
-            description="Um link que mostra seus blocos no seu calendário de sempre, atualizando sozinho"
+            title={traducao.configuracoes.assinar.titulo}
+            description={traducao.configuracoes.assinar.descricao}
           >
             <CalendarFeed />
           </Section>
 
           <Section
             icon={<Share2 className="h-5 w-5" />}
-            title="Compartilhar meus horários"
-            description="Um link para quem precisa marcar horário com você — sem conta, e sem ver o que você faz"
+            title={traducao.configuracoes.compartilharAgenda.titulo}
+            description={traducao.configuracoes.compartilharAgenda.descricao}
           >
             <AgendaPublica />
           </Section>
 
           <Section
             icon={<Bell className="h-5 w-5" />}
-            title="Notificações"
-            description="Lembretes e check-ins mesmo com o app fechado"
+            title={traducao.configuracoes.notificacoes.titulo}
+            description={traducao.configuracoes.notificacoes.descricao}
           >
             <button
               type="button"
@@ -584,11 +581,11 @@ export default function SettingsPage() {
               className="flex w-full items-center justify-between gap-3 rounded-xl border border-border/50 p-3 text-left transition-colors hover:border-border disabled:opacity-60"
             >
               <span>
-                <span className="block text-sm font-medium">Notificações neste dispositivo</span>
+                <span className="block text-sm font-medium">{traducao.configuracoes.notificacoes.nesteDispositivo}</span>
                 <span className="block text-xs text-muted-foreground">
                   {pushSupported()
-                    ? "Ative em cada aparelho que quiser receber (celular, computador)."
-                    : "Não suportado neste navegador. No iPhone: adicione o app à tela de início e ative por lá."}
+                    ? traducao.configuracoes.notificacoes.suportado
+                    : traducao.configuracoes.notificacoes.naoSuportado}
                 </span>
               </span>
               <span
@@ -609,19 +606,19 @@ export default function SettingsPage() {
 
           <Section
             icon={<Send className="h-5 w-5" />}
-            title="Telegram"
-            description="Mande uma mensagem para o bot e ela vira tarefa"
+            title={traducao.configuracoes.telegram.titulo}
+            description={traducao.configuracoes.telegram.descricao}
           >
             <div className="space-y-3">
               {tgPairing ? (
                 <div className="rounded-xl border border-border/50 p-4 text-center">
                   <p className="text-2xl font-bold tracking-[0.3em] tabular-nums">{tgPairing.code}</p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    No Telegram, mande para o bot:{" "}
+                    {traducao.configuracoes.telegram.mandeParaOBot}{" "}
                     <code className="rounded bg-muted px-1 py-0.5">/start {tgPairing.code}</code>
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Expira em {Math.floor(tgLeft / 60)}:{String(tgLeft % 60).padStart(2, "0")}.
+                    {traducao.configuracoes.telegram.expiraEm(`${Math.floor(tgLeft / 60)}:${String(tgLeft % 60).padStart(2, "0")}`)}
                   </p>
                 </div>
               ) : (
@@ -632,13 +629,13 @@ export default function SettingsPage() {
                   className="flex h-9 items-center gap-2 rounded-lg border border-border/50 px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
                 >
                   {tgBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  Gerar código de pareamento
+                  {traducao.configuracoes.telegram.gerarCodigo}
                 </button>
               )}
 
               {tgLinks.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Conversas conectadas</p>
+                  <p className="text-xs font-medium text-muted-foreground">{traducao.configuracoes.telegram.conversasConectadas}</p>
                   {tgLinks.map((l) => (
                     <div
                       key={l.id}
@@ -646,12 +643,12 @@ export default function SettingsPage() {
                     >
                       <span>
                         <span className="block text-sm font-medium">
-                          {l.username ? `@${l.username}` : "Conversa do Telegram"}
+                          {l.username ? `@${l.username}` : traducao.configuracoes.telegram.conversaSemNome}
                         </span>
                         <span className="block text-xs text-muted-foreground">
                           {l.last_seen_at
-                            ? `Última mensagem em ${new Date(l.last_seen_at).toLocaleDateString("pt-BR")}`
-                            : "Ainda sem mensagens"}
+                            ? traducao.configuracoes.telegram.ultimaMensagem(new Date(l.last_seen_at).toLocaleDateString(locale))
+                            : traducao.configuracoes.telegram.semMensagens}
                         </span>
                       </span>
                       <button
@@ -667,22 +664,20 @@ export default function SettingsPage() {
               )}
 
               <p className="text-[11px] leading-relaxed text-muted-foreground/70">
-                Qualquer mensagem vira tarefa (1ª linha = título). Também entende
-                <code className="mx-1 rounded bg-muted px-1 py-0.5">/hoje</code> e
-                <code className="mx-1 rounded bg-muted px-1 py-0.5">/ajuda</code>.
+                {traducao.configuracoes.telegram.ajudaComandos}
               </p>
             </div>
           </Section>
 
           <ErrorsPanel />
 
-          <Section icon={<LogOut className="h-5 w-5" />} title="Conta">
+          <Section icon={<LogOut className="h-5 w-5" />} title={traducao.configuracoes.conta.titulo}>
             <button
               onClick={signOut}
               className="flex h-9 items-center gap-2 rounded-lg border border-destructive/30 px-4 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
             >
               <LogOut className="h-4 w-4" />
-              Sair da conta
+              {traducao.configuracoes.conta.sair}
             </button>
           </Section>
         </div>

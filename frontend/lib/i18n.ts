@@ -23,6 +23,9 @@ import { type TimeFormat } from "@/lib/time-format"
 
 export type Idioma = "pt" | "en"
 
+/** O locale para Intl/toLocaleDateString de cada idioma. */
+export const LOCALE: Record<Idioma, string> = { pt: "pt-BR", en: "en-US" }
+
 export const IDIOMA_DEFAULT: Idioma = "pt"
 
 /** A forma do dicionário. É este contrato que faz falta de chave não compilar. */
@@ -66,6 +69,81 @@ export interface Dicionario {
     escritorio: string
     amigos: string
     configuracoes: string
+  }
+  configuracoes: {
+    perfil: {
+      titulo: string
+      descricao: string
+      nome: string
+      nomePlaceholder: string
+      email: string
+      salvar: string
+      salvo: string
+    }
+    aparencia: {
+      titulo: string
+      descricao: string
+      claro: string
+      escuro: string
+      sistema: string
+      regiao: string
+      /** O que a região faz de fato — e a tradução mudou essa resposta. */
+      regiaoAjuda: string
+    }
+    rotina: {
+      titulo: string
+      descricao: string
+      sonoDesejado: string
+      avisos: string
+      avisosDetalhe: string
+      salvar: string
+      minhasAtividades: string
+      atividadesAjuda: string
+      adicionar: string
+      nomePlaceholder: string
+      excluir: string
+      aceitar: string
+      ignorar: string
+      /**
+       * As duas frases de sugestão têm trechos em negrito no meio. O `§` marca
+       * o que vai em <strong> (ver `enfatizar` em lib/enfase.tsx): assim cada
+       * idioma escreve a frase inteira, com a ORDEM das palavras que quiser, e
+       * o negrito acompanha — em vez de a frase virar pedaços costurados no
+       * JSX, que prendem a ordem do português.
+       */
+      sugestaoNova: (titulo: string, dias: number, categoria: string, minutos: number) => string
+      sugestaoAjuste: (titulo: string, real: number, amostras: number, antes: number) => string
+      toastAtualizada: string
+    }
+    importarExportar: { titulo: string; descricao: string }
+    assinar: { titulo: string; descricao: string }
+    compartilharAgenda: { titulo: string; descricao: string }
+    notificacoes: {
+      titulo: string
+      descricao: string
+      nesteDispositivo: string
+      suportado: string
+      naoSuportado: string
+      toastDesativadas: string
+      toastAtivadas: string
+      toastAtivadasDetalhe: string
+      erroAtivar: string
+    }
+    telegram: {
+      titulo: string
+      descricao: string
+      mandeParaOBot: string
+      expiraEm: (mm: string) => string
+      gerarCodigo: string
+      conversasConectadas: string
+      conversaSemNome: string
+      ultimaMensagem: (data: string) => string
+      semMensagens: string
+      ajudaComandos: string
+      erroGerar: string
+      tenteNovamente: string
+    }
+    conta: { titulo: string; sair: string }
   }
   compartilhar: {
     explicacao: string
@@ -113,6 +191,88 @@ export const pt: Dicionario = {
     amigos: "Amigos",
     configuracoes: "Configurações",
   },
+  configuracoes: {
+    perfil: {
+      titulo: "Perfil",
+      descricao: "Sua foto, nome e email",
+      nome: "Nome",
+      nomePlaceholder: "Seu nome",
+      email: "Email",
+      salvar: "Salvar",
+      salvo: "Salvo",
+    },
+    aparencia: {
+      titulo: "Aparência",
+      descricao: "Tema e região",
+      claro: "Claro",
+      escuro: "Escuro",
+      sistema: "Sistema",
+      regiao: "Região",
+      regiaoAjuda:
+        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento: a moldura e o compartilhamento de agenda já acompanham; o resto ainda está em português.",
+    },
+    rotina: {
+      titulo: "Rotina",
+      descricao: "Seus tempos pessoais — usados pelo planejamento e pelos avisos do calendário",
+      sonoDesejado: "Sono desejado",
+      avisos: "Avisos inteligentes no calendário",
+      avisosDetalhe: "Sono curto antes de compromissos, telas perto da hora de dormir",
+      salvar: "Salvar rotina",
+      minhasAtividades: "Minhas atividades",
+      atividadesAjuda:
+        "Atividades nomeadas com duração — viram blocos de 1 toque no calendário e alimentam o planejamento da Neuro. Ex.: \u201cDeslocamento \u2192 Trabalho\u201d, \u201cSe arrumar (evento)\u201d.",
+      adicionar: "Adicionar atividade",
+      nomePlaceholder: "Nome — ex.: Deslocamento \u2192 Trabalho",
+      excluir: "Excluir atividade",
+      aceitar: "Aceitar sugestão",
+      ignorar: "Ignorar",
+      sugestaoNova: (titulo, dias, categoria, minutos) =>
+        `Você fez §${titulo}§ em ${dias} dias diferentes — salvar como atividade de ${categoria} de §${minutos} min§?`,
+      sugestaoAjuste: (titulo, real, amostras, antes) =>
+        `Em §${titulo}§ você leva ~§${real} min§ na prática (${amostras} check-ins), não ${antes} — ajustar?`,
+      toastAtualizada: "Rotina atualizada! ✨",
+    },
+    importarExportar: {
+      titulo: "Importar e exportar",
+      descricao: "Traga sua agenda de outro calendário (.ics) ou leve a sua pra fora",
+    },
+    assinar: {
+      titulo: "Assinar no Google/Outlook",
+      descricao: "Um link que mostra seus blocos no seu calendário de sempre, atualizando sozinho",
+    },
+    compartilharAgenda: {
+      titulo: "Compartilhar meus horários",
+      descricao: "Um link para quem precisa marcar horário com você — sem conta, e sem ver o que você faz",
+    },
+    notificacoes: {
+      titulo: "Notificações",
+      descricao: "Lembretes e check-ins mesmo com o app fechado",
+      nesteDispositivo: "Notificações neste dispositivo",
+      suportado: "Ative em cada aparelho que quiser receber (celular, computador).",
+      naoSuportado:
+        "Não suportado neste navegador. No iPhone: adicione o app à tela de início e ative por lá.",
+      toastDesativadas: "Notificações desativadas neste dispositivo.",
+      toastAtivadas: "Notificações ativadas! 🔔",
+      toastAtivadasDetalhe: "Lembretes e check-ins chegam mesmo com o app fechado.",
+      erroAtivar: "Não deu para ativar",
+    },
+    telegram: {
+      titulo: "Telegram",
+      descricao: "Mande uma mensagem para o bot e ela vira tarefa",
+      mandeParaOBot: "No Telegram, mande para o bot:",
+      expiraEm: (mm) => `Expira em ${mm}.`,
+      gerarCodigo: "Gerar código de pareamento",
+      conversasConectadas: "Conversas conectadas",
+      conversaSemNome: "Conversa do Telegram",
+      ultimaMensagem: (data) => `Última mensagem em ${data}`,
+      semMensagens: "Ainda sem mensagens",
+      ajudaComandos:
+        "Qualquer mensagem vira tarefa (1ª linha = título). Também entende /hoje e /ajuda.",
+      erroGerar: "Não deu para gerar o código",
+      tenteNovamente: "Tente novamente.",
+    },
+    conta: { titulo: "Conta", sair: "Sair da conta" },
+  },
   compartilhar: {
     explicacao:
       "Um link para mandar a quem precisa marcar horário com você — cliente, professor, quem for. Não exige conta e mostra só quando você está ocupado: título, local e com quem nunca saem daqui.",
@@ -159,6 +319,88 @@ export const en: Dicionario = {
     escritorio: "Office",
     amigos: "Friends",
     configuracoes: "Settings",
+  },
+  configuracoes: {
+    perfil: {
+      titulo: "Profile",
+      descricao: "Your photo, name and email",
+      nome: "Name",
+      nomePlaceholder: "Your name",
+      email: "Email",
+      salvar: "Save",
+      salvo: "Saved",
+    },
+    aparencia: {
+      titulo: "Appearance",
+      descricao: "Theme and region",
+      claro: "Light",
+      escuro: "Dark",
+      sistema: "System",
+      regiao: "Region",
+      regiaoAjuda:
+        "Sets how times are shown and which language the app speaks. Translation is under way: the app frame and schedule sharing already follow it; the rest is still in Portuguese.",
+    },
+    rotina: {
+      titulo: "Routine",
+      descricao: "Your personal timings — used by planning and by the calendar warnings",
+      sonoDesejado: "Target sleep",
+      avisos: "Smart calendar warnings",
+      avisosDetalhe: "Short sleep before commitments, screens close to bedtime",
+      salvar: "Save routine",
+      minhasAtividades: "My activities",
+      atividadesAjuda:
+        "Named activities with a duration — they become one-tap blocks in the calendar and feed Neuro\u2019s planning. E.g. \u201cCommute \u2192 Work\u201d, \u201cGet ready (event)\u201d.",
+      adicionar: "Add activity",
+      nomePlaceholder: "Name — e.g. Commute \u2192 Work",
+      excluir: "Delete activity",
+      aceitar: "Accept suggestion",
+      ignorar: "Dismiss",
+      sugestaoNova: (titulo, dias, categoria, minutos) =>
+        `You did §${titulo}§ on ${dias} different days — save it as a ${categoria} activity of §${minutos} min§?`,
+      sugestaoAjuste: (titulo, real, amostras, antes) =>
+        `§${titulo}§ actually takes you ~§${real} min§ (${amostras} check-ins), not ${antes} — adjust it?`,
+      toastAtualizada: "Routine updated! ✨",
+    },
+    importarExportar: {
+      titulo: "Import and export",
+      descricao: "Bring your schedule from another calendar (.ics), or take yours elsewhere",
+    },
+    assinar: {
+      titulo: "Subscribe on Google/Outlook",
+      descricao: "A link that shows your blocks in your usual calendar, updating on its own",
+    },
+    compartilharAgenda: {
+      titulo: "Share my hours",
+      descricao: "A link for whoever needs to book time with you — no account, and no view of what you do",
+    },
+    notificacoes: {
+      titulo: "Notifications",
+      descricao: "Reminders and check-ins even with the app closed",
+      nesteDispositivo: "Notifications on this device",
+      suportado: "Turn it on for each device you want to be notified on (phone, computer).",
+      naoSuportado:
+        "Not supported in this browser. On iPhone: add the app to your home screen and enable it there.",
+      toastDesativadas: "Notifications turned off on this device.",
+      toastAtivadas: "Notifications on! 🔔",
+      toastAtivadasDetalhe: "Reminders and check-ins arrive even with the app closed.",
+      erroAtivar: "Could not turn it on",
+    },
+    telegram: {
+      titulo: "Telegram",
+      descricao: "Send the bot a message and it becomes a task",
+      mandeParaOBot: "On Telegram, send the bot:",
+      expiraEm: (mm) => `Expires in ${mm}.`,
+      gerarCodigo: "Generate pairing code",
+      conversasConectadas: "Connected chats",
+      conversaSemNome: "Telegram chat",
+      ultimaMensagem: (data) => `Last message on ${data}`,
+      semMensagens: "No messages yet",
+      ajudaComandos:
+        "Any message becomes a task (first line = title). It also understands /hoje and /ajuda.",
+      erroGerar: "Could not generate the code",
+      tenteNovamente: "Try again.",
+    },
+    conta: { titulo: "Account", sair: "Sign out" },
   },
   compartilhar: {
     explicacao:
