@@ -274,6 +274,33 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > LER e para DIGITAR. O risco que segurava este item (mexer no que vai pro banco) não se
 > materializou: entrada e saída continuam "HH:mm" em 24h, igual ao input nativo.
 
+> **Três hydration mismatches achados testando com sessão de verdade (09/09).** O servidor
+> da Vercel roda em UTC; o navegador de quem usa, não. Quando algo calcula `new Date()` (ou
+> `getTimezoneOffset()`) direto no corpo do render, servidor e cliente montam textos
+> diferentes na mesma tela e o React descarta a árvore por hydration mismatch (erro #418) —
+> produção só dá o código minificado, então cada um foi reproduzido rodando a MESMA árvore
+> em modo dev (fora do `/app`, herdando a liberação de auth do `/agenda/`) até o aviso
+> completo apontar a linha exata.
+>
+> **Achados e corrigidos**: a saudação e a data do Dashboard (`new Date().getHours()` direto
+> no JSX — 9h em São Paulo é meio-dia em UTC, servidor "Boa tarde", cliente "Bom dia", ~9 das
+> 24 horas do dia); o toggle de notificações em Configurações (`pushSupported()` olha
+> `typeof window`, sempre falso no servidor); e o rótulo de fuso do Calendário (`GMT-3` no
+> cliente contra `GMT+0` no servidor — esse é o pior dos três, porque não depende da hora do
+> dia: acontece SEMPRE para quem não está em UTC, ou seja, quase todo mundo). Os três seguem
+> o mesmo remédio: o valor nasce como o SERVIDOR veria (nulo, vazio ou `false`) e só vira o
+> valor de verdade depois de montado — mesmo desenho do "mounted" que Configurações já usava
+> pro tema.
+>
+> **Um quarto ficou só registrado, não corrigido**: o Calendário guarda `anchor` e `now`
+> (o período visto e a hora atual) como `useState(() => new Date())` — mesma classe de bug,
+> mas os dois alimentam a busca de dados e a navegação de verdade, não só texto de tela;
+> corrigir direito pede entender o arquivo inteiro (1156 linhas), que não foi lido de ponta a
+> ponta nesta rodada. O sintoma observado foi mais brando (mismatch de ATRIBUTO, não de
+> texto — "this won't be patched up", React deixa como está em vez de descartar a árvore):
+> o destaque de "hoje" na grade (`isSameDay(day, now)`, 4 ocorrências) pode marcar o dia
+> errado por até 60s perto da virada UTC, e se autocorrige no próximo tick do relógio.
+
 ### Escritório 3D — do desenho para o ambiente
 
 > A primeira rodada de refino já foi: materiais **PBR** com acabamento por superfície +

@@ -447,8 +447,20 @@ export default function CalendarPage() {
     return `${fmt(days[0])} - ${fmt(days[6])}`
   }, [view, anchor, days])
 
-  const tzOffset = -new Date().getTimezoneOffset() / 60
-  const tzLabel = `GMT${tzOffset >= 0 ? "+" : ""}${tzOffset}`
+  // O fuso do visitante (getTimezoneOffset) é 0 no servidor da Vercel (UTC) e
+  // o fuso de verdade em qualquer navegador fora dele — GMT+0 vs GMT-3 no Brasil,
+  // SEMPRE, não só numa janela do dia como a saudação do dashboard. Calculado
+  // direto no render, cada lado montava um rótulo diferente na mesma célula e o
+  // React descartava a grade inteira por hydration mismatch (erro #418) — achado
+  // reproduzindo com o servidor forçado a rodar em UTC (`TZ=UTC next dev`, a
+  // mesma configuração da Vercel) e o navegador de teste no fuso local. Mesmo
+  // remédio de sempre: nasce vazio (sem afirmar nada, igual nos dois lados) e só
+  // vira o rótulo de verdade depois de montado.
+  const [tzLabel, setTzLabel] = useState("")
+  useEffect(() => {
+    const offset = -new Date().getTimezoneOffset() / 60
+    setTzLabel(`GMT${offset >= 0 ? "+" : ""}${offset}`)
+  }, [])
 
   const occurrencesForDay = (day: Date): Occurrence[] => {
     const dayStart = new Date(day)
