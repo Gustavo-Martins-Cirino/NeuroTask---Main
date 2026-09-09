@@ -129,9 +129,18 @@ export default function SettingsPage() {
 
   const [pushOn, setPushOn] = useState(false)
   const [pushBusy, setPushBusy] = useState(false)
+  // pushSupported() olha `typeof window`: no servidor é sempre false, e no
+  // cliente quase sempre true. Chamado direto no render, cada lado montava um
+  // texto diferente ("suportado" vs "não suportado") e o React descartava a
+  // seção de Notificações inteira por hydration mismatch (erro #418) — achado
+  // reproduzindo a árvore em modo dev, que aponta a linha exata (produção só
+  // dá o código minificado). Mesmo remédio de sempre: nasce como o SERVIDOR
+  // veria (false) e só corrige depois de montado.
+  const [pushOk, setPushOk] = useState(false)
 
   useEffect(() => {
     getPushStatus().then(setPushOn)
+    setPushOk(pushSupported())
   }, [])
 
   const handleTogglePush = async () => {
@@ -583,7 +592,7 @@ export default function SettingsPage() {
               <span>
                 <span className="block text-sm font-medium">{traducao.configuracoes.notificacoes.nesteDispositivo}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {pushSupported()
+                  {pushOk
                     ? traducao.configuracoes.notificacoes.suportado
                     : traducao.configuracoes.notificacoes.naoSuportado}
                 </span>
