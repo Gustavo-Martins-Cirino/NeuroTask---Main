@@ -1,0 +1,374 @@
+Configurações
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Lvl 18
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+/100 XP
+Enviar feedback
+Alternar tema
+Perfil
+
+Sua foto, nome e email
+
+Seu retrato
+
+Usando sua foto
+
+Nome
+Email
+Salvar
+Aparência
+
+Tema e região
+
+Claro
+Escuro
+Sistema
+
+Região
+
+Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda faltam o calendário, as notas, os amigos, o Escritório e a Neuro IA.
+
+Brasil
+14:30
+Rotina
+
+Seus tempos pessoais — usados pelo planejamento e pelos avisos do calendário
+
+Sono desejado
+
+7 h
+Avisos inteligentes no calendário
+Sono curto antes de compromissos, telas perto da hora de dormir
+Salvar rotina
+
+Minhas atividades
+
+Atividades nomeadas com duração — viram blocos de 1 toque no calendário e alimentam o planejamento da Neuro. Ex.: “Deslocamento → Trabalho”, “Se arrumar (evento)”.
+
+Deslocamento → Trabalho
+15 min
+Se arrumar → Trabalho
+60 min
+Preparo
+Deslocamento
+Refeição
+Outro
+30 min
+Adicionar atividade
+
+Sugestões da sua rotina
+
+Você fez Autoescola em 3 dias diferentes — salvar como atividade de outro de 150 min?
+Importar e exportar
+
+Traga sua agenda de outro calendário (.ics) ou leve a sua pra fora
+
+Importar
+Traga sua agenda de um arquivo .ics (Google Calendar, Outlook…)
+Exportar
+Baixe seus blocos como .ics pra usar em outro calendário
+Assinar no Google/Outlook
+
+Um link que mostra seus blocos no seu calendário de sempre, atualizando sozinho
+
+Assine sua agenda no Google Calendar, Outlook e outros: eles leem este link e mostram seus blocos, atualizando sozinhos. É só-leitura — ninguém edita sua agenda por aqui.
+
+Copiar
+Gerar novo link (invalida o antigo)
+
+No Google Calendar: Outros calendários → Adicionar → De URL, cole o link. A atualização do lado deles pode levar horas — o Google reamostra quando quer.
+
+Compartilhar meus horários
+
+Um link para quem precisa marcar horário com você — sem conta, e sem ver o que você faz
+
+Um link para mandar a quem precisa marcar horário com você — cliente, professor, quem for. Não exige conta e mostra só quando você está ocupado: título, local e com quem nunca saem daqui.
+
+Mostrar os próximos
+7 dias
+14 dias
+30 dias
+Criar link de agenda
+Notificações
+
+Lembretes e check-ins mesmo com o app fechado
+
+Notificações neste dispositivo
+Ative em cada aparelho que quiser receber (celular, computador).
+Telegram
+
+Mande uma mensagem para o bot e ela vira tarefa
+
+Gerar código de pareamento
+
+Qualquer mensagem vira tarefa (1ª linha = título). Também entende /hoje e /ajuda.
+
+Erros
+(só você vê)
+
+0 nas últimas 24h · 6 em 7 dias · 28× /auth/harness
+
+Cannot read properties of null (reading 'trim')
+
+07 de set., 20:13
+· /auth/harness
+· window
+· local
+· (deslogado)
+
+Cannot read properties of null (reading 'trim')
+
+07 de set., 20:10
+· /auth/harness
+· window
+· local
+· (deslogado)
+
+Cannot read properties of undefined (reading 'color')
+
+03 de set., 18:47
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Cannot read properties of undefined (reading 'color')
+
+03 de set., 18:47
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Cannot read properties of undefined (reading 'color')
+
+02 de set., 18:58
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Cannot read properties of undefined (reading 'color')
+
+02 de set., 18:58
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+31 de ago., 18:33
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+31 de ago., 18:32
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+31 de ago., 18:31
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+31 de ago., 18:31
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+29 de ago., 20:04
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+29 de ago., 20:03
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Cannot read properties of undefined (reading 'color')
+
+29 de ago., 20:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+29 de ago., 20:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Cannot read properties of undefined (reading 'color')
+
+29 de ago., 20:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+29 de ago., 20:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Cannot read properties of undefined (reading 'color')
+
+29 de ago., 18:21
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+29 de ago., 18:21
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Cannot read properties of undefined (reading 'color')
+
+29 de ago., 18:16
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Minified React error #310; visit https://react.dev/errors/310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+29 de ago., 18:16
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Failed to load chunk /_next/static/chunks/0y93_rq~ofyol.js from module 16157
+
+28 de ago., 17:01
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Failed to load chunk /_next/static/chunks/09wty-ip82i9u.js from module 16157
+
+28 de ago., 17:01
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Failed to load chunk /_next/static/chunks/09wty-ip82i9u.js from module 16157
+
+28 de ago., 17:01
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Failed to load chunk /_next/static/chunks/09wty-ip82i9u.js from module 16157
+
+28 de ago., 17:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Failed to load chunk /_next/static/chunks/09wty-ip82i9u.js from module 16157
+
+28 de ago., 17:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Failed to load chunk /_next/static/chunks/09wty-ip82i9u.js from module 16157
+
+28 de ago., 17:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Failed to load chunk /_next/static/chunks/0droqey1o6t4e.js from module 16157
+
+28 de ago., 17:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Failed to load chunk /_next/static/chunks/0droqey1o6t4e.js from module 16157
+
+28 de ago., 17:00
+· /auth/harness
+· boundary-publico
+· local
+· (deslogado)
+
+Conta
+Sair da conta

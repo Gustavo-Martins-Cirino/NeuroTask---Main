@@ -75,6 +75,17 @@ export default function DashboardPage() {
   })
   const [userName, setUserName] = useState("")
   const [perfilPronto, setPerfilPronto] = useState(false)
+  // O servidor roda em UTC; quem abre o app não. `new Date()` direto no render
+  // dava hora e data DIFERENTES entre o HTML do servidor e a hidratação do
+  // cliente sempre que os fusos discordavam da faixa do dia (~9h de cada 24,
+  // pra quem está em UTC-3) — descoberto testando o dashboard de verdade:
+  // servidor "Boa tarde" (12h UTC), cliente "Bom dia" (9h local), React
+  // descartando a árvore por hydration mismatch (erro #418) a cada carregamento
+  // nesse horário. Nasce nulo (igual nos dois lados) e só vira a hora real
+  // depois de montado — mesmo desenho do "mounted" que a aba Aparência já usa
+  // pro tema.
+  const [agora, setAgora] = useState<Date | null>(null)
+  useEffect(() => setAgora(new Date()), [])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [todayBlocks, setTodayBlocks] = useState<{ id: string; title: string; start_time: string; end_time: string }[]>([])
   const [todayTasks, setTodayTasks] = useState<{ id: string; title: string; priority: string }[]>([])
@@ -159,11 +170,9 @@ export default function DashboardPage() {
     fetchData()
   }, [supabase])
 
-  const today = new Date().toLocaleDateString(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  })
+  const today = agora
+    ? agora.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })
+    : ""
 
   const completionRate = stats.totalTasks > 0
     ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
@@ -211,7 +220,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <SplitGreeting
-              texto={`${traducao.inicio.saudacoes[saudacaoPorHora(new Date().getHours())]}${userName ? `, ${userName}` : ""}`}
+              texto={`${traducao.inicio.saudacoes[saudacaoPorHora(agora?.getHours() ?? 0)]}${userName ? `, ${userName}` : ""}`}
               pronto={perfilPronto}
               className="text-3xl font-bold tracking-tight text-foreground md:text-4xl"
             />
