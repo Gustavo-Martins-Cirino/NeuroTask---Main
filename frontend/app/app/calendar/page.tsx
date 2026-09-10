@@ -14,14 +14,15 @@ import { formatTime, formatClock, formatHourMinute } from "@/lib/time-format"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronLeft, ChevronRight, CalendarDays, Plus, Trash2, Clock, Repeat, TriangleAlert, X } from "lucide-react"
 import { fetchRoutine, type RoutineProfile } from "@/lib/routine"
-import { computeWarnings } from "@/lib/calendar-warnings"
+import { computeWarnings, type CalendarWarning } from "@/lib/calendar-warnings"
 import { alvoDeScroll, partidaDoScroll } from "@/lib/calendar-scroll"
-import { useDicionario } from "@/hooks/use-idioma"
+import { useDicionario, useLocale } from "@/hooks/use-idioma"
+import { type Dicionario } from "@/lib/i18n"
+import { VISOES, type VisaoDoCalendario } from "@/lib/calendario-visao"
 
-type ViewMode = "dia" | "semana" | "mes" | "ano"
+type ViewMode = VisaoDoCalendario
 
 const HOUR_HEIGHT = 56
-const DAY_LABELS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SAB"]
 
 function startOfWeek(date: Date): Date {
   const d = new Date(date)
@@ -90,8 +91,31 @@ interface DragState {
   moved: boolean
 }
 
+/**
+ * O aviso escolhido por `computeWarnings` virando frase.
+ *
+ * A separação é o ponto: o módulo de datas decide QUAL aviso e com quais
+ * valores; o idioma decide como ele se diz. Antes a frase vinha pronta em
+ * português de dentro de um módulo puro, e traduzir o calendário sem mexer nele
+ * deixaria a tela em inglês com um aviso em português no meio.
+ */
+function textoDoAviso(w: CalendarWarning, t: Dicionario): string {
+  const a = t.calendario.avisos
+  switch (w.chave) {
+    case "telaAntesDeDormir":
+      return a.telaAntesDeDormir(w.titulo, w.horaDeDormir)
+    case "sonoCurto":
+      return a.sonoCurto(w.inicio, w.fim, a.horas(w.horas), a.horas(w.desejadas))
+    case "vaoAntesDoSono":
+      return a.vaoAntesDoSono(
+        w.titulo, w.fim, w.tituloSeguinte, w.inicio, a.horas(w.horas), a.horas(w.desejadas)
+      )
+  }
+}
+
 export default function CalendarPage() {
   const traducao = useDicionario()
+  const locale = useLocale()
   const timeFormat = useTimeFormat()
   const [view, setView] = useState<ViewMode>("semana")
   const escolheuAVisao = useRef(false)
@@ -437,15 +461,15 @@ export default function CalendarPage() {
   }
 
   const rangeLabel = useMemo(() => {
-    const fmt = (d: Date) => d.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })
+    const fmt = (d: Date) => d.toLocaleDateString(locale, { day: "numeric", month: "short" })
     if (view === "dia") {
-      return anchor.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })
+      return anchor.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })
     }
     if (view === "mes" || view === "ano") {
-      return anchor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+      return anchor.toLocaleDateString(locale, { month: "long", year: "numeric" })
     }
     return `${fmt(days[0])} - ${fmt(days[6])}`
-  }, [view, anchor, days])
+  }, [view, anchor, days, locale])
 
   // O fuso do visitante (getTimezoneOffset) é 0 no servidor da Vercel (UTC) e
   // o fuso de verdade em qualquer navegador fora dele — GMT+0 vs GMT-3 no Brasil,
@@ -506,13 +530,13 @@ export default function CalendarPage() {
               className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Plus className="h-4 w-4" />
-              Novo bloco
+              {traducao.calendario.novoBloco}
             </button>
             <button
               onClick={goToday}
               className="rounded-lg border border-border/50 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
             >
-              Hoje
+              {traducao.calendario.hoje}
             </button>
             <div className="flex items-center">
               <button onClick={() => navigate(-1)} className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
@@ -526,7 +550,7 @@ export default function CalendarPage() {
           </div>
 
           <div className="flex rounded-lg border border-border/50 p-0.5">
-            {(["dia", "semana", "mes", "ano"] as ViewMode[]).map((v) => (
+            {VISOES.map((v) => (
               <button
                 key={v}
                 onClick={() => trocarVisao(v)}
@@ -542,7 +566,7 @@ export default function CalendarPage() {
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                <span className="relative z-10">{v === "mes" ? "mês" : v}</span>
+                <span className="relative z-10">{traducao.calendario.visoes[v]}</span>
               </button>
             ))}
           </div>
@@ -563,10 +587,10 @@ export default function CalendarPage() {
                   className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
                 >
                   <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span className="min-w-0 flex-1">{w.text}</span>
+                  <span className="min-w-0 flex-1">{textoDoAviso(w, traducao)}</span>
                   <button
                     onClick={() => setDismissedWarnings((prev) => new Set(prev).add(w.id))}
-                    aria-label="Dispensar aviso"
+                    aria-label={traducao.calendario.dispensarAviso}
                     className="shrink-0 opacity-60 transition-opacity hover:opacity-100"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -600,7 +624,7 @@ export default function CalendarPage() {
                           {monthDate.toLocaleDateString("pt-BR", { month: "long" })}
                         </button>
                         <div className="grid grid-cols-7 gap-0.5 text-center">
-                          {DAY_LABELS.map((l, i) => (
+                          {traducao.calendario.diasDaSemana.map((l, i) => (
                             <span key={`h${i}`} className="text-[9px] font-medium text-muted-foreground">{l[0]}</span>
                           ))}
                           {cells.map((d, i) => {
@@ -641,7 +665,7 @@ export default function CalendarPage() {
               <div className="flex min-h-0 min-w-[560px] flex-1 flex-col md:min-w-0">
                 {/* Cabeçalho de dias da semana */}
                 <div className="grid grid-cols-7 border-b border-border/40">
-                  {DAY_LABELS.map((l) => (
+                  {traducao.calendario.diasDaSemana.map((l) => (
                     <div key={l} className="py-2 text-center text-xs font-medium uppercase text-muted-foreground">
                       {l}
                     </div>
@@ -660,7 +684,7 @@ export default function CalendarPage() {
                       <div
                         key={day.toISOString()}
                         onClick={() => goToDay(day)}
-                        title="Abrir o dia"
+                        title={traducao.calendario.abrirODia}
                         className={cn(
                           "flex min-h-0 cursor-pointer flex-col gap-0.5 border-b border-l border-border/20 p-1 transition-colors hover:bg-accent/30",
                           outside && "bg-muted/20"
@@ -668,7 +692,7 @@ export default function CalendarPage() {
                       >
                         <button
                           onClick={(e) => { e.stopPropagation(); goToDay(day) }}
-                          title={hol ? `${hol} · Abrir o dia` : "Abrir o dia"}
+                          title={hol ? `${hol} · ${traducao.calendario.abrirODia}` : traducao.calendario.abrirODia}
                           className={cn(
                             "ml-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium transition-colors hover:bg-accent",
                             today ? "bg-primary text-primary-foreground hover:bg-primary" : hol ? "text-emerald-500" : outside ? "text-muted-foreground/50" : "text-foreground"
@@ -716,7 +740,7 @@ export default function CalendarPage() {
                         <div key={day.toISOString()} className="flex flex-col items-center justify-center gap-1 py-2" title={hol}>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-medium uppercase text-muted-foreground">
-                              {DAY_LABELS[day.getDay()]}
+                              {traducao.calendario.diasDaSemana[day.getDay()]}
                             </span>
                             <span
                               className={cn(
@@ -865,7 +889,7 @@ export default function CalendarPage() {
             <button
               onClick={() => setPanelOpen((o) => !o)}
               aria-expanded={panelOpen}
-              title={panelOpen ? "Recolher painel" : "Expandir painel"}
+              title={panelOpen ? traducao.calendario.recolherPainel : traducao.calendario.expandirPainel}
               className="flex w-full items-center justify-between p-4"
             >
               <AnimatePresence initial={false}>
@@ -876,7 +900,7 @@ export default function CalendarPage() {
                     exit={{ opacity: 0 }}
                     className="text-sm font-semibold"
                   >
-                    Painel Contextual
+                    {traducao.calendario.painelContextual}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -884,7 +908,7 @@ export default function CalendarPage() {
                   baixo prometia uma sanfona que não existe. Aberto mostra "<",
                   que é para onde a folga vai — o calendário ganha o espaço. */}
               <ChevronLeft className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", !panelOpen && "rotate-180")} />
-              <span className="sr-only">{panelOpen ? "Recolher painel contextual" : "Expandir painel contextual"}</span>
+              <span className="sr-only">{panelOpen ? traducao.calendario.recolherPainel : traducao.calendario.expandirPainel}</span>
             </button>
 
             <AnimatePresence initial={false}>
@@ -903,7 +927,7 @@ export default function CalendarPage() {
 
           {/* Painel contextual (mobile — abaixo do calendário) */}
           <div className="rounded-2xl border border-border/40 bg-card/30 p-4 lg:hidden">
-            <p className="mb-4 text-sm font-semibold">Painel Contextual</p>
+            <p className="mb-4 text-sm font-semibold">{traducao.calendario.painelContextual}</p>
             <ContextualNotes anchor={anchor} />
           </div>
         </div>
@@ -923,6 +947,7 @@ export default function CalendarPage() {
 }
 
 function ContextualNotes({ anchor }: { anchor: Date }) {
+  const traducao = useDicionario()
   const supabase = createClient()
   const dateStr = dateKey(anchor)
   const [notes, setNotes] = useState("")
@@ -979,7 +1004,7 @@ function ContextualNotes({ anchor }: { anchor: Date }) {
                 exit={{ opacity: 0 }}
                 className={cn("text-[10px]", saveState === "saved" ? "text-emerald-500" : "text-muted-foreground")}
               >
-                {saveState === "saving" ? "Salvando…" : "Salvo"}
+                {saveState === "saving" ? traducao.calendario.notas.salvando : traducao.calendario.notas.salvo}
               </motion.span>
             )}
           </AnimatePresence>
@@ -987,7 +1012,7 @@ function ContextualNotes({ anchor }: { anchor: Date }) {
         <textarea
           value={notes}
           onChange={(e) => save(e.target.value)}
-          placeholder="Para interpretação por IA: Reflexões de hoje... Como tem sido seu foco? Alguma ideia solta?"
+          placeholder={traducao.calendario.notas.placeholder}
           className="min-h-[120px] w-full resize-none rounded-lg border border-border/40 bg-transparent p-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40"
         />
       </div>
@@ -998,6 +1023,7 @@ function ContextualNotes({ anchor }: { anchor: Date }) {
 }
 
 function ContextualReminders({ anchor }: { anchor: Date }) {
+  const traducao = useDicionario()
   const timeFormat = useTimeFormat()
   const supabase = createClient()
   const dateStr = dateKey(anchor)
@@ -1056,7 +1082,7 @@ function ContextualReminders({ anchor }: { anchor: Date }) {
   return (
     <div className="space-y-2">
       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Lembretes do dia
+        {traducao.calendario.lembretes.titulo}
       </h3>
 
       <div className="space-y-1.5">
@@ -1070,7 +1096,7 @@ function ContextualReminders({ anchor }: { anchor: Date }) {
                 addReminder()
               }
             }}
-            placeholder="Adicionar lembrete..."
+            placeholder={traducao.calendario.lembretes.placeholder}
             className="min-w-0 flex-1 rounded-lg border border-border/40 bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40"
           />
           <button
@@ -1079,8 +1105,8 @@ function ContextualReminders({ anchor }: { anchor: Date }) {
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
               showTime || time ? "border-primary/40 text-primary" : "border-border/40 text-muted-foreground hover:text-foreground"
             )}
-            aria-label="Definir horário"
-            title="Horário (notificação)"
+            aria-label={traducao.calendario.lembretes.definirHorario}
+            title={traducao.calendario.lembretes.horarioNotificacao}
           >
             <Clock className="h-4 w-4" />
           </button>
@@ -1088,7 +1114,7 @@ function ContextualReminders({ anchor }: { anchor: Date }) {
             onClick={addReminder}
             disabled={!input.trim()}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
-            aria-label="Adicionar lembrete"
+            aria-label={traducao.calendario.lembretes.adicionar}
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -1114,7 +1140,7 @@ function ContextualReminders({ anchor }: { anchor: Date }) {
       </div>
 
       {ordered.length === 0 ? (
-        <p className="text-sm text-muted-foreground/60">Nenhum lembrete por enquanto.</p>
+        <p className="text-sm text-muted-foreground/60">{traducao.calendario.lembretes.vazio}</p>
       ) : (
         <ul className="space-y-1">
           <AnimatePresence initial={false}>
@@ -1142,7 +1168,7 @@ function ContextualReminders({ anchor }: { anchor: Date }) {
                 <button
                   onClick={() => removeReminder(r)}
                   className="shrink-0 text-muted-foreground/0 transition-colors hover:text-destructive group-hover:text-muted-foreground"
-                  aria-label="Remover lembrete"
+                  aria-label={traducao.calendario.lembretes.remover}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

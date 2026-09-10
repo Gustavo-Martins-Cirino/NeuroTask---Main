@@ -127,15 +127,21 @@ describe("sono que começa depois da meia-noite", () => {
   ]
 
   it("não chama de sono o vão entre o último compromisso e a hora de deitar", () => {
-    const textos = computeWarnings(noite, 8).map((w) => w.text).join(" | ")
-    // O bug dizia "sobram só 2,5h" — a noite ANTES de deitar.
-    expect(textos).not.toMatch(/2,5h/)
-    expect(textos).not.toMatch(/Entre .*Estudar.* e .*Dormir/)
+    // Medido na ESTRUTURA, não no texto: o aviso deixou de carregar a frase
+    // pronta (ela agora mora no dicionário), e casar por string voltaria a
+    // amarrar o teste a um idioma.
+    const avisos = computeWarnings(noite, 8)
+    const vaos = avisos.filter((w) => w.chave === "vaoAntesDoSono")
+    // O bug media 2,5h — a noite ANTES de deitar — e a chamava de sono.
+    expect(vaos.some((w) => Math.abs(w.horas - 2.5) < 0.01)).toBe(false)
+    expect(vaos.some((w) => w.titulo.includes("Estudar") && w.tituloSeguinte.includes("Dormir"))).toBe(false)
   })
 
   it("mede o bloco de sono de verdade: 7,5h, e avisa por ser abaixo de 8h", () => {
     const avisos = computeWarnings(noite, 8)
-    expect(avisos.map((w) => w.text).join(" ")).toMatch(/7,5h/)
+    const curto = avisos.find((w) => w.chave === "sonoCurto")
+    expect(curto?.horas).toBeCloseTo(7.5, 6)
+    expect(curto?.desejadas).toBe(8)
     expect(avisos.some((w) => w.id === "sleep-short-sono")).toBe(true)
   })
 

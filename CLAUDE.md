@@ -88,6 +88,7 @@ frontend/
 │   ├── avatar-accessories.ts # Item da loja → chapéu/óculos (puro; usado pelo 2D e pelo 3D)
 │   ├── avatar-calca.ts       # Cor da calça + a regra do terno (puro; 2D e 3D leem a mesma)
 │   ├── contraste.ts          # Contraste WCAG dos tokens oklch do tema (puro; lê o globals.css)
+│   ├── calendario-visao.ts   # As quatro visões do calendário — o tipo que o dicionário exige (puro)
 │   ├── avatar-silhueta.ts    # Medidas do corpo M/F + o que cada roupa faz com elas (puro)
 │   ├── avatar-cabelo.ts      # Contorno ondulado do cabelo cacheado (puro)
 │   ├── routine-insights.ts   # Rotina aprendida: sugestões determinísticas de rotina

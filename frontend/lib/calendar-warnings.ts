@@ -5,10 +5,31 @@
 //      primeiro bloco do dia seguinte menor que as horas de sono desejadas
 //      (ou bloco de sono explícito mais curto que o desejado).
 
-export interface CalendarWarning {
-  id: string
-  text: string
-}
+/**
+ * Um aviso já decidido, mas ainda NÃO escrito.
+ *
+ * Ele guardava a frase pronta, em português, dentro de um módulo de datas. O
+ * módulo decide QUAL aviso é e com quais valores; como ele se diz é assunto do
+ * idioma (lib/i18n). A união discriminada é o que faz cada aviso carregar
+ * exatamente os campos da frase dele — com um saco de dados opcionais, esquecer
+ * um campo só apareceria na tela.
+ *
+ * As horas viajam como NÚMERO, não como "2,5h": a vírgula decimal é português,
+ * e o inglês escreve 2.5h. Formatar aqui seria decidir o idioma no lugar errado.
+ */
+export type CalendarWarning =
+  | { id: string; chave: "telaAntesDeDormir"; titulo: string; horaDeDormir: string }
+  | { id: string; chave: "sonoCurto"; inicio: string; fim: string; horas: number; desejadas: number }
+  | {
+      id: string
+      chave: "vaoAntesDoSono"
+      titulo: string
+      fim: string
+      tituloSeguinte: string
+      inicio: string
+      horas: number
+      desejadas: number
+    }
 
 const SCREEN_RE =
   /(tela|planilha|computador|\bpc\b|celular|filme|s[ée]rie|v[íi]deo|youtube|netflix|jogo|game|c[óo]digo|programar?|excel|sheets)/i
@@ -36,11 +57,6 @@ function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
-function hoursLabel(h: number): string {
-  const r = Math.round(h * 10) / 10
-  return `${String(r).replace(".", ",")}h`
-}
-
 function isSleepBlock(b: B): boolean {
   if (SLEEP_RE.test(b.title)) return true
   // longo (≥ 5h) começando à noite ou de madrugada
@@ -66,7 +82,9 @@ export function computeWarnings(blocks: BlockLike[], sleepHours: number): Calend
       if (gapMin >= -15 && gapMin <= 60) {
         out.push({
           id: `screen-${b.id}-${s.id}`,
-          text: `"${b.title}" termina pouco antes de dormir (${fmt(s.start)}). Telas perto do sono atrapalham o descanso — que tal encerrar mais cedo?`,
+          chave: "telaAntesDeDormir",
+          titulo: b.title,
+          horaDeDormir: fmt(s.start),
         })
       }
     }
@@ -94,7 +112,11 @@ export function computeWarnings(blocks: BlockLike[], sleepHours: number): Calend
       if (durH + 0.25 >= sleepHours) return
       out.push({
         id: `sleep-short-${b.id}`,
-        text: `Seu bloco de sono (${fmt(b.start)}–${fmt(b.end)}) tem só ${hoursLabel(durH)} — abaixo das ${hoursLabel(sleepHours)} que você quer dormir.`,
+        chave: "sonoCurto",
+        inicio: fmt(b.start),
+        fim: fmt(b.end),
+        horas: durH,
+        desejadas: sleepHours,
       })
     }
 
@@ -122,7 +144,13 @@ export function computeWarnings(blocks: BlockLike[], sleepHours: number): Calend
     if (gapH > 0 && gapH < sleepHours) {
       out.push({
         id: `night-gap-${lastDay.id}-${firstNext.id}`,
-        text: `Entre "${lastDay.title}" (até ${fmt(lastDay.end)}) e "${firstNext.title}" (às ${fmt(firstNext.start)}) sobram só ${hoursLabel(gapH)} — menos que suas ${hoursLabel(sleepHours)} de sono.`,
+        chave: "vaoAntesDoSono",
+        titulo: lastDay.title,
+        fim: fmt(lastDay.end),
+        tituloSeguinte: firstNext.title,
+        inicio: fmt(firstNext.start),
+        horas: gapH,
+        desejadas: sleepHours,
       })
     }
   }

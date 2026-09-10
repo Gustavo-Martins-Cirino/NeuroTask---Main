@@ -20,6 +20,7 @@ import type { TimeBlock, Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { TimeSelect } from "@/components/time-select"
+import { useDicionario, useLocale } from "@/hooks/use-idioma"
 import { Loader2, ChevronDown, Check, Clock, Trash2 } from "lucide-react"
 
 interface TimeBlockDialogProps {
@@ -37,12 +38,28 @@ const COLORS = [
   "#eab308", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6",
 ]
 
-const RECURRENCE_OPTIONS = [
-  { value: "none", label: "Não repete" },
-  { value: "daily", label: "Diariamente" },
-  { value: "weekly", label: "Semanalmente" },
-  { value: "weekdays", label: "Dias úteis (seg–sex)" },
-]
+/**
+ * A repetição de um BLOCO — e por que ela não é a mesma lista da tarefa.
+ *
+ * O roadmap perguntava se as duas deviam virar uma só. Não devem, e o motivo é
+ * que elas não são a mesma coisa: a tarefa repete `daily | weekly | monthly |
+ * yearly | every:N`, e é `nextOccurrence` que empurra o PRAZO ao concluir; o
+ * bloco repete na GRADE, e tem `weekdays` (seg–sex), que tarefa nenhuma tem.
+ * Fundir as duas ofereceria "mensalmente" para um bloco que não sabe repetir
+ * assim, e "dias úteis" para uma tarefa cujo `nextOccurrence` devolveria null —
+ * a tarefa repetiria na tela e nunca avançaria de prazo.
+ *
+ * O que elas compartilham é o VOCABULÁRIO, e é só isso que vale unificar: as
+ * três chaves em comum vêm do mesmo lugar do dicionário que as tarefas usam, e
+ * só `diasUteis` é daqui. Assim não existe o estado em que metade do app diz
+ * "Semanalmente" e a outra metade "Weekly".
+ */
+const REPETICOES_DE_BLOCO = [
+  { value: "none", chave: "naoRepete" },
+  { value: "daily", chave: "diariamente" },
+  { value: "weekly", chave: "semanalmente" },
+  { value: "weekdays", chave: "diasUteis" },
+] as const
 
 type OptKey = "" | "date" | "color" | "task" | "repeat"
 
@@ -52,10 +69,10 @@ function toDateKey(d: Date): string {
 function toHM(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
 }
-function dateLabel(dateKey: string): string {
+function dateLabel(dateKey: string, locale: string): string {
   const d = new Date(dateKey + "T00:00:00")
   if (isNaN(d.getTime())) return dateKey
-  return d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })
+  return d.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })
 }
 
 // Linha compacta expansível (opções discretas: data, cor, tarefa, repetir)
@@ -101,6 +118,11 @@ export function TimeBlockDialog({
   tasks,
   onSuccess,
 }: TimeBlockDialogProps) {
+  const traducao = useDicionario()
+  // Atalho para o bloco inteiro: ele aparece em quase toda linha do formulário,
+  // e `traducao.calendario.bloco` repetido trinta vezes esconde o texto.
+  const t = traducao.calendario.bloco
+  const locale = useLocale()
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [date, setDate] = useState(() => toDateKey(new Date()))
@@ -194,7 +216,7 @@ export function TimeBlockDialog({
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      setError("Você precisa estar logado")
+      setError(t.precisaLogin)
       setLoading(false)
       return
     }
@@ -247,27 +269,34 @@ export function TimeBlockDialog({
   const toggle = (k: OptKey) => setExpanded((cur) => (cur === k ? "" : k))
   const pendingTasks = tasks.filter((t) => t.status !== "completed" && t.status !== "cancelled")
   const linkedTask = pendingTasks.find((t) => t.id === taskId)
-  const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === recurrence)?.label ?? "Não repete"
+  // O nome da repetição sai do dicionário: as três chaves em comum são as
+  // MESMAS das tarefas, e só "diasUteis" é daqui.
+  const nomeDaRepeticao = (v: string): string => {
+    const achada = REPETICOES_DE_BLOCO.find((o) => o.value === v) ?? REPETICOES_DE_BLOCO[0]
+    return achada.chave === "diasUteis"
+      ? traducao.calendario.bloco.diasUteis
+      : traducao.tarefas.repeticao[achada.chave]
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{timeBlock ? "Editar Bloco" : "Novo Bloco de Tempo"}</DialogTitle>
+            <DialogTitle>{timeBlock ? t.editarTitulo : t.novoTitulo}</DialogTitle>
             <DialogDescription>
-              {timeBlock ? "Atualize os detalhes do bloco" : "Agende um novo bloco de foco"}
+              {timeBlock ? t.editarSubtitulo : t.novoSubtitulo}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Título</Label>
+              <Label htmlFor="title">{t.titulo}</Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Foco em desenvolvimento"
+                placeholder={t.tituloPlaceholder}
                 required
               />
             </div>
@@ -291,33 +320,33 @@ export function TimeBlockDialog({
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">{t.descricao}</Label>
               <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Detalhes opcionais..."
+                placeholder={t.descricaoPlaceholder}
                 className="min-h-16 max-h-40 w-full resize-none overflow-y-auto rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors [field-sizing:content] placeholder:text-muted-foreground focus:border-ring/50"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Início</Label>
-                <TimeSelect label="Horário de início" value={startTime} onChange={setStartTime} />
+                <Label>{t.inicio}</Label>
+                <TimeSelect label={t.horarioDeInicio} value={startTime} onChange={setStartTime} />
               </div>
 
               <div className="space-y-2">
-                <Label>Fim</Label>
-                <TimeSelect label="Horário de fim" value={endTime} onChange={setEndTime} />
+                <Label>{t.fim}</Label>
+                <TimeSelect label={t.horarioDeFim} value={endTime} onChange={setEndTime} />
               </div>
             </div>
 
             {/* Opções discretas — expandem só se o usuário quiser mexer */}
             <div className="space-y-2">
               <OptionRow
-                label="Data"
-                value={<span>{maiusculaInicial(dateLabel(date))}</span>}
+                label={t.data}
+                value={<span>{maiusculaInicial(dateLabel(date, locale))}</span>}
                 open={expanded === "date"}
                 onToggle={() => toggle("date")}
               >
@@ -325,7 +354,7 @@ export function TimeBlockDialog({
               </OptionRow>
 
               <OptionRow
-                label="Cor"
+                label={t.cor}
                 value={<span className="h-4 w-4 rounded-full" style={{ backgroundColor: color }} />}
                 open={expanded === "color"}
                 onToggle={() => toggle("color")}
@@ -350,17 +379,17 @@ export function TimeBlockDialog({
               </OptionRow>
 
               <OptionRow
-                label="Vincular tarefa"
+                label={t.vincularTarefa}
                 value={
                   <span className="max-w-40 truncate">
-                    {linkedTask ? linkedTask.title : <span className="text-muted-foreground">Nenhuma</span>}
+                    {linkedTask ? linkedTask.title : <span className="text-muted-foreground">{t.nenhumaTarefa}</span>}
                   </span>
                 }
                 open={expanded === "task"}
                 onToggle={() => toggle("task")}
               >
                 <p className="mb-2 text-xs text-muted-foreground">
-                  Liga este bloco a uma tarefa da sua lista — o bloco vira o horário de fazê-la.
+                  {t.vincularAjuda}
                 </p>
                 <div className="max-h-40 space-y-1 overflow-y-auto">
                   <button
@@ -371,7 +400,7 @@ export function TimeBlockDialog({
                       taskId === "none" && "bg-accent font-medium"
                     )}
                   >
-                    Nenhuma
+                    {t.nenhumaTarefa}
                   </button>
                   {pendingTasks.map((task) => (
                     <button
@@ -390,17 +419,17 @@ export function TimeBlockDialog({
               </OptionRow>
 
               <OptionRow
-                label="Repetir"
+                label={t.repetir}
                 value={
                   recurrence === "none"
-                    ? <span className="text-muted-foreground">Não repete</span>
-                    : <span>{recurrenceLabel}</span>
+                    ? <span className="text-muted-foreground">{traducao.tarefas.repeticao.naoRepete}</span>
+                    : <span>{nomeDaRepeticao(recurrence)}</span>
                 }
                 open={expanded === "repeat"}
                 onToggle={() => toggle("repeat")}
               >
                 <div className="flex flex-wrap gap-2">
-                  {RECURRENCE_OPTIONS.map((o) => (
+                  {REPETICOES_DE_BLOCO.map((o) => (
                     <button
                       key={o.value}
                       type="button"
@@ -412,7 +441,7 @@ export function TimeBlockDialog({
                           : "border-border/50 text-muted-foreground hover:border-border"
                       )}
                     >
-                      {o.label}
+                      {nomeDaRepeticao(o.value)}
                     </button>
                   ))}
                 </div>
@@ -430,26 +459,26 @@ export function TimeBlockDialog({
                 type="button"
                 variant="outline"
                 onClick={handleDeleteBlock}
-                aria-label="Excluir bloco"
-                title="Excluir bloco (Backspace)"
+                aria-label={t.excluir}
+                title={t.excluirAtalho}
                 className="mr-auto border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+              {t.cancelar}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
+                  {t.salvando}
                 </>
               ) : timeBlock ? (
-                "Salvar"
+                t.salvar
               ) : (
-                "Criar Bloco"
+                t.criar
               )}
             </Button>
           </DialogFooter>

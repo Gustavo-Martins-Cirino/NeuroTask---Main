@@ -1549,18 +1549,45 @@ vira ruído.
 > tinha token nenhum — ou seja, "passou" sem ter medido nada. O seletor agora tem de ser a
 > linha inteira, e há um teste cobrando que os dois temas leiam valores diferentes.
 
+> **O calendário traduzido (31/08), e o módulo puro que ainda falava português.**
+> `lib/calendar-warnings` montava a frase pronta — em português — dentro de um módulo de
+> datas: traduzir a tela sem mexer nele deixaria o calendário em inglês com um aviso em
+> português no meio. Agora ele devolve CHAVE e valores, numa união discriminada, e a frase
+> é do dicionário. A união importa: com um saco de dados opcionais, esquecer um campo só
+> apareceria na tela.
+>
+> **As horas viajam como número**, e não como "2,5h": a vírgula decimal é português, o inglês
+> escreve 2.5h. Formatar dentro do módulo seria decidir o idioma no lugar errado — e é o tipo
+> de detalhe que passa despercebido até alguém ver "2,5h" no meio de uma frase em inglês.
+>
+> **Os testes do módulo mudaram de alvo junto**: eles casavam a frase por regex (`/2,5h/`),
+> o que amarrava um teste de datas a um idioma. Agora medem a estrutura — chave e número.
+>
+> Saiu também o `type ViewMode` da página para `lib/calendario-visao`: o dicionário precisa
+> dele para exigir um nome por visão, e a página é componente de cliente. O VALOR continua em
+> português ("mes", sem acento) porque é o que já está gravado no localStorage de quem usa —
+> traduzir o valor jogaria fora a visão preferida de todo mundo.
+>
+> Os feriados continuam vindo da API pública (Nager.Date, calendário brasileiro): nome de
+> feriado é nome próprio de um país, não texto de interface.
+
 - [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (66 testes em
       `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Já passaram: agenda pública, moldura
-      (dock e títulos), Configurações, dashboard, Tarefas, Favoritos e **Notas**. Falta o
-      miolo de **calendário, amigos, Escritório e Neuro IA**. Faltam também os componentes
+      (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas** e
+      **calendário** (grade, painel do dia e o diálogo de bloco). Falta o miolo de
+      **amigos, Escritório e Neuro IA**. Faltam também os componentes
       embutidos em Configurações, que têm texto próprio: `foto-perfil-campo`, `calendar-feed`,
       `agenda-io` e o `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
       infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada
       fatia poder ser conferida no olho antes da seguinte.
-      **O calendário tem uma armadilha esperando**: `time-block-dialog.tsx` mantém um
-      `RECURRENCE_OPTIONS` PRÓPRIO, cópia do que era o de `lib/task-recurrence`. Traduzir um
-      sem olhar o outro deixa metade do app repetindo em inglês e a outra metade em
-      português — e a pergunta de verdade ali é se as duas listas deviam ser uma só.
+      **A armadilha do calendário foi respondida (31/08): as duas listas NÃO viram uma só.**
+      Elas não são a mesma coisa — a tarefa repete `daily | weekly | monthly | yearly |
+      every:N` e é `nextOccurrence` que empurra o PRAZO ao concluir; o bloco repete na GRADE
+      e tem `weekdays`, que tarefa nenhuma tem. Fundir ofereceria "mensalmente" a um bloco
+      que não sabe repetir assim, e "dias úteis" a uma tarefa cujo `nextOccurrence`
+      devolveria null — ela repetiria na tela e nunca avançaria de prazo. O que se unificou
+      foi o VOCABULÁRIO: as três chaves em comum saem do mesmo lugar do dicionário, e só
+      `diasUteis` é do bloco. Há teste cobrando isso.
       A ajuda da região lista o que **falta**, não o que já foi: a lista do que falta encolhe
       até sumir sozinha, e a outra envelhecia a cada fatia — é ela que muda a cada fatia
       entregue.

@@ -5,6 +5,7 @@ import {
 } from "./i18n"
 import { RECURRENCE_OPTIONS } from "./task-recurrence"
 import { CORES_DE_NOTA } from "./nota-cor"
+import { VISOES } from "./calendario-visao"
 
 // A falta de uma CHAVE já não compila (é o que a interface Dicionario compra).
 // O que a interface não pega, e estes testes pegam: dicionário que compila mas
@@ -375,6 +376,67 @@ describe("notas", () => {
   it("a tela vazia manda clicar no botão que existe", () => {
     for (const [nome, d] of IDIOMAS) {
       expect(d.notas.vazio, `${nome}`).toContain(d.notas.nova)
+    }
+  })
+})
+
+describe("calendário", () => {
+  it("as quatro visões têm nome, e os nomes mudam de idioma", () => {
+    for (const v of VISOES) {
+      expect(pt.calendario.visoes[v]).not.toBe("")
+      expect(en.calendario.visoes[v]).not.toBe("")
+      expect(pt.calendario.visoes[v]).not.toBe(en.calendario.visoes[v])
+    }
+  })
+
+  it("a semana tem sete iniciais, e a primeira é domingo nos dois", () => {
+    // A grade indexa por `getDay()`, em que 0 é domingo. Uma lista de seis, ou
+    // começando na segunda, desloca a semana inteira em silêncio.
+    for (const [, d] of IDIOMAS) expect(d.calendario.diasDaSemana).toHaveLength(7)
+    expect(pt.calendario.diasDaSemana[0]).toBe("DOM")
+    expect(en.calendario.diasDaSemana[0]).toBe("SUN")
+  })
+
+  it("a vírgula decimal não viaja: 2,5h em português e 2.5h em inglês", () => {
+    expect(pt.calendario.avisos.horas(2.5)).toBe("2,5h")
+    expect(en.calendario.avisos.horas(2.5)).toBe("2.5h")
+  })
+
+  it("as horas arredondam em uma casa, sem dízima na tela", () => {
+    for (const [, d] of IDIOMAS) {
+      expect(d.calendario.avisos.horas(7.499999)).toMatch(/^7[.,]5h$/)
+      expect(d.calendario.avisos.horas(8)).toBe("8h")
+    }
+  })
+
+  it("todo aviso põe na frase os valores que recebeu", () => {
+    // Sem isto, um aviso pode "traduzir" perdendo o número ou o título — e ele
+    // vira um alerta genérico que não diz de que bloco está falando.
+    for (const [, d] of IDIOMAS) {
+      const a = d.calendario.avisos
+      expect(a.telaAntesDeDormir("Estudar", "23:30")).toContain("Estudar")
+      expect(a.telaAntesDeDormir("Estudar", "23:30")).toContain("23:30")
+
+      const curto = a.sonoCurto("00:30", "08:00", "7,5h", "8h")
+      for (const p of ["00:30", "08:00", "7,5h", "8h"]) expect(curto).toContain(p)
+
+      const vao = a.vaoAntesDoSono("Estudar", "22:00", "Dormir", "00:30", "2,5h", "8h")
+      for (const p of ["Estudar", "22:00", "Dormir", "00:30", "2,5h", "8h"]) expect(vao).toContain(p)
+    }
+  })
+
+  it("a repetição do BLOCO fala a mesma língua que a da TAREFA", () => {
+    // As duas listas são separadas de propósito (domínios diferentes: o bloco
+    // tem "dias úteis", a tarefa tem "mensalmente" e "a cada N dias"). O que
+    // NÃO pode divergir é a palavra: as três chaves em comum saem do mesmo
+    // lugar, senão metade do app diz "Semanalmente" e a outra "Weekly".
+    for (const [, d] of IDIOMAS) {
+      for (const chave of ["naoRepete", "diariamente", "semanalmente"] as const) {
+        expect(d.tarefas.repeticao[chave]).not.toBe("")
+      }
+      // E a que só existe no bloco tem nome próprio.
+      expect(d.calendario.bloco.diasUteis).not.toBe("")
+      expect(d.calendario.bloco.diasUteis).not.toBe(d.tarefas.repeticao.semanalmente)
     }
   })
 })

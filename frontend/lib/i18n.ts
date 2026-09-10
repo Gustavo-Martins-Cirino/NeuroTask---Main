@@ -5,6 +5,7 @@ import { type ChaveFaixa } from "@/lib/nivel-faixa"
 import { type Repeticao } from "@/lib/task-recurrence"
 import { type TaskPriority } from "@/lib/types"
 import { type ChaveCorDeNota } from "@/lib/nota-cor"
+import { type VisaoDoCalendario } from "@/lib/calendario-visao"
 
 // Tradução do app — a primeira fatia.
 //
@@ -371,9 +372,150 @@ export interface Dicionario {
       concluir: string
     }
   }
+  /**
+   * O calendário: barra de ferramentas, grade, painel do dia e o diálogo de
+   * bloco de tempo.
+   */
+  calendario: {
+    novoBloco: string
+    hoje: string
+    /** Os nomes das quatro visões, na ordem em que aparecem. */
+    visoes: Record<VisaoDoCalendario, string>
+    /** As sete iniciais no alto da grade — "DOM…SÁB" / "SUN…SAT". */
+    diasDaSemana: readonly string[]
+    dispensarAviso: string
+    abrirODia: string
+    recolherPainel: string
+    expandirPainel: string
+    painelContextual: string
+    /**
+     * Os avisos do calendário (lib/calendar-warnings decide qual e com quais
+     * valores; a frase é daqui).
+     */
+    avisos: {
+      telaAntesDeDormir: (titulo: string, horaDeDormir: string) => string
+      sonoCurto: (inicio: string, fim: string, horas: string, desejadas: string) => string
+      vaoAntesDoSono: (
+        titulo: string, fim: string, tituloSeguinte: string, inicio: string,
+        horas: string, desejadas: string
+      ) => string
+      /** "2,5h" em português, "2.5h" em inglês — a vírgula decimal não viaja. */
+      horas: (h: number) => string
+    }
+    notas: {
+      salvando: string
+      salvo: string
+      /** O que se escreve para a IA ler depois. */
+      placeholder: string
+    }
+    lembretes: {
+      titulo: string
+      adicionar: string
+      placeholder: string
+      definirHorario: string
+      horarioNotificacao: string
+      remover: string
+      vazio: string
+    }
+    bloco: {
+      novoTitulo: string
+      editarTitulo: string
+      novoSubtitulo: string
+      editarSubtitulo: string
+      titulo: string
+      tituloPlaceholder: string
+      descricao: string
+      descricaoPlaceholder: string
+      inicio: string
+      fim: string
+      horarioDeInicio: string
+      horarioDeFim: string
+      data: string
+      cor: string
+      vincularTarefa: string
+      nenhumaTarefa: string
+      vincularAjuda: string
+      repetir: string
+      /**
+       * A repetição de BLOCO. Ela reaproveita as chaves da tarefa onde as duas
+       * coincidem e acrescenta a que só existe aqui — ver o comentário em
+       * components/time-block-dialog sobre por que as listas não viram uma só.
+       */
+      diasUteis: string
+      excluir: string
+      excluirAtalho: string
+      cancelar: string
+      salvar: string
+      criar: string
+      salvando: string
+      precisaLogin: string
+    }
+  }
 }
 
 export const pt: Dicionario = {
+  calendario: {
+    novoBloco: "Novo bloco",
+    hoje: "Hoje",
+    visoes: { dia: "dia", semana: "semana", mes: "mês", ano: "ano" },
+    diasDaSemana: ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"],
+    dispensarAviso: "Dispensar aviso",
+    abrirODia: "Abrir o dia",
+    recolherPainel: "Recolher painel",
+    expandirPainel: "Expandir painel",
+    painelContextual: "Painel contextual",
+    avisos: {
+      telaAntesDeDormir: (titulo, horaDeDormir) =>
+        `"${titulo}" termina pouco antes de dormir (${horaDeDormir}). Telas perto do sono atrapalham o descanso — que tal encerrar mais cedo?`,
+      sonoCurto: (inicio, fim, horas, desejadas) =>
+        `Seu bloco de sono (${inicio}–${fim}) tem só ${horas} — abaixo das ${desejadas} que você quer dormir.`,
+      vaoAntesDoSono: (titulo, fim, tituloSeguinte, inicio, horas, desejadas) =>
+        `Entre "${titulo}" (até ${fim}) e "${tituloSeguinte}" (às ${inicio}) sobram só ${horas} — menos que suas ${desejadas} de sono.`,
+      horas: (h) => `${String(Math.round(h * 10) / 10).replace(".", ",")}h`,
+    },
+    notas: {
+      salvando: "Salvando…",
+      salvo: "Salvo",
+      placeholder: "Para interpretação por IA: Reflexões de hoje... Como tem sido seu foco? Alguma ideia solta?",
+    },
+    lembretes: {
+      titulo: "Lembretes do dia",
+      adicionar: "Adicionar lembrete",
+      placeholder: "Adicionar lembrete...",
+      definirHorario: "Definir horário",
+      horarioNotificacao: "Horário (notificação)",
+      remover: "Remover lembrete",
+      vazio: "Nenhum lembrete por enquanto.",
+    },
+    bloco: {
+      novoTitulo: "Novo bloco de tempo",
+      editarTitulo: "Editar bloco",
+      novoSubtitulo: "Agende um novo bloco de foco",
+      editarSubtitulo: "Atualize os detalhes do bloco",
+      titulo: "Título",
+      tituloPlaceholder: "Ex: Foco em desenvolvimento",
+      descricao: "Descrição",
+      descricaoPlaceholder: "Detalhes opcionais...",
+      inicio: "Início",
+      fim: "Fim",
+      horarioDeInicio: "Horário de início",
+      horarioDeFim: "Horário de fim",
+      data: "Data",
+      cor: "Cor",
+      vincularTarefa: "Vincular tarefa",
+      nenhumaTarefa: "Nenhuma",
+      vincularAjuda: "Liga este bloco a uma tarefa da sua lista — o bloco vira o horário de fazê-la.",
+      repetir: "Repetir",
+      diasUteis: "Dias úteis (seg–sex)",
+      excluir: "Excluir bloco",
+      excluirAtalho: "Excluir bloco (Backspace)",
+      cancelar: "Cancelar",
+      salvar: "Salvar",
+      criar: "Criar bloco",
+      salvando: "Salvando...",
+      precisaLogin: "Você precisa estar logado",
+    },
+  },
   agenda: {
     titulo: (nome) => (nome ? `Horários ocupados de ${nome}` : "Horários ocupados"),
     periodo: (dias) =>
@@ -703,6 +845,68 @@ export const pt: Dicionario = {
 }
 
 export const en: Dicionario = {
+  calendario: {
+    novoBloco: "New block",
+    hoje: "Today",
+    visoes: { dia: "day", semana: "week", mes: "month", ano: "year" },
+    diasDaSemana: ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"],
+    dispensarAviso: "Dismiss warning",
+    abrirODia: "Open this day",
+    recolherPainel: "Collapse panel",
+    expandirPainel: "Expand panel",
+    painelContextual: "Context panel",
+    avisos: {
+      telaAntesDeDormir: (titulo, horaDeDormir) =>
+        `"${titulo}" ends shortly before bedtime (${horaDeDormir}). Screens close to sleep get in the way of resting — how about wrapping up earlier?`,
+      sonoCurto: (inicio, fim, horas, desejadas) =>
+        `Your sleep block (${inicio}–${fim}) is only ${horas} — below the ${desejadas} you want to sleep.`,
+      vaoAntesDoSono: (titulo, fim, tituloSeguinte, inicio, horas, desejadas) =>
+        `Between "${titulo}" (ending ${fim}) and "${tituloSeguinte}" (at ${inicio}) there are only ${horas} — less than your ${desejadas} of sleep.`,
+      horas: (h) => `${Math.round(h * 10) / 10}h`,
+    },
+    notas: {
+      salvando: "Saving…",
+      salvo: "Saved",
+      placeholder: "For the AI to read: today's thoughts… How has your focus been? Any loose ideas?",
+    },
+    lembretes: {
+      titulo: "Reminders for the day",
+      adicionar: "Add reminder",
+      placeholder: "Add a reminder...",
+      definirHorario: "Set a time",
+      horarioNotificacao: "Time (notification)",
+      remover: "Remove reminder",
+      vazio: "No reminders yet.",
+    },
+    bloco: {
+      novoTitulo: "New time block",
+      editarTitulo: "Edit block",
+      novoSubtitulo: "Schedule a new focus block",
+      editarSubtitulo: "Update the block details",
+      titulo: "Title",
+      tituloPlaceholder: "E.g. Deep work",
+      descricao: "Description",
+      descricaoPlaceholder: "Optional details...",
+      inicio: "Start",
+      fim: "End",
+      horarioDeInicio: "Start time",
+      horarioDeFim: "End time",
+      data: "Date",
+      cor: "Colour",
+      vincularTarefa: "Link a task",
+      nenhumaTarefa: "None",
+      vincularAjuda: "Links this block to a task on your list — the block becomes the time to do it.",
+      repetir: "Repeat",
+      diasUteis: "Weekdays (Mon–Fri)",
+      excluir: "Delete block",
+      excluirAtalho: "Delete block (Backspace)",
+      cancelar: "Cancel",
+      salvar: "Save",
+      criar: "Create block",
+      salvando: "Saving...",
+      precisaLogin: "You need to be signed in",
+    },
+  },
   agenda: {
     titulo: (nome) => (nome ? `${nome}'s busy hours` : "Busy hours"),
     periodo: (dias) =>
