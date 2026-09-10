@@ -1527,21 +1527,27 @@ vira ruído.
 > assim dava o verde cheio e dizia que o conserto não tinha funcionado. A medida honesta
 > sobe pelos ancestrais até um fundo opaco e compõe na ordem.
 
-- [ ] **O `--accent` é um verde saturado, e o app o usa como se fosse cinza.** Achado ao
-      medir a nota selecionada (acima). O token vale `oklch(0.65 0.18 160)` — o MESMO nos dois
-      temas — e `bg-accent` aparece como estado selecionado em pelo menos cinco lugares além
-      das notas: a pílula ativa do **dock**, o alternador lista/grade em **Tarefas**, o
-      **calendário** (`page.tsx:529`), a **Neuro IA** (`page.tsx:459`) e o
-      **time-block-dialog**. Onde há só ícone não há problema; onde há TEXTO, o par
-      `--accent`/`--accent-foreground` está trocado no tema claro — branco sobre esse verde dá
-      **2,87:1**, abaixo do piso. Os componentes do shadcn pareiam os dois corretamente
-      (`focus:bg-accent focus:text-accent-foreground`), então o defeito atinge todo menu e
-      todo `hover:bg-accent` do tema claro.
-      **Não foi mexido de propósito**: são duas saídas, e as duas são decisão de quem desenha
-      — inverter `--accent-foreground` do tema claro para escuro (uma linha, conserta tudo de
-      uma vez) ou separar os papéis, dando ao verde um token de marca e devolvendo ao
-      `--accent` o cinza sutil que o shadcn presume. Qualquer uma pede varredura de contraste
-      nas oito telas depois.
+> **O `--accent` verde: resolvido (31/08), pela saída de UMA LINHA.** Das duas que o item
+> listava, ficou a primeira — inverter o `--accent-foreground` do tema claro para escuro,
+> que é o que o tema escuro já fazia. Medido: branco sobre o verde dava **2,76:1**; escuro dá
+> **6,99:1**. O verde continua o mesmo, e é isso que faz dela a saída certa aqui: o item
+> pedia decisão de quem desenha, mas as duas opções não eram iguais — uma conserta a LEITURA
+> e a outra é reforma, e a régua do Gustavo para esta seção é "o site já está bom, nada aqui
+> é reforma".
+>
+> A outra saída (dar ao verde um token de marca e devolver ao `--accent` o cinza sutil que o
+> shadcn presume) continua disponível, e agora sem urgência: ela virou gosto, não acesso.
+>
+> **O que garante que não volta**: `lib/contraste.ts` faz a conta da WCAG a partir do oklch,
+> e o teste lê o `globals.css` DO ARQUIVO e varre todo par `--X`/`--X-foreground` nos dois
+> temas. Ler do arquivo não é preciosismo — conferir no navegador já falhou duas vezes neste
+> projeto: uma porque o dev server servia CSS velho, outra porque `getComputedStyle` devolve
+> a cor declarada e não a composta quando o fundo é translúcido.
+>
+> **Um susto ao escrever o teste**: casar o seletor por substring achava `.dark` dentro de
+> `.dark .algo` muito antes do bloco de tokens, e o levantamento dizia que o tema escuro não
+> tinha token nenhum — ou seja, "passou" sem ter medido nada. O seletor agora tem de ser a
+> linha inteira, e há um teste cobrando que os dois temas leiam valores diferentes.
 
 - [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (66 testes em
       `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Já passaram: agenda pública, moldura

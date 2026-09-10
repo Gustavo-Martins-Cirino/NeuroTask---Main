@@ -45,7 +45,9 @@ datas, XP, recorrência, parsing e formatação sem tocar em rede: `admin`, `ava
 `avatar-cabelo` (o contorno ondulado do cabelo cacheado, que era sete discos soltos),
 `avatar-silhueta` (as duas silhuetas do corpo e o que cada roupa faz com elas — o teste
 compara RAZÕES, porque o defeito antigo era serem o mesmo desenho em dois tamanhos),
-`backward-plan`, `calendar-feed`, `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
+`backward-plan`, `calendar-feed`,
+`contraste` (a conta da WCAG a partir do oklch — e o teste varre o `globals.css` do
+ARQUIVO, porque medir no navegador já mentiu duas vezes aqui), `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
 `enquete` (quando perguntar e quando ficar quieto — e que "agora não" cala a enquete
 inteira, não só a pergunta recusada),

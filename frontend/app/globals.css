@@ -266,7 +266,12 @@
   --muted: oklch(0.96 0.005 260);
   --muted-foreground: oklch(0.5 0.01 260);
   --accent: oklch(0.65 0.18 160);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Texto ESCURO sobre o verde, como o tema escuro já fazia. Branco sobre ele
+     dava 2,76:1 — abaixo do piso de 4,5:1 da WCAG —, e como todo componente do
+     shadcn escreve `bg-accent text-accent-foreground`, o defeito atingia todo
+     menu, todo hover e toda seleção do tema claro de uma vez. Escuro dá 6,99:1.
+     O verde continua o mesmo: isto conserta a LEITURA, não redesenha nada. */
+  --accent-foreground: oklch(0.13 0 0);
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.92 0.005 260);
