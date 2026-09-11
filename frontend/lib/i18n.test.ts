@@ -103,6 +103,7 @@ describe("dicionário inteiro", () => {
   const COM_ENFASE = new Set([
     "notas.vazio",
     "configuracoes.importarExportar.dialogo.ondeAchar",
+    "configuracoes.assinar.ondeColar",
   ])
 
   it("nenhuma marca de ênfase sobra num texto fixo", () => {
@@ -529,6 +530,40 @@ describe("a ajuda da região envelhece sozinha", () => {
         expect(ajuda, `${nome}: ${tela} falta traduzir e não está na ajuda`)
           .toContain(tela.toLowerCase())
       }
+    }
+  })
+})
+
+describe("assinar a agenda no Google/Outlook", () => {
+  const a = (d: Dicionario) => d.configuracoes.assinar
+
+  it("os rótulos e a explicação mudam de idioma", () => {
+    expect(a(en).explicacao).not.toBe(a(pt).explicacao)
+    expect(a(en).copiar).not.toBe(a(pt).copiar)
+    expect(a(en).gerar).not.toBe(a(pt).gerar)
+    expect(a(en).toastCopiado).not.toBe(a(pt).toastCopiado)
+  })
+
+  it("o nome do .sql sobrevive à tradução nos três erros", () => {
+    // É o que resolve a falha: sem o nome do arquivo a mensagem não serve.
+    for (const [nome, d] of IDIOMAS) {
+      expect(a(d).erroSemTabela, nome).toContain("calendar_feed.sql")
+      expect(a(d).erroPermissao, nome).toContain("calendar_feed.sql")
+      expect(a(d).erroCacheSchema, nome).not.toBe("")
+    }
+  })
+
+  // O feed é SÓ-LEITURA, e é isso que tira o medo de colar o link num serviço de
+  // fora. A promessa não pode sumir na tradução.
+  it("a explicação diz que ninguém edita a agenda pelo link", () => {
+    expect(a(pt).explicacao.toLowerCase()).toContain("só-leitura")
+    expect(a(en).explicacao.toLowerCase()).toContain("read-only")
+  })
+
+  it("gerar de novo avisa que o link antigo morre", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(a(d).gerarNovo.length, nome).toBeGreaterThan(a(d).gerar.length / 2)
+      expect(a(d).gerarNovo, nome).not.toBe(a(d).gerar)
     }
   })
 })

@@ -193,7 +193,24 @@ export interface Dicionario {
         toastImportado: (n: number) => string
       }
     }
-    assinar: { titulo: string; descricao: string }
+    assinar: {
+      titulo: string
+      descricao: string
+      explicacao: string
+      carregando: string
+      copiar: string
+      gerar: string
+      gerarNovo: string
+      /** Onde colar o link no Google — a ênfase marca o caminho do menu. */
+      ondeColar: string
+      toastPronto: string
+      toastCopiado: string
+      erroCopiar: string
+      /** Falhas de banco. Dizem QUAL arquivo rodar — é o que resolve. */
+      erroSemTabela: string
+      erroCacheSchema: string
+      erroPermissao: string
+    }
     compartilharAgenda: { titulo: string; descricao: string }
     notificacoes: {
       titulo: string
@@ -697,6 +714,21 @@ export const pt: Dicionario = {
     assinar: {
       titulo: "Assinar no Google/Outlook",
       descricao: "Um link que mostra seus blocos no seu calendário de sempre, atualizando sozinho",
+      explicacao:
+        "Assine sua agenda no Google Calendar, Outlook e outros: eles leem este link e mostram seus blocos, atualizando sozinhos. É só-leitura — ninguém edita sua agenda por aqui.",
+      carregando: "Carregando…",
+      copiar: "Copiar",
+      gerar: "Gerar link de assinatura",
+      gerarNovo: "Gerar novo link (invalida o antigo)",
+      ondeColar:
+        "No Google Calendar: §Outros calendários → Adicionar → De URL§, cole o link. A atualização do lado deles pode levar horas — o Google reamostra quando quer.",
+      toastPronto: "Link de assinatura pronto! 📆",
+      toastCopiado: 'Link copiado! Cole no seu calendário, em "assinar por URL".',
+      erroCopiar: "Não consegui copiar — selecione o link e copie manualmente.",
+      erroSemTabela: "A tabela do feed ainda não existe. Rode supabase/calendar_feed.sql no Supabase.",
+      erroCacheSchema:
+        "A tabela existe, mas a API do Supabase ainda não a enxerga (cache do schema). Espere alguns segundos e recarregue.",
+      erroPermissao: "Sem permissão (RLS). Confira se as policies do calendar_feed.sql foram criadas.",
     },
     compartilharAgenda: {
       titulo: "Compartilhar meus horários",
@@ -1114,6 +1146,21 @@ export const en: Dicionario = {
     assinar: {
       titulo: "Subscribe on Google/Outlook",
       descricao: "A link that shows your blocks in your usual calendar, updating on its own",
+      explicacao:
+        "Subscribe to your schedule in Google Calendar, Outlook and others: they read this link and show your blocks, refreshing on their own. It is read-only — nobody edits your schedule from there.",
+      carregando: "Loading…",
+      copiar: "Copy",
+      gerar: "Generate subscription link",
+      gerarNovo: "Generate a new link (the old one stops working)",
+      ondeColar:
+        "In Google Calendar: §Other calendars → Add → From URL§, paste the link. Their end can take hours to refresh — Google resamples whenever it likes.",
+      toastPronto: "Subscription link ready! 📆",
+      toastCopiado: 'Link copied! Paste it into your calendar, under "subscribe from URL".',
+      erroCopiar: "I could not copy it — select the link and copy it by hand.",
+      erroSemTabela: "The feed table does not exist yet. Run supabase/calendar_feed.sql on Supabase.",
+      erroCacheSchema:
+        "The table exists, but the Supabase API cannot see it yet (schema cache). Wait a few seconds and reload.",
+      erroPermissao: "No permission (RLS). Check that the calendar_feed.sql policies were created.",
     },
     compartilharAgenda: {
       titulo: "Share my hours",

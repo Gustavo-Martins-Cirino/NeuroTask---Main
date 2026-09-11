@@ -1574,11 +1574,12 @@ vira ruído.
 - [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (66 testes em
       `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Já passaram: agenda pública, moldura
       (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas**,
-      **calendário** (grade, painel do dia e o diálogo de bloco) e **importar/exportar**
-      (`agenda-io` + o diálogo `ics-import-dialog`). Falta o miolo de
-      **amigos, Escritório e Neuro IA**. Faltam também os componentes
-      embutidos em Configurações, que têm texto próprio: `foto-perfil-campo`, `calendar-feed`
-      e o `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
+      **calendário** (grade, painel do dia e o diálogo de bloco), **importar/exportar**
+      (`agenda-io` + o diálogo `ics-import-dialog`) e **assinar no Google/Outlook**
+      (`calendar-feed`). Falta o miolo de
+      **amigos, Escritório e Neuro IA**. Faltam também dois componentes
+      embutidos em Configurações, que têm texto próprio: `foto-perfil-campo` e o
+      `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
       infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada
       fatia poder ser conferida no olho antes da seguinte.
       **A armadilha do calendário foi respondida (31/08): as duas listas NÃO viram uma só.**
