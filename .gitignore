@@ -28,3 +28,8 @@ __pycache__/
 # o histórico depois não apaga o que já foi clonado). As referências VERSIONADAS
 # moram em frontend/components/inspirações/ — esta pasta aqui é a de rascunho.
 /frontend/inspirações/
+
+# Bancada de render e provas de conceito descartáveis. É onde monto as cenas 3D
+# para olhar num screenshot headless — sai bundle de 70 MB e PNG de 1 MB, nada
+# disso é código do app. Já entrou no repositório uma vez por `git add -A`.
+/frontend/scratch/
