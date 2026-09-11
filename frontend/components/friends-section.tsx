@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 // bundle 3D não pesa em quem nunca abre uma visita).
 const OfficeScene3D = dynamic(
   () => import("@/components/office-scene-3d").then((m) => m.OfficeScene3D),
-  { ssr: false, loading: () => <div className="flex aspect-[480/340] items-center justify-center text-sm text-muted-foreground">Carregando 3D…</div> }
+  { ssr: false, loading: () => <Carregando3D /> }
 )
 import {
   Users, Search, UserPlus, Check, X, Loader2, Eye, Clock3, AtSign,
@@ -35,11 +35,25 @@ import { AvatarRetrato } from "@/components/avatar-figure"
 import { acessoriosEquipados } from "@/lib/avatar-accessories"
 import { useTimeFormat } from "@/hooks/use-time-format"
 import { formatTime, type TimeFormat } from "@/lib/time-format"
+import { useDicionario, useLocale } from "@/hooks/use-idioma"
+import { type Dicionario } from "@/lib/i18n"
 
 const fmtTime = (d: Date | string, f: TimeFormat) => formatTime(new Date(d), f)
 
-const fmtDay = (d: string) =>
-  new Date(d).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })
+// O dia saia sempre em pt-BR ("sab., 28/09") mesmo com o app em ingles.
+const fmtDay = (d: string, locale: string) =>
+  new Date(d).toLocaleDateString(locale, { weekday: "short", day: "2-digit", month: "2-digit" })
+
+// O `loading` do dynamic() mora fora do componente e nao alcanca o hook — entao
+// o texto vem daqui, de um componente que alcanca.
+function Carregando3D() {
+  const t = useDicionario().amigos.visita
+  return (
+    <div className="flex aspect-[480/340] items-center justify-center text-sm text-muted-foreground">
+      {t.carregando3d}
+    </div>
+  )
+}
 
 function Initial({ name }: { name: string }) {
   return (
@@ -70,21 +84,24 @@ function FriendAvatar({
   )
 }
 
-function StatusDot({ busy }: { busy: boolean | null }) {
+function StatusDot({ busy, t }: { busy: boolean | null; t: Dicionario["amigos"] }) {
   if (busy === null) {
-    return <span className="text-[11px] text-muted-foreground/60">privado</span>
+    return <span className="text-[11px] text-muted-foreground/60">{t.privado}</span>
   }
   return (
     <span className="flex items-center gap-1.5 text-[11px] font-medium">
       <span className={cn("h-2 w-2 rounded-full", busy ? "bg-red-500" : "bg-emerald-500")} />
       <span className={busy ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"}>
-        {busy ? "Ocupado" : "Livre"}
+        {busy ? t.ocupado : t.livre}
       </span>
     </span>
   )
 }
 
 export function FriendsSection() {
+  const traducao = useDicionario()
+  const t = traducao.amigos
+  const locale = useLocale()
   const timeFormat = useTimeFormat()
   const [profile, setProfile] = useState<MyProfile | null | undefined>(undefined)
   const [friends, setFriends] = useState<FriendEntry[]>([])
@@ -146,7 +163,7 @@ export function FriendsSection() {
     }
     setProfile(p!)
     refreshFriends()
-    toast.success(`Pronto, @${p!.username}! Agora seus amigos podem te encontrar.`)
+    toast.success(t.escolherUsuario.toastPronto(p!.username))
   }
 
   const handleAdd = async (u: UserSearchResult) => {
@@ -155,7 +172,7 @@ export function FriendsSection() {
       toast.error(error)
       return
     }
-    toast.success(result === "accepted" ? `Vocês agora são amigos! 🎉` : `Pedido enviado para @${u.username}`)
+    toast.success(result === "accepted" ? t.toastAgoraAmigos : t.toastPedidoEnviado(u.username))
     setQuery("")
     setResults([])
     setSuggested((prev) => prev.filter((s) => s.user_id !== u.user_id))
@@ -164,7 +181,7 @@ export function FriendsSection() {
 
   const handleAccept = async (f: FriendEntry) => {
     await acceptFriendRequest(f.friendship_id)
-    toast.success(`Você e @${f.username} agora são amigos! 🎉`)
+    toast.success(t.toastAmizadeAceita(f.username))
     refreshFriends()
   }
 
@@ -202,7 +219,7 @@ export function FriendsSection() {
       return
     }
     if (status === "accepted") {
-      toast.success("Compromisso confirmado — já está no calendário de vocês dois! 📅")
+      toast.success(t.convitesRecebidos.toastConfirmado)
     }
     refreshFriends()
   }
@@ -219,7 +236,7 @@ export function FriendsSection() {
     setCitySaving(false)
     setProfile({ ...profile, city: cityDraft.trim() || null })
     fetchSuggestedUsers().then(setSuggested)
-    toast.success(cityDraft.trim() ? "Região salva — vamos priorizar quem está perto." : "Região removida.")
+    toast.success(cityDraft.trim() ? t.toastRegiaoSalva : t.toastRegiaoRemovida)
   }
 
   const togglePrivacy = (field: "share_status" | "share_office" | "share_level" | "discoverable" | "share_schedule") => {
@@ -242,22 +259,22 @@ export function FriendsSection() {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Users className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold">Amigos</h2>
+        <h2 className="text-sm font-semibold">{traducao.telas.amigos}</h2>
         {profile && <span className="text-xs text-muted-foreground">@{profile.username}</span>}
         {profile && (
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             {([
-              ["share_status", "Ocupado/livre"],
-              ["share_office", "Escritório"],
-              ["share_level", "Nível"],
-              ["share_schedule", "Agenda"],
-              ["discoverable", "Perfil aberto"],
+              ["share_status", t.privacidade.ocupadoLivre],
+              ["share_office", t.privacidade.escritorio],
+              ["share_level", t.privacidade.nivel],
+              ["share_schedule", t.privacidade.agenda],
+              ["discoverable", t.privacidade.perfilAberto],
             ] as const).map(([field, label]) => (
               <button
                 key={field}
                 type="button"
                 onClick={() => togglePrivacy(field)}
-                title={`Amigos ${profile[field] ? "veem" : "NÃO veem"}: ${label}`}
+                title={t.privacidade.dica(profile[field], label)}
                 className={cn(
                   "flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
                   profile[field]
@@ -284,11 +301,9 @@ export function FriendsSection() {
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15">
               <AtSign className="h-4 w-4 text-primary" />
             </span>
-            Escolha seu @usuário
+            {t.escolherUsuario.titulo}
           </p>
-          <p className="text-xs text-muted-foreground">
-            É como seus amigos vão te achar na busca. Letras minúsculas, números e _ (3–20).
-          </p>
+          <p className="text-xs text-muted-foreground">{t.escolherUsuario.ajuda}</p>
           <div className="flex items-center gap-2">
             <div className="flex h-9 flex-1 items-center gap-1 rounded-lg border border-border/50 bg-background px-2.5">
               <AtSign className="h-3.5 w-3.5 text-muted-foreground" />
@@ -296,7 +311,7 @@ export function FriendsSection() {
                 value={claimName}
                 onChange={(e) => setClaimName(normalizeUsername(e.target.value))}
                 onKeyDown={(e) => { if (e.key === "Enter") handleClaim() }}
-                placeholder="seu_usuario"
+                placeholder={t.escolherUsuario.placeholder}
                 className="w-full bg-transparent text-sm outline-none"
               />
             </div>
@@ -307,7 +322,7 @@ export function FriendsSection() {
               className="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition-opacity disabled:opacity-40"
             >
               {claiming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-              Criar
+              {t.escolherUsuario.criar}
             </button>
           </div>
         </motion.div>
@@ -320,7 +335,7 @@ export function FriendsSection() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar por @usuário ou nome…"
+                placeholder={t.buscaPlaceholder}
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
               {searching && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
@@ -354,7 +369,7 @@ export function FriendsSection() {
               onChange={(e) => setCityDraft(e.target.value)}
               onBlur={handleSaveCity}
               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
-              placeholder="Sua região — ex.: Campinas, SP (opcional)"
+              placeholder={t.regiaoPlaceholder}
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
             {citySaving && <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />}
@@ -363,7 +378,7 @@ export function FriendsSection() {
           {/* Sugeridos (perfis abertos fora das suas amizades) */}
           {suggested.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Sugeridos para você</p>
+              <p className="text-xs font-medium text-muted-foreground">{t.sugeridos}</p>
               <div className="grid gap-1.5 sm:grid-cols-2">
                 {suggested.map((u) => (
                   <div key={u.user_id} className="flex items-center gap-2.5 rounded-xl border border-border/50 bg-card px-3 py-2">
@@ -374,7 +389,7 @@ export function FriendsSection() {
                         <span className="truncate">@{u.username}</span>
                         {u.same_region && (
                           <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                            <MapPin className="h-2.5 w-2.5" /> mesma região
+                            <MapPin className="h-2.5 w-2.5" /> {t.mesmaRegiao}
                           </span>
                         )}
                       </span>
@@ -385,7 +400,7 @@ export function FriendsSection() {
                       className="flex h-7 items-center gap-1 rounded-lg bg-primary/10 px-2 text-[11px] font-medium text-primary transition-colors hover:bg-primary/15"
                     >
                       <UserPlus className="h-3 w-3" />
-                      Adicionar
+                      {t.adicionar}
                     </button>
                   </div>
                 ))}
@@ -396,7 +411,7 @@ export function FriendsSection() {
           {/* Pedidos recebidos */}
           {pendingIn.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-primary">Pedidos de amizade</p>
+              <p className="text-xs font-medium text-primary">{t.pedidos}</p>
               {pendingIn.map((f) => (
                 <div key={f.friendship_id} className="flex items-center gap-2.5 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2">
                   <FriendAvatar name={f.display_name || f.username} avatar={f.avatar} accessories={f.accessories} />
@@ -408,7 +423,7 @@ export function FriendsSection() {
                     type="button"
                     onClick={() => handleAccept(f)}
                     className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-85"
-                    title="Aceitar"
+                    title={t.aceitar}
                   >
                     <Check className="h-3.5 w-3.5" />
                   </button>
@@ -416,7 +431,7 @@ export function FriendsSection() {
                     type="button"
                     onClick={() => handleRemove(f)}
                     className="flex h-7 w-7 items-center justify-center rounded-full border border-border/50 text-muted-foreground transition-colors hover:bg-accent"
-                    title="Recusar"
+                    title={t.recusar}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -429,7 +444,7 @@ export function FriendsSection() {
           {invites.filter((i) => i.status === "pending").length > 0 && (
             <div className="space-y-1.5">
               <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
-                <CalendarClock className="h-3.5 w-3.5" /> Convites de compromisso
+                <CalendarClock className="h-3.5 w-3.5" /> {t.convitesRecebidos.titulo}
               </p>
               {invites
                 .filter((i) => i.status === "pending")
@@ -442,14 +457,14 @@ export function FriendsSection() {
                       <span className="font-semibold">{inv.title}</span>
                       <span className="text-muted-foreground">
                         {" · "}
-                        {fmtDay(inv.starts_at)} {fmtTime(inv.starts_at, timeFormat)}–{fmtTime(inv.ends_at, timeFormat)}
+                        {fmtDay(inv.starts_at, locale)} {fmtTime(inv.starts_at, timeFormat)}–{fmtTime(inv.ends_at, timeFormat)}
                         {" · "}
-                        {inv.direction === "received" ? "de" : "para"} @{inv.other_username}
+                        {inv.direction === "received" ? t.convitesRecebidos.de : t.convitesRecebidos.para} @{inv.other_username}
                       </span>
                       {(inv.meeting_url || inv.location) && (
                         <span className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                           {inv.meeting_url && (
-                            <span className="flex items-center gap-1"><Video className="h-3 w-3" /> online</span>
+                            <span className="flex items-center gap-1"><Video className="h-3 w-3" /> {t.convitesRecebidos.online}</span>
                           )}
                           {inv.location && (
                             <span className="flex min-w-0 items-center gap-1"><MapPin className="h-3 w-3 shrink-0" /><span className="truncate">{inv.location}</span></span>
@@ -464,25 +479,25 @@ export function FriendsSection() {
                           onClick={() => handleRespondInvite(inv, true)}
                           className="flex h-7 items-center gap-1 rounded-lg bg-primary px-2.5 text-[11px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
                         >
-                          <Check className="h-3 w-3" /> Aceitar
+                          <Check className="h-3 w-3" /> {t.aceitar}
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRespondInvite(inv, false)}
                           className="flex h-7 w-7 items-center justify-center rounded-full border border-border/50 text-muted-foreground transition-colors hover:bg-accent"
-                          title="Recusar"
+                          title={t.recusar}
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </span>
                     ) : (
                       <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <Clock3 className="h-3 w-3" /> aguardando
+                        <Clock3 className="h-3 w-3" /> {t.convitesRecebidos.aguardando}
                         <button
                           type="button"
                           onClick={() => handleCancelInvite(inv)}
                           className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-accent"
-                          title="Cancelar convite"
+                          title={t.convitesRecebidos.cancelar}
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -501,14 +516,14 @@ export function FriendsSection() {
                   <FriendAvatar name={f.display_name || f.username} avatar={f.avatar} accessories={f.accessories} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{f.display_name ?? `@${f.username}`}</span>
-                    <StatusDot busy={f.busy} />
+                    <StatusDot busy={f.busy} t={t} />
                   </span>
                   {f.can_schedule && (
                     <button
                       type="button"
                       onClick={() => handleAgenda(f)}
                       disabled={busyLoading === f.friend_id}
-                      title="Ver horários ocupados de hoje"
+                      title={t.verAgenda}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/15"
                     >
                       {busyLoading === f.friend_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CalendarClock className="h-3.5 w-3.5" />}
@@ -517,7 +532,7 @@ export function FriendsSection() {
                   <button
                     type="button"
                     onClick={() => setInviteFriend(f)}
-                    title="Convidar para um compromisso"
+                    title={t.convidar}
                     className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/15"
                   >
                     <CalendarPlus className="h-3.5 w-3.5" />
@@ -527,7 +542,7 @@ export function FriendsSection() {
                       type="button"
                       onClick={() => handleVisit(f)}
                       disabled={visitLoading === f.friend_id}
-                      title="Visitar escritório"
+                      title={t.visitar}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/15"
                     >
                       {visitLoading === f.friend_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
@@ -537,7 +552,7 @@ export function FriendsSection() {
                     type="button"
                     onClick={() => handleRemove(f)}
                     className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground/50 transition-all hover:bg-accent hover:text-destructive com-mouse:opacity-0 com-mouse:group-hover:opacity-100"
-                    title="Desfazer amizade"
+                    title={t.desfazer}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -554,13 +569,13 @@ export function FriendsSection() {
                   <FriendAvatar name={f.display_name || f.username} avatar={f.avatar} accessories={f.accessories} />
                   <span className="min-w-0 flex-1 truncate text-sm">@{f.username}</span>
                   <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <Clock3 className="h-3 w-3" /> aguardando
+                    <Clock3 className="h-3 w-3" /> {t.convitesRecebidos.aguardando}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleRemove(f)}
                     className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground/60 transition-colors hover:bg-accent"
-                    title="Cancelar pedido"
+                    title={t.cancelarPedido}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -571,7 +586,7 @@ export function FriendsSection() {
 
           {friends.length === 0 && suggested.length === 0 && (
             <p className="rounded-xl border border-dashed border-border/50 px-3 py-4 text-center text-xs text-muted-foreground">
-              Busque um amigo pelo @ para começar — dá pra ver se ele está livre e visitar o escritório dele. 👀
+              {t.vazio}
             </p>
           )}
         </>
@@ -585,12 +600,12 @@ export function FriendsSection() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <CalendarClock className="h-4 w-4 text-primary" />
-                  Hoje, {busyView.friend.display_name ?? `@${busyView.friend.username}`} está…
+                  {t.agendaDoDia.titulo(busyView.friend.display_name ?? `@${busyView.friend.username}`)}
                 </DialogTitle>
               </DialogHeader>
               {busyView.ranges.length === 0 ? (
                 <p className="rounded-xl bg-emerald-500/10 px-3 py-3 text-center text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                  Livre o dia todo! 🎉
+                  {t.agendaDoDia.livreODiaTodo}
                 </p>
               ) : (
                 <ul className="space-y-1.5">
@@ -600,14 +615,12 @@ export function FriendsSection() {
                       <span className="font-medium tabular-nums">
                         {fmtTime(r.start, timeFormat)} – {fmtTime(r.end, timeFormat)}
                       </span>
-                      <span className="text-xs text-muted-foreground">ocupado</span>
+                      <span className="text-xs text-muted-foreground">{t.agendaDoDia.ocupado}</span>
                     </li>
                   ))}
                 </ul>
               )}
-              <p className="text-[11px] text-muted-foreground/70">
-                Só os horários são compartilhados — nunca o que a pessoa está fazendo.
-              </p>
+              <p className="text-[11px] text-muted-foreground/70">{t.agendaDoDia.aviso}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -618,7 +631,7 @@ export function FriendsSection() {
                 className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
               >
                 <CalendarPlus className="h-3.5 w-3.5" />
-                Convidar para um horário livre
+                {t.agendaDoDia.convidarLivre}
               </button>
             </>
           )}
@@ -635,10 +648,10 @@ export function FriendsSection() {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  Escritório de {visit.display_name ?? `@${visit.username}`}
+                  {t.visita.titulo(visit.display_name ?? `@${visit.username}`)}
                   {visit.level != null && (
                     <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-bold text-primary">
-                      Lvl {visit.level}
+                      {t.visita.nivel(visit.level)}
                     </span>
                   )}
                 </DialogTitle>
@@ -651,9 +664,7 @@ export function FriendsSection() {
                   className="block w-full"
                 />
               </div>
-              <p className="text-center text-xs text-muted-foreground">
-                {visit.items.length} {visit.items.length === 1 ? "item conquistado" : "itens conquistados"} — e o seu, como está? 😉
-              </p>
+              <p className="text-center text-xs text-muted-foreground">{t.visita.itens(visit.items.length)}</p>
             </>
           )}
         </DialogContent>

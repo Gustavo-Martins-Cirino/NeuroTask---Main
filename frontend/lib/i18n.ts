@@ -510,6 +510,77 @@ export interface Dicionario {
    * perfil vêm depois.
    */
   amigos: {
+    /** Os cinco interruptores de privacidade, no alto da seção. */
+    privacidade: {
+      ocupadoLivre: string
+      escritorio: string
+      nivel: string
+      agenda: string
+      perfilAberto: string
+      /** "Amigos veem: Nível" — ou "Amigos NÃO veem: Nível". */
+      dica: (veem: boolean, oQue: string) => string
+    }
+    /** O cartão que aparece antes de a pessoa ter um @. */
+    escolherUsuario: {
+      titulo: string
+      ajuda: string
+      placeholder: string
+      criar: string
+      toastPronto: (usuario: string) => string
+    }
+    buscaPlaceholder: string
+    regiaoPlaceholder: string
+    toastRegiaoSalva: string
+    toastRegiaoRemovida: string
+    sugeridos: string
+    mesmaRegiao: string
+    adicionar: string
+    toastPedidoEnviado: (usuario: string) => string
+    /** Quando o outro já havia pedido: o pedido vira amizade na hora. */
+    toastAgoraAmigos: string
+    pedidos: string
+    aceitar: string
+    recusar: string
+    toastAmizadeAceita: (usuario: string) => string
+    /** Estado do amigo na lista. `privado` é quem não compartilha. */
+    ocupado: string
+    livre: string
+    privado: string
+    verAgenda: string
+    convidar: string
+    visitar: string
+    desfazer: string
+    cancelarPedido: string
+    vazio: string
+    convitesRecebidos: {
+      titulo: string
+      /** "de @ana" / "para @ana" — quem convidou quem. */
+      de: string
+      para: string
+      online: string
+      aguardando: string
+      cancelar: string
+      toastConfirmado: string
+    }
+    agendaDoDia: {
+      /** "Hoje, Ana está…" */
+      titulo: (nome: string) => string
+      /**
+       * A agenda pública tem a própria frase de dia livre: lá é rótulo de
+       * linha, aqui é comemoração. Mesma ideia, registros diferentes.
+       */
+      livreODiaTodo: string
+      ocupado: string
+      aviso: string
+      convidarLivre: string
+    }
+    visita: {
+      titulo: (nome: string) => string
+      /** "Lvl 7" — abreviação que não se traduz, como "Dashboard". */
+      nivel: (n: number) => string
+      itens: (n: number) => string
+      carregando3d: string
+    }
     convite: {
       /** "Convidar Ana" — ou "Convidar @ana", quando não há nome público. */
       titulo: (nome: string) => string
@@ -685,7 +756,7 @@ export const pt: Dicionario = {
       regiao: "Região",
       regioes: { BR: "Brasil", US: "Estados Unidos" },
       regiaoAjuda:
-        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda faltam os amigos, o Escritório e a Neuro IA.",
+        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda faltam o Escritório e a Neuro IA.",
     },
     rotina: {
       titulo: "Rotina",
@@ -899,6 +970,65 @@ export const pt: Dicionario = {
     },
   },
   amigos: {
+    privacidade: {
+      ocupadoLivre: "Ocupado/livre",
+      escritorio: "Escritório",
+      nivel: "Nível",
+      agenda: "Agenda",
+      perfilAberto: "Perfil aberto",
+      dica: (veem, oQue) => `Amigos ${veem ? "veem" : "NÃO veem"}: ${oQue}`,
+    },
+    escolherUsuario: {
+      titulo: "Escolha seu @usuário",
+      ajuda: "É como seus amigos vão te achar na busca. Letras minúsculas, números e _ (3–20).",
+      placeholder: "seu_usuario",
+      criar: "Criar",
+      toastPronto: (usuario) => `Pronto, @${usuario}! Agora seus amigos podem te encontrar.`,
+    },
+    buscaPlaceholder: "Buscar por @usuário ou nome…",
+    regiaoPlaceholder: "Sua região — ex.: Campinas, SP (opcional)",
+    toastRegiaoSalva: "Região salva — vamos priorizar quem está perto.",
+    toastRegiaoRemovida: "Região removida.",
+    sugeridos: "Sugeridos para você",
+    mesmaRegiao: "mesma região",
+    adicionar: "Adicionar",
+    toastPedidoEnviado: (usuario) => `Pedido enviado para @${usuario}`,
+    toastAgoraAmigos: "Vocês agora são amigos! 🎉",
+    pedidos: "Pedidos de amizade",
+    aceitar: "Aceitar",
+    recusar: "Recusar",
+    toastAmizadeAceita: (usuario) => `Você e @${usuario} agora são amigos! 🎉`,
+    ocupado: "Ocupado",
+    livre: "Livre",
+    privado: "privado",
+    verAgenda: "Ver horários ocupados de hoje",
+    convidar: "Convidar para um compromisso",
+    visitar: "Visitar escritório",
+    desfazer: "Desfazer amizade",
+    cancelarPedido: "Cancelar pedido",
+    vazio: "Busque um amigo pelo @ para começar — dá pra ver se ele está livre e visitar o escritório dele. 👀",
+    convitesRecebidos: {
+      titulo: "Convites de compromisso",
+      de: "de",
+      para: "para",
+      online: "online",
+      aguardando: "aguardando",
+      cancelar: "Cancelar convite",
+      toastConfirmado: "Compromisso confirmado — já está no calendário de vocês dois! 📅",
+    },
+    agendaDoDia: {
+      titulo: (nome) => `Hoje, ${nome} está…`,
+      livreODiaTodo: "Livre o dia todo! 🎉",
+      ocupado: "ocupado",
+      aviso: "Só os horários são compartilhados — nunca o que a pessoa está fazendo.",
+      convidarLivre: "Convidar para um horário livre",
+    },
+    visita: {
+      titulo: (nome) => `Escritório de ${nome}`,
+      nivel: (n) => `Lvl ${n}`,
+      itens: (n) => `${n} ${n === 1 ? "item conquistado" : "itens conquistados"} — e o seu, como está? 😉`,
+      carregando3d: "Carregando 3D…",
+    },
     convite: {
       titulo: (nome) => `Convidar ${nome}`,
       tituloPlaceholder: "Título — ex.: Reunião de alinhamento",
@@ -1134,7 +1264,7 @@ export const en: Dicionario = {
       regiao: "Region",
       regioes: { BR: "Brazil", US: "United States" },
       regiaoAjuda:
-        "Sets how times are shown and which language the app speaks. Translation is under way — friends, the Office and Neuro IA are still to come.",
+        "Sets how times are shown and which language the app speaks. Translation is under way — the Office and Neuro IA are still to come.",
     },
     rotina: {
       titulo: "Routine",
@@ -1347,6 +1477,65 @@ export const en: Dicionario = {
     },
   },
   amigos: {
+    privacidade: {
+      ocupadoLivre: "Busy/free",
+      escritorio: "Office",
+      nivel: "Level",
+      agenda: "Schedule",
+      perfilAberto: "Open profile",
+      dica: (veem, oQue) => `Friends ${veem ? "can see" : "can NOT see"}: ${oQue}`,
+    },
+    escolherUsuario: {
+      titulo: "Pick your @username",
+      ajuda: "It is how your friends will find you in search. Lowercase letters, numbers and _ (3–20).",
+      placeholder: "your_username",
+      criar: "Create",
+      toastPronto: (usuario) => `All set, @${usuario}! Your friends can find you now.`,
+    },
+    buscaPlaceholder: "Search by @username or name…",
+    regiaoPlaceholder: "Your area — e.g. Austin, TX (optional)",
+    toastRegiaoSalva: "Area saved — we will put people nearby first.",
+    toastRegiaoRemovida: "Area removed.",
+    sugeridos: "Suggested for you",
+    mesmaRegiao: "same area",
+    adicionar: "Add",
+    toastPedidoEnviado: (usuario) => `Request sent to @${usuario}`,
+    toastAgoraAmigos: "You are friends now! 🎉",
+    pedidos: "Friend requests",
+    aceitar: "Accept",
+    recusar: "Decline",
+    toastAmizadeAceita: (usuario) => `You and @${usuario} are friends now! 🎉`,
+    ocupado: "Busy",
+    livre: "Free",
+    privado: "private",
+    verAgenda: "See today's busy hours",
+    convidar: "Invite to a meeting",
+    visitar: "Visit their office",
+    desfazer: "Remove friend",
+    cancelarPedido: "Cancel request",
+    vazio: "Search a friend by @ to get started — you can see whether they are free and visit their office. 👀",
+    convitesRecebidos: {
+      titulo: "Meeting invites",
+      de: "from",
+      para: "to",
+      online: "online",
+      aguardando: "waiting",
+      cancelar: "Cancel invite",
+      toastConfirmado: "Meeting confirmed — it is already in both your calendars! 📅",
+    },
+    agendaDoDia: {
+      titulo: (nome) => `Today, ${nome} is…`,
+      livreODiaTodo: "Free all day! 🎉",
+      ocupado: "busy",
+      aviso: "Only the hours are shared — never what the person is doing.",
+      convidarLivre: "Invite them to a free slot",
+    },
+    visita: {
+      titulo: (nome) => `${nome}'s office`,
+      nivel: (n) => `Lvl ${n}`,
+      itens: (n) => `${n} ${n === 1 ? "item" : "items"} earned — and how is yours doing? 😉`,
+      carregando3d: "Loading 3D…",
+    },
     convite: {
       titulo: (nome) => `Invite ${nome}`,
       tituloPlaceholder: "Title — e.g. Alignment meeting",

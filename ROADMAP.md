@@ -1576,9 +1576,9 @@ vira ruído.
       (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas**,
       **calendário** (grade, painel do dia e o diálogo de bloco), **importar/exportar**
       (`agenda-io` + o diálogo `ics-import-dialog`), **assinar no Google/Outlook**
-      (`calendar-feed`) e o **diálogo de convite** de Amigos (`invite-dialog`). Falta o
-      miolo de **amigos** (`friends-section`, a fatia grande: perfil, busca, lista, visita e
-      convites recebidos), **Escritório e Neuro IA**. Faltam também dois componentes
+      (`calendar-feed`) e **Amigos inteiro** (`invite-dialog` + `friends-section`: perfil,
+      privacidade, busca, sugeridos, lista, agenda do dia, visita e convites). Falta o
+      miolo do **Escritório e da Neuro IA**. Faltam também dois componentes
       embutidos em Configurações, que têm texto próprio: `foto-perfil-campo` e o
       `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
       infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada

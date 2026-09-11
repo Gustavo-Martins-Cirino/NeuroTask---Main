@@ -511,6 +511,7 @@ describe("a ajuda da região envelhece sozinha", () => {
     d.telas.notas,
     d.telas.calendario,
     d.telas.configuracoes,
+    d.telas.amigos,
   ]
 
   it("nenhuma tela já traduzida continua na lista do que falta", () => {
@@ -526,7 +527,7 @@ describe("a ajuda da região envelhece sozinha", () => {
   it("as que faltam continuam nomeadas — a frase não pode virar promessa vazia", () => {
     for (const [nome, d] of IDIOMAS) {
       const ajuda = d.configuracoes.aparencia.regiaoAjuda.toLowerCase()
-      for (const tela of [d.telas.amigos, d.telas.escritorio, d.telas.neuroIa]) {
+      for (const tela of [d.telas.escritorio, d.telas.neuroIa]) {
         expect(ajuda, `${nome}: ${tela} falta traduzir e não está na ajuda`)
           .toContain(tela.toLowerCase())
       }
@@ -607,5 +608,88 @@ describe("amigos — convidar para um compromisso", () => {
       expect(c(d).as.trim(), nome).not.toBe("")
       expect(c(d).das, nome).not.toBe(c(d).as)
     }
+  })
+})
+
+describe("amigos — a seção inteira", () => {
+  const a = (d: Dicionario) => d.amigos
+
+  it("os rótulos da tela mudam de idioma", () => {
+    expect(a(en).buscaPlaceholder).not.toBe(a(pt).buscaPlaceholder)
+    expect(a(en).sugeridos).not.toBe(a(pt).sugeridos)
+    expect(a(en).vazio).not.toBe(a(pt).vazio)
+    expect(a(en).escolherUsuario.titulo).not.toBe(a(pt).escolherUsuario.titulo)
+    expect(a(en).privacidade.ocupadoLivre).not.toBe(a(pt).privacidade.ocupadoLivre)
+  })
+
+  // A dica do interruptor diz o que os amigos veem — e o que NÃO veem. As duas
+  // metades são frases diferentes, e trocá-las inverte a promessa de privacidade.
+  it("a dica de privacidade distingue ver de NÃO ver, e nomeia o campo", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const campo = a(d).privacidade.nivel
+      const sim = a(d).privacidade.dica(true, campo)
+      const nao = a(d).privacidade.dica(false, campo)
+      expect(sim, nome).toContain(campo)
+      expect(nao, nome).toContain(campo)
+      expect(sim, nome).not.toBe(nao)
+    }
+  })
+
+  it("o @usuário entra em cada aviso que fala de uma pessoa", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(a(d).escolherUsuario.toastPronto("ana"), nome).toContain("@ana")
+      expect(a(d).toastPedidoEnviado("ana"), nome).toContain("@ana")
+      expect(a(d).toastAmizadeAceita("ana"), nome).toContain("@ana")
+    }
+  })
+
+  it("o nome do amigo entra no título da agenda e da visita", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(a(d).agendaDoDia.titulo("Ana"), nome).toContain("Ana")
+      expect(a(d).visita.titulo("Ana"), nome).toContain("Ana")
+      // Sem nome público o app passa o @usuário.
+      expect(a(d).visita.titulo("@ana"), nome).toContain("@ana")
+    }
+  })
+
+  it("singular e plural dos itens do escritório visitado são diferentes", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(a(d).visita.itens(1), nome).not.toBe(a(d).visita.itens(2))
+      expect(a(d).visita.itens(9), nome).toContain("9")
+    }
+  })
+
+  // "de @ana" e "para @ana" dizem quem convidou quem. Iguais, o cartão do
+  // convite deixa de dizer a única coisa que ele precisa dizer.
+  it("de e para não são a mesma palavra", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(a(d).convitesRecebidos.de, nome).not.toBe(a(d).convitesRecebidos.para)
+      expect(a(d).convitesRecebidos.de.trim(), nome).not.toBe("")
+    }
+  })
+
+  // O mesmo para ocupado/livre: é o estado do amigo na lista.
+  it("ocupado e livre não são a mesma palavra", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(a(d).ocupado, nome).not.toBe(a(d).livre)
+      expect(a(d).privado, nome).not.toBe(a(d).livre)
+    }
+  })
+
+  // A agenda pública e o diálogo do amigo dizem a mesma ideia em registros
+  // diferentes (rótulo de linha × comemoração). São chaves separadas de
+  // propósito, e o teste registra isso — não é descuido.
+  it("o dia livre do diálogo comemora; o da agenda pública é só rótulo", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(a(d).agendaDoDia.livreODiaTodo, nome).not.toBe(d.agenda.livreODiaTodo)
+      expect(a(d).agendaDoDia.livreODiaTodo, nome).toContain("🎉")
+      expect(d.agenda.livreODiaTodo, nome).not.toContain("🎉")
+    }
+  })
+
+  // "Lvl" é abreviação, como "Dashboard": igual nos dois idiomas de propósito.
+  it("Lvl não se traduz, e o número entra", () => {
+    expect(pt.amigos.visita.nivel(7)).toBe(en.amigos.visita.nivel(7))
+    expect(pt.amigos.visita.nivel(7)).toContain("7")
   })
 })
