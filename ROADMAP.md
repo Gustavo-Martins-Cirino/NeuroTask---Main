@@ -1573,11 +1573,12 @@ vira ruído.
 
 - [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (66 testes em
       `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Já passaram: agenda pública, moldura
-      (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas** e
-      **calendário** (grade, painel do dia e o diálogo de bloco). Falta o miolo de
+      (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas**,
+      **calendário** (grade, painel do dia e o diálogo de bloco) e **importar/exportar**
+      (`agenda-io` + o diálogo `ics-import-dialog`). Falta o miolo de
       **amigos, Escritório e Neuro IA**. Faltam também os componentes
-      embutidos em Configurações, que têm texto próprio: `foto-perfil-campo`, `calendar-feed`,
-      `agenda-io` e o `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
+      embutidos em Configurações, que têm texto próprio: `foto-perfil-campo`, `calendar-feed`
+      e o `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
       infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada
       fatia poder ser conferida no olho antes da seguinte.
       **A armadilha do calendário foi respondida (31/08): as duas listas NÃO viram uma só.**
@@ -1591,6 +1592,11 @@ vira ruído.
       A ajuda da região lista o que **falta**, não o que já foi: a lista do que falta encolhe
       até sumir sozinha, e a outra envelhecia a cada fatia — é ela que muda a cada fatia
       entregue.
+      **E ela envelheceu de qualquer jeito (11/09), duas vezes**: o calendário e as notas já
+      estavam traduzidos e continuavam listados como pendentes, porque nada cobrava a
+      atualização. Agora cobra — há teste que exige que a tela entregue SAIA da frase e que
+      as que faltam continuem nomeadas. Ao fechar uma fatia, acrescente a tela à lista
+      `JA_TRADUZIDAS` de `lib/i18n.test.ts` e o teste pede o resto.
       Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de
       fato: **região e formato**, nunca "idioma".
       Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar

@@ -155,7 +155,44 @@ export interface Dicionario {
       sugestaoAjuste: (titulo: string, real: number, amostras: number, antes: number) => string
       toastAtualizada: string
     }
-    importarExportar: { titulo: string; descricao: string }
+    importarExportar: {
+      titulo: string
+      descricao: string
+      importar: string
+      importarDescricao: string
+      exportar: string
+      exportarDescricao: string
+      /** Ainda não há bloco nenhum — não é erro, é aviso. */
+      nadaParaExportar: string
+      toastExportado: (n: number) => string
+      /** O diálogo que a opção "Importar" abre. */
+      dialogo: {
+        titulo: string
+        escolherArquivo: string
+        /** Onde achar o .ics no Google — a ênfase marca o passo final. */
+        ondeAchar: string
+        semEventos: string
+        erroLeitura: string
+        precisaLogin: string
+        marcarTodos: string
+        desmarcarTodos: string
+        /** "12 eventos · 3 já existe(m) · selecione o que criar" */
+        resumo: (total: number, duplicados: number) => string
+        jaExiste: string
+        diaInteiro: string
+        /**
+         * O chip de repetição do evento importado. Diário e semanal saem do
+         * vocabulário da TAREFA, que é o mesmo; só "dias úteis" nasce aqui,
+         * porque o rótulo do bloco ("Dias úteis (seg–sex)") é de opção de
+         * menu e não cabe num chip de 10px.
+         */
+        repeticaoDiasUteis: string
+        cancelar: string
+        importar: string
+        importarN: (n: number) => string
+        toastImportado: (n: number) => string
+      }
+    }
     assinar: { titulo: string; descricao: string }
     compartilharAgenda: { titulo: string; descricao: string }
     notificacoes: {
@@ -604,7 +641,7 @@ export const pt: Dicionario = {
       regiao: "Região",
       regioes: { BR: "Brasil", US: "Estados Unidos" },
       regiaoAjuda:
-        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda faltam o calendário, as notas, os amigos, o Escritório e a Neuro IA.",
+        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda faltam os amigos, o Escritório e a Neuro IA.",
     },
     rotina: {
       titulo: "Rotina",
@@ -630,6 +667,32 @@ export const pt: Dicionario = {
     importarExportar: {
       titulo: "Importar e exportar",
       descricao: "Traga sua agenda de outro calendário (.ics) ou leve a sua pra fora",
+      importar: "Importar",
+      importarDescricao: "Traga sua agenda de um arquivo .ics (Google Calendar, Outlook…)",
+      exportar: "Exportar",
+      exportarDescricao: "Baixe seus blocos como .ics pra usar em outro calendário",
+      nadaParaExportar: "Nenhum bloco pra exportar ainda.",
+      toastExportado: (n) => `${n} ${n === 1 ? "bloco exportado" : "blocos exportados"} (.ics)`,
+      dialogo: {
+        titulo: "Importar agenda (.ics)",
+        escolherArquivo: "Escolher arquivo .ics",
+        ondeAchar:
+          "No Google Calendar: Configurações → Importar e exportar → §Exportar§ (baixa um .zip com o .ics).",
+        semEventos: "Não encontrei eventos nesse arquivo. Exporte a agenda como .ics no seu calendário.",
+        erroLeitura: "Não consegui ler o arquivo.",
+        precisaLogin: "Você precisa estar logado.",
+        marcarTodos: "Marcar todos",
+        desmarcarTodos: "Desmarcar todos",
+        resumo: (total, duplicados) =>
+          `${total} ${total === 1 ? "evento" : "eventos"} · ${duplicados > 0 ? `${duplicados} já existe(m) · ` : ""}selecione o que criar`,
+        jaExiste: "já existe",
+        diaInteiro: "dia inteiro",
+        repeticaoDiasUteis: "Dias úteis",
+        cancelar: "Cancelar",
+        importar: "Importar",
+        importarN: (n) => `Importar ${n}`,
+        toastImportado: (n) => `${n} ${n === 1 ? "evento importado" : "eventos importados"}! 📅`,
+      },
     },
     assinar: {
       titulo: "Assinar no Google/Outlook",
@@ -995,7 +1058,7 @@ export const en: Dicionario = {
       regiao: "Region",
       regioes: { BR: "Brazil", US: "United States" },
       regiaoAjuda:
-        "Sets how times are shown and which language the app speaks. Translation is under way — the calendar, notes, friends, the Office and Neuro IA are still to come.",
+        "Sets how times are shown and which language the app speaks. Translation is under way — friends, the Office and Neuro IA are still to come.",
     },
     rotina: {
       titulo: "Routine",
@@ -1021,6 +1084,32 @@ export const en: Dicionario = {
     importarExportar: {
       titulo: "Import and export",
       descricao: "Bring your schedule from another calendar (.ics), or take yours elsewhere",
+      importar: "Import",
+      importarDescricao: "Bring your schedule in from an .ics file (Google Calendar, Outlook…)",
+      exportar: "Export",
+      exportarDescricao: "Download your blocks as .ics to use in another calendar",
+      nadaParaExportar: "No blocks to export yet.",
+      toastExportado: (n) => `${n} ${n === 1 ? "block" : "blocks"} exported (.ics)`,
+      dialogo: {
+        titulo: "Import a calendar (.ics)",
+        escolherArquivo: "Choose an .ics file",
+        ondeAchar:
+          "In Google Calendar: Settings → Import & export → §Export§ (it downloads a .zip with the .ics inside).",
+        semEventos: "I found no events in that file. Export your calendar as .ics first.",
+        erroLeitura: "I couldn't read the file.",
+        precisaLogin: "You need to be signed in.",
+        marcarTodos: "Select all",
+        desmarcarTodos: "Clear all",
+        resumo: (total, duplicados) =>
+          `${total} ${total === 1 ? "event" : "events"} · ${duplicados > 0 ? `${duplicados} already here · ` : ""}pick what to create`,
+        jaExiste: "already here",
+        diaInteiro: "all day",
+        repeticaoDiasUteis: "Weekdays",
+        cancelar: "Cancel",
+        importar: "Import",
+        importarN: (n) => `Import ${n}`,
+        toastImportado: (n) => `${n} ${n === 1 ? "event" : "events"} imported! 📅`,
+      },
     },
     assinar: {
       titulo: "Subscribe on Google/Outlook",

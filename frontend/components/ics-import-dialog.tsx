@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client"
 import { parseIcs, type IcsEvent } from "@/lib/ics"
 import { cn } from "@/lib/utils"
 import { useTimeFormat } from "@/hooks/use-time-format"
+import { useDicionario, useLocale } from "@/hooks/use-idioma"
+import { enfatizar } from "@/lib/enfase"
 import { formatTime, type TimeFormat } from "@/lib/time-format"
 import { CalendarPlus, Upload, Loader2, Repeat } from "lucide-react"
 import { toast } from "sonner"
@@ -18,24 +20,30 @@ interface Props {
 }
 
 const IMPORT_COLOR = "#3b82f6"
-const RECUR_LABEL: Record<NonNullable<IcsEvent["recurrence"]>, string> = {
-  daily: "diário",
-  weekly: "semanal",
-  weekdays: "dias úteis",
-}
 
 // Chave de dedupe: mesmo título + mesmo minuto de início (o start é gravado em
 // ISO/UTC nos dois lados). Reimportar o mesmo arquivo não duplica.
 const dedupeKey = (title: string, startISO: string) => `${title.trim().toLowerCase()}|${startISO.slice(0, 16)}`
 
-function formatWhen(e: IcsEvent, f: TimeFormat): string {
-  const dia = e.start.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
-  if (e.allDay) return `${dia} · dia inteiro`
+// O dia saía sempre em pt-BR, mesmo com o app em inglês — a prévia dizia
+// "28 de ago." numa tela que já falava outra língua.
+function formatWhen(e: IcsEvent, f: TimeFormat, locale: string, diaInteiro: string): string {
+  const dia = e.start.toLocaleDateString(locale, { day: "2-digit", month: "short" })
+  if (e.allDay) return `${dia} · ${diaInteiro}`
   return `${dia} · ${formatTime(e.start, f)}–${formatTime(e.end, f)}`
 }
 
 export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
+  const traducao = useDicionario()
+  const t = traducao.configuracoes.importarExportar.dialogo
+  const locale = useLocale()
   const timeFormat = useTimeFormat()
+  // Diário e semanal falam o vocabulário da tarefa; só "dias úteis" é daqui.
+  const rotuloRepeticao: Record<NonNullable<IcsEvent["recurrence"]>, string> = {
+    daily: traducao.tarefas.repeticao.diariamente,
+    weekly: traducao.tarefas.repeticao.semanalmente,
+    weekdays: t.repeticaoDiasUteis,
+  }
   const [fileName, setFileName] = useState("")
   const [events, setEvents] = useState<IcsEvent[]>([])
   const [dupes, setDupes] = useState<Set<number>>(new Set())
@@ -56,7 +64,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
       const text = await file.text()
       const parsed = parseIcs(text)
       if (parsed.length === 0) {
-        setError("Não encontrei eventos nesse arquivo. Exporte a agenda como .ics no seu calendário.")
+        setError(t.semEventos)
         setEvents([]); setSel(new Set()); setDupes(new Set())
         return
       }
@@ -71,7 +79,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
       })
       setEvents(parsed); setDupes(dupeSet); setSel(selSet)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não consegui ler o arquivo.")
+      setError(err instanceof Error ? err.message : t.erroLeitura)
     } finally {
       setParsing(false)
     }
@@ -94,7 +102,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
     if (chosen.length === 0) return
     setImporting(true); setError(null)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setError("Você precisa estar logado."); setImporting(false); return }
+    if (!user) { setError(t.precisaLogin); setImporting(false); return }
 
     const rows = chosen.map((i) => {
       const e = events[i]
@@ -115,7 +123,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
     const { error: insErr } = await supabase.from("time_blocks").insert(rows)
     setImporting(false)
     if (insErr) { setError(insErr.message); return }
-    toast.success(`${rows.length} ${rows.length === 1 ? "evento importado" : "eventos importados"}! 📅`)
+    toast.success(t.toastImportado(rows.length))
     onImported()
     onOpenChange(false)
     reset()
@@ -131,7 +139,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
       <DialogContent className="max-h-[88vh] overflow-hidden sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CalendarPlus className="h-5 w-5" /> Importar agenda (.ics)
+            <CalendarPlus className="h-5 w-5" /> {t.titulo}
           </DialogTitle>
         </DialogHeader>
 
@@ -139,10 +147,8 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
           {/* Upload */}
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-6 text-center transition-colors hover:border-primary/50 hover:bg-accent/40">
             {parsing ? <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
-            <span className="text-sm font-medium">{fileName || "Escolher arquivo .ics"}</span>
-            <span className="max-w-sm text-xs text-muted-foreground">
-              No Google Calendar: Configurações → Importar e exportar → <b>Exportar</b> (baixa um .zip com o .ics).
-            </span>
+            <span className="text-sm font-medium">{fileName || t.escolherArquivo}</span>
+            <span className="max-w-sm text-xs text-muted-foreground">{enfatizar(t.ondeAchar)}</span>
             <input type="file" accept=".ics,text/calendar" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
           </label>
 
@@ -152,9 +158,9 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
           {events.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{events.length} {events.length === 1 ? "evento" : "eventos"} · {dupes.size > 0 && `${dupes.size} já existe(m) · `}selecione o que criar</span>
+                <span>{t.resumo(events.length, dupes.size)}</span>
                 <button onClick={toggleAll} className="font-medium text-primary hover:underline">
-                  {allSelected ? "Desmarcar todos" : "Marcar todos"}
+                  {allSelected ? t.desmarcarTodos : t.marcarTodos}
                 </button>
               </div>
               <div className="max-h-[42vh] space-y-1.5 overflow-y-auto pr-1 scrollbar-thin">
@@ -180,12 +186,12 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
                           <span className="truncate text-sm font-medium">{e.title}</span>
                           {e.recurrence && (
                             <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
-                              <Repeat className="h-2.5 w-2.5" /> {RECUR_LABEL[e.recurrence]}
+                              <Repeat className="h-2.5 w-2.5" /> {rotuloRepeticao[e.recurrence]}
                             </span>
                           )}
-                          {isDupe && <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">já existe</span>}
+                          {isDupe && <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">{t.jaExiste}</span>}
                         </span>
-                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{formatWhen(e, timeFormat)}{e.location ? ` · ${e.location}` : ""}</span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{formatWhen(e, timeFormat, locale, t.diaInteiro)}{e.location ? ` · ${e.location}` : ""}</span>
                       </span>
                     </button>
                   )
@@ -196,10 +202,10 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t.cancelar}</Button>
           <Button type="button" onClick={doImport} disabled={importing || chosenCount === 0}>
             {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {chosenCount > 0 ? `Importar ${chosenCount}` : "Importar"}
+            {chosenCount > 0 ? t.importarN(chosenCount) : t.importar}
           </Button>
         </DialogFooter>
       </DialogContent>

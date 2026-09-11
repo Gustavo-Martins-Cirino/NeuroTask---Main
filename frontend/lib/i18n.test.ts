@@ -100,7 +100,10 @@ describe("dicionário inteiro", () => {
   //
   // As frases com ênfase que também levam um NOME (as sugestões de rotina) não
   // entram: sendo funções, a varredura já não as alcança.
-  const COM_ENFASE = new Set(["notas.vazio"])
+  const COM_ENFASE = new Set([
+    "notas.vazio",
+    "configuracoes.importarExportar.dialogo.ondeAchar",
+  ])
 
   it("nenhuma marca de ênfase sobra num texto fixo", () => {
     for (const [, d] of IDIOMAS) {
@@ -437,6 +440,95 @@ describe("calendário", () => {
       // E a que só existe no bloco tem nome próprio.
       expect(d.calendario.bloco.diasUteis).not.toBe("")
       expect(d.calendario.bloco.diasUteis).not.toBe(d.tarefas.repeticao.semanalmente)
+    }
+  })
+})
+
+describe("importar e exportar agenda", () => {
+  const io = (d: Dicionario) => d.configuracoes.importarExportar
+
+  it("as duas opções e o diálogo mudam de idioma", () => {
+    expect(io(en).importar).not.toBe(io(pt).importar)
+    expect(io(en).exportar).not.toBe(io(pt).exportar)
+    expect(io(en).importarDescricao).not.toBe(io(pt).importarDescricao)
+    expect(io(en).dialogo.titulo).not.toBe(io(pt).dialogo.titulo)
+    expect(io(en).dialogo.escolherArquivo).not.toBe(io(pt).dialogo.escolherArquivo)
+  })
+
+  it("singular e plural são diferentes, e o número entra na frase", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const t = io(d)
+      expect(t.toastExportado(1), nome).not.toBe(t.toastExportado(2))
+      expect(t.toastExportado(7), nome).toContain("7")
+      expect(t.dialogo.toastImportado(1), nome).not.toBe(t.dialogo.toastImportado(2))
+      expect(t.dialogo.toastImportado(3), nome).toContain("3")
+      expect(t.dialogo.importarN(5), nome).toContain("5")
+    }
+  })
+
+  // O resumo tem uma parte que só aparece quando há duplicados. Concatenar isso
+  // no JSX era o que travava a ordem das palavras do português.
+  it("o resumo só fala de duplicados quando há duplicados", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const t = io(d).dialogo
+      expect(t.resumo(12, 0), nome).toContain("12")
+      expect(t.resumo(12, 0), nome).not.toContain("3")
+      const com = t.resumo(12, 3)
+      expect(com, nome).toContain("3")
+      expect(com.length, nome).toBeGreaterThan(t.resumo(12, 0).length)
+    }
+  })
+
+  it("a extensão .ics sobrevive à tradução", () => {
+    // É nome de formato, não palavra: quem procura o arquivo procura ".ics".
+    for (const [nome, d] of IDIOMAS) {
+      expect(io(d).dialogo.escolherArquivo, nome).toContain(".ics")
+      expect(io(d).dialogo.titulo, nome).toContain(".ics")
+      expect(io(d).toastExportado(1), nome).toContain(".ics")
+    }
+  })
+
+  it("o chip de repetição é curto — o rótulo do bloco não caberia nele", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const chip = io(d).dialogo.repeticaoDiasUteis
+      expect(chip, nome).not.toBe("")
+      expect(chip.length, nome).toBeLessThan(d.calendario.bloco.diasUteis.length)
+    }
+  })
+})
+
+// A ajuda da região promete o que FALTA traduzir, e essa lista encolhe a cada
+// fatia. Ela envelheceu em silêncio duas vezes (o calendário e as notas já
+// estavam traduzidos e continuavam listados), porque nada cobrava a atualização.
+// Agora cobra: ao entregar uma área, acrescente-a aqui e o teste exige que ela
+// saia da frase.
+describe("a ajuda da região envelhece sozinha", () => {
+  const JA_TRADUZIDAS = (d: Dicionario) => [
+    d.telas.inicio,
+    d.telas.tarefas,
+    d.telas.favoritos,
+    d.telas.notas,
+    d.telas.calendario,
+    d.telas.configuracoes,
+  ]
+
+  it("nenhuma tela já traduzida continua na lista do que falta", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const ajuda = d.configuracoes.aparencia.regiaoAjuda.toLowerCase()
+      for (const tela of JA_TRADUZIDAS(d)) {
+        expect(ajuda, `${nome}: ${tela} já foi traduzida e ainda aparece na ajuda`)
+          .not.toContain(tela.toLowerCase())
+      }
+    }
+  })
+
+  it("as que faltam continuam nomeadas — a frase não pode virar promessa vazia", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const ajuda = d.configuracoes.aparencia.regiaoAjuda.toLowerCase()
+      for (const tela of [d.telas.amigos, d.telas.escritorio, d.telas.neuroIa]) {
+        expect(ajuda, `${nome}: ${tela} falta traduzir e não está na ajuda`)
+          .toContain(tela.toLowerCase())
+      }
     }
   })
 })

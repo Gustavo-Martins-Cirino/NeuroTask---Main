@@ -6,11 +6,13 @@ import { toIcs, blocksToIcsEvents } from "@/lib/ics"
 import { IcsImportDialog } from "@/components/ics-import-dialog"
 import { CalendarPlus, Download, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { useDicionario } from "@/hooks/use-idioma"
 
 // Importar/exportar agenda (.ics) — mora nas Configurações, como no Google
 // Calendar, pra não poluir a tela do calendário. Importar reaproveita o dialog
 // (com prévia + dedupe); exportar baixa todos os blocos como .ics (UTC + RRULE).
 export function AgendaIo() {
+  const t = useDicionario().configuracoes.importarExportar
   const [importOpen, setImportOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const supabase = createClient()
@@ -22,7 +24,7 @@ export function AgendaIo() {
       .select("id, title, description, start_time, end_time, recurrence_rule")
     const eventos = blocksToIcsEvents(data ?? [])
     setExporting(false)
-    if (eventos.length === 0) { toast.info("Nenhum bloco pra exportar ainda."); return }
+    if (eventos.length === 0) { toast.info(t.nadaParaExportar); return }
     const blob = new Blob([toIcs(eventos)], { type: "text/calendar;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -30,7 +32,7 @@ export function AgendaIo() {
     a.download = "neurotask.ics"
     a.click()
     URL.revokeObjectURL(url)
-    toast.success(`${eventos.length} ${eventos.length === 1 ? "bloco exportado" : "blocos exportados"} (.ics)`)
+    toast.success(t.toastExportado(eventos.length))
   }
 
   return (
@@ -44,10 +46,8 @@ export function AgendaIo() {
           <CalendarPlus className="h-4 w-4" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium">Importar</span>
-          <span className="block text-xs text-muted-foreground">
-            Traga sua agenda de um arquivo .ics (Google Calendar, Outlook…)
-          </span>
+          <span className="block text-sm font-medium">{t.importar}</span>
+          <span className="block text-xs text-muted-foreground">{t.importarDescricao}</span>
         </span>
       </button>
 
@@ -61,10 +61,8 @@ export function AgendaIo() {
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium">Exportar</span>
-          <span className="block text-xs text-muted-foreground">
-            Baixe seus blocos como .ics pra usar em outro calendário
-          </span>
+          <span className="block text-sm font-medium">{t.exportar}</span>
+          <span className="block text-xs text-muted-foreground">{t.exportarDescricao}</span>
         </span>
       </button>
 
