@@ -505,6 +505,33 @@ export interface Dicionario {
       precisaLogin: string
     }
   }
+  /**
+   * Amigos. Entra por fatias — esta é a do diálogo de convite; a lista e o
+   * perfil vêm depois.
+   */
+  amigos: {
+    convite: {
+      /** "Convidar Ana" — ou "Convidar @ana", quando não há nome público. */
+      titulo: (nome: string) => string
+      tituloPlaceholder: string
+      /**
+       * "Das 14:00 às 15:00". São duas chaves porque em inglês a construção é
+       * outra ("From … to") — juntar viraria concatenação no JSX, que é
+       * exatamente o que trava a ordem das palavras.
+       */
+      das: string
+      as: string
+      sugerir: string
+      /** Sem janela comum: o número é a duração escolhida nos campos. */
+      semJanela: (minutos: number) => string
+      linkPlaceholder: string
+      localPlaceholder: string
+      aviso: string
+      cancelar: string
+      enviar: string
+      toastEnviado: (usuario: string) => string
+    }
+  }
 }
 
 export const pt: Dicionario = {
@@ -869,6 +896,23 @@ export const pt: Dicionario = {
       aCadaNDias: (dias) => `a cada ${dias} ${dias === 1 ? "dia" : "dias"}`,
       avancaSozinho: "Ao concluir, o prazo avança automaticamente para a próxima ocorrência.",
       precisaLogin: "Você precisa estar logado",
+    },
+  },
+  amigos: {
+    convite: {
+      titulo: (nome) => `Convidar ${nome}`,
+      tituloPlaceholder: "Título — ex.: Reunião de alinhamento",
+      das: "Das",
+      as: "às",
+      sugerir: "Sugerir horário livre dos dois",
+      semJanela: (minutos) => `Nenhuma janela de ${minutos}min livre para os dois nesse dia.`,
+      linkPlaceholder: "Link — Meet, Zoom… (opcional)",
+      localPlaceholder: "Local — sala, endereço… (opcional)",
+      aviso: "Quando o convite for aceito, o compromisso entra automaticamente no calendário de vocês dois.",
+      cancelar: "Cancelar",
+      enviar: "Enviar convite",
+      toastEnviado: (usuario) =>
+        `Convite enviado para @${usuario}! Quando aceitar, entra na agenda dos dois.`,
     },
   },
   favoritos: {
@@ -1300,6 +1344,22 @@ export const en: Dicionario = {
       aCadaNDias: (dias) => `every ${dias} ${dias === 1 ? "day" : "days"}`,
       avancaSozinho: "On completion, the due date moves to the next occurrence by itself.",
       precisaLogin: "You need to be signed in",
+    },
+  },
+  amigos: {
+    convite: {
+      titulo: (nome) => `Invite ${nome}`,
+      tituloPlaceholder: "Title — e.g. Alignment meeting",
+      das: "From",
+      as: "to",
+      sugerir: "Suggest a time you are both free",
+      semJanela: (minutos) => `No ${minutos}min window free for both of you that day.`,
+      linkPlaceholder: "Link — Meet, Zoom… (optional)",
+      localPlaceholder: "Place — room, address… (optional)",
+      aviso: "Once the invite is accepted, the meeting lands in both your calendars automatically.",
+      cancelar: "Cancel",
+      enviar: "Send invite",
+      toastEnviado: (usuario) => `Invite sent to @${usuario}! When they accept, it lands in both calendars.`,
     },
   },
   favoritos: {

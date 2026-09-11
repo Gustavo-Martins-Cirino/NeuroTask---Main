@@ -567,3 +567,45 @@ describe("assinar a agenda no Google/Outlook", () => {
     }
   })
 })
+
+describe("amigos — convidar para um compromisso", () => {
+  const c = (d: Dicionario) => d.amigos.convite
+
+  it("os rótulos mudam de idioma", () => {
+    expect(c(en).sugerir).not.toBe(c(pt).sugerir)
+    expect(c(en).enviar).not.toBe(c(pt).enviar)
+    expect(c(en).aviso).not.toBe(c(pt).aviso)
+    expect(c(en).tituloPlaceholder).not.toBe(c(pt).tituloPlaceholder)
+  })
+
+  it("o nome de quem se convida entra no título", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(c(d).titulo("Ana"), nome).toContain("Ana")
+      // Sem nome público o app passa o @usuário, e a arroba tem de sobreviver.
+      expect(c(d).titulo("@ana"), nome).toContain("@ana")
+    }
+  })
+
+  it("o @usuário aparece no aviso de convite enviado", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(c(d).toastEnviado("gustavo"), nome).toContain("@gustavo")
+    }
+  })
+
+  it("a duração escolhida entra na frase de nenhuma janela livre", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(c(d).semJanela(45), nome).toContain("45")
+      expect(c(d).semJanela(45), nome).not.toBe(c(d).semJanela(90))
+    }
+  })
+
+  // "Das 14:00 às 15:00" e "From 14:00 to 15:00" — a construção é diferente, e
+  // é por isso que são duas chaves em vez de uma frase montada no JSX.
+  it("o par das/às não é a mesma palavra, e nenhuma das duas vem vazia", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(c(d).das.trim(), nome).not.toBe("")
+      expect(c(d).as.trim(), nome).not.toBe("")
+      expect(c(d).das, nome).not.toBe(c(d).as)
+    }
+  })
+})

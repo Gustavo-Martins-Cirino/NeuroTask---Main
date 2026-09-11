@@ -10,6 +10,7 @@ import { sendMeetingInvite } from "@/lib/invites"
 import { suggestCommonFreeSlots, type FreeSlot } from "@/lib/friends"
 import { toast } from "sonner"
 import { CalendarPlus, Loader2, Video, MapPin, Sparkles } from "lucide-react"
+import { useDicionario } from "@/hooks/use-idioma"
 
 interface InviteDialogProps {
   friend: {
@@ -40,6 +41,8 @@ function plusHour(hm: string): string {
 }
 
 export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
+  const traducao = useDicionario()
+  const t = traducao.amigos.convite
   const [title, setTitle] = useState("")
   const [date, setDate] = useState(todayISO())
   const [start, setStart] = useState(nextHour())
@@ -102,7 +105,7 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
       toast.error(error)
       return
     }
-    toast.success(`Convite enviado para @${friend.username}! Quando aceitar, entra na agenda dos dois.`)
+    toast.success(t.toastEnviado(friend.username))
     onSent()
     onClose()
   }
@@ -113,7 +116,7 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CalendarPlus className="h-4 w-4 text-primary" />
-            Convidar {friend?.display_name ?? `@${friend?.username}`}
+            {t.titulo(friend?.display_name ?? `@${friend?.username}`)}
           </DialogTitle>
         </DialogHeader>
 
@@ -122,20 +125,22 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Título — ex.: Reunião de alinhamento"
+            placeholder={t.tituloPlaceholder}
             className="h-10"
           />
 
           <DatePicker value={date} onChange={setDate} />
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Das</span>
+            <span className="text-xs text-muted-foreground">{t.das}</span>
             <div className="w-32">
-              <TimeSelect label="Início" value={start} onChange={setStart} />
+              {/* O rótulo é aria-label, e é a mesma frase do diálogo de bloco —
+                  sai do mesmo lugar do dicionário de propósito. */}
+              <TimeSelect label={traducao.calendario.bloco.horarioDeInicio} value={start} onChange={setStart} />
             </div>
-            <span className="text-xs text-muted-foreground">às</span>
+            <span className="text-xs text-muted-foreground">{t.as}</span>
             <div className="w-32">
-              <TimeSelect label="Fim" value={end} onChange={setEnd} />
+              <TimeSelect label={traducao.calendario.bloco.horarioDeFim} value={end} onChange={setEnd} />
             </div>
           </div>
 
@@ -148,13 +153,11 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
                 className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-primary/10 text-xs font-medium text-primary transition-colors hover:bg-primary/15 disabled:opacity-60"
               >
                 {suggesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                Sugerir horário livre dos dois
+                {t.sugerir}
               </button>
               {slots !== null && (
                 slots.length === 0 ? (
-                  <p className="text-center text-[11px] text-muted-foreground">
-                    Nenhuma janela de {durationMinutes}min livre para os dois nesse dia.
-                  </p>
+                  <p className="text-center text-[11px] text-muted-foreground">{t.semJanela(durationMinutes)}</p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {slots.map((s) => (
@@ -182,7 +185,7 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Link — Meet, Zoom… (opcional)"
+              placeholder={t.linkPlaceholder}
               className="h-9 text-sm"
               inputMode="url"
             />
@@ -192,21 +195,19 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
             <Input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="Local — sala, endereço… (opcional)"
+              placeholder={t.localPlaceholder}
               className="h-9 text-sm"
             />
           </div>
 
-          <p className="text-[11px] leading-relaxed text-muted-foreground/70">
-            Quando o convite for aceito, o compromisso entra automaticamente no calendário de vocês dois.
-          </p>
+          <p className="text-[11px] leading-relaxed text-muted-foreground/70">{t.aviso}</p>
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={onClose}>{t.cancelar}</Button>
           <Button type="button" onClick={handleSend} disabled={loading || !title.trim()}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarPlus className="mr-2 h-4 w-4" />}
-            Enviar convite
+            {t.enviar}
           </Button>
         </DialogFooter>
       </DialogContent>

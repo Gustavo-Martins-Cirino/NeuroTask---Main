@@ -1575,9 +1575,10 @@ vira ruído.
       `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Já passaram: agenda pública, moldura
       (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas**,
       **calendário** (grade, painel do dia e o diálogo de bloco), **importar/exportar**
-      (`agenda-io` + o diálogo `ics-import-dialog`) e **assinar no Google/Outlook**
-      (`calendar-feed`). Falta o miolo de
-      **amigos, Escritório e Neuro IA**. Faltam também dois componentes
+      (`agenda-io` + o diálogo `ics-import-dialog`), **assinar no Google/Outlook**
+      (`calendar-feed`) e o **diálogo de convite** de Amigos (`invite-dialog`). Falta o
+      miolo de **amigos** (`friends-section`, a fatia grande: perfil, busca, lista, visita e
+      convites recebidos), **Escritório e Neuro IA**. Faltam também dois componentes
       embutidos em Configurações, que têm texto próprio: `foto-perfil-campo` e o
       `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
       infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada
