@@ -621,7 +621,7 @@ export default function CalendarPage() {
                           onClick={() => { setAnchor(monthDate); trocarVisao("mes") }}
                           className="mb-2 text-sm font-semibold capitalize transition-colors hover:text-primary"
                         >
-                          {monthDate.toLocaleDateString("pt-BR", { month: "long" })}
+                          {monthDate.toLocaleDateString(locale, { month: "long" })}
                         </button>
                         <div className="grid grid-cols-7 gap-0.5 text-center">
                           {traducao.calendario.diasDaSemana.map((l, i) => (

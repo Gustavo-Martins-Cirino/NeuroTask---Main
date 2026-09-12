@@ -250,7 +250,6 @@ export default function AiPage() {
           // envia só as últimas mensagens para economizar tokens (limite gratuito do Groq)
           messages: nextMessages.slice(-6),
           dayNotes,
-          now: new Date().toLocaleString("pt-BR"),
           tz: new Date().getTimezoneOffset(),
         }),
       })

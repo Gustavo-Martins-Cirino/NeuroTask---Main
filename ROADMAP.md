@@ -1599,6 +1599,18 @@ vira ruído.
       atualização. Agora cobra — há teste que exige que a tela entregue SAIA da frase e que
       as que faltam continuem nomeadas. Ao fechar uma fatia, acrescente a tela à lista
       `JA_TRADUZIDAS` de `lib/i18n.test.ts` e o teste pede o resto.
+      **O locale vazava por baixo da tradução (11/09), três vezes.** A tela ficava traduzida
+      e a DATA continuava em português: a prévia do importador de .ics, os convites de Amigos
+      e o nome do mês na visão de ano do calendário — este último com os dias da semana já
+      vindo do dicionário na linha debaixo. Nenhum teste pegava, porque não há o que quebrar:
+      a função devolve string e a tela renderiza, só na língua errada. Virou
+      `lib/locale-fixo.test.ts`, que varre o AST das quatro pastas e aponta arquivo e linha;
+      as exceções legítimas estão nomeadas lá, uma por uma, com o motivo.
+      **Dois locales de VOZ ficam para a fatia da Neuro IA**, e são bug de verdade para quem
+      usa em inglês: o `lang` do TTS/STT em `voice-conversation.tsx` e o
+      `language: "pt"` que `app/api/ai/transcribe/route.ts` manda ao Whisper — quem aperta o
+      microfone com o app em inglês é transcrito como se falasse português. O guarda não os
+      cobra (locale de voz é outro eixo), mas eles estão anotados na lista de exceções.
       Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de
       fato: **região e formato**, nunca "idioma".
       Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar

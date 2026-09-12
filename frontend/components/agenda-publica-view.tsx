@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { CalendarClock, Lock } from "lucide-react"
 import { agendaDosProximosDias, type BlocoBruto, type DiaDaAgenda } from "@/lib/faixas-ocupadas"
 import { maiusculaInicial } from "@/lib/texto"
-import { dicionario, idiomaDoNavegador, LOCALE, type Dicionario, type Idioma } from "@/lib/i18n"
+import { dicionario, idiomaDoNavegador, IDIOMA_DEFAULT, LOCALE, type Dicionario, type Idioma } from "@/lib/i18n"
 
 // A metade visível da agenda compartilhada (/agenda/<token>).
 //
@@ -44,7 +44,7 @@ export function AgendaPublicaView({
 }) {
   const [agenda, setAgenda] = useState<DiaDaAgenda[] | null>(null)
   const [fuso, setFuso] = useState("")
-  const [d, setD] = useState<Dicionario>(() => dicionario("pt"))
+  const [d, setD] = useState<Dicionario>(() => dicionario(IDIOMA_DEFAULT))
 
   useEffect(() => {
     setAgenda(agendaDosProximosDias(blocos, new Date(), dias))
