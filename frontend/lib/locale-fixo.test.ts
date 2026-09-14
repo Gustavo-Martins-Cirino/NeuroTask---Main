@@ -44,8 +44,6 @@ const PERMITIDOS: Record<string, string> = {
   "app/global-error.tsx": "mesma coisa, na tela de erro — ali nem há React para corrigir depois",
   "app/admin/page.tsx": "painel do dono: uma pessoa só o abre, e ela fala português",
   "components/errors-panel.tsx": "idem — painel de erros do dono",
-  "components/voice-conversation.tsx":
-    "o `lang` da Web Speech API (voz e reconhecimento). É um locale de VOZ, não de texto, e vai junto com a fatia da Neuro IA",
 }
 
 function arquivos(dir: string, saida: string[] = []): string[] {

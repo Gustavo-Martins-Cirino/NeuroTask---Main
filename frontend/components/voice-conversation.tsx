@@ -6,6 +6,7 @@ import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { OndaSonora } from "@/components/onda-sonora"
 import { estadoDaOnda } from "@/lib/onda-sonora"
+import { useIdioma, useLocale } from "@/hooks/use-idioma"
 
 type Status = "idle" | "listening" | "thinking" | "speaking"
 interface Msg { role: "user" | "assistant"; content: string }
@@ -134,6 +135,8 @@ export function VoiceConversation({
   const [error, setError] = useState<string | null>(null)
   const [resting, setResting] = useState(false)
   const [ouvindo, setOuvindo] = useState(false)
+  const idioma = useIdioma()
+  const locale = useLocale()
 
   const phaseRef = useRef<Status>("idle")
   const messagesRef = useRef<Msg[]>([])
@@ -151,20 +154,27 @@ export function VoiceConversation({
   aoEncerrarRef.current = aoEncerrar
   /** Quantas mensagens vieram do chat escrito — essas já foram lidas. */
   const [herdadas, setHerdadas] = useState(0)
+  // Por ref pelo mesmo motivo do histórico: as funções da conversa ao vivo
+  // nascem dentro de um efeito que só reage a `open`, e sem ref elas ficariam
+  // presas ao idioma de quando a conversa abriu.
+  const idiomaRef = useRef(idioma)
+  idiomaRef.current = idioma
+  const localeRef = useRef(locale)
+  localeRef.current = locale
 
   phaseRef.current = status
   messagesRef.current = messages
   voicesRef.current = voices
   voiceURIRef.current = voiceURI
 
-  // Vozes do sistema (prefere pt-BR mais naturais)
+  // Vozes do sistema, no idioma da interface (prefere as mais naturais)
   useEffect(() => {
     const synth = typeof window !== "undefined" ? window.speechSynthesis : null
     if (!synth) return
     const load = () => {
       const all = synth.getVoices()
-      const pt = all.filter((v) => v.lang?.toLowerCase().startsWith("pt"))
-      const list = pt.length ? pt : all
+      const doIdioma = all.filter((v) => v.lang?.toLowerCase().startsWith(idioma))
+      const list = doIdioma.length ? doIdioma : all
       setVoices(list)
       // Voz masculina NATURAL (menos robótica). Cuidado: /male/ casaria com
       // "female" — por isso a checagem explícita de nomes femininos.
@@ -183,7 +193,7 @@ export function VoiceConversation({
     load()
     synth.addEventListener("voiceschanged", load)
     return () => synth.removeEventListener("voiceschanged", load)
-  }, [])
+  }, [idioma])
 
   useEffect(() => {
     if (!open) return
@@ -300,7 +310,7 @@ export function VoiceConversation({
         if (idx >= chunks.length) { goIdle(); return }
         const u = new SpeechSynthesisUtterance(chunks[idx++])
         if (v && !IS_MOBILE) u.voice = v
-        u.lang = "pt-BR"
+        u.lang = localeRef.current
         u.rate = IS_MOBILE ? 0.9 : 1.5
         u.pitch = 1
         u.onend = next
@@ -369,6 +379,7 @@ export function VoiceConversation({
             const form = new FormData()
             const ext = (mr.mimeType || "").includes("mp4") ? "mp4" : "webm"
             form.append("file", blob, `audio.${ext}`)
+            form.append("language", idiomaRef.current)
             const res = await fetch("/api/ai/transcribe", { method: "POST", body: form })
             const data = res.ok ? await res.json() : { text: "" }
             if (disposed) return
@@ -412,7 +423,7 @@ export function VoiceConversation({
       if (USE_WHISPER) { startHoldWhisper(); return }
       try { holdRec?.abort() } catch {}
       const r = new Ctor!()
-      r.lang = "pt-BR"
+      r.lang = localeRef.current
       r.continuous = true
       r.interimResults = true
       buffer = ""

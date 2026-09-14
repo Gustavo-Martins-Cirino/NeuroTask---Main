@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useDicionario } from "@/hooks/use-idioma"
+import { useDicionario, useIdioma } from "@/hooks/use-idioma"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { Bot, ArrowUp, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
@@ -84,6 +84,7 @@ const TUDO = Number.MAX_SAFE_INTEGER
 
 export default function AiPage() {
   const traducao = useDicionario()
+  const idioma = useIdioma()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -299,6 +300,7 @@ export default function AiPage() {
     try {
       const form = new FormData()
       form.append("file", blob, "audio.webm")
+      form.append("language", idioma)
       const res = await fetch("/api/ai/transcribe", { method: "POST", body: form })
       if (!res.ok) {
         const err = await res.text().catch(() => "")

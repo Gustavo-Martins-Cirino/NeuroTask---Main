@@ -27,10 +27,13 @@ export async function POST(req: Request) {
     return new Response("Áudio ausente", { status: 400 })
   }
 
+  const idiomaRecebido = form.get("language")
+  const language = idiomaRecebido === "en" ? "en" : "pt"
+
   const groqForm = new FormData()
   groqForm.append("file", file, "audio.webm")
   groqForm.append("model", "whisper-large-v3-turbo")
-  groqForm.append("language", "pt")
+  groqForm.append("language", language)
   groqForm.append("response_format", "json")
 
   const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {

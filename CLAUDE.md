@@ -188,9 +188,11 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   `regiao` e `task-recurrence`. O idioma dentro do app sai da região (`hooks/use-idioma`),
   que já sai do formato de hora; em `/agenda/<token>` sai do navegador de quem abre.
 - **A tradução avança por área, e ainda não terminou.** Já passaram: agenda pública, dock e
-  títulos, Configurações, dashboard, Tarefas, Favoritos e Notas. Faltam calendário, amigos,
-  Escritório e Neuro IA — o ROADMAP tem a lista e as armadilhas. Enquanto sobrar tela em
-  português, o seletor diz **"região e formato"**, nunca "idioma".
+  títulos, Configurações, dashboard, Tarefas, Favoritos, Notas, calendário, importar/exportar
+  de agenda, assinar agenda no Google/Outlook e Amigos inteiro. Faltam o **Escritório** e a
+  **Neuro IA** (chat, voz e a esfera), além de dois componentes embutidos em Configurações
+  (`foto-perfil-campo`, `errors-panel`) — o ROADMAP tem a lista e as armadilhas. Enquanto
+  sobrar tela em português, o seletor diz **"região e formato"**, nunca "idioma".
 
 ## Funcionalidades da IA (Neuro IA)
 

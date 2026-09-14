@@ -1606,11 +1606,20 @@ vira ruído.
       a função devolve string e a tela renderiza, só na língua errada. Virou
       `lib/locale-fixo.test.ts`, que varre o AST das quatro pastas e aponta arquivo e linha;
       as exceções legítimas estão nomeadas lá, uma por uma, com o motivo.
-      **Dois locales de VOZ ficam para a fatia da Neuro IA**, e são bug de verdade para quem
-      usa em inglês: o `lang` do TTS/STT em `voice-conversation.tsx` e o
-      `language: "pt"` que `app/api/ai/transcribe/route.ts` manda ao Whisper — quem aperta o
-      microfone com o app em inglês é transcrito como se falasse português. O guarda não os
-      cobra (locale de voz é outro eixo), mas eles estão anotados na lista de exceções.
+      **Os dois locales de VOZ: resolvidos (14/09), antes da fatia da Neuro IA.** Eram bug de
+      verdade para quem usa em inglês, não só tradução: o `lang` do TTS/STT em
+      `voice-conversation.tsx` estava fixo em `"pt-BR"` (reconhecimento, síntese e o filtro de
+      vozes do sistema), e `app/api/ai/transcribe/route.ts` sempre mandava `language: "pt"` ao
+      Whisper — quem apertasse o microfone com o app em inglês era transcrito como se
+      estivesse falando português, tanto na conversa ao vivo quanto no botão de microfone do
+      chat escrito.
+      Os dois agora leem `useIdioma()`/`useLocale()` (`hooks/use-idioma`). A rota de
+      transcrição passou a receber o idioma pelo `FormData` (validado contra `"en"`, com
+      `"pt"` de reserva — cliente antigo em cache continua funcionando). Dentro do componente,
+      os valores entram por REF pelo mesmo motivo do histórico da conversa: as funções que
+      abrem o microfone nascem num efeito que só reage a `open`, e sem ref ficariam presas ao
+      idioma de quando a conversa começou. A saída de `lib/locale-fixo.test.ts` perdeu a
+      exceção de `voice-conversation.tsx`, que não tem mais locale escrito à mão.
       Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de
       fato: **região e formato**, nunca "idioma".
       Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar
