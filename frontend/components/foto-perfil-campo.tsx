@@ -12,6 +12,7 @@ import {
 } from "@/lib/avatar"
 import { erroDoArquivo } from "@/lib/foto-perfil"
 import { parseAvatarModo, type AvatarModo } from "@/lib/avatar-modo"
+import { useDicionario } from "@/hooks/use-idioma"
 
 // A foto de perfil, em Configurações → Perfil.
 //
@@ -24,13 +25,20 @@ import { parseAvatarModo, type AvatarModo } from "@/lib/avatar-modo"
 // A prévia é o MESMO AvatarIniciais do header, de propósito: é a única forma de
 // ver, antes de sair da tela, exatamente o que vai aparecer lá em cima.
 
-const OPCOES: { modo: AvatarModo; rotulo: string; icone: typeof User }[] = [
-  { modo: "foto", rotulo: "Sua foto", icone: Upload },
-  { modo: "boneco", rotulo: "Seu personagem", icone: Armchair },
-  { modo: "iniciais", rotulo: "Iniciais do nome", icone: User },
+const ICONES: { modo: AvatarModo; icone: typeof User }[] = [
+  { modo: "foto", icone: Upload },
+  { modo: "boneco", icone: Armchair },
+  { modo: "iniciais", icone: User },
 ]
 
 export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
+  const traducao = useDicionario()
+  const t = traducao.configuracoes.perfil.foto
+  const ROTULOS: Record<AvatarModo, string> = {
+    foto: t.suaFoto,
+    boneco: t.seuPersonagem,
+    iniciais: t.iniciaisDoNome,
+  }
   const supabase = createClient()
   const entrada = useRef<HTMLInputElement>(null)
   const raiz = useRef<HTMLDivElement>(null)
@@ -80,7 +88,7 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
     try {
       await salvarAvatarModo(novo)
     } catch {
-      toast.error("Não deu para salvar a escolha.")
+      toast.error(t.erroSalvarEscolha)
     }
   }
 
@@ -99,9 +107,9 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
       await salvarAvatarModo("foto")
       setModo("foto")
       setAberto(false)
-      toast.success("Foto atualizada!")
+      toast.success(t.fotoAtualizada)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não deu para enviar a foto.")
+      toast.error(e instanceof Error ? e.message : t.erroEnviarFoto)
     } finally {
       setOcupado(null)
       // Sem isto, escolher o MESMO arquivo de novo (depois de um erro) não
@@ -114,9 +122,9 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
     setOcupado("removendo")
     try {
       await removerFotoPerfil()
-      toast.success("Foto removida.")
+      toast.success(t.fotoRemovida)
     } catch {
-      toast.error("Não deu para remover a foto.")
+      toast.error(t.erroRemoverFoto)
     } finally {
       setOcupado(null)
       setAberto(false)
@@ -132,7 +140,7 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
           type="button"
           onClick={() => setAberto((a) => !a)}
           disabled={ocupado !== null}
-          aria-label="Trocar o retrato"
+          aria-label={t.trocarRetrato}
           aria-expanded={aberto}
           className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:opacity-50"
         >
@@ -141,15 +149,15 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
       </div>
 
       <div className="min-w-0">
-        <p className="text-sm font-medium">Seu retrato</p>
+        <p className="text-sm font-medium">{t.retrato}</p>
         <p className="text-xs text-muted-foreground">
-          {modo === "foto" ? "Usando sua foto" : modo === "boneco" ? "Usando seu personagem do Escritório" : "Usando as iniciais do nome"}
+          {modo === "foto" ? t.usandoFoto : modo === "boneco" ? t.usandoBoneco : t.usandoIniciais}
         </p>
       </div>
 
       {aberto && (
         <div className="absolute left-0 top-[4.5rem] z-50 w-56 overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-xl">
-          {OPCOES.map((o) => {
+          {ICONES.map((o) => {
             const indisponivel = o.modo === "boneco" && !boneco
             return (
               <button
@@ -164,12 +172,12 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
               >
                 <o.icone className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate">{o.rotulo}</span>
+                  <span className="block truncate">{ROTULOS[o.modo]}</span>
                   {indisponivel && (
-                    <span className="block text-[11px] text-muted-foreground">Monte um no Escritório</span>
+                    <span className="block text-[11px] text-muted-foreground">{t.monteNoEscritorio}</span>
                   )}
                   {o.modo === "foto" && !foto && (
-                    <span className="block text-[11px] text-muted-foreground">Escolher um arquivo</span>
+                    <span className="block text-[11px] text-muted-foreground">{t.escolherArquivo}</span>
                   )}
                 </span>
                 {modo === o.modo && <Check className="h-4 w-4 shrink-0 text-primary" />}
@@ -187,7 +195,7 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
                 className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
               >
                 <Trash2 className="h-4 w-4 shrink-0" />
-                Remover a foto
+                {t.removerFoto}
               </button>
             </>
           )}

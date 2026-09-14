@@ -117,6 +117,25 @@ export interface Dicionario {
       email: string
       salvar: string
       salvo: string
+      /** O retrato: foto enviada / bonequinho do Escritório / iniciais. */
+      foto: {
+        retrato: string
+        usandoFoto: string
+        usandoBoneco: string
+        usandoIniciais: string
+        trocarRetrato: string
+        suaFoto: string
+        seuPersonagem: string
+        iniciaisDoNome: string
+        monteNoEscritorio: string
+        escolherArquivo: string
+        removerFoto: string
+        erroSalvarEscolha: string
+        fotoAtualizada: string
+        erroEnviarFoto: string
+        fotoRemovida: string
+        erroRemoverFoto: string
+      }
     }
     aparencia: {
       titulo: string
@@ -811,6 +830,24 @@ export const pt: Dicionario = {
       email: "Email",
       salvar: "Salvar",
       salvo: "Salvo",
+      foto: {
+        retrato: "Seu retrato",
+        usandoFoto: "Usando sua foto",
+        usandoBoneco: "Usando seu personagem do Escritório",
+        usandoIniciais: "Usando as iniciais do nome",
+        trocarRetrato: "Trocar o retrato",
+        suaFoto: "Sua foto",
+        seuPersonagem: "Seu personagem",
+        iniciaisDoNome: "Iniciais do nome",
+        monteNoEscritorio: "Monte um no Escritório",
+        escolherArquivo: "Escolher um arquivo",
+        removerFoto: "Remover a foto",
+        erroSalvarEscolha: "Não deu para salvar a escolha.",
+        fotoAtualizada: "Foto atualizada!",
+        erroEnviarFoto: "Não deu para enviar a foto.",
+        fotoRemovida: "Foto removida.",
+        erroRemoverFoto: "Não deu para remover a foto.",
+      },
     },
     aparencia: {
       titulo: "Aparência",
@@ -1378,6 +1415,24 @@ export const en: Dicionario = {
       email: "Email",
       salvar: "Save",
       salvo: "Saved",
+      foto: {
+        retrato: "Your portrait",
+        usandoFoto: "Using your photo",
+        usandoBoneco: "Using your Office character",
+        usandoIniciais: "Using your initials",
+        trocarRetrato: "Change portrait",
+        suaFoto: "Your photo",
+        seuPersonagem: "Your character",
+        iniciaisDoNome: "Initials",
+        monteNoEscritorio: "Build one in the Office",
+        escolherArquivo: "Choose a file",
+        removerFoto: "Remove photo",
+        erroSalvarEscolha: "Couldn't save the choice.",
+        fotoAtualizada: "Photo updated!",
+        erroEnviarFoto: "Couldn't upload the photo.",
+        fotoRemovida: "Photo removed.",
+        erroRemoverFoto: "Couldn't remove the photo.",
+      },
     },
     aparencia: {
       titulo: "Appearance",

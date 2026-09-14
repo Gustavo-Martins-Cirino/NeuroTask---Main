@@ -188,10 +188,11 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   `regiao` e `task-recurrence`. O idioma dentro do app sai da região (`hooks/use-idioma`),
   que já sai do formato de hora; em `/agenda/<token>` sai do navegador de quem abre.
 - **A tradução avança por área, e ainda não terminou.** Já passaram: agenda pública, dock e
-  títulos, Configurações, dashboard, Tarefas, Favoritos, Notas, calendário, importar/exportar
-  de agenda, assinar agenda no Google/Outlook, Amigos inteiro e a Neuro IA (chat, atalhos e
-  conversa por voz). Falta o **Escritório**, além de dois componentes embutidos em
-  Configurações (`foto-perfil-campo`, `errors-panel`) — o ROADMAP tem a lista e as armadilhas.
+  títulos, Configurações (incl. `foto-perfil-campo`), dashboard, Tarefas, Favoritos, Notas,
+  calendário, importar/exportar de agenda, assinar agenda no Google/Outlook, Amigos inteiro e
+  a Neuro IA (chat, atalhos e conversa por voz). Falta só o **Escritório** — o ROADMAP tem a
+  lista e as armadilhas. `errors-panel` fica de fora de propósito: é o painel de erros do
+  DONO, mesma régua do `app/admin/page.tsx` (uma pessoa só abre, e ela fala português).
   Enquanto sobrar tela em português, o seletor diz **"região e formato"**, nunca "idioma".
   **O que a própria IA escreve não entra nisso**: as respostas do modelo saem sempre em
   português (o system prompt de `app/api/ai/route.ts` não é bilíngue) — é conteúdo dinâmico,

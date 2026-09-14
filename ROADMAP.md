@@ -1577,13 +1577,16 @@ vira ruído.
       **calendário** (grade, painel do dia e o diálogo de bloco), **importar/exportar**
       (`agenda-io` + o diálogo `ics-import-dialog`), **assinar no Google/Outlook**
       (`calendar-feed`), **Amigos inteiro** (`invite-dialog` + `friends-section`: perfil,
-      privacidade, busca, sugeridos, lista, agenda do dia, visita e convites) e a **Neuro IA**
-      (chat, atalhos da tela vazia e conversa por voz — ver nota de 14/09 abaixo). Falta o
-      miolo do **Escritório**. Faltam também dois componentes
-      embutidos em Configurações, que têm texto próprio: `foto-perfil-campo` e o
-      `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
-      infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada
-      fatia poder ser conferida no olho antes da seguinte.
+      privacidade, busca, sugeridos, lista, agenda do dia, visita e convites), a **Neuro IA**
+      (chat, atalhos da tela vazia e conversa por voz — ver nota de 14/09 abaixo) e o retrato
+      de perfil (`foto-perfil-campo`, ver nota de 14/09 abaixo). Falta o
+      miolo do **Escritório**. É trabalho de dias, e melhor feito por área, uma de cada vez,
+      para cada fatia poder ser conferida no olho antes da seguinte.
+      **`errors-panel` fica de fora, e é decisão, não pendência**: é o painel de erros do
+      DONO em Configurações — só renderiza algo quando `data.owner` é verdadeiro, ou seja,
+      só quem está logado com `OWNER_EMAIL` chega a ver esse texto. Mesma régua de
+      `app/admin/page.tsx`, já nomeada em `lib/locale-fixo.test.ts`: uma pessoa só abre, e ela
+      fala português.
       **A Neuro IA: resolvida (14/09)** — chat de texto (`app/app/ai/page.tsx`), os quatro
       atalhos editáveis da tela vazia (`atalhos-neuro.tsx`) e a conversa por voz
       (`voice-conversation.tsx`), numa seção nova do dicionário (`Dicionario.ia`).
@@ -1600,6 +1603,11 @@ vira ruído.
       quatro frases em português, direto, o que é exatamente o que "módulo puro não fala
       idioma" proíbe. `leAtalhos` e `ehPadrao` mudaram de assinatura por causa disso, e o
       teste ganhou um padrão de mentira (`PADRAO_TESTE`) para não depender do dicionário.
+      **O retrato de perfil: resolvido (14/09)** — `foto-perfil-campo.tsx`, em
+      Configurações → Perfil (o lápis que troca entre foto/bonequinho/iniciais). Foi na mesma
+      leva por ser pequeno e por o `OPCOES` do arquivo guardar `rotulo` em português direto no
+      módulo — o mesmo problema que os atalhos da Neuro IA tinham, resolvido do mesmo jeito
+      (a lista virou `ICONES`, sem texto, e o rótulo sai de `Dicionario.configuracoes.perfil.foto`).
       **A armadilha do calendário foi respondida (31/08): as duas listas NÃO viram uma só.**
       Elas não são a mesma coisa — a tarefa repete `daily | weekly | monthly | yearly |
       every:N` e é `nextOccurrence` que empurra o PRAZO ao concluir; o bloco repete na GRADE
