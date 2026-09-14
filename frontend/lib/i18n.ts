@@ -603,6 +603,71 @@ export interface Dicionario {
       toastEnviado: (usuario: string) => string
     }
   }
+  /**
+   * Neuro IA — chat, atalhos da tela vazia e conversa por voz.
+   *
+   * O que a PRÓPRIA IA escreve (as respostas do modelo) fica de fora de
+   * propósito: aquilo é conteúdo dinâmico, não interface, e hoje sai sempre em
+   * português — o system prompt da rota não é bilíngue. Aqui só entra o que é
+   * texto fixo do app: rótulos, erros de rede/microfone e o estado da conversa.
+   */
+  ia: {
+    /** Sinal de limite gratuito da IA, sem jargão técnico. */
+    limiteAtingido: string
+    /** Mesmo sinal, versão curta e falável — para a conversa ao vivo. */
+    limiteAtingidoVoz: string
+    novaConversa: string
+    conversas: string
+    desafixar: string
+    fixar: string
+    excluir: string
+    saudacao: string
+    subtitulo: string
+    leuAnotacoes: string
+    placeholder: string
+    pararGravacao: string
+    gravarAudio: string
+    enviar: string
+    conversarPorVoz: string
+    gravando: string
+    transcrevendo: string
+    erroResposta: string
+    erroConexao: string
+    erroTranscricao: string
+    erroTranscricaoGenerica: string
+    erroMicrofone: string
+    /** As quatro sugestões da tela vazia, antes de a pessoa editar as suas. */
+    atalhosPadrao: string[]
+    atalhoPlaceholder: string
+    removerAtalho: string
+    adicionar: string
+    restaurarPadrao: string
+    concluir: string
+    editarAtalhos: string
+    criarAtalho: string
+    respostaFallback: string
+    erroConexaoVoz: string
+    naoOuvi: string
+    gravandoToqueEnviar: string
+    permissaoMicNegada: string
+    statusDescansando: string
+    statusOuvindo: string
+    statusPensando: string
+    statusFalando: string
+    statusToqueParaFalar: string
+    encerrarConversa: string
+    /** Ênfase marcada por `§` (ver lib/enfase.tsx) em volta de "Chrome"/"Edge". */
+    semSuporteVoz: string
+    acordarPlano: string
+    emBreve: string
+    tentarDeNovo: string
+    sim: string
+    nao: string
+    enviarFalado: string
+    tocarParaFalar: string
+    podeFalarAVontade: string
+    toqueMicUseFones: string
+  }
 }
 
 export const pt: Dicionario = {
@@ -756,7 +821,7 @@ export const pt: Dicionario = {
       regiao: "Região",
       regioes: { BR: "Brasil", US: "Estados Unidos" },
       regiaoAjuda:
-        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda faltam o Escritório e a Neuro IA.",
+        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda falta o Escritório.",
     },
     rotina: {
       titulo: "Rotina",
@@ -1111,6 +1176,65 @@ export const pt: Dicionario = {
       concluir: "Concluir",
     },
   },
+  ia: {
+    limiteAtingido:
+      "A Neuro está descansando 😴 O limite gratuito da IA chegou por agora — tente de novo em instantes.",
+    limiteAtingidoVoz: "Estou descansando um pouquinho 😴 O limite gratuito da IA chegou por agora.",
+    novaConversa: "Nova conversa",
+    conversas: "Conversas",
+    desafixar: "Desafixar",
+    fixar: "Fixar",
+    excluir: "Excluir",
+    saudacao: "Olá! Sou a Neuro IA",
+    subtitulo: "Posso organizar seu dia, priorizar tarefas e ajudar você a focar.",
+    leuAnotacoes: "Li suas anotações de hoje",
+    placeholder: "Pergunte qualquer coisa…",
+    pararGravacao: "Parar gravação",
+    gravarAudio: "Gravar áudio",
+    enviar: "Enviar",
+    conversarPorVoz: "Conversar por voz",
+    gravando: "Gravando… toque no quadrado para transcrever",
+    transcrevendo: "Transcrevendo seu áudio…",
+    erroResposta: "Não consegui responder agora. Tente novamente.",
+    erroConexao: "Houve um erro de conexão. Tente novamente.",
+    erroTranscricao: "Não consegui transcrever o áudio.",
+    erroTranscricaoGenerica: "Erro ao transcrever o áudio.",
+    erroMicrofone: "Não foi possível acessar o microfone. Verifique a permissão do navegador.",
+    atalhosPadrao: [
+      "Organize meu dia com base nas minhas anotações",
+      "Quais devem ser minhas 3 prioridades de hoje?",
+      "Sugira blocos de foco para a tarde",
+      "Como melhorar meu foco hoje?",
+    ],
+    atalhoPlaceholder: "O que você quer perguntar…",
+    removerAtalho: "Remover atalho",
+    adicionar: "Adicionar",
+    restaurarPadrao: "Restaurar padrão",
+    concluir: "Concluir",
+    editarAtalhos: "Editar atalhos",
+    criarAtalho: "Criar um atalho",
+    respostaFallback: "Desculpe, não consegui responder agora.",
+    erroConexaoVoz: "Tive um problema de conexão.",
+    naoOuvi: "Não consegui te ouvir — toca no microfone e tenta de novo?",
+    gravandoToqueEnviar: "Gravando… toque de novo para enviar",
+    permissaoMicNegada: "Permissão de microfone negada.",
+    statusDescansando: "Descansando 😴",
+    statusOuvindo: "Ouvindo…",
+    statusPensando: "Pensando…",
+    statusFalando: "Falando…",
+    statusToqueParaFalar: "Toque no microfone para falar",
+    encerrarConversa: "Encerrar conversa",
+    semSuporteVoz: "Seu navegador não suporta reconhecimento de voz ao vivo. Use o §Chrome§ ou §Edge§.",
+    acordarPlano: "Acorde a Neuro com o plano ilimitado",
+    emBreve: "(em breve)",
+    tentarDeNovo: "Tentar de novo",
+    sim: "Sim",
+    nao: "Não",
+    enviarFalado: "Enviar o que você falou",
+    tocarParaFalar: "Tocar para falar",
+    podeFalarAVontade: "Pode falar à vontade. Toque de novo para enviar.",
+    toqueMicUseFones: "Toque no microfone para falar. Use fones para melhor resultado.",
+  },
 }
 
 export const en: Dicionario = {
@@ -1264,7 +1388,7 @@ export const en: Dicionario = {
       regiao: "Region",
       regioes: { BR: "Brazil", US: "United States" },
       regiaoAjuda:
-        "Sets how times are shown and which language the app speaks. Translation is under way — the Office and Neuro IA are still to come.",
+        "Sets how times are shown and which language the app speaks. Translation is under way — the Office is still to come.",
     },
     rotina: {
       titulo: "Routine",
@@ -1616,6 +1740,65 @@ export const en: Dicionario = {
       aumentar: "Bigger",
       concluir: "Done",
     },
+  },
+  ia: {
+    limiteAtingido:
+      "Neuro is taking a nap 😴 The free AI limit was reached for now — try again in a moment.",
+    limiteAtingidoVoz: "I'm taking a little nap 😴 The free AI limit was reached for now.",
+    novaConversa: "New chat",
+    conversas: "Chats",
+    desafixar: "Unpin",
+    fixar: "Pin",
+    excluir: "Delete",
+    saudacao: "Hi! I'm Neuro IA",
+    subtitulo: "I can organise your day, prioritise tasks and help you focus.",
+    leuAnotacoes: "I read today's notes",
+    placeholder: "Ask anything…",
+    pararGravacao: "Stop recording",
+    gravarAudio: "Record audio",
+    enviar: "Send",
+    conversarPorVoz: "Talk by voice",
+    gravando: "Recording… tap the square to transcribe",
+    transcrevendo: "Transcribing your audio…",
+    erroResposta: "I couldn't reply right now. Try again.",
+    erroConexao: "There was a connection error. Try again.",
+    erroTranscricao: "I couldn't transcribe the audio.",
+    erroTranscricaoGenerica: "Error transcribing the audio.",
+    erroMicrofone: "Couldn't access the microphone. Check your browser permission.",
+    atalhosPadrao: [
+      "Organise my day based on my notes",
+      "What should my top 3 priorities be today?",
+      "Suggest focus blocks for the afternoon",
+      "How can I improve my focus today?",
+    ],
+    atalhoPlaceholder: "What do you want to ask…",
+    removerAtalho: "Remove shortcut",
+    adicionar: "Add",
+    restaurarPadrao: "Restore defaults",
+    concluir: "Done",
+    editarAtalhos: "Edit shortcuts",
+    criarAtalho: "Create a shortcut",
+    respostaFallback: "Sorry, I couldn't reply right now.",
+    erroConexaoVoz: "I had a connection problem.",
+    naoOuvi: "I couldn't hear you — tap the microphone and try again?",
+    gravandoToqueEnviar: "Recording… tap again to send",
+    permissaoMicNegada: "Microphone permission denied.",
+    statusDescansando: "Resting 😴",
+    statusOuvindo: "Listening…",
+    statusPensando: "Thinking…",
+    statusFalando: "Speaking…",
+    statusToqueParaFalar: "Tap the microphone to talk",
+    encerrarConversa: "End conversation",
+    semSuporteVoz: "Your browser doesn't support live voice recognition. Use §Chrome§ or §Edge§.",
+    acordarPlano: "Wake Neuro up with the unlimited plan",
+    emBreve: "(coming soon)",
+    tentarDeNovo: "Try again",
+    sim: "Yes",
+    nao: "No",
+    enviarFalado: "Send what you said",
+    tocarParaFalar: "Tap to talk",
+    podeFalarAVontade: "Feel free to talk. Tap again to send.",
+    toqueMicUseFones: "Tap the microphone to talk. Use headphones for best results.",
   },
 }
 

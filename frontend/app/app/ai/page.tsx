@@ -39,10 +39,8 @@ function localDateKey() {
 }
 
 // Traduz o sinal de limite da IA para uma mensagem amigável (sem jargão técnico)
-function prettyReply(t: string): string {
-  return t.trim() === "__RATE_LIMIT__"
-    ? "A Neuro está descansando 😴 O limite gratuito da IA chegou por agora — tente de novo em instantes."
-    : t
+function prettyReply(t: string, mensagemLimite: string): string {
+  return t.trim() === "__RATE_LIMIT__" ? mensagemLimite : t
 }
 
 // ---- Histórico de conversas (até 3 não-fixadas; fixadas são preservadas) ----
@@ -50,13 +48,13 @@ interface Convo { id: string; title: string; messages: ChatMessage[]; pinned: bo
 const CONVOS_KEY = "neurotask-ai-convos"
 const MAX_UNPINNED = 3
 
-function newConvo(): Convo {
-  return { id: Math.random().toString(36).slice(2), title: "Nova conversa", messages: [], pinned: false, updatedAt: Date.now() }
+function newConvo(tituloPadrao: string): Convo {
+  return { id: Math.random().toString(36).slice(2), title: tituloPadrao, messages: [], pinned: false, updatedAt: Date.now() }
 }
-function titleFrom(messages: ChatMessage[]): string {
+function titleFrom(messages: ChatMessage[], tituloPadrao: string): string {
   const firstUser = messages.find((m) => m.role === "user")
   const src = firstUser ?? messages.find((m) => m.role === "assistant" && m.content.trim())
-  return src ? src.content.replace(/\s+/g, " ").trim().slice(0, 40) || "Nova conversa" : "Nova conversa"
+  return src ? src.content.replace(/\s+/g, " ").trim().slice(0, 40) || tituloPadrao : tituloPadrao
 }
 function pruneConvos(list: Convo[]): Convo[] {
   const pinned = list.filter((c) => c.pinned)
@@ -122,7 +120,8 @@ export default function AiPage() {
         const old = localStorage.getItem("neurotask-ai-chat")
         if (old) {
           const arr = JSON.parse(old)
-          if (Array.isArray(arr) && arr.length) list = [{ ...newConvo(), messages: arr, title: titleFrom(arr) }]
+          if (Array.isArray(arr) && arr.length)
+            list = [{ ...newConvo(traducao.ia.novaConversa), messages: arr, title: titleFrom(arr, traducao.ia.novaConversa) }]
           localStorage.removeItem("neurotask-ai-chat")
         }
       } catch { /* ignora */ }
@@ -136,7 +135,7 @@ export default function AiPage() {
     // as vazias de visitas anteriores saem aqui (e do storage, logo abaixo).
     if (comConteudo.length !== list.length) saveConvos(comConteudo)
 
-    const nova = newConvo()
+    const nova = newConvo(traducao.ia.novaConversa)
     setConvos([nova, ...comConteudo])
     setActiveId(nova.id)
     setMessages([])
@@ -155,7 +154,7 @@ export default function AiPage() {
     if (!activeId || !messages.some((m) => m.content.trim())) return
     setConvos((prev) => {
       const next = prev.map((c) =>
-        c.id === activeId ? { ...c, messages, title: titleFrom(messages), updatedAt: Date.now() } : c
+        c.id === activeId ? { ...c, messages, title: titleFrom(messages, traducao.ia.novaConversa), updatedAt: Date.now() } : c
       )
       saveConvos(next)
       return next
@@ -261,7 +260,7 @@ export default function AiPage() {
           const copy = [...prev]
           copy[copy.length - 1] = {
             role: "assistant",
-            content: errText || "Não consegui responder agora. Tente novamente.",
+            content: errText || traducao.ia.erroResposta,
           }
           return copy
         })
@@ -277,7 +276,7 @@ export default function AiPage() {
         acc += decoder.decode(value, { stream: true })
         setMessages((prev) => {
           const copy = [...prev]
-          copy[copy.length - 1] = { role: "assistant", content: prettyReply(acc) }
+          copy[copy.length - 1] = { role: "assistant", content: prettyReply(acc, traducao.ia.limiteAtingido) }
           return copy
         })
       }
@@ -286,7 +285,7 @@ export default function AiPage() {
         const copy = [...prev]
         copy[copy.length - 1] = {
           role: "assistant",
-          content: "Houve um erro de conexão. Tente novamente.",
+          content: traducao.ia.erroConexao,
         }
         return copy
       })
@@ -304,7 +303,7 @@ export default function AiPage() {
       const res = await fetch("/api/ai/transcribe", { method: "POST", body: form })
       if (!res.ok) {
         const err = await res.text().catch(() => "")
-        setMessages((prev) => [...prev, { role: "assistant", content: err || "Não consegui transcrever o áudio." }])
+        setMessages((prev) => [...prev, { role: "assistant", content: err || traducao.ia.erroTranscricao }])
         return
       }
       const { text } = await res.json()
@@ -313,7 +312,7 @@ export default function AiPage() {
         setInput((prev) => (prev.trim() ? `${prev.trim()} ${text.trim()}` : text.trim()))
       }
     } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Erro ao transcrever o áudio." }])
+      setMessages((prev) => [...prev, { role: "assistant", content: traducao.ia.erroTranscricaoGenerica }])
     } finally {
       setTranscribing(false)
     }
@@ -369,7 +368,7 @@ export default function AiPage() {
       }
       rafRef.current = requestAnimationFrame(tick)
     } catch {
-      alert("Não foi possível acessar o microfone. Verifique a permissão do navegador.")
+      alert(traducao.ia.erroMicrofone)
     }
   }
 
@@ -388,7 +387,7 @@ export default function AiPage() {
   // Trocar de conversa mostra o que já foi lido, inteiro: reescrever uma
   // resposta antiga letra a letra seria fingir que ela está chegando agora.
   const newConversation = () => {
-    const c = newConvo()
+    const c = newConvo(traducao.ia.novaConversa)
     setConvos((prev) => pruneConvos([c, ...prev]))
     setActiveId(c.id)
     setMessages([])
@@ -418,7 +417,7 @@ export default function AiPage() {
         setActiveId(nx.id)
         setMessages(nx.messages)
       } else {
-        const c = newConvo()
+        const c = newConvo(traducao.ia.novaConversa)
         next.push(c)
         setActiveId(c.id)
         setMessages([])
@@ -447,13 +446,13 @@ export default function AiPage() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
               <MessagesSquare className="h-3.5 w-3.5" />
-              Conversas
+              {traducao.ia.conversas}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
             <DropdownMenuItem onClick={newConversation} className="gap-2">
               <Plus className="h-4 w-4" />
-              Nova conversa
+              {traducao.ia.novaConversa}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {[...convos].sort((a, b) => b.updatedAt - a.updatedAt).map((c) => (
@@ -463,18 +462,18 @@ export default function AiPage() {
                   className="flex min-w-0 flex-1 items-center gap-1.5 py-1.5 pl-1 text-left text-sm"
                 >
                   {c.pinned && <Pin className="h-3 w-3 shrink-0 text-primary" />}
-                  <span className="truncate">{c.title || "Nova conversa"}</span>
+                  <span className="truncate">{c.title || traducao.ia.novaConversa}</span>
                 </button>
                 <button
                   onClick={() => togglePin(c.id)}
-                  title={c.pinned ? "Desafixar" : "Fixar"}
+                  title={c.pinned ? traducao.ia.desafixar : traducao.ia.fixar}
                   className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {c.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
                 </button>
                 <button
                   onClick={() => deleteConvo(c.id)}
-                  title="Excluir"
+                  title={traducao.ia.excluir}
                   className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -529,16 +528,14 @@ export default function AiPage() {
                 }
               />
               <div className="space-y-1">
-                <h2 className="text-2xl font-bold">Olá! Sou a Neuro IA</h2>
-                <p className="text-muted-foreground">
-                  Posso organizar seu dia, priorizar tarefas e ajudar você a focar.
-                </p>
+                <h2 className="text-2xl font-bold">{traducao.ia.saudacao}</h2>
+                <p className="text-muted-foreground">{traducao.ia.subtitulo}</p>
               </div>
 
               {dayNotes.trim() && (
                 <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-xs text-muted-foreground">
                   <NotebookPen className="h-3.5 w-3.5" />
-                  Li suas anotações de hoje
+                  {traducao.ia.leuAnotacoes}
                 </div>
               )}
 
@@ -593,8 +590,8 @@ export default function AiPage() {
           <button
             type="button"
             onClick={newConversation}
-            title="Nova conversa"
-            aria-label="Nova conversa"
+            title={traducao.ia.novaConversa}
+            aria-label={traducao.ia.novaConversa}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Plus className="h-4 w-4" />
@@ -609,7 +606,7 @@ export default function AiPage() {
                 send(input)
               }
             }}
-            placeholder="Pergunte qualquer coisa…"
+            placeholder={traducao.ia.placeholder}
             rows={1}
             className="max-h-32 flex-1 resize-none bg-transparent px-2 py-2.5 text-sm outline-none placeholder:text-muted-foreground"
           />
@@ -618,7 +615,7 @@ export default function AiPage() {
             type="button"
             onClick={recording ? stopRecording : startRecording}
             disabled={loading || transcribing}
-            aria-label={recording ? "Parar gravação" : "Gravar áudio"}
+            aria-label={recording ? traducao.ia.pararGravacao : traducao.ia.gravarAudio}
             className={cn(
               "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40",
               recording ? "bg-red-500 text-white" : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -645,8 +642,8 @@ export default function AiPage() {
             type={temTexto ? "submit" : "button"}
             onClick={temTexto ? undefined : () => { unlockSpeech(); setVoiceOpen(true) }}
             disabled={loading}
-            title={temTexto ? "Enviar" : "Conversar por voz"}
-            aria-label={temTexto ? "Enviar" : "Conversar por voz"}
+            title={temTexto ? traducao.ia.enviar : traducao.ia.conversarPorVoz}
+            aria-label={temTexto ? traducao.ia.enviar : traducao.ia.conversarPorVoz}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-background transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {loading ? (
@@ -660,7 +657,7 @@ export default function AiPage() {
         </form>
         {(recording || transcribing) && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            {recording ? "Gravando… toque no quadrado para transcrever" : "Transcrevendo seu áudio…"}
+            {recording ? traducao.ia.gravando : traducao.ia.transcrevendo}
           </p>
         )}
       </div>

@@ -6,7 +6,8 @@ import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { OndaSonora } from "@/components/onda-sonora"
 import { estadoDaOnda } from "@/lib/onda-sonora"
-import { useIdioma, useLocale } from "@/hooks/use-idioma"
+import { useDicionario, useIdioma, useLocale } from "@/hooks/use-idioma"
+import { enfatizar } from "@/lib/enfase"
 
 type Status = "idle" | "listening" | "thinking" | "speaking"
 interface Msg { role: "user" | "assistant"; content: string }
@@ -137,6 +138,7 @@ export function VoiceConversation({
   const [ouvindo, setOuvindo] = useState(false)
   const idioma = useIdioma()
   const locale = useLocale()
+  const traducao = useDicionario()
 
   const phaseRef = useRef<Status>("idle")
   const messagesRef = useRef<Msg[]>([])
@@ -161,6 +163,8 @@ export function VoiceConversation({
   idiomaRef.current = idioma
   const localeRef = useRef(locale)
   localeRef.current = locale
+  const traducaoRef = useRef(traducao)
+  traducaoRef.current = traducao
 
   phaseRef.current = status
   messagesRef.current = messages
@@ -226,7 +230,7 @@ export function VoiceConversation({
       if (reply !== "__RATE_LIMIT__") return false
       setResting(true)
       goIdle()
-      setMessages((m) => [...m, { role: "assistant", content: "Estou descansando um pouquinho 😴 O limite gratuito da IA chegou por agora." }])
+      setMessages((m) => [...m, { role: "assistant", content: traducaoRef.current.ia.limiteAtingidoVoz }])
       return true
     }
 
@@ -343,14 +347,14 @@ export function VoiceConversation({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: history.slice(-6), mode: "voice", tz: new Date().getTimezoneOffset() }),
         })
-        const reply = (await res.text()).trim() || "Desculpe, não consegui responder agora."
+        const reply = (await res.text()).trim() || traducaoRef.current.ia.respostaFallback
         if (disposed) return
         if (handleRateLimit(reply)) return
         setMessages((m) => [...m, { role: "assistant", content: reply }])
         speak(reply)
       } catch {
         if (disposed) return
-        setMessages((m) => [...m, { role: "assistant", content: "Tive um problema de conexão." }])
+        setMessages((m) => [...m, { role: "assistant", content: traducaoRef.current.ia.erroConexaoVoz }])
         goIdle()
       }
     }
@@ -386,7 +390,7 @@ export function VoiceConversation({
             if (data.text?.trim()) {
               onUtterance(data.text.trim())
             } else {
-              setMessages((m) => [...m, { role: "assistant", content: "Não consegui te ouvir — toca no microfone e tenta de novo?" }])
+              setMessages((m) => [...m, { role: "assistant", content: traducaoRef.current.ia.naoOuvi }])
               goIdle()
             }
           } catch {
@@ -395,13 +399,13 @@ export function VoiceConversation({
         }
         mediaRec = mr
         mr.start()
-        setInterim("Gravando… toque de novo para enviar")
+        setInterim(traducaoRef.current.ia.gravandoToqueEnviar)
       } catch {
         // A permissão foi negada ou o microfone não abriu: o botão volta ao
         // lugar, senão ele fica aceso ouvindo o que ninguém está gravando.
         setOuvindo(false)
         goIdle()
-        setError("Não foi possível acessar o microfone. Verifique a permissão do navegador.")
+        setError(traducaoRef.current.ia.erroMicrofone)
       }
     }
 
@@ -440,7 +444,7 @@ export function VoiceConversation({
         setInterim(it)
       }
       r.onerror = (e: any) => {
-        if (e?.error === "not-allowed" || e?.error === "service-not-allowed") setError("Permissão de microfone negada.")
+        if (e?.error === "not-allowed" || e?.error === "service-not-allowed") setError(traducaoRef.current.ia.permissaoMicNegada)
       }
       r.onend = () => {
         const text = (buffer + " " + interimText).replace(/\s+/g, " ").trim()
@@ -500,11 +504,11 @@ export function VoiceConversation({
   }
 
   const statusLabel = resting
-    ? "Descansando 😴"
-    : ouvindo ? "Ouvindo…"
-    : status === "thinking" ? "Pensando…"
-    : status === "speaking" ? "Falando…"
-    : "Toque no microfone para falar"
+    ? traducao.ia.statusDescansando
+    : ouvindo ? traducao.ia.statusOuvindo
+    : status === "thinking" ? traducao.ia.statusPensando
+    : status === "speaking" ? traducao.ia.statusFalando
+    : traducao.ia.statusToqueParaFalar
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")
 
@@ -578,16 +582,14 @@ export function VoiceConversation({
               dela, senão a luz passaria por cima do X e do texto. */}
           <OndaSonora estado={estadoDaOnda(status, ouvindo)} />
 
-          <button onClick={encerrar} aria-label="Encerrar conversa" className="absolute right-6 top-6 z-10 rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+          <button onClick={encerrar} aria-label={traducao.ia.encerrarConversa} className="absolute right-6 top-6 z-10 rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
             <X className="h-6 w-6" />
           </button>
 
           {!supported ? (
             <div className="relative z-10 max-w-sm px-6 text-center">
               <Mic className="mx-auto h-10 w-10 text-muted-foreground/50" />
-              <p className="mt-4 text-muted-foreground">
-                Seu navegador não suporta reconhecimento de voz ao vivo. Use o <strong>Chrome</strong> ou <strong>Edge</strong>.
-              </p>
+              <p className="mt-4 text-muted-foreground">{enfatizar(traducao.ia.semSuporteVoz)}</p>
             </div>
           ) : error ? (
             <div className="relative z-10 max-w-sm px-6 text-center"><p className="text-muted-foreground">{error}</p></div>
@@ -633,7 +635,7 @@ export function VoiceConversation({
                   <div className="flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
                     <Sparkles className="h-4 w-4 shrink-0 text-primary" />
                     <span className="text-muted-foreground">
-                      Acorde a Neuro com o plano ilimitado <span className="text-[10px] opacity-70">(em breve)</span>
+                      {traducao.ia.acordarPlano} <span className="text-[10px] opacity-70">{traducao.ia.emBreve}</span>
                     </span>
                   </div>
                   <button
@@ -641,7 +643,7 @@ export function VoiceConversation({
                     className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
                   >
                     <RotateCcw className="h-4 w-4" />
-                    Tentar de novo
+                    {traducao.ia.tentarDeNovo}
                   </button>
                 </div>
               ) : (
@@ -650,19 +652,22 @@ export function VoiceConversation({
                   <div className="mt-5 flex h-11 items-center justify-center gap-2">
                     {needsConfirm && (
                       <>
+                        {/* O valor enviado é sempre "sim"/"não": a IA só entende
+                            português hoje (o system prompt não é bilíngue), então
+                            o rótulo do botão traduz e o que ele manda não muda. */}
                         <button
                           onClick={() => submitRef.current("sim")}
                           className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
                         >
                           <Check className="h-4 w-4" />
-                          Sim
+                          {traducao.ia.sim}
                         </button>
                         <button
                           onClick={() => submitRef.current("não")}
                           className="flex items-center gap-2 rounded-full border border-border/60 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
                         >
                           <X className="h-4 w-4" />
-                          Não
+                          {traducao.ia.nao}
                         </button>
                       </>
                     )}
@@ -687,16 +692,14 @@ export function VoiceConversation({
                     disabled={status === "thinking"}
                     className={cnMic(ouvindo, status === "thinking")}
                     aria-pressed={ouvindo}
-                    aria-label={ouvindo ? "Enviar o que você falou" : "Tocar para falar"}
+                    aria-label={ouvindo ? traducao.ia.enviarFalado : traducao.ia.tocarParaFalar}
                   >
                     {ouvindo && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500/40" />}
                     {ouvindo ? <Check className="relative h-7 w-7" /> : <Mic className="relative h-7 w-7" />}
                   </button>
 
                   <p className="mt-3 text-center text-xs text-muted-foreground/60">
-                    {ouvindo
-                      ? "Pode falar à vontade. Toque de novo para enviar."
-                      : "Toque no microfone para falar. Use fones para melhor resultado."}
+                    {ouvindo ? traducao.ia.podeFalarAVontade : traducao.ia.toqueMicUseFones}
                   </p>
                 </>
               )}

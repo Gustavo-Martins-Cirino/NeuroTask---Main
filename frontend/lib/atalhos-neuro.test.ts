@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
 import {
-  ATALHOS_PADRAO,
   CHAVE_ATALHOS,
   MAX_ATALHOS,
   MAX_CARACTERES,
@@ -10,17 +9,10 @@ import {
   saneiaAtalhos,
 } from "./atalhos-neuro"
 
-describe("ATALHOS_PADRAO", () => {
-  it("cabe no teto e não tem texto vazio", () => {
-    expect(ATALHOS_PADRAO.length).toBeGreaterThan(0)
-    expect(ATALHOS_PADRAO.length).toBeLessThanOrEqual(MAX_ATALHOS)
-    for (const a of ATALHOS_PADRAO) expect(a.trim()).toBeTruthy()
-  })
-
-  it("já está saneado — senão o padrão mudaria só de passar pela leitura", () => {
-    expect(saneiaAtalhos(ATALHOS_PADRAO)).toEqual(ATALHOS_PADRAO)
-  })
-})
+// Os quatro textos-padrão de verdade moram no dicionário (lib/i18n.ts,
+// Dicionario.ia.atalhosPadrao) — este módulo só testa a REGRA, com um padrão
+// de mentira que serve para qualquer idioma.
+const PADRAO_TESTE = ["um", "dois", "três", "quatro"]
 
 describe("saneiaAtalhos", () => {
   it("tira espaço sobrando das pontas", () => {
@@ -62,39 +54,39 @@ describe("saneiaAtalhos", () => {
 
 describe("leAtalhos", () => {
   it("quem nunca mexeu recebe os padrões", () => {
-    expect(leAtalhos({})).toEqual(ATALHOS_PADRAO)
-    expect(leAtalhos(null)).toEqual(ATALHOS_PADRAO)
-    expect(leAtalhos(undefined)).toEqual(ATALHOS_PADRAO)
+    expect(leAtalhos({}, PADRAO_TESTE)).toEqual(PADRAO_TESTE)
+    expect(leAtalhos(null, PADRAO_TESTE)).toEqual(PADRAO_TESTE)
+    expect(leAtalhos(undefined, PADRAO_TESTE)).toEqual(PADRAO_TESTE)
   })
 
   it("quem apagou todos recebe nada — os padrões não renascem sozinhos", () => {
-    expect(leAtalhos({ [CHAVE_ATALHOS]: [] })).toEqual([])
+    expect(leAtalhos({ [CHAVE_ATALHOS]: [] }, PADRAO_TESTE)).toEqual([])
   })
 
   it("devolve o que foi salvo, já saneado", () => {
-    expect(leAtalhos({ [CHAVE_ATALHOS]: ["  meu  ", "", "meu"] })).toEqual(["meu"])
+    expect(leAtalhos({ [CHAVE_ATALHOS]: ["  meu  ", "", "meu"] }, PADRAO_TESTE)).toEqual(["meu"])
   })
 
   it("metadata corrompido cai no padrão em vez de quebrar a tela", () => {
-    expect(leAtalhos({ [CHAVE_ATALHOS]: "não é lista" })).toEqual(ATALHOS_PADRAO)
+    expect(leAtalhos({ [CHAVE_ATALHOS]: "não é lista" }, PADRAO_TESTE)).toEqual(PADRAO_TESTE)
   })
 
   it("não devolve a mesma referência do padrão — quem editar não muda a constante", () => {
-    const lidos = leAtalhos({})
+    const lidos = leAtalhos({}, PADRAO_TESTE)
     lidos.push("novo")
-    expect(ATALHOS_PADRAO).toHaveLength(4)
+    expect(PADRAO_TESTE).toHaveLength(4)
   })
 })
 
 describe("ehPadrao", () => {
   it("reconhece o padrão", () => {
-    expect(ehPadrao([...ATALHOS_PADRAO])).toBe(true)
+    expect(ehPadrao([...PADRAO_TESTE], PADRAO_TESTE)).toBe(true)
   })
 
   it("qualquer diferença já não é padrão", () => {
-    expect(ehPadrao(ATALHOS_PADRAO.slice(0, 3))).toBe(false)
-    expect(ehPadrao([...ATALHOS_PADRAO].reverse())).toBe(false)
-    expect(ehPadrao([])).toBe(false)
+    expect(ehPadrao(PADRAO_TESTE.slice(0, 3), PADRAO_TESTE)).toBe(false)
+    expect(ehPadrao([...PADRAO_TESTE].reverse(), PADRAO_TESTE)).toBe(false)
+    expect(ehPadrao([], PADRAO_TESTE)).toBe(false)
   })
 })
 

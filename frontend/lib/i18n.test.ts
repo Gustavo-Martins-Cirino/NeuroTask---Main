@@ -104,6 +104,7 @@ describe("dicionário inteiro", () => {
     "notas.vazio",
     "configuracoes.importarExportar.dialogo.ondeAchar",
     "configuracoes.assinar.ondeColar",
+    "ia.semSuporteVoz",
   ])
 
   it("nenhuma marca de ênfase sobra num texto fixo", () => {
@@ -512,6 +513,7 @@ describe("a ajuda da região envelhece sozinha", () => {
     d.telas.calendario,
     d.telas.configuracoes,
     d.telas.amigos,
+    d.telas.neuroIa,
   ]
 
   it("nenhuma tela já traduzida continua na lista do que falta", () => {
@@ -527,7 +529,7 @@ describe("a ajuda da região envelhece sozinha", () => {
   it("as que faltam continuam nomeadas — a frase não pode virar promessa vazia", () => {
     for (const [nome, d] of IDIOMAS) {
       const ajuda = d.configuracoes.aparencia.regiaoAjuda.toLowerCase()
-      for (const tela of [d.telas.escritorio, d.telas.neuroIa]) {
+      for (const tela of [d.telas.escritorio]) {
         expect(ajuda, `${nome}: ${tela} falta traduzir e não está na ajuda`)
           .toContain(tela.toLowerCase())
       }

@@ -11,15 +11,12 @@
 //
 // Só dados e regras puras aqui. O I/O — ler e gravar no `user_metadata`, como
 // avatar_modo e onboarding_v1 — mora em components/atalhos-neuro.tsx.
+//
+// Módulo puro não fala idioma: os QUATRO textos-padrão moram no dicionário
+// (`Dicionario.ia.atalhosPadrao`), não aqui. Este arquivo só sabe as REGRAS —
+// sanear, tapar no teto, reconhecer o padrão — e recebe o padrão de fora.
 
 export const CHAVE_ATALHOS = "atalhos_neuro_v1"
-
-export const ATALHOS_PADRAO: string[] = [
-  "Organize meu dia com base nas minhas anotações",
-  "Quais devem ser minhas 3 prioridades de hoje?",
-  "Sugira blocos de foco para a tarde",
-  "Como melhorar meu foco hoje?",
-]
 
 /** Teto de atalhos. Seis porque a grade tem duas colunas e a tela vazia precisa
  *  caber com a esfera acima dela — mais que isso e a sugestão vira parede. */
@@ -61,19 +58,19 @@ export function saneiaAtalhos(brutos: unknown): string[] {
  * nada. Devolver os padrões nos dois casos faria os cartões renascerem sozinhos
  * para quem acabou de removê-los de propósito.
  */
-export function leAtalhos(metadata: Record<string, unknown> | null | undefined): string[] {
+export function leAtalhos(
+  metadata: Record<string, unknown> | null | undefined,
+  padrao: string[]
+): string[] {
   const guardado = metadata?.[CHAVE_ATALHOS]
-  if (guardado === undefined || guardado === null) return [...ATALHOS_PADRAO]
-  if (!Array.isArray(guardado)) return [...ATALHOS_PADRAO]
+  if (guardado === undefined || guardado === null) return [...padrao]
+  if (!Array.isArray(guardado)) return [...padrao]
   return saneiaAtalhos(guardado)
 }
 
 /** Sem isto, "Restaurar padrão" apareceria mesmo já estando no padrão. */
-export function ehPadrao(atalhos: string[]): boolean {
-  return (
-    atalhos.length === ATALHOS_PADRAO.length &&
-    atalhos.every((a, i) => a === ATALHOS_PADRAO[i])
-  )
+export function ehPadrao(atalhos: string[], padrao: string[]): boolean {
+  return atalhos.length === padrao.length && atalhos.every((a, i) => a === padrao[i])
 }
 
 export function podeAdicionar(atalhos: string[]): boolean {

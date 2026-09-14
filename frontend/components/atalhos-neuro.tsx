@@ -5,8 +5,9 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { Pencil, Plus, RotateCcw, Trash2, Check } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { useDicionario } from "@/hooks/use-idioma"
 import {
-  ATALHOS_PADRAO, CHAVE_ATALHOS, MAX_CARACTERES,
+  CHAVE_ATALHOS, MAX_CARACTERES,
   ehPadrao, leAtalhos, podeAdicionar, saneiaAtalhos,
 } from "@/lib/atalhos-neuro"
 
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function AtalhosNeuro({ aoEscolher }: Props) {
+  const traducao = useDicionario()
   const [atalhos, setAtalhos] = useState<string[] | null>(null)
   const [editando, setEditando] = useState(false)
   const [rascunho, setRascunho] = useState<string[]>([])
@@ -34,10 +36,11 @@ export function AtalhosNeuro({ aoEscolher }: Props) {
   useEffect(() => {
     let vivo = true
     createClient().auth.getUser().then(({ data: { user } }) => {
-      if (vivo) setAtalhos(leAtalhos(user?.user_metadata))
+      if (vivo) setAtalhos(leAtalhos(user?.user_metadata, traducao.ia.atalhosPadrao))
     })
     return () => { vivo = false }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [traducao.ia.atalhosPadrao])
 
   const abrirEdicao = () => {
     setRascunho(atalhos ?? [])
@@ -87,7 +90,7 @@ export function AtalhosNeuro({ aoEscolher }: Props) {
                     if (e.key === "Enter") { e.preventDefault(); salvar() }
                     if (e.key === "Escape") setEditando(false)
                   }}
-                  placeholder="O que você quer perguntar…"
+                  placeholder={traducao.ia.atalhoPlaceholder}
                   className="flex-1 rounded-xl border border-border/50 bg-card/50 px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40"
                 />
                 <button
@@ -96,7 +99,7 @@ export function AtalhosNeuro({ aoEscolher }: Props) {
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">Remover atalho</span>
+                  <span className="sr-only">{traducao.ia.removerAtalho}</span>
                 </button>
               </div>
             ))}
@@ -104,16 +107,16 @@ export function AtalhosNeuro({ aoEscolher }: Props) {
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-1">
               {podeAdicionar(rascunho) && (
                 <BotaoDeTexto onClick={() => setRascunho((r) => [...r, ""])} icone={Plus}>
-                  Adicionar
+                  {traducao.ia.adicionar}
                 </BotaoDeTexto>
               )}
-              {!ehPadrao(rascunho) && (
-                <BotaoDeTexto onClick={() => setRascunho([...ATALHOS_PADRAO])} icone={RotateCcw}>
-                  Restaurar padrão
+              {!ehPadrao(rascunho, traducao.ia.atalhosPadrao) && (
+                <BotaoDeTexto onClick={() => setRascunho([...traducao.ia.atalhosPadrao])} icone={RotateCcw}>
+                  {traducao.ia.restaurarPadrao}
                 </BotaoDeTexto>
               )}
               <BotaoDeTexto onClick={salvar} icone={Check} destaque>
-                Concluir
+                {traducao.ia.concluir}
               </BotaoDeTexto>
             </div>
           </motion.div>
@@ -144,7 +147,7 @@ export function AtalhosNeuro({ aoEscolher }: Props) {
                 todos os atalhos seria uma porta que só abre para fora. */}
             <div className="flex justify-center">
               <BotaoDeTexto onClick={abrirEdicao} icone={Pencil}>
-                {lista.length > 0 ? "Editar atalhos" : "Criar um atalho"}
+                {lista.length > 0 ? traducao.ia.editarAtalhos : traducao.ia.criarAtalho}
               </BotaoDeTexto>
             </div>
           </motion.div>

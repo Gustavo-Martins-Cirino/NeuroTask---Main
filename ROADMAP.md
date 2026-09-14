@@ -1576,13 +1576,30 @@ vira ruído.
       (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas**,
       **calendário** (grade, painel do dia e o diálogo de bloco), **importar/exportar**
       (`agenda-io` + o diálogo `ics-import-dialog`), **assinar no Google/Outlook**
-      (`calendar-feed`) e **Amigos inteiro** (`invite-dialog` + `friends-section`: perfil,
-      privacidade, busca, sugeridos, lista, agenda do dia, visita e convites). Falta o
-      miolo do **Escritório e da Neuro IA**. Faltam também dois componentes
+      (`calendar-feed`), **Amigos inteiro** (`invite-dialog` + `friends-section`: perfil,
+      privacidade, busca, sugeridos, lista, agenda do dia, visita e convites) e a **Neuro IA**
+      (chat, atalhos da tela vazia e conversa por voz — ver nota de 14/09 abaixo). Falta o
+      miolo do **Escritório**. Faltam também dois componentes
       embutidos em Configurações, que têm texto próprio: `foto-perfil-campo` e o
       `errors-panel` — o `seletor-regiao` já saiu da lista, entrou com a
       infraestrutura. É trabalho de dias, e melhor feito por área, uma de cada vez, para cada
       fatia poder ser conferida no olho antes da seguinte.
+      **A Neuro IA: resolvida (14/09)** — chat de texto (`app/app/ai/page.tsx`), os quatro
+      atalhos editáveis da tela vazia (`atalhos-neuro.tsx`) e a conversa por voz
+      (`voice-conversation.tsx`), numa seção nova do dicionário (`Dicionario.ia`).
+      **O que ficou de fora, e é decisão, não esquecimento**: o que a PRÓPRIA IA escreve —
+      as respostas do modelo — continua sempre em português, porque o system prompt de
+      `app/api/ai/route.ts` não é bilíngue. Traduzir a interface não resolve isso: é a IA
+      falando, não texto fixo do app, e ensiná-la a responder no idioma de quem usa é um
+      item à parte (prompt + o regex de `needsConfirm`, que hoje só reconhece "posso
+      confirmar?" em português). Continua tudo funcionando para quem usa em português, que
+      é o único idioma real de uso hoje; só falta a interface, e é isso que este item fecha.
+      **Os quatro atalhos-padrão saíram de `lib/atalhos-neuro.ts` para o dicionário**
+      (`Dicionario.ia.atalhosPadrao`) — o módulo puro continuou só com a REGRA (sanear, tapar
+      no teto, reconhecer o padrão) e passou a recebê-lo por parâmetro; antes ele guardava as
+      quatro frases em português, direto, o que é exatamente o que "módulo puro não fala
+      idioma" proíbe. `leAtalhos` e `ehPadrao` mudaram de assinatura por causa disso, e o
+      teste ganhou um padrão de mentira (`PADRAO_TESTE`) para não depender do dicionário.
       **A armadilha do calendário foi respondida (31/08): as duas listas NÃO viram uma só.**
       Elas não são a mesma coisa — a tarefa repete `daily | weekly | monthly | yearly |
       every:N` e é `nextOccurrence` que empurra o PRAZO ao concluir; o bloco repete na GRADE
