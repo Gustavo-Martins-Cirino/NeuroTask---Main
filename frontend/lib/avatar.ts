@@ -33,26 +33,11 @@ export const OUTFIT_COLORS = ["#3f6f8f", "#4a5568", "#7a4a8f", "#3f8f5f", "#b556
 // não é uma calça que alguém veste.
 export const PANTS_COLORS = ["#3b5378", "#22252d", "#4a5568", "#8a7a5c", "#3f4a3a", "#5c4535"]
 
-export const HAIR_STYLES: { value: HairStyle; label: string }[] = [
-  { value: "curto", label: "Curto" },
-  { value: "franja", label: "Franja" },
-  { value: "cacheado", label: "Cacheado" },
-  { value: "longo", label: "Longo" },
-  { value: "coque", label: "Coque" },
-  { value: "raspado", label: "Raspado" },
-]
-
-export const OUTFITS: { value: Outfit; label: string }[] = [
-  { value: "camiseta", label: "Camiseta" },
-  { value: "moletom", label: "Moletom" },
-  { value: "jaqueta", label: "Jaqueta" },
-  { value: "terno", label: "Terno" },
-]
-
-export const BODY_TYPES: { value: BodyType; label: string }[] = [
-  { value: "m", label: "Masculino" },
-  { value: "f", label: "Feminino" },
-]
+// Só os valores — o rótulo de cada um mora no dicionário
+// (Dicionario.escritorio.avatarEditor), não aqui: módulo puro não fala idioma.
+export const HAIR_STYLES: HairStyle[] = ["curto", "franja", "cacheado", "longo", "coque", "raspado"]
+export const OUTFITS: Outfit[] = ["camiseta", "moletom", "jaqueta", "terno"]
+export const BODY_TYPES: BodyType[] = ["m", "f"]
 
 export const DEFAULT_AVATAR: AvatarConfig = {
   body: "m",
@@ -72,9 +57,9 @@ export function normalizeAvatar(raw: unknown): AvatarConfig {
   return {
     body: a.body === "f" ? "f" : "m",
     skin: typeof a.skin === "string" ? a.skin : DEFAULT_AVATAR.skin,
-    hairStyle: HAIR_STYLES.some((h) => h.value === a.hairStyle) ? (a.hairStyle as HairStyle) : DEFAULT_AVATAR.hairStyle,
+    hairStyle: HAIR_STYLES.includes(a.hairStyle as HairStyle) ? (a.hairStyle as HairStyle) : DEFAULT_AVATAR.hairStyle,
     hairColor: typeof a.hairColor === "string" ? a.hairColor : DEFAULT_AVATAR.hairColor,
-    outfit: OUTFITS.some((o) => o.value === a.outfit) ? (a.outfit as Outfit) : DEFAULT_AVATAR.outfit,
+    outfit: OUTFITS.includes(a.outfit as Outfit) ? (a.outfit as Outfit) : DEFAULT_AVATAR.outfit,
     outfitColor: typeof a.outfitColor === "string" ? a.outfitColor : DEFAULT_AVATAR.outfitColor,
     pantsColor: typeof a.pantsColor === "string" ? a.pantsColor : DEFAULT_AVATAR.pantsColor,
     headphones: a.headphones !== false,

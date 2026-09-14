@@ -6,6 +6,7 @@ import { type Repeticao } from "@/lib/task-recurrence"
 import { type TaskPriority } from "@/lib/types"
 import { type ChaveCorDeNota } from "@/lib/nota-cor"
 import { type VisaoDoCalendario } from "@/lib/calendario-visao"
+import { type HairStyle, type Outfit, type BodyType } from "@/lib/avatar"
 
 // Tradução do app — a primeira fatia.
 //
@@ -687,6 +688,27 @@ export interface Dicionario {
     podeFalarAVontade: string
     toqueMicUseFones: string
   }
+  /** O Escritório 3D — por enquanto só o editor de avatar (a cena e a loja
+   *  entram numa fatia seguinte). */
+  escritorio: {
+    editarAvatar: string
+    avatarEditor: {
+      corpo: string
+      cabelo: string
+      pele: string
+      roupa: string
+      calca: string
+      ternoAvisoCalca: string
+      /** "Fones ligados"/"desligados" — o botão que liga o acessório do avatar. */
+      fones: (ligado: boolean) => string
+      cancelar: string
+      salvar: string
+      /** Nome de cada corte, pela CHAVE de `lib/avatar.ts` — módulo puro não fala idioma. */
+      cabeloEstilos: Record<HairStyle, string>
+      roupas: Record<Outfit, string>
+      corpoTipos: Record<BodyType, string>
+    }
+  }
 }
 
 export const pt: Dicionario = {
@@ -1272,6 +1294,38 @@ export const pt: Dicionario = {
     podeFalarAVontade: "Pode falar à vontade. Toque de novo para enviar.",
     toqueMicUseFones: "Toque no microfone para falar. Use fones para melhor resultado.",
   },
+  escritorio: {
+    editarAvatar: "Editar avatar",
+    avatarEditor: {
+      corpo: "Corpo",
+      cabelo: "Cabelo",
+      pele: "Pele",
+      roupa: "Roupa",
+      calca: "Calça",
+      ternoAvisoCalca: "No terno, a calça acompanha a cor do paletó.",
+      fones: (ligado) => `Fones ${ligado ? "ligados" : "desligados"}`,
+      cancelar: "Cancelar",
+      salvar: "Salvar",
+      cabeloEstilos: {
+        curto: "Curto",
+        franja: "Franja",
+        cacheado: "Cacheado",
+        longo: "Longo",
+        coque: "Coque",
+        raspado: "Raspado",
+      },
+      roupas: {
+        camiseta: "Camiseta",
+        moletom: "Moletom",
+        jaqueta: "Jaqueta",
+        terno: "Terno",
+      },
+      corpoTipos: {
+        m: "Masculino",
+        f: "Feminino",
+      },
+    },
+  },
 }
 
 export const en: Dicionario = {
@@ -1854,6 +1908,38 @@ export const en: Dicionario = {
     tocarParaFalar: "Tap to talk",
     podeFalarAVontade: "Feel free to talk. Tap again to send.",
     toqueMicUseFones: "Tap the microphone to talk. Use headphones for best results.",
+  },
+  escritorio: {
+    editarAvatar: "Edit avatar",
+    avatarEditor: {
+      corpo: "Body",
+      cabelo: "Hair",
+      pele: "Skin",
+      roupa: "Outfit",
+      calca: "Trousers",
+      ternoAvisoCalca: "With a suit, the trousers follow the jacket colour.",
+      fones: (ligado) => `Headphones ${ligado ? "on" : "off"}`,
+      cancelar: "Cancel",
+      salvar: "Save",
+      cabeloEstilos: {
+        curto: "Short",
+        franja: "Fringe",
+        cacheado: "Curly",
+        longo: "Long",
+        coque: "Bun",
+        raspado: "Buzzcut",
+      },
+      roupas: {
+        camiseta: "T-shirt",
+        moletom: "Hoodie",
+        jaqueta: "Jacket",
+        terno: "Suit",
+      },
+      corpoTipos: {
+        m: "Male",
+        f: "Female",
+      },
+    },
   },
 }
 

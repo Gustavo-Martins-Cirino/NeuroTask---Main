@@ -12,6 +12,7 @@ import {
 } from "@/lib/avatar"
 import { ternoMandaNaCalca } from "@/lib/avatar-calca"
 import { type AvatarAccessories } from "@/lib/avatar-accessories"
+import { useDicionario } from "@/hooks/use-idioma"
 
 interface AvatarEditorProps {
   open: boolean
@@ -44,6 +45,8 @@ function Swatches({ colors, value, onPick }: { colors: string[]; value: string; 
 }
 
 export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }: AvatarEditorProps) {
+  const traducao = useDicionario()
+  const t = traducao.escritorio.avatarEditor
   const [cfg, setCfg] = useState<AvatarConfig>(value)
 
   useEffect(() => {
@@ -60,7 +63,7 @@ export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>Editar avatar</DialogTitle>
+          <DialogTitle>{traducao.escritorio.editarAvatar}</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 sm:flex-row">
@@ -79,22 +82,22 @@ export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }:
           {/* Opções */}
           <div className="min-w-0 flex-1 space-y-3">
             <div className="space-y-1.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Corpo</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t.corpo}</p>
               <div className="flex flex-wrap gap-1.5">
                 {BODY_TYPES.map((b) => (
-                  <button key={b.value} type="button" onClick={() => setCfg({ ...cfg, body: b.value })} className={chip(cfg.body === b.value)}>
-                    {b.label}
+                  <button key={b} type="button" onClick={() => setCfg({ ...cfg, body: b })} className={chip(cfg.body === b)}>
+                    {t.corpoTipos[b]}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cabelo</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t.cabelo}</p>
               <div className="flex flex-wrap gap-1.5">
                 {HAIR_STYLES.map((h) => (
-                  <button key={h.value} type="button" onClick={() => setCfg({ ...cfg, hairStyle: h.value })} className={chip(cfg.hairStyle === h.value)}>
-                    {h.label}
+                  <button key={h} type="button" onClick={() => setCfg({ ...cfg, hairStyle: h })} className={chip(cfg.hairStyle === h)}>
+                    {t.cabeloEstilos[h]}
                   </button>
                 ))}
               </div>
@@ -102,16 +105,16 @@ export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }:
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Pele</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t.pele}</p>
               <Swatches colors={SKIN_TONES} value={cfg.skin} onPick={(c) => setCfg({ ...cfg, skin: c })} />
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Roupa</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t.roupa}</p>
               <div className="flex flex-wrap gap-1.5">
                 {OUTFITS.map((o) => (
-                  <button key={o.value} type="button" onClick={() => setCfg({ ...cfg, outfit: o.value })} className={chip(cfg.outfit === o.value)}>
-                    {o.label}
+                  <button key={o} type="button" onClick={() => setCfg({ ...cfg, outfit: o })} className={chip(cfg.outfit === o)}>
+                    {t.roupas[o]}
                   </button>
                 ))}
               </div>
@@ -119,7 +122,7 @@ export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }:
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Calça</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t.calca}</p>
               {/* Com terno, a calça sai do paletó — traje de dois tons não é
                   traje. A linha continua visível, e não escondida, para a
                   escolha voltar sozinha ao trocar de roupa. */}
@@ -127,9 +130,7 @@ export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }:
                 <Swatches colors={PANTS_COLORS} value={cfg.pantsColor} onPick={(c) => setCfg({ ...cfg, pantsColor: c })} />
               </div>
               {ternoMandaNaCalca(cfg.outfit) && (
-                <p className="text-[11px] leading-tight text-muted-foreground/70">
-                  No terno, a calça acompanha a cor do paletó.
-                </p>
+                <p className="text-[11px] leading-tight text-muted-foreground/70">{t.ternoAvisoCalca}</p>
               )}
             </div>
 
@@ -139,16 +140,16 @@ export function AvatarEditor({ open, onOpenChange, value, accessories, onSave }:
               className={chip(cfg.headphones)}
             >
               <Headphones className="mr-1 inline h-3.5 w-3.5" />
-              Fones {cfg.headphones ? "on" : "off"}
+              {t.fones(cfg.headphones)}
             </button>
           </div>
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t.cancelar}</Button>
           <Button type="button" onClick={() => onSave(cfg)}>
             <Check className="mr-1.5 h-4 w-4" />
-            Salvar
+            {t.salvar}
           </Button>
         </DialogFooter>
       </DialogContent>
