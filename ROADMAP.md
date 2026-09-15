@@ -292,14 +292,34 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > valor de verdade depois de montado — mesmo desenho do "mounted" que Configurações já usava
 > pro tema.
 >
-> **Um quarto ficou só registrado, não corrigido**: o Calendário guarda `anchor` e `now`
-> (o período visto e a hora atual) como `useState(() => new Date())` — mesma classe de bug,
-> mas os dois alimentam a busca de dados e a navegação de verdade, não só texto de tela;
-> corrigir direito pede entender o arquivo inteiro (1156 linhas), que não foi lido de ponta a
-> ponta nesta rodada. O sintoma observado foi mais brando (mismatch de ATRIBUTO, não de
-> texto — "this won't be patched up", React deixa como está em vez de descartar a árvore):
-> o destaque de "hoje" na grade (`isSameDay(day, now)`, 4 ocorrências) pode marcar o dia
-> errado por até 60s perto da virada UTC, e se autocorrige no próximo tick do relógio.
+> **O quarto — o relógio do Calendário: resolvido (15/09), e era pior do que o registrado.**
+> Medido com o servidor em `TZ=UTC next dev` (a configuração da Vercel) e o fuso do
+> navegador trocado por CDP, os efeitos eram outros:
+>
+> · **Em todo carregamento, para qualquer pessoa fora de UTC**: a linha vermelha da hora
+>   atual tem o `top` calculado de `now` no render. O servidor a punha na hora UTC — para
+>   quem está no Brasil, **1177px contra 1009px, exatamente as 3 horas do fuso** — e o React
+>   não corrige atributo divergente ("this won't be patched up"). Ela só ia para o lugar no
+>   tique seguinte, até um minuto depois.
+> · **Quando a DATA diverge** (no Brasil, toda noite das 21h à meia-noite, com o servidor já
+>   no dia seguinte): o "hoje" caía em outra coluna, e a linha vermelha existia numa coluna
+>   no servidor e noutra no navegador. Isso já não é atributo, é ESTRUTURA: **"Hydration
+>   failed… this tree will be regenerated on the client"** — a árvore inteira ia fora.
+>
+> A nota anterior falava em "até 60s perto da virada UTC" e em mismatch "brando". O primeiro
+> sintoma acontecia sempre e o segundo derrubava a árvore; foi medir que mostrou a diferença.
+>
+> **O remédio é o mesmo dos outros três**: o relógio nasce NULO e só vale depois de montado.
+> Um `ehHoje()` no lugar dos quatro `isSameDay(…, now)`, e o que depende da âncora e aparece
+> na visão da semana — a única que o servidor renderiza — espera o relógio do cliente: o
+> rótulo do período e os números do cabeçalho. `anchor` continua nascendo `new Date()`: no
+> que o servidor desenha, só esses dois dependiam dela; o resto é consulta e navegação, que
+> rodam no cliente. Medido de novo nos dois fusos: **zero aviso de hydration**, a linha na
+> hora do navegador e o "hoje" no dia certo.
+>
+> **Fica coberto por construção, sem medida**: a virada de SEMANA (sábado à noite no Brasil,
+> com o servidor já no domingo) mudaria justamente o rótulo e os números do cabeçalho — o
+> que agora espera o relógio do cliente. Não dá para reproduzir numa terça-feira.
 
 ### Escritório 3D — do desenho para o ambiente
 

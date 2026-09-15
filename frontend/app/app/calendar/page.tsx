@@ -127,7 +127,15 @@ export default function CalendarPage() {
   const [defaultStart, setDefaultStart] = useState<Date | undefined>()
   const [defaultEnd, setDefaultEnd] = useState<Date | undefined>()
   const [panelOpen, setPanelOpen] = useState(true)
-  const [now, setNow] = useState(() => new Date())
+  // O relógio nasce NULO e só passa a valer depois de montado. Com
+  // `useState(() => new Date())` o servidor da Vercel (UTC) e o navegador
+  // calculavam cada um a sua hora — medido com `TZ=UTC next dev`: para quem está
+  // no Brasil a linha vermelha da hora atual nascia 168px (3h) fora do lugar e só
+  // corrigia no tique seguinte; e quando a DATA dos dois lados diverge (no
+  // Brasil, toda noite das 21h à meia-noite) o "hoje" caía em outra coluna e o
+  // React jogava a árvore inteira fora. Sem relógio do cliente, nenhuma data é
+  // afirmada na tela.
+  const [now, setNow] = useState<Date | null>(null)
   const [routine, setRoutine] = useState<RoutineProfile | null>(null)
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<string>>(new Set())
   const [holidays, setHolidays] = useState<Record<string, string>>({})
@@ -238,9 +246,13 @@ export default function CalendarPage() {
   const holidayName = (day: Date): string | undefined => holidays[dateKey(day)]
 
   useEffect(() => {
+    setNow(new Date())
     const id = setInterval(() => setNow(new Date()), 60_000)
     return () => clearInterval(id)
   }, [])
+
+  const montado = now !== null
+  const ehHoje = (day: Date) => now !== null && isSameDay(day, now)
 
   useEffect(() => {
     fetchRoutine().then(setRoutine)
@@ -546,7 +558,7 @@ export default function CalendarPage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <span className="text-sm font-medium text-muted-foreground">{maiusculaInicial(rangeLabel)}</span>
+            <span className="text-sm font-medium text-muted-foreground">{montado && maiusculaInicial(rangeLabel)}</span>
           </div>
 
           <div className="flex rounded-lg border border-border/50 p-0.5">
@@ -629,7 +641,7 @@ export default function CalendarPage() {
                           ))}
                           {cells.map((d, i) => {
                             if (!d) return <span key={`e${i}`} />
-                            const today = isSameDay(d, now)
+                            const today = ehHoje(d)
                             const hol = holidayName(d)
                             const busy = occurrencesForDay(d).length > 0
                             return (
@@ -674,7 +686,7 @@ export default function CalendarPage() {
                 {/* Grade do mês (6 semanas) */}
                 <div className="grid flex-1 grid-cols-7 grid-rows-6">
                   {days.map((day) => {
-                    const today = isSameDay(day, now)
+                    const today = ehHoje(day)
                     const outside = day.getMonth() !== anchor.getMonth()
                     const hol = holidayName(day)
                     const dayBlocks = occurrencesForDay(day).sort(
@@ -734,7 +746,7 @@ export default function CalendarPage() {
                   </div>
                   <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
                     {days.map((day) => {
-                      const today = isSameDay(day, now)
+                      const today = ehHoje(day)
                       const hol = holidayName(day)
                       return (
                         <div key={day.toISOString()} className="flex flex-col items-center justify-center gap-1 py-2" title={hol}>
@@ -748,7 +760,7 @@ export default function CalendarPage() {
                                 today ? "bg-primary text-primary-foreground" : hol ? "text-emerald-500" : "text-foreground"
                               )}
                             >
-                              {day.getDate()}
+                              {montado && day.getDate()}
                             </span>
                           </div>
                           {hol && (
@@ -781,7 +793,7 @@ export default function CalendarPage() {
                       style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
                     >
                       {days.map((day) => {
-                        const today = isSameDay(day, now)
+                        const today = ehHoje(day)
                         return (
                           <div key={day.toISOString()} className="relative border-l border-border/30">
                             {/* Hour cells */}
@@ -795,7 +807,7 @@ export default function CalendarPage() {
                             ))}
 
                             {/* Current time indicator */}
-                            {today && (
+                            {today && now && (
                               <div
                                 className="pointer-events-none absolute left-0 right-0 z-20 flex items-center"
                                 style={{ top: (minutesFromMidnight(now) / 60) * HOUR_HEIGHT }}
