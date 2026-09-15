@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { ALVO_DA_MOEDA } from "@/lib/coin-flight"
 import { NumeroRolante } from "@/components/numero-rolante"
+import { useDicionario } from "@/hooks/use-idioma"
 
 interface XpBarProps {
   level?: number
@@ -18,12 +19,13 @@ export function XpBar({
   xpForNextLevel = 100,
   className,
 }: XpBarProps) {
+  const traducao = useDicionario()
   const progress = Math.min(100, Math.max(0, (currentXp / xpForNextLevel) * 100))
 
   return (
     <div
       className={cn("flex items-center gap-3", className)}
-      title="Conclua tarefas para ganhar XP — Baixa +5 · Média +10 · Alta +20 · Urgente +30. A cada 100 XP você sobe de nível! Regras: tarefas criadas há menos de 10 min não geram XP; sem prazo e sem duração vale metade; máximo de 150 XP por dia."
+      title={traducao.moldura.xpDica}
     >
       <div className="flex items-center gap-2">
         <div

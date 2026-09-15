@@ -1776,6 +1776,29 @@ vira ruído.
 > (painéis do dono), a marca "NeuroTask", o comando `/start` do Telegram e o "A" que é
 > amostra do tamanho de fonte no editor de notas.
 
+> **Fatia 1 — a moldura: feita (15/09).** O cabeçalho (tema, perfil, sair e o toast de nível —
+> este por ref, senão ficaria preso ao idioma de quando o cabeçalho montou), o botão de
+> feedback, o aviso de conexão, o guia de boas-vindas, o "Modo Foco" do dock, a dica da barra
+> de XP, e o "Anotações do dia" e o "+N mais" do calendário.
+>
+> **Dois módulos puros falavam português, e deixaram de falar.** `lib/feedback` devolvia a
+> instrução de erro pronta; agora decide o MOTIVO pelo código do Postgres e recebe os textos
+> por parâmetro, como os atalhos da Neuro IA. Os testes deixaram de casar frase em português
+> para casar motivo, e um segundo bloco confere os textos de verdade nos dois idiomas — o de
+> cache do schema segue proibido de mandar rodar SQL. `lib/onboarding` guardava os quatro
+> passos inteiros; virou só a ordem dos ids (`IdPassoOnboarding`), e o dicionário é indexado
+> por eles: passo novo sem texto nos dois idiomas não compila.
+>
+> **O guarda entrou antes de a tradução acabar, e é de propósito.** `lib/texto-solto.test.ts`
+> varre o AST atrás de texto escrito à mão no JSX e nos atributos visíveis, com uma lista de
+> PENDENTES que só encolhe — ele quebra se um arquivo já limpo continuar nela. Assim o que foi
+> traduzido não regride enquanto as outras fatias não chegam. Passou na primeira execução, o
+> que confirmou que a lista estava exata.
+>
+> Conferido em build de produção a 390px, com o app em inglês: o painel de feedback cabe
+> inteiro (x=12 a 364), a frase do rodapé quebra ao lado do botão sem cortar, e nenhum texto
+> ficou em português.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

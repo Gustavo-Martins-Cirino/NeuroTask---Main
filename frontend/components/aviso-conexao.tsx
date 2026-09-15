@@ -8,6 +8,7 @@ import {
   type EstadoConexao, type PulsoDeConexao,
 } from "@/lib/conexao"
 import { duracaoDoMovimento } from "@/lib/movimento"
+import { useDicionario } from "@/hooks/use-idioma"
 
 // O recado que faltava quando o servidor cai.
 //
@@ -24,6 +25,7 @@ import { duracaoDoMovimento } from "@/lib/movimento"
 export function AvisoConexao() {
   const [estado, setEstado] = useState<EstadoConexao>(CONEXAO_INICIAL)
   const semMovimento = useReducedMotion()
+  const t = useDicionario().moldura.conexao
 
   useEffect(() => {
     const aoPulsar = (e: Event) => {
@@ -59,8 +61,8 @@ export function AvisoConexao() {
               salvo" é a metade que importa: sem ela, a tela vazia por trás do
               aviso continua parecendo perda de dados. */}
           <span className="min-w-0">
-            <span className="font-medium text-foreground">Sem conexão com o servidor.</span>{" "}
-            <span className="text-muted-foreground">Seus dados estão a salvo.</span>
+            <span className="font-medium text-foreground">{t.semConexao}</span>{" "}
+            <span className="text-muted-foreground">{t.dadosASalvo}</span>
           </span>
           <button
             type="button"
@@ -68,7 +70,7 @@ export function AvisoConexao() {
             className="flex shrink-0 items-center gap-1.5 rounded-full bg-foreground/10 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-foreground/20"
           >
             <RotateCw className="h-3.5 w-3.5" />
-            Tentar de novo
+            {t.tentarDeNovo}
           </button>
         </motion.div>
       )}

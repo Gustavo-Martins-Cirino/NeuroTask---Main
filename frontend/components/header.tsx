@@ -20,8 +20,9 @@ import { createClient } from "@/lib/supabase/client"
 import { fetchRetrato, RETRATO_UPDATED_EVENT, type Retrato } from "@/lib/avatar"
 import { fetchGamification, computeGamification, XP_UPDATED_EVENT, type Gamification, type XpUpdateDetail } from "@/lib/gamification"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { useDicionario } from "@/hooks/use-idioma"
 
 interface HeaderProps {
   title: string
@@ -33,6 +34,13 @@ export function Header({ title, icon, children }: HeaderProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const supabase = createClient()
+  const t = useDicionario().moldura.cabecalho
+  // O toast de nível nasce num efeito que só roda na montagem: sem a ref, ele
+  // ficaria preso ao idioma de quando o cabeçalho montou.
+  const cabecalhoRef = useRef(t)
+  useEffect(() => {
+    cabecalhoRef.current = t
+  }, [t])
   const [user, setUser] = useState<{ email?: string; name?: string; foto?: string | null; modo?: AvatarModo } | null>(null)
   const [boneco, setBoneco] = useState<Retrato | null>(null)
   const [gamification, setGamification] = useState<Gamification>(() => computeGamification(0))
@@ -89,8 +97,8 @@ export function Header({ title, icon, children }: HeaderProps) {
 
       setGamification((prev) => {
         if (detail.gamification.level > prev.level) {
-          toast.success(`Subiu para o nível ${detail.gamification.level}! 🎉`, {
-            description: "Continue assim, você está mandando bem.",
+          toast.success(cabecalhoRef.current.subiuDeNivel(detail.gamification.level), {
+            description: cabecalhoRef.current.subiuDeNivelDescricao,
           })
         } else if (detail.amount > 0) {
           toast.success(`+${detail.amount} XP`)
@@ -138,7 +146,7 @@ export function Header({ title, icon, children }: HeaderProps) {
         >
           <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Alternar tema</span>
+          <span className="sr-only">{t.alternarTema}</span>
         </Button>
 
         <DropdownMenu>
@@ -150,26 +158,26 @@ export function Header({ title, icon, children }: HeaderProps) {
               {/* Era um <AvatarImage src="/avatar.png">, arquivo que nunca
                   existiu: dava 404 a cada carregamento e caía num fallback de
                   uma letra só, igual para metade das pessoas. */}
-              <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} modo={user?.modo} className="h-9 w-9 text-xs" title={user?.name || "Avatar"} />
+              <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} modo={user?.modo} className="h-9 w-9 text-xs" title={user?.name || t.avatar} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">
             <div className="flex items-center gap-2 p-2">
               <AvatarIniciais nome={user?.name} foto={user?.foto} boneco={boneco} modo={user?.modo} className="h-8 w-8 text-xs" />
               <div className="flex flex-col">
-                <p className="text-sm font-medium">{user?.name || "Usuário"}</p>
+                <p className="text-sm font-medium">{user?.name || t.usuario}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push("/app/settings")}>
               <User className="mr-2 h-4 w-4" />
-              Perfil
+              {t.perfil}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
-              Sair
+              {t.sair}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

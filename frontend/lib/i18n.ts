@@ -9,6 +9,8 @@ import { type VisaoDoCalendario } from "@/lib/calendario-visao"
 import { type HairStyle, type Outfit, type BodyType } from "@/lib/avatar"
 import { type ShopCategory, type ShopItemId } from "@/lib/shop"
 import { type ChaveFundoOffice } from "@/lib/office-bg"
+import { type IdPassoOnboarding } from "@/lib/onboarding"
+import { type TextosDeErroDoFeedback, type TipoDeFeedback } from "@/lib/feedback"
 
 // Tradução do app — a primeira fatia.
 //
@@ -75,9 +77,61 @@ export interface Dicionario {
     favoritos: string
     notas: string
     neuroIa: string
+    /** Nome de recurso, não de produto: ao contrário de "Neuro IA", traduz. */
+    modoFoco: string
     escritorio: string
     amigos: string
     configuracoes: string
+  }
+  /**
+   * O que aparece em TODA tela depois de entrar: o cabeçalho, o botão de
+   * feedback, o aviso de conexão, o guia de boas-vindas e a dica da barra de XP.
+   *
+   * Ficou de fora de todas as fatias da tradução, e é fácil ver por quê: cada
+   * TELA foi traduzida, e a moldura que envolve todas elas não mora em tela
+   * nenhuma — mora no AppShell e no cabeçalho. Achado varrendo o AST atrás de
+   * texto solto no JSX (lib/texto-solto.test.ts).
+   */
+  moldura: {
+    cabecalho: {
+      alternarTema: string
+      /** Título do botão do retrato enquanto o nome não carregou. */
+      avatar: string
+      /** Nome de reserva no menu, antes de o nome carregar. */
+      usuario: string
+      perfil: string
+      sair: string
+      subiuDeNivel: (nivel: number) => string
+      subiuDeNivelDescricao: string
+    }
+    /** A regra do XP, no `title` da barra. */
+    xpDica: string
+    feedback: {
+      enviarFeedback: string
+      fechar: string
+      tipos: Record<TipoDeFeedback, string>
+      placeholder: string
+      vaiJunto: string
+      enviar: string
+      obrigado: string
+      /** Quando a tabela não tinha a coluna da versão e o envio foi sem ela. */
+      chegouSemVersao: string
+      fazDiferenca: string
+      erros: TextosDeErroDoFeedback
+    }
+    conexao: {
+      semConexao: string
+      /** A metade que importa: sem ela, a tela vazia por trás parece perda de dados. */
+      dadosASalvo: string
+      tentarDeNovo: string
+    }
+    onboarding: {
+      passos: Record<IdPassoOnboarding, { titulo: string; texto: string }>
+      voltar: string
+      pular: string
+      comecar: string
+      proximo: string
+    }
   }
   inicio: {
     /** Saudação: a hora escolhe a chave (lib/saudacao), aqui vira texto. */
@@ -461,6 +515,8 @@ export interface Dicionario {
     diasDaSemana: readonly string[]
     dispensarAviso: string
     abrirODia: string
+    /** "+2 mais" no dia cheio da visão de mês. */
+    maisN: (n: number) => string
     recolherPainel: string
     expandirPainel: string
     painelContextual: string
@@ -479,6 +535,7 @@ export interface Dicionario {
       horas: (h: number) => string
     }
     notas: {
+      titulo: string
       salvando: string
       salvo: string
       /** O que se escreve para a IA ler depois. */
@@ -764,6 +821,7 @@ export const pt: Dicionario = {
     diasDaSemana: ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"],
     dispensarAviso: "Dispensar aviso",
     abrirODia: "Abrir o dia",
+    maisN: (n) => `+${n} mais`,
     recolherPainel: "Recolher painel",
     expandirPainel: "Expandir painel",
     painelContextual: "Painel contextual",
@@ -777,6 +835,7 @@ export const pt: Dicionario = {
       horas: (h) => `${String(Math.round(h * 10) / 10).replace(".", ",")}h`,
     },
     notas: {
+      titulo: "Anotações do dia",
       salvando: "Salvando…",
       salvo: "Salvo",
       placeholder: "Para interpretação por IA: Reflexões de hoje... Como tem sido seu foco? Alguma ideia solta?",
@@ -840,9 +899,79 @@ export const pt: Dicionario = {
     favoritos: "Favoritos",
     notas: "Notas",
     neuroIa: "Neuro IA",
+    modoFoco: "Modo Foco",
     escritorio: "Escritório",
     amigos: "Amigos",
     configuracoes: "Configurações",
+  },
+  moldura: {
+    cabecalho: {
+      alternarTema: "Alternar tema",
+      avatar: "Avatar",
+      usuario: "Usuário",
+      perfil: "Perfil",
+      sair: "Sair",
+      subiuDeNivel: (nivel) => `Subiu para o nível ${nivel}! 🎉`,
+      subiuDeNivelDescricao: "Continue assim, você está mandando bem.",
+    },
+    xpDica:
+      "Conclua tarefas para ganhar XP — Baixa +5 · Média +10 · Alta +20 · Urgente +30. A cada 100 XP você sobe de nível! Regras: tarefas criadas há menos de 10 min não geram XP; sem prazo e sem duração vale metade; máximo de 150 XP por dia.",
+    feedback: {
+      enviarFeedback: "Enviar feedback",
+      fechar: "Fechar",
+      tipos: { bug: "Problema", ideia: "Ideia", geral: "Outro" },
+      placeholder: "O que funcionou, o que quebrou, o que faltou…",
+      vaiJunto: "Vai junto: a tela atual e a versão do app.",
+      enviar: "Enviar",
+      obrigado: "Valeu pelo feedback! 🙏",
+      chegouSemVersao: "Chegou aqui. (Sem o contexto da versão — rode supabase/feedback.sql.)",
+      fazDiferenca: "Faz muita diferença pra melhorar o app.",
+      erros: {
+        tabelaAusente: "A tabela de feedback ainda não existe. Rode supabase/feedback.sql no Supabase.",
+        cacheDoSchema:
+          "A tabela existe, mas a API do Supabase ainda não a enxerga (cache do schema). Espere alguns segundos e tente de novo.",
+        colunaFaltando:
+          "A tabela de feedback está sem uma coluna que o app usa. Rode supabase/feedback.sql de novo — ele acrescenta o que falta sem apagar nada.",
+        semPermissao:
+          "Sem permissão para gravar (RLS). Confira se você está logado e se a policy de insert do feedback.sql foi criada.",
+        checkAntigo:
+          "O banco está recusando o tipo do feedback — é um CHECK antigo na coluna kind, de uma versão anterior da tabela. Rode supabase/feedback.sql de novo: ele derruba o constraint velho e recria o certo. Sua mensagem continua aqui.",
+        generico: "Não deu para enviar agora. Tente de novo em instantes.",
+      },
+    },
+    conexao: {
+      semConexao: "Sem conexão com o servidor.",
+      dadosASalvo: "Seus dados estão a salvo.",
+      tentarDeNovo: "Tentar de novo",
+    },
+    onboarding: {
+      passos: {
+        "bem-vindo": {
+          titulo: "Bem-vindo ao NeuroTask",
+          texto:
+            "Não é mais um calendário que você esquece e abandona. É um copiloto da sua rotina: ele planeja o dia com você e acompanha de verdade.",
+        },
+        tarefas: {
+          titulo: "Comece pelas tarefas",
+          texto:
+            "Anote o que precisa fazer. O app prioriza, cuida dos prazos e te dá XP a cada conclusão — o progresso vira jogo, com propósito.",
+        },
+        calendario: {
+          titulo: "Bloqueie o seu tempo",
+          texto:
+            "No calendário você reserva horários para cada coisa. Uma tarefa com hora marcada já vira um bloco no dia, sem trabalho dobrado.",
+        },
+        "neuro-ia": {
+          titulo: "A Neuro IA organiza com você",
+          texto:
+            "Peça para montar o dia, criar tarefas ou entrar em foco. Ela propõe e você confirma — nunca age por conta própria nem inventa dados.",
+        },
+      },
+      voltar: "Voltar",
+      pular: "Pular",
+      comecar: "Começar",
+      proximo: "Próximo",
+    },
   },
   inicio: {
     saudacoes: { ola: "Olá", bomDia: "Bom dia", boaTarde: "Boa tarde", boaNoite: "Boa noite" },
@@ -1481,6 +1610,7 @@ export const en: Dicionario = {
     diasDaSemana: ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"],
     dispensarAviso: "Dismiss warning",
     abrirODia: "Open this day",
+    maisN: (n) => `+${n} more`,
     recolherPainel: "Collapse panel",
     expandirPainel: "Expand panel",
     painelContextual: "Context panel",
@@ -1494,6 +1624,7 @@ export const en: Dicionario = {
       horas: (h) => `${Math.round(h * 10) / 10}h`,
     },
     notas: {
+      titulo: "Day notes",
       salvando: "Saving…",
       salvo: "Saved",
       placeholder: "For the AI to read: today's thoughts… How has your focus been? Any loose ideas?",
@@ -1557,9 +1688,79 @@ export const en: Dicionario = {
     favoritos: "Favorites",
     notas: "Notes",
     neuroIa: "Neuro IA",
+    modoFoco: "Focus Mode",
     escritorio: "Office",
     amigos: "Friends",
     configuracoes: "Settings",
+  },
+  moldura: {
+    cabecalho: {
+      alternarTema: "Toggle theme",
+      avatar: "Avatar",
+      usuario: "User",
+      perfil: "Profile",
+      sair: "Sign out",
+      subiuDeNivel: (nivel) => `You reached level ${nivel}! 🎉`,
+      subiuDeNivelDescricao: "Keep it up — you're doing great.",
+    },
+    xpDica:
+      "Complete tasks to earn XP — Low +5 · Medium +10 · High +20 · Urgent +30. Every 100 XP you level up! Rules: tasks created less than 10 min ago earn no XP; no due date and no duration earns half; at most 150 XP per day.",
+    feedback: {
+      enviarFeedback: "Send feedback",
+      fechar: "Close",
+      tipos: { bug: "Problem", ideia: "Idea", geral: "Other" },
+      placeholder: "What worked, what broke, what was missing…",
+      vaiJunto: "Sent along: the current screen and the app version.",
+      enviar: "Send",
+      obrigado: "Thanks for the feedback! 🙏",
+      chegouSemVersao: "It arrived. (Without the version context — run supabase/feedback.sql.)",
+      fazDiferenca: "It really helps make the app better.",
+      erros: {
+        tabelaAusente: "The feedback table doesn't exist yet. Run supabase/feedback.sql in Supabase.",
+        cacheDoSchema:
+          "The table exists, but the Supabase API can't see it yet (schema cache). Wait a few seconds and try again.",
+        colunaFaltando:
+          "The feedback table is missing a column the app uses. Run supabase/feedback.sql again — it adds what's missing without deleting anything.",
+        semPermissao:
+          "No permission to save (RLS). Check that you're signed in and that the insert policy from feedback.sql was created.",
+        checkAntigo:
+          "The database is rejecting the feedback type — it's an old CHECK on the kind column, from a previous version of the table. Run supabase/feedback.sql again: it drops the old constraint and recreates the right one. Your message is still here.",
+        generico: "Couldn't send it right now. Try again in a moment.",
+      },
+    },
+    conexao: {
+      semConexao: "No connection to the server.",
+      dadosASalvo: "Your data is safe.",
+      tentarDeNovo: "Try again",
+    },
+    onboarding: {
+      passos: {
+        "bem-vindo": {
+          titulo: "Welcome to NeuroTask",
+          texto:
+            "Not another calendar you forget and abandon. It's a copilot for your routine: it plans the day with you and actually follows through.",
+        },
+        tarefas: {
+          titulo: "Start with your tasks",
+          texto:
+            "Write down what you need to do. The app prioritizes, keeps track of deadlines and gives you XP for every completion — progress becomes a game, with purpose.",
+        },
+        calendario: {
+          titulo: "Block out your time",
+          texto:
+            "In the calendar you set aside time for each thing. A task with a set time already becomes a block in your day, with no double work.",
+        },
+        "neuro-ia": {
+          titulo: "Neuro IA organizes with you",
+          texto:
+            "Ask it to plan your day, create tasks or start a focus session. It proposes and you confirm — it never acts on its own or makes up data.",
+        },
+      },
+      voltar: "Back",
+      pular: "Skip",
+      comecar: "Get started",
+      proximo: "Next",
+    },
   },
   inicio: {
     saudacoes: { ola: "Hello", bomDia: "Good morning", boaTarde: "Good afternoon", boaNoite: "Good evening" },

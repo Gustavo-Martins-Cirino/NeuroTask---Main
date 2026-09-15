@@ -7,20 +7,34 @@ import {
   passoAnterior,
   ehUltimoPasso,
 } from "./onboarding"
+import { pt, en } from "./i18n"
 
 describe("PASSOS_ONBOARDING", () => {
-  it("tem passos, cada um com id, título e texto", () => {
+  it("tem passos", () => {
     expect(PASSOS_ONBOARDING.length).toBeGreaterThan(0)
-    for (const p of PASSOS_ONBOARDING) {
-      expect(p.id).toBeTruthy()
-      expect(p.titulo).toBeTruthy()
-      expect(p.texto).toBeTruthy()
-    }
   })
 
-  it("os ids são únicos (o componente casa ícone por id)", () => {
-    const ids = PASSOS_ONBOARDING.map((p) => p.id)
-    expect(new Set(ids).size).toBe(ids.length)
+  it("os ids são únicos (o componente casa ícone e texto por id)", () => {
+    expect(new Set(PASSOS_ONBOARDING).size).toBe(PASSOS_ONBOARDING.length)
+  })
+})
+
+// O texto saiu daqui para o dicionário. A interface já garante que todo passo
+// tem as duas chaves; o que ela não garante é texto de verdade nos dois idiomas.
+describe("o texto de cada passo, nos dois idiomas", () => {
+  for (const [nome, d] of [["pt", pt], ["en", en]] as const) {
+    it(`${nome}: todo passo tem título e texto`, () => {
+      for (const id of PASSOS_ONBOARDING) {
+        expect(d.moldura.onboarding.passos[id].titulo.trim(), `${id}.titulo`).not.toBe("")
+        expect(d.moldura.onboarding.passos[id].texto.trim(), `${id}.texto`).not.toBe("")
+      }
+    })
+  }
+
+  it("os passos mudam de idioma", () => {
+    for (const id of PASSOS_ONBOARDING) {
+      expect(en.moldura.onboarding.passos[id].texto, id).not.toBe(pt.moldura.onboarding.passos[id].texto)
+    }
   })
 })
 

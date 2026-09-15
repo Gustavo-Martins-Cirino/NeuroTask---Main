@@ -8,14 +8,16 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
   PASSOS_ONBOARDING, CHAVE_ONBOARDING, jaViuOnboarding,
-  passoSeguinte, passoAnterior, ehUltimoPasso,
+  passoSeguinte, passoAnterior, ehUltimoPasso, type IdPassoOnboarding,
 } from "@/lib/onboarding"
+import { useDicionario } from "@/hooks/use-idioma"
 
 // Primeiro contato — montado global no AppShell (só na área logada). Aparece uma
-// vez por conta: a marca "já vi" fica no user_metadata, como avatar_modo. Regras
-// e textos são puros em lib/onboarding.ts; aqui mora o diálogo e o I/O.
+// vez por conta: a marca "já vi" fica no user_metadata, como avatar_modo. As
+// regras são puras em lib/onboarding.ts e o texto mora no dicionário
+// (`moldura.onboarding`); aqui ficam o diálogo e o I/O.
 
-const ICONES: Record<string, LucideIcon> = {
+const ICONES: Record<IdPassoOnboarding, LucideIcon> = {
   "bem-vindo": Sparkles,
   tarefas: ListTodo,
   calendario: CalendarClock,
@@ -27,6 +29,7 @@ export function Onboarding() {
   const [passo, setPasso] = useState(0)
   const reduzido = useReducedMotion()
   const total = PASSOS_ONBOARDING.length
+  const t = useDicionario().moldura.onboarding
 
   // Só decide mostrar depois de ler o metadata — assim quem já viu nunca vê um
   // flash do diálogo.
@@ -47,8 +50,9 @@ export function Onboarding() {
     createClient().auth.updateUser({ data: { [CHAVE_ONBOARDING]: new Date().toISOString() } }).catch(() => {})
   }
 
-  const dados = PASSOS_ONBOARDING[passo]
-  const Icone = ICONES[dados.id] ?? Sparkles
+  const id = PASSOS_ONBOARDING[passo]
+  const dados = t.passos[id]
+  const Icone = ICONES[id]
   const ultimo = ehUltimoPasso(passo, total)
 
   return (
@@ -62,7 +66,7 @@ export function Onboarding() {
           <div className="min-h-[7rem]">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
-                key={dados.id}
+                key={id}
                 initial={reduzido ? false : { opacity: 0, x: 16 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={reduzido ? { opacity: 0 } : { opacity: 0, x: -16 }}
@@ -78,7 +82,7 @@ export function Onboarding() {
           <div className="flex items-center gap-1.5">
             {PASSOS_ONBOARDING.map((p, i) => (
               <span
-                key={p.id}
+                key={p}
                 className={cn(
                   "h-1.5 rounded-full transition-all",
                   i === passo ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/30"
@@ -94,7 +98,7 @@ export function Onboarding() {
                 onClick={() => setPasso((p) => passoAnterior(p))}
                 className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                <ArrowLeft className="h-4 w-4" /> Voltar
+                <ArrowLeft className="h-4 w-4" /> {t.voltar}
               </button>
             ) : (
               <button
@@ -102,7 +106,7 @@ export function Onboarding() {
                 onClick={concluir}
                 className="rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                Pular
+                {t.pular}
               </button>
             )}
 
@@ -111,7 +115,7 @@ export function Onboarding() {
               onClick={() => (ultimo ? concluir() : setPasso((p) => passoSeguinte(p, total)))}
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.03]"
             >
-              {ultimo ? "Começar" : "Próximo"}
+              {ultimo ? t.comecar : t.proximo}
               {!ultimo && <ArrowRight className="h-4 w-4" />}
             </button>
           </div>

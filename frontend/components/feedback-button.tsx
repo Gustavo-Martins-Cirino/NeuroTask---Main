@@ -7,7 +7,8 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { MessageSquarePlus, Loader2, Bug, Lightbulb, MessageCircle, X } from "lucide-react"
 import { toast } from "sonner"
-import { colunaFaltante, envioSemColuna, explicaErro, MAX_TENTATIVAS } from "@/lib/feedback"
+import { useDicionario } from "@/hooks/use-idioma"
+import { colunaFaltante, envioSemColuna, explicaErro, MAX_TENTATIVAS, type TipoDeFeedback } from "@/lib/feedback"
 import { ancorarPainel, LARGURA_PAINEL, type CaixaAncorada } from "@/lib/painel-ancorado"
 
 // Botão de feedback dentro do app (Fase 5 — fechar o ciclo). Grava junto a ROTA
@@ -30,13 +31,15 @@ import { ancorarPainel, LARGURA_PAINEL, type CaixaAncorada } from "@/lib/painel-
 // o MESMO recurso da pílula do Dock. Um vocabulário de animação a menos para o
 // app aprender.
 
-const KINDS = [
-  { value: "bug", label: "Problema", icon: Bug },
-  { value: "ideia", label: "Ideia", icon: Lightbulb },
-  { value: "geral", label: "Outro", icon: MessageCircle },
-] as const
+// O rótulo de cada tipo mora no dicionário (`moldura.feedback.tipos`); aqui fica
+// só o valor gravado no banco e o ícone.
+const KINDS: { value: TipoDeFeedback; icon: typeof Bug }[] = [
+  { value: "bug", icon: Bug },
+  { value: "ideia", icon: Lightbulb },
+  { value: "geral", icon: MessageCircle },
+]
 
-type Kind = (typeof KINDS)[number]["value"]
+type Kind = TipoDeFeedback
 
 /** O ícone e a superfície são o MESMO elemento aos olhos do framer. */
 const MORPH = "nt-feedback-superficie"
@@ -50,6 +53,7 @@ export function FeedbackButton() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const semMovimento = useReducedMotion()
+  const t = useDicionario().moldura.feedback
   const supabase = createClient()
   const caixa = useRef<HTMLDivElement>(null)
   const [ancora, setAncora] = useState<CaixaAncorada>({ largura: LARGURA_PAINEL, deslocamento: 0 })
@@ -141,13 +145,11 @@ export function FeedbackButton() {
 
     setLoading(false)
     if (err) {
-      setError(explicaErro(err))
+      setError(explicaErro(err, t.erros))
       return
     }
-    toast.success("Valeu pelo feedback! 🙏", {
-      description: perdidas.length
-        ? "Chegou aqui. (Sem o contexto da versão — rode supabase/feedback.sql.)"
-        : "Faz muita diferença pra melhorar o app.",
+    toast.success(t.obrigado, {
+      description: perdidas.length ? t.chegouSemVersao : t.fazDiferenca,
     })
     setMessage("")
     setKind("geral")
@@ -170,7 +172,7 @@ export function FeedbackButton() {
             key="gatilho"
             layoutId={MORPH}
             onClick={abrir}
-            title="Enviar feedback"
+            title={t.enviarFeedback}
             aria-expanded={false}
             // `borderRadius` no style, e não numa classe: durante o morph o
             // framer escala o elemento, e um raio vindo do CSS escala junto —
@@ -182,14 +184,14 @@ export function FeedbackButton() {
             <motion.span layout="position">
               <MessageSquarePlus className="h-5 w-5" />
             </motion.span>
-            <span className="sr-only">Enviar feedback</span>
+            <span className="sr-only">{t.enviarFeedback}</span>
           </motion.button>
         ) : (
           <motion.div
             key="superficie"
             layoutId={MORPH}
             role="dialog"
-            aria-label="Enviar feedback"
+            aria-label={t.enviarFeedback}
             // `right` negativo empurra o painel para fora do botão, que é o
             // que o traz de volta para dentro da tela no celular. Vai no style e
             // não numa classe porque o valor é medido — e não em `transform`,
@@ -208,14 +210,14 @@ export function FeedbackButton() {
               className="p-3"
             >
               <div className="mb-2.5 flex items-center gap-2">
-                <span className="flex-1 text-sm font-medium">Enviar feedback</span>
+                <span className="flex-1 text-sm font-medium">{t.enviarFeedback}</span>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   className="-mr-1 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:h-7 sm:w-7"
                 >
                   <X className="h-4 w-4" />
-                  <span className="sr-only">Fechar</span>
+                  <span className="sr-only">{t.fechar}</span>
                 </button>
               </div>
 
@@ -232,7 +234,7 @@ export function FeedbackButton() {
                         : "border-border/50 text-muted-foreground hover:border-border"
                     )}
                   >
-                    <k.icon className="h-3.5 w-3.5" /> {k.label}
+                    <k.icon className="h-3.5 w-3.5" /> {t.tipos[k.value]}
                   </button>
                 ))}
               </div>
@@ -242,7 +244,7 @@ export function FeedbackButton() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={4}
-                placeholder="O que funcionou, o que quebrou, o que faltou…"
+                placeholder={t.placeholder}
                 className="mt-2.5 w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring/50"
               />
 
@@ -250,11 +252,11 @@ export function FeedbackButton() {
 
               <div className="mt-2.5 flex items-center gap-2">
                 <p className="flex-1 text-[11px] leading-tight text-muted-foreground/70">
-                  Vai junto: a tela atual e a versão do app.
+                  {t.vaiJunto}
                 </p>
                 <Button type="submit" size="sm" className="h-9 sm:h-8" disabled={loading || !message.trim()}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Enviar
+                  {t.enviar}
                 </Button>
               </div>
             </motion.form>

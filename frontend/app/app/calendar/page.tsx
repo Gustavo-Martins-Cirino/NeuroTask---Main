@@ -727,7 +727,7 @@ export default function CalendarPage() {
                             </div>
                           ))}
                           {dayBlocks.length > 3 && (
-                            <span className="px-1 text-[10px] text-muted-foreground">+{dayBlocks.length - 3} mais</span>
+                            <span className="px-1 text-[10px] text-muted-foreground">{traducao.calendario.maisN(dayBlocks.length - 3)}</span>
                           )}
                         </div>
                       </div>
@@ -1005,7 +1005,7 @@ function ContextualNotes({ anchor }: { anchor: Date }) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Anotações do dia
+            {traducao.calendario.notas.titulo}
           </h3>
           <AnimatePresence mode="wait">
             {saveState !== "idle" && (

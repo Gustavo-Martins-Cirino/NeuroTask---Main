@@ -129,7 +129,7 @@ export function Dock() {
       {navItems.map(renderMobileItem)}
       <button
         onClick={() => openFocus()}
-        aria-label="Modo Foco"
+        aria-label={d.telas.modoFoco}
         className="flex h-14 flex-1 items-center justify-center text-muted-foreground transition-colors"
       >
         <Zap className="h-5 w-5" />
@@ -176,7 +176,7 @@ export function Dock() {
           <AnimatePresence initial={false}>
             {expanded && (
               <motion.span key="focus-label" {...labelMotion} className="relative z-10 whitespace-nowrap text-sm font-medium">
-                Modo Foco
+                {d.telas.modoFoco}
               </motion.span>
             )}
           </AnimatePresence>

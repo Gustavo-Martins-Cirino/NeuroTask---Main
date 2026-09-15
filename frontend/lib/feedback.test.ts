@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
-import { colunaFaltante, envioSemColuna, explicaErro, MAX_TENTATIVAS } from "./feedback"
+import { colunaFaltante, envioSemColuna, explicaErro, MAX_TENTATIVAS, type TextosDeErroDoFeedback } from "./feedback"
+import { pt, en } from "./i18n"
 
 const ENVIO = {
   user_id: "u1",
@@ -71,32 +72,62 @@ describe("envioSemColuna", () => {
   })
 })
 
-describe("explicaErro", () => {
-  it("cada código vira uma instrução diferente, e nenhuma manda rodar SQL à toa", () => {
-    const rls = explicaErro({ code: "42501", message: 'new row violates policy for table "feedback"' })
-    expect(rls).toMatch(/permissão/i)
-    expect(rls).not.toMatch(/ainda não existe/i)
+// Os textos de mentira marcam qual motivo saiu, sem amarrar o teste da REGRA a
+// um idioma. Os textos de verdade são conferidos logo abaixo, nos dois.
+const TEXTOS: TextosDeErroDoFeedback = {
+  tabelaAusente: "[tabelaAusente]",
+  cacheDoSchema: "[cacheDoSchema]",
+  colunaFaltando: "[colunaFaltando]",
+  semPermissao: "[semPermissao]",
+  checkAntigo: "[checkAntigo]",
+  generico: "[generico]",
+}
 
-    expect(explicaErro({ code: "42P01", message: "relation does not exist" })).toMatch(/não existe/i)
-    expect(explicaErro({ code: "PGRST204", message: "..." })).toMatch(/coluna/i)
-    expect(explicaErro({ code: "PGRST205", message: "..." })).toMatch(/cache/i)
+describe("explicaErro", () => {
+  it("cada código vira um motivo diferente — RLS não é tabela ausente", () => {
+    expect(explicaErro({ code: "42501", message: 'new row violates policy for table "feedback"' }, TEXTOS)).toBe("[semPermissao]")
+    expect(explicaErro({ code: "42P01", message: "relation does not exist" }, TEXTOS)).toBe("[tabelaAusente]")
+    expect(explicaErro({ code: "PGRST204", message: "..." }, TEXTOS)).toBe("[colunaFaltando]")
+    expect(explicaErro({ code: "PGRST205", message: "..." }, TEXTOS)).toBe("[cacheDoSchema]")
   })
 
   it("CHECK do kind vira instrução, não o texto cru do Postgres", () => {
-    // O que a pessoa via: 'new row for relation "feedback" violates check
-    // constraint "feedback_kind_check"' — verdadeiro e inútil.
-    const t = explicaErro({
-      code: "23514",
-      message: 'new row for relation "feedback" violates check constraint "feedback_kind_check"',
-    })
-    expect(t).toMatch(/feedback\.sql/)
-    expect(t).not.toMatch(/violates check constraint/)
-    // Descascar coluna não salva este caso: o kind é essencial.
-    expect(colunaFaltante({ code: "23514", message: "..." })).toBeNull()
+    const t = explicaErro(
+      { code: "23514", message: 'new row for relation "feedback" violates check constraint "feedback_kind_check"' },
+      TEXTOS
+    )
+    expect(t).toBe("[checkAntigo]")
   })
 
-  it("erro desconhecido mostra a mensagem crua, e sem mensagem não mostra 'undefined'", () => {
-    expect(explicaErro({ code: "XX000", message: "falha exótica" })).toBe("falha exótica")
-    expect(explicaErro({})).not.toMatch(/undefined/)
+  it("erro desconhecido mostra a mensagem crua, e sem mensagem cai no genérico", () => {
+    expect(explicaErro({ code: "XX000", message: "falha exótica" }, TEXTOS)).toBe("falha exótica")
+    expect(explicaErro({}, TEXTOS)).toBe("[generico]")
+  })
+})
+
+describe("os textos de erro do feedback, nos dois idiomas", () => {
+  for (const [nome, d] of [["pt", pt], ["en", en]] as const) {
+    const t = d.moldura.feedback.erros
+
+    it(`${nome}: cada motivo diz uma coisa diferente`, () => {
+      const valores = Object.values(t)
+      expect(new Set(valores).size).toBe(valores.length)
+    })
+
+    it(`${nome}: o CHECK antigo manda rodar o feedback.sql, e não repete o erro cru`, () => {
+      expect(t.checkAntigo).toMatch(/feedback\.sql/)
+      expect(t.checkAntigo).not.toMatch(/violates check constraint/)
+    })
+
+    // Nenhuma instrução manda rodar SQL à toa: cache do schema se resolve
+    // esperando, e rodar o arquivo de novo não muda nada.
+    it(`${nome}: cache do schema não manda rodar SQL`, () => {
+      expect(t.cacheDoSchema).not.toMatch(/\.sql/)
+    })
+  }
+
+  it("as instruções mudam de idioma", () => {
+    expect(en.moldura.feedback.erros.semPermissao).not.toBe(pt.moldura.feedback.erros.semPermissao)
+    expect(en.moldura.feedback.erros.generico).not.toBe(pt.moldura.feedback.erros.generico)
   })
 })

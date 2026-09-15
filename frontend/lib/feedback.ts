@@ -44,25 +44,49 @@ export function envioSemColuna<T extends Record<string, unknown>>(
   return resto
 }
 
+/** O que deu errado, lido pelo CÓDIGO do erro. */
+export type MotivoDoErro = "tabelaAusente" | "cacheDoSchema" | "colunaFaltando" | "semPermissao" | "checkAntigo"
+
+/** O tipo gravado na coluna `kind`. O rótulo de cada um mora no dicionário. */
+export type TipoDeFeedback = "bug" | "ideia" | "geral"
+
+/**
+ * O texto de cada motivo, mais o de quando não há mensagem nenhuma. Mora no
+ * dicionário (`moldura.feedback.erros`): este módulo decide QUAL motivo, o
+ * idioma decide como ele se diz.
+ */
+export type TextosDeErroDoFeedback = Record<MotivoDoErro, string> & { generico: string }
+
 // O erro do Postgres vem pelo CÓDIGO, não pelo texto: a mensagem de violação de
 // RLS cita o nome da tabela ("...for table \"feedback\""), então casar por
 // substring fazia RLS e cache virarem "a tabela não existe" — e mandava rodar de
 // novo um SQL que já estava rodado.
-export function explicaErro(err: ErroDoPostgrest): string {
+export function motivoDoErro(err: ErroDoPostgrest): MotivoDoErro | null {
   switch (err.code) {
     case "42P01":
-      return "A tabela de feedback ainda não existe. Rode supabase/feedback.sql no Supabase."
+      return "tabelaAusente"
     case "PGRST205":
-      return "A tabela existe, mas a API do Supabase ainda não a enxerga (cache do schema). Espere alguns segundos e tente de novo."
+      return "cacheDoSchema"
     case "PGRST204":
-      return "A tabela de feedback está sem uma coluna que o app usa. Rode supabase/feedback.sql de novo — ele acrescenta o que falta sem apagar nada."
+      return "colunaFaltando"
     case "42501":
-      return "Sem permissão para gravar (RLS). Confira se você está logado e se a policy de insert do feedback.sql foi criada."
+      return "semPermissao"
     // Descascar coluna não resolve este: o `kind` é essencial, e a mensagem crua
     // do Postgres ("violates check constraint") não diz a ninguém o que fazer.
     case "23514":
-      return "O banco está recusando o tipo do feedback — é um CHECK antigo na coluna kind, de uma versão anterior da tabela. Rode supabase/feedback.sql de novo: ele derruba o constraint velho e recria o certo. Sua mensagem continua aqui."
+      return "checkAntigo"
     default:
-      return err.message ?? "Não deu para enviar agora. Tente de novo em instantes."
+      return null
   }
+}
+
+/**
+ * A frase para a pessoa. Motivo conhecido vira instrução; desconhecido mostra a
+ * mensagem crua do banco — melhor que esconder o que houve —, e sem mensagem
+ * nenhuma cai no genérico.
+ */
+export function explicaErro(err: ErroDoPostgrest, textos: TextosDeErroDoFeedback): string {
+  const motivo = motivoDoErro(err)
+  if (motivo) return textos[motivo]
+  return err.message ?? textos.generico
 }
