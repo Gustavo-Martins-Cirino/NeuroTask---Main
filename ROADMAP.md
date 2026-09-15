@@ -1729,6 +1729,41 @@ vira ruído.
 > 24h como o Brasil, a derivação acima deixa de servir e a região passa a ser o dado
 > guardado, com o formato saindo dela.
 
+> ⚠️ **A tradução NÃO está completa — correção de 15/09.** O parágrafo acima diz que não sobra
+> tela em português, e é verdade para as telas que entraram nas fatias. Uma varredura do AST
+> (todo texto de JSX com letra, mais `title`/`placeholder`/`aria-label`/`alt`/`label` escritos
+> à mão) achou **205 textos soltos em 30 arquivos** — ~163 tirando os painéis do dono e as
+> exceções legítimas. A maioria é de coisas que nunca entraram em fatia nenhuma, e são
+> justamente as que aparecem em TODA tela ou ANTES de entrar:
+>
+> · **Moldura global** (montada no `AppShell`): o menu do cabeçalho ("Perfil", "Sair",
+>   "Alternar tema"), o botão de feedback inteiro, o **Modo Foco** (16), o aviso de conexão,
+>   o guia de boas-vindas ("Voltar", "Pular") e o "Modo Foco" do dock.
+> · **Antes de entrar**: login (19), cadastro (25), redefinir senha (23), o erro de
+>   autenticação e o login social ("último acesso", "ou", "com").
+> · **Dentro de telas dadas como traduzidas**: "Comece por aqui" e "Seus números" no
+>   dashboard, a enquete, a barra de XP, a dica de Amigos, "Sugestões da sua rotina" e os
+>   "min" de Configurações, "Anotações do dia" e o "+N mais" do calendário.
+> · **Telas de erro**: as duas `error.tsx`, `global-error.tsx` e `not-found.tsx`; e o aviso
+>   de "sem WebGL" do Escritório.
+>
+> **Por que nada pegou**: `i18n.test.ts` garante que o DICIONÁRIO está completo, e
+> `locale-fixo.test.ts` garante que a DATA segue o idioma — nenhum dos dois olha texto escrito
+> direto no JSX, que é o jeito mais comum de uma frase escapar. A varredura também não
+> enxerga texto dentro de `toast(...)` e de arrays de rótulos, então o número real é maior.
+>
+> Ficam de fora com motivo, como já estavam: `app/admin/page.tsx` e `errors-panel.tsx`
+> (painéis do dono), a marca "NeuroTask", o comando `/start` do Telegram e o "A" que é
+> amostra do tamanho de fonte no editor de notas.
+
+- [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
+      que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
+      login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do
+      `locale-fixo`: varre o AST atrás de texto com letra no JSX e nos atributos visíveis, com
+      as exceções nomeadas e o motivo de cada uma. Para o login há uma escolha a registrar:
+      quem ainda não entrou não tem região — vale a preferência guardada neste navegador, se
+      houver, e senão o idioma do navegador (a regra que a agenda pública já usa).
+
 #### Os arquivos de código da pasta
 
 Varridos um a um (nome mais o que o código importa). Onde cada um encaixaria:
