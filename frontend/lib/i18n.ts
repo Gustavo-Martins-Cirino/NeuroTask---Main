@@ -188,6 +188,88 @@ export interface Dicionario {
       ajuda: string
     }
   }
+  /**
+   * O que se lê ANTES de entrar: login, cadastro, redefinir senha, o erro de
+   * autenticação e os botões de login social. Tudo fora do AppShell — e por isso
+   * cada uma dessas telas também sincroniza o `lang` do documento sozinha.
+   *
+   * O idioma aqui vem da MESMA fonte do app (a região guardada neste navegador),
+   * e não do navegador de quem abre. Ver ROADMAP: com o Chrome em inglês, a
+   * outra regra poria o login em inglês e o app em português.
+   */
+  entrada: {
+    email: string
+    emailPlaceholder: string
+    senha: string
+    entrar: string
+    criarConta: string
+    voltarParaLogin: string
+    minimoSeisCaracteres: string
+    verifiqueSeuEmail: string
+    muitasTentativas: string
+    senhaFraca: string
+    login: {
+      subtitulo: string
+      esqueceuSenha: string
+      entrando: string
+      /** Tem ênfase (§). */
+      olheOSpam: string
+      linkReenviado: string
+      reenviarConfirmacao: string
+      naoTemConta: string
+      erros: { credenciaisInvalidas: string; emailNaoConfirmado: string; contaSuspensa: string; generico: string }
+    }
+    cadastro: {
+      subtitulo: string
+      nome: string
+      nomePlaceholder: string
+      criandoConta: string
+      jaTemConta: string
+      /** Tem ênfase (§) em volta do e-mail. */
+      enviamosConfirmacao: (email: string) => string
+      /** Tem ênfase (§). */
+      naoChegou: string
+      reenviadoAguarde: (segundos: number) => string
+      reenviarLink: string
+      erros: { emailEmUso: string; emailInvalido: string; cadastrosDesativados: string; generico: string }
+    }
+    senhaNova: {
+      novaSenha: string
+      redefinirSenha: string
+      subtituloNova: string
+      subtituloRedefinir: string
+      confirmarNovaSenha: string
+      repitaSenha: string
+      salvando: string
+      salvarNovaSenha: string
+      enviando: string
+      enviarLink: string
+      lembrouSenha: string
+      /** Tem ênfase (§) em volta do e-mail e das pastas. */
+      seExistirConta: (email: string) => string
+      /** Tem ênfase (§). */
+      soOMaisRecente: string
+      erros: {
+        muitasTentativasMinuto: string
+        naoEnviou: string
+        senhasDiferentes: string
+        linkExpirado: string
+        senhaIgual: string
+      }
+    }
+    erroAutenticacao: {
+      titulo: string
+      texto: string
+      detalheTecnico: (motivo: string) => string
+    }
+    social: {
+      ou: string
+      ultimoAcesso: string
+      entrarCom: (provedor: string) => string
+      criarContaCom: (provedor: string) => string
+      erroProvedor: (provedor: string) => string
+    }
+  }
   inicio: {
     /** Saudação: a hora escolhe a chave (lib/saudacao), aqui vira texto. */
     saudacoes: Record<ChaveSaudacao, string>
@@ -1110,6 +1192,86 @@ export const pt: Dicionario = {
         "Cole um link, dê §Tocar§ e clique na §★§ pra favoritar. O áudio continua enquanto você trabalha — é só deixar o Foco §minimizado§.",
     },
   },
+  entrada: {
+    email: "Email",
+    emailPlaceholder: "seu@email.com",
+    senha: "Senha",
+    entrar: "Entrar",
+    criarConta: "Criar conta",
+    voltarParaLogin: "Voltar para o login",
+    minimoSeisCaracteres: "Mínimo 6 caracteres",
+    verifiqueSeuEmail: "Verifique seu email",
+    muitasTentativas: "Muitas tentativas. Aguarde um momento e tente de novo.",
+    senhaFraca: "Senha muito fraca. Use ao menos 6 caracteres.",
+    login: {
+      subtitulo: "Gerencie suas tarefas com inteligência",
+      esqueceuSenha: "Esqueceu a senha?",
+      entrando: "Entrando...",
+      olheOSpam: "Olhe também o §spam§ e as abas §Promoções/Atualizações§ (Gmail) ou §Outros§ (Outlook).",
+      linkReenviado: "Link reenviado! ✓",
+      reenviarConfirmacao: "Reenviar link de confirmação",
+      naoTemConta: "Não tem uma conta?",
+      erros: {
+        credenciaisInvalidas: "Email ou senha incorretos.",
+        emailNaoConfirmado: "Confirme seu email antes de entrar. Verifique sua caixa de entrada.",
+        contaSuspensa: "Esta conta está suspensa.",
+        generico: "Não foi possível entrar. Tente novamente.",
+      },
+    },
+    cadastro: {
+      subtitulo: "Comece a organizar suas tarefas hoje",
+      nome: "Nome",
+      nomePlaceholder: "Seu nome",
+      criandoConta: "Criando conta...",
+      jaTemConta: "Já tem uma conta?",
+      enviamosConfirmacao: (email) =>
+        `Enviamos um link de confirmação para §${email}§. Clique no link para ativar sua conta.`,
+      naoChegou: "Não chegou? Olhe o §spam§ e as abas §Promoções/Atualizações§ (Gmail) ou §Outros§ (Outlook) —",
+      reenviadoAguarde: (segundos) => `reenviado ✓ (aguarde ${segundos}s para reenviar de novo)`,
+      reenviarLink: "reenviar link",
+      erros: {
+        emailEmUso: "Este email já está em uso. Tente fazer login.",
+        emailInvalido: "Email inválido. Verifique e tente novamente.",
+        cadastrosDesativados: "Os cadastros estão temporariamente desativados.",
+        generico: "Não foi possível criar a conta. Tente novamente.",
+      },
+    },
+    senhaNova: {
+      novaSenha: "Nova senha",
+      redefinirSenha: "Redefinir senha",
+      subtituloNova: "Escolha a nova senha da sua conta",
+      subtituloRedefinir: "Enviaremos um link de redefinição para o seu e-mail",
+      confirmarNovaSenha: "Confirmar nova senha",
+      repitaSenha: "Repita a senha",
+      salvando: "Salvando...",
+      salvarNovaSenha: "Salvar nova senha",
+      enviando: "Enviando...",
+      enviarLink: "Enviar link de redefinição",
+      lembrouSenha: "Lembrou a senha?",
+      seExistirConta: (email) =>
+        `Se existir uma conta para §${email}§, enviamos um link para redefinir a senha. Olhe também o §spam§ e as abas §Promoções/Atualizações§ (Gmail) ou §Outros§ (Outlook).`,
+      soOMaisRecente: "⚠️ Se pediu mais de uma vez, §só o e-mail mais recente§ funciona.",
+      erros: {
+        muitasTentativasMinuto: "Muitas tentativas. Aguarde um minuto e tente de novo.",
+        naoEnviou: "Não foi possível enviar o link. Tente novamente.",
+        senhasDiferentes: "As senhas não coincidem.",
+        linkExpirado: "Este link já foi usado ou expirou. Peça um novo abaixo.",
+        senhaIgual: "A nova senha precisa ser diferente da atual.",
+      },
+    },
+    erroAutenticacao: {
+      titulo: "Erro de autenticação",
+      texto: "Ocorreu um erro durante o processo de autenticação. Por favor, tente novamente.",
+      detalheTecnico: (motivo) => `Detalhe técnico: ${motivo}`,
+    },
+    social: {
+      ou: "ou",
+      ultimoAcesso: "último acesso",
+      entrarCom: (provedor) => `Entrar com ${provedor}`,
+      criarContaCom: (provedor) => `Criar conta com ${provedor}`,
+      erroProvedor: (provedor) => `Não deu para entrar com ${provedor}. Tente pelo email.`,
+    },
+  },
   inicio: {
     saudacoes: { ola: "Olá", bomDia: "Bom dia", boaTarde: "Boa tarde", boaNoite: "Boa noite" },
     faixas: {
@@ -1979,6 +2141,86 @@ export const en: Dicionario = {
       remover: "Remove",
       ajuda:
         "Paste a link, hit §Play§ and click the §★§ to save it. The audio keeps playing while you work — just leave Focus §minimized§.",
+    },
+  },
+  entrada: {
+    email: "Email",
+    emailPlaceholder: "you@email.com",
+    senha: "Password",
+    entrar: "Sign in",
+    criarConta: "Create account",
+    voltarParaLogin: "Back to sign in",
+    minimoSeisCaracteres: "At least 6 characters",
+    verifiqueSeuEmail: "Check your email",
+    muitasTentativas: "Too many attempts. Wait a moment and try again.",
+    senhaFraca: "Password too weak. Use at least 6 characters.",
+    login: {
+      subtitulo: "Manage your tasks intelligently",
+      esqueceuSenha: "Forgot your password?",
+      entrando: "Signing in...",
+      olheOSpam: "Also check §spam§ and the §Promotions/Updates§ tabs (Gmail) or §Other§ (Outlook).",
+      linkReenviado: "Link resent! ✓",
+      reenviarConfirmacao: "Resend confirmation link",
+      naoTemConta: "Don't have an account?",
+      erros: {
+        credenciaisInvalidas: "Incorrect email or password.",
+        emailNaoConfirmado: "Confirm your email before signing in. Check your inbox.",
+        contaSuspensa: "This account is suspended.",
+        generico: "Couldn't sign in. Please try again.",
+      },
+    },
+    cadastro: {
+      subtitulo: "Start organizing your tasks today",
+      nome: "Name",
+      nomePlaceholder: "Your name",
+      criandoConta: "Creating account...",
+      jaTemConta: "Already have an account?",
+      enviamosConfirmacao: (email) =>
+        `We sent a confirmation link to §${email}§. Click the link to activate your account.`,
+      naoChegou: "Didn't get it? Check §spam§ and the §Promotions/Updates§ tabs (Gmail) or §Other§ (Outlook) —",
+      reenviadoAguarde: (segundos) => `resent ✓ (wait ${segundos}s to resend again)`,
+      reenviarLink: "resend link",
+      erros: {
+        emailEmUso: "This email is already in use. Try signing in.",
+        emailInvalido: "Invalid email. Check it and try again.",
+        cadastrosDesativados: "Sign-ups are temporarily disabled.",
+        generico: "Couldn't create the account. Please try again.",
+      },
+    },
+    senhaNova: {
+      novaSenha: "New password",
+      redefinirSenha: "Reset password",
+      subtituloNova: "Choose your account's new password",
+      subtituloRedefinir: "We'll send a reset link to your email",
+      confirmarNovaSenha: "Confirm new password",
+      repitaSenha: "Repeat the password",
+      salvando: "Saving...",
+      salvarNovaSenha: "Save new password",
+      enviando: "Sending...",
+      enviarLink: "Send reset link",
+      lembrouSenha: "Remembered your password?",
+      seExistirConta: (email) =>
+        `If there's an account for §${email}§, we sent a link to reset the password. Also check §spam§ and the §Promotions/Updates§ tabs (Gmail) or §Other§ (Outlook).`,
+      soOMaisRecente: "⚠️ If you asked more than once, §only the most recent email§ works.",
+      erros: {
+        muitasTentativasMinuto: "Too many attempts. Wait a minute and try again.",
+        naoEnviou: "Couldn't send the link. Please try again.",
+        senhasDiferentes: "The passwords don't match.",
+        linkExpirado: "This link was already used or has expired. Request a new one below.",
+        senhaIgual: "The new password must be different from the current one.",
+      },
+    },
+    erroAutenticacao: {
+      titulo: "Authentication error",
+      texto: "Something went wrong while signing you in. Please try again.",
+      detalheTecnico: (motivo) => `Technical detail: ${motivo}`,
+    },
+    social: {
+      ou: "or",
+      ultimoAcesso: "last used",
+      entrarCom: (provedor) => `Sign in with ${provedor}`,
+      criarContaCom: (provedor) => `Sign up with ${provedor}`,
+      erroProvedor: (provedor) => `Couldn't sign in with ${provedor}. Try with your email.`,
     },
   },
   inicio: {

@@ -49,11 +49,6 @@ const TEXTOS_LIVRES: Record<string, string> = {
  * pode.
  */
 const PENDENTES: Record<string, string> = {
-  "app/login/page.tsx": "fatia do login e cadastro",
-  "app/signup/page.tsx": "fatia do login e cadastro",
-  "app/reset-password/page.tsx": "fatia do login e cadastro",
-  "app/auth/error/page.tsx": "fatia do login e cadastro",
-  "components/social-login.tsx": "fatia do login e cadastro",
   "components/getting-started.tsx": "fatia do que sobrou dentro das telas",
   "components/metricas-dashboard.tsx": "fatia do que sobrou dentro das telas",
   "components/enquete.tsx": "fatia do que sobrou dentro das telas",

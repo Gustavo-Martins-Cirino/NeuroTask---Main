@@ -8,6 +8,7 @@ import {
   provedoresHabilitados, lembrarMetodo, metodoLembrado,
   ROTULO_PROVEDOR, type Metodo, type Provedor,
 } from "@/lib/auth-metodos"
+import { useDicionario } from "@/hooks/use-idioma"
 
 // Entrar com Google/GitHub/Apple, mais o selo do método usado da última vez.
 // Referência: components/inspirações/better-auth-6.webp.
@@ -72,6 +73,7 @@ export function useUltimoMetodo(): Metodo | null {
 
 /** O selo da referência: discreto, só marca onde a pessoa entrou da última vez. */
 export function SeloUltimoUso({ className }: { className?: string }) {
+  const t = useDicionario().entrada.social
   return (
     <span
       className={cn(
@@ -79,7 +81,7 @@ export function SeloUltimoUso({ className }: { className?: string }) {
         className
       )}
     >
-      último acesso
+      {t.ultimoAcesso}
     </span>
   )
 }
@@ -96,6 +98,7 @@ export function SocialLogin({
   const [erro, setErro] = useState<string | null>(null)
   const ultimo = useUltimoMetodo()
   const supabase = createClient()
+  const t = useDicionario().entrada.social
 
   if (HABILITADOS.length === 0) return null
 
@@ -112,7 +115,7 @@ export function SocialLogin({
     })
     if (error) {
       // O caso comum é o provedor não estar habilitado no painel do Supabase.
-      setErro(`Não deu para entrar com ${ROTULO_PROVEDOR[provedor]}. Tente pelo email.`)
+      setErro(t.erroProvedor(ROTULO_PROVEDOR[provedor]))
       setIndo(null)
     }
   }
@@ -121,7 +124,7 @@ export function SocialLogin({
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">ou</span>
+        <span className="text-xs text-muted-foreground">{t.ou}</span>
         <span className="h-px flex-1 bg-border" />
       </div>
 
@@ -135,7 +138,7 @@ export function SocialLogin({
             className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-border/60 bg-card/40 px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
           >
             {indo === p ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Marca provedor={p} />}
-            {modo === "entrar" ? "Entrar" : "Criar conta"} com {ROTULO_PROVEDOR[p]}
+            {modo === "entrar" ? t.entrarCom(ROTULO_PROVEDOR[p]) : t.criarContaCom(ROTULO_PROVEDOR[p])}
             {mostrarSelo && ultimo === p && <SeloUltimoUso className="ml-1" />}
           </button>
         ))}

@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { KeyRound, Loader2, CheckCircle } from "lucide-react"
+import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
+import { dicionario } from "@/lib/i18n"
+import { enfatizar } from "@/lib/enfase"
 
 // Três caminhos:
 // 1. Sem sessão e sem token → pede o e-mail e envia o link de redefinição.
@@ -17,6 +20,10 @@ import { KeyRound, Loader2, CheckCircle } from "lucide-react"
 //    scanners de e-mail corporativo que abrem links antes do usuário.
 // 3. Com sessão → formulário de nova senha direto.
 export default function ResetPasswordPage() {
+  // Fora do AppShell: esta página cuida sozinha do `lang` do documento.
+  const idioma = useIdioma()
+  useSincronizarLangDoDocumento(idioma)
+  const t = dicionario(idioma).entrada
   const [checking, setChecking] = useState(true)
   const [hasSession, setHasSession] = useState(false)
   const [tokenHash, setTokenHash] = useState<string | null>(null)
@@ -31,9 +38,9 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const t = params.get("token_hash")
-    if (t) {
-      setTokenHash(t)
+    const token = params.get("token_hash")
+    if (token) {
+      setTokenHash(token)
       window.history.replaceState({}, "", "/reset-password") // tira o token da URL
     }
     supabase.auth.getSession().then(({ data }) => {
@@ -59,11 +66,7 @@ export default function ResetPasswordPage() {
     })
     setLoading(false)
     if (!res.ok) {
-      setError(
-        res.status === 429
-          ? "Muitas tentativas. Aguarde um minuto e tente de novo."
-          : "Não foi possível enviar o link. Tente novamente."
-      )
+      setError(res.status === 429 ? t.senhaNova.erros.muitasTentativasMinuto : t.senhaNova.erros.naoEnviou)
       return
     }
     setSent(true)
@@ -73,7 +76,7 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     setError(null)
     if (password !== confirm) {
-      setError("As senhas não coincidem.")
+      setError(t.senhaNova.erros.senhasDiferentes)
       return
     }
     setLoading(true)
@@ -83,7 +86,7 @@ export default function ResetPasswordPage() {
       if (otpError) {
         setLoading(false)
         setTokenHash(null)
-        setError("Este link já foi usado ou expirou. Peça um novo abaixo.")
+        setError(t.senhaNova.erros.linkExpirado)
         return
       }
       setHasSession(true)
@@ -93,9 +96,9 @@ export default function ResetPasswordPage() {
     if (error) {
       setError(
         error.code === "same_password"
-          ? "A nova senha precisa ser diferente da atual."
+          ? t.senhaNova.erros.senhaIgual
           : error.code === "weak_password"
-            ? "Senha muito fraca. Use ao menos 6 caracteres."
+            ? t.senhaFraca
             : error.message
       )
       return
@@ -121,20 +124,18 @@ export default function ResetPasswordPage() {
               <CheckCircle className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Verifique seu email</h1>
+              <h1 className="text-2xl font-bold text-foreground">{t.verifiqueSeuEmail}</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Se existir uma conta para <strong>{email}</strong>, enviamos um link para
-                redefinir a senha. Olhe também o <strong>spam</strong> e as abas{" "}
-                <strong>Promoções/Atualizações</strong> (Gmail) ou <strong>Outros</strong> (Outlook).
+                {enfatizar(t.senhaNova.seExistirConta(email))}
                 <br />
                 <span className="mt-1 inline-block">
-                  ⚠️ Se pediu mais de uma vez, <strong>só o e-mail mais recente</strong> funciona.
+                  {enfatizar(t.senhaNova.soOMaisRecente)}
                 </span>
               </p>
             </div>
           </div>
           <Link href="/login">
-            <Button variant="outline" className="h-11 w-full">Voltar para o login</Button>
+            <Button variant="outline" className="h-11 w-full">{t.voltarParaLogin}</Button>
           </Link>
         </div>
       </AuthBackdrop>
@@ -150,12 +151,10 @@ export default function ResetPasswordPage() {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">
-              {hasSession || tokenHash ? "Nova senha" : "Redefinir senha"}
+              {hasSession || tokenHash ? t.senhaNova.novaSenha : t.senhaNova.redefinirSenha}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {hasSession || tokenHash
-                ? "Escolha a nova senha da sua conta"
-                : "Enviaremos um link de redefinição para o seu e-mail"}
+              {hasSession || tokenHash ? t.senhaNova.subtituloNova : t.senhaNova.subtituloRedefinir}
             </p>
           </div>
         </div>
@@ -163,11 +162,11 @@ export default function ResetPasswordPage() {
         {hasSession || tokenHash ? (
           <form onSubmit={handleUpdate} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Nova senha</Label>
+              <Label htmlFor="password">{t.senhaNova.novaSenha}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder={t.minimoSeisCaracteres}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -176,11 +175,11 @@ export default function ResetPasswordPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm">Confirmar nova senha</Label>
+              <Label htmlFor="confirm">{t.senhaNova.confirmarNovaSenha}</Label>
               <Input
                 id="confirm"
                 type="password"
-                placeholder="Repita a senha"
+                placeholder={t.senhaNova.repitaSenha}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
@@ -193,21 +192,21 @@ export default function ResetPasswordPage() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
+                  {t.senhaNova.salvando}
                 </>
               ) : (
-                "Salvar nova senha"
+                t.senhaNova.salvarNovaSenha
               )}
             </Button>
           </form>
         ) : (
           <form onSubmit={handleRequest} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t.email}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder={t.emailPlaceholder}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -219,19 +218,19 @@ export default function ResetPasswordPage() {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Enviando...
+                  {t.senhaNova.enviando}
                 </>
               ) : (
-                "Enviar link de redefinição"
+                t.senhaNova.enviarLink
               )}
             </Button>
           </form>
         )}
 
         <p className="text-center text-sm text-muted-foreground">
-          Lembrou a senha?{" "}
+          {t.senhaNova.lembrouSenha}{" "}
           <Link href="/login" className="font-medium text-primary hover:underline">
-            Entrar
+            {t.entrar}
           </Link>
         </p>
       </div>

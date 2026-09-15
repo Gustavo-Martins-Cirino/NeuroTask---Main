@@ -1827,6 +1827,40 @@ vira ruído.
 > palavra em português (nem nos `aria-label`, inclusive os do mixer escondido), nenhum elemento
 > fora da tela e nenhum erro de JS.
 
+> **Fatia 3 — antes de entrar: feita (15/09).** Login, cadastro, redefinir senha, a tela de
+> erro de autenticação e os botões de login social. As mensagens de erro do Supabase passaram
+> a ser escolhidas pelo CÓDIGO e ditas pelo dicionário; sem código conhecido continua
+> aparecendo a mensagem crua do Supabase, que ainda diz mais que um "tente de novo".
+>
+> **Estas telas ficam fora do AppShell, e isso tinha uma consequência escondida.** O
+> `IdiomaDoDocumento` mora lá dentro, então o `<html lang>` delas continuaria dizendo `pt-BR`
+> com a tela em inglês — o Chrome ofereceria traduzir uma página que já está em inglês, e o
+> leitor de tela leria inglês com fonética portuguesa. Cada uma agora sincroniza sozinha. A de
+> erro de autenticação é server component (lê o `reason` no servidor), então o texto foi para
+> um componente de cliente (`components/erro-autenticacao.tsx`): o idioma só existe no navegador.
+>
+> **Uma decisão mudou no meio, e fica registrada.** A primeira ideia (escrita no item logo
+> abaixo) era mostrar a quem ainda não entrou o idioma do NAVEGADOR, a regra da agenda
+> pública. Pensando em quem usa hoje, isso produziria o pior caso: um brasileiro com o Chrome
+> em inglês veria o login em inglês e, ao entrar, o app em português. As telas de entrada
+> seguem a MESMA fonte do app — a região guardada neste navegador. Não muda nada para quem usa
+> hoje, e acompanha quem já escolheu a região EUA.
+>
+> **Fica em aberto, como decisão do Gustavo**: se um visitante estrangeiro de primeira viagem
+> deve ver o login em inglês. Para isso é preciso decidir antes se região e idioma viram eixos
+> independentes — a pendência que já está registrada em "Idioma e região".
+>
+> Conferido em build de produção a 390px, nos dois idiomas e cada um num contexto de navegador
+> isolado: em inglês as quatro telas saem em inglês, com `lang="en-US"`; em português, sem
+> preferência guardada, saem exatamente como eram, com `lang="pt-BR"`. Nenhum erro de JS. O único
+> elemento que passa da tela é o brilho decorativo do fundo (`nt-auth-glow`), cortado pelo
+> `overflow: hidden` do pai — de propósito.
+>
+> ⚠️ **A primeira medição disse o contrário, e estava errada.** A rodada em português mostrou
+> inglês: as duas rodadas usavam o mesmo contexto do navegador, e o `localStorage` é por origem
+> — a segunda herdou o `12h` que a primeira tinha gravado. O app fez o certo (seguiu a
+> preferência guardada); quem errou foi a bancada.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

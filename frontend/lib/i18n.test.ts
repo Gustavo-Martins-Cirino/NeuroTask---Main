@@ -106,6 +106,9 @@ describe("dicionário inteiro", () => {
     "configuracoes.assinar.ondeColar",
     "ia.semSuporteVoz",
     "foco.youtube.ajuda",
+    "entrada.login.olheOSpam",
+    "entrada.cadastro.naoChegou",
+    "entrada.senhaNova.soOMaisRecente",
   ])
 
   it("nenhuma marca de ênfase sobra num texto fixo", () => {
@@ -720,6 +723,34 @@ describe("Modo Foco", () => {
       expect(d.foco.mixer.desativar("Chuva"), nome).toContain("Chuva")
       expect(d.foco.mixer.volumeDe("Chuva"), nome).toContain("Chuva")
       expect(d.foco.restantes("12:30"), nome).toContain("12:30")
+    }
+  })
+})
+
+describe("antes de entrar", () => {
+  it("login, cadastro e senha mudam de idioma", () => {
+    expect(en.entrada.entrar).not.toBe(pt.entrada.entrar)
+    expect(en.entrada.login.erros.credenciaisInvalidas).not.toBe(pt.entrada.login.erros.credenciaisInvalidas)
+    expect(en.entrada.senhaNova.erros.senhasDiferentes).not.toBe(pt.entrada.senhaNova.erros.senhasDiferentes)
+  })
+
+  // As frases com o e-mail dentro são FUNÇÕES, então a varredura de ênfase
+  // acima não as alcança. Cobrado aqui: o e-mail entra, e as marcas vêm em par.
+  it("as frases com e-mail o levam, com a ênfase em par", () => {
+    for (const [nome, d] of IDIOMAS) {
+      for (const frase of [d.entrada.cadastro.enviamosConfirmacao("ana@x.com"), d.entrada.senhaNova.seExistirConta("ana@x.com")]) {
+        expect(frase, nome).toContain("ana@x.com")
+        expect((frase.split("§").length - 1) % 2, `${nome}: marca sobrando`).toBe(0)
+      }
+    }
+  })
+
+  it("o provedor e a contagem entram no texto", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(d.entrada.social.entrarCom("GitHub"), nome).toContain("GitHub")
+      expect(d.entrada.social.criarContaCom("Google"), nome).toContain("Google")
+      expect(d.entrada.social.erroProvedor("Apple"), nome).toContain("Apple")
+      expect(d.entrada.cadastro.reenviadoAguarde(42), nome).toContain("42")
     }
   })
 })

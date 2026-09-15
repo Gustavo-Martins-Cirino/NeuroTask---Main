@@ -10,29 +10,36 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sparkles, Loader2, CheckCircle } from "lucide-react"
 import { SocialLogin } from "@/components/social-login"
+import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
+import { dicionario, type Dicionario } from "@/lib/i18n"
+import { enfatizar } from "@/lib/enfase"
 import type { AuthError } from "@supabase/supabase-js"
 
-function translateSignupError(error: AuthError): string {
+function textoDoErroDeCadastro(error: AuthError, t: Dicionario["entrada"]): string {
   switch (error.code) {
     case "user_already_exists":
     case "email_exists":
-      return "Este email já está em uso. Tente fazer login."
+      return t.cadastro.erros.emailEmUso
     case "weak_password":
-      return "Senha muito fraca. Use ao menos 6 caracteres."
+      return t.senhaFraca
     case "email_address_invalid":
     case "validation_failed":
-      return "Email inválido. Verifique e tente novamente."
+      return t.cadastro.erros.emailInvalido
     case "over_email_send_rate_limit":
     case "over_request_rate_limit":
-      return "Muitas tentativas. Aguarde um momento e tente de novo."
+      return t.muitasTentativas
     case "signup_disabled":
-      return "Os cadastros estão temporariamente desativados."
+      return t.cadastro.erros.cadastrosDesativados
     default:
-      return error.message || "Não foi possível criar a conta. Tente novamente."
+      return error.message || t.cadastro.erros.generico
   }
 }
 
 export default function SignupPage() {
+  // Fora do AppShell: esta página cuida sozinha do `lang` do documento.
+  const idioma = useIdioma()
+  useSincronizarLangDoDocumento(idioma)
+  const t = dicionario(idioma).entrada
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -79,7 +86,7 @@ export default function SignupPage() {
     })
 
     if (error) {
-      setError(translateSignupError(error))
+      setError(textoDoErroDeCadastro(error, t))
       setLoading(false)
       return
     }
@@ -87,7 +94,7 @@ export default function SignupPage() {
     // Supabase oculta emails já cadastrados por segurança: retorna sucesso
     // mas com identities vazio. Detectamos isso para avisar o usuário.
     if (data.user && data.user.identities && data.user.identities.length === 0) {
-      setError("Este email já está em uso. Tente fazer login.")
+      setError(t.cadastro.erros.emailEmUso)
       setLoading(false)
       return
     }
@@ -105,19 +112,17 @@ export default function SignupPage() {
               <CheckCircle className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Verifique seu email</h1>
+              <h1 className="text-2xl font-bold text-foreground">{t.verifiqueSeuEmail}</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Enviamos um link de confirmação para <strong>{email}</strong>.
-                Clique no link para ativar sua conta.
+                {enfatizar(t.cadastro.enviamosConfirmacao(email))}
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                Não chegou? Olhe o <strong>spam</strong> e as abas{" "}
-                <strong>Promoções/Atualizações</strong> (Gmail) ou <strong>Outros</strong> (Outlook) —{" "}
+                {enfatizar(t.cadastro.naoChegou)}{" "}
                 {resendIn > 0 ? (
-                  <span>reenviado ✓ (aguarde {resendIn}s para reenviar de novo)</span>
+                  <span>{t.cadastro.reenviadoAguarde(resendIn)}</span>
                 ) : (
                   <button type="button" onClick={handleResend} className="font-medium text-primary hover:underline">
-                    reenviar link
+                    {t.cadastro.reenviarLink}
                   </button>
                 )}
               </p>
@@ -125,7 +130,7 @@ export default function SignupPage() {
           </div>
           <Link href="/login">
             <Button variant="outline" className="w-full h-11">
-              Voltar para o login
+              {t.voltarParaLogin}
             </Button>
           </Link>
         </div>
@@ -141,20 +146,20 @@ export default function SignupPage() {
             <Sparkles className="h-7 w-7 text-primary-foreground" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">Criar conta</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t.criarConta}</h1>
             <p className="text-sm text-muted-foreground">
-              Comece a organizar suas tarefas hoje
+              {t.cadastro.subtitulo}
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
+            <Label htmlFor="name">{t.cadastro.nome}</Label>
             <Input
               id="name"
               type="text"
-              placeholder="Seu nome"
+              placeholder={t.cadastro.nomePlaceholder}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -163,11 +168,11 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t.email}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="seu@email.com"
+              placeholder={t.emailPlaceholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -176,11 +181,11 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+            <Label htmlFor="password">{t.senha}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="Mínimo 6 caracteres"
+              placeholder={t.minimoSeisCaracteres}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -197,10 +202,10 @@ export default function SignupPage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando conta...
+                {t.cadastro.criandoConta}
               </>
             ) : (
-              "Criar conta"
+              t.criarConta
             )}
           </Button>
         </form>
@@ -208,9 +213,9 @@ export default function SignupPage() {
         <SocialLogin modo="criar" />
 
         <p className="text-center text-sm text-muted-foreground">
-          Já tem uma conta?{" "}
+          {t.cadastro.jaTemConta}{" "}
           <Link href="/login" className="font-medium text-primary hover:underline">
-            Entrar
+            {t.entrar}
           </Link>
         </p>
       </div>
