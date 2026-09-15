@@ -136,7 +136,15 @@ export async function fetchShopState(): Promise<ShopState> {
 // dos pets 3D e dos acessórios). Mandar rodar só o coins_shop.sql fazia quem já
 // o tinha rodado dar de cara com a mesma mensagem — o caso do beagle, que mora
 // no office_3d.sql. Por isso a dica aponta o arquivo por item.
-const SQL_DO_ITEM: Record<string, string> = {
+//
+// Uma leva inteira de itens de office_v4/v5/v6.sql (relógio, prateleira, LED,
+// setup-notebook, mais paredes e pisos) caiu na mesma armadilha e ficou de
+// fora até agora: quem já tinha coins_shop.sql rodado (a maioria dos itens
+// nasce ali) recebia essa MESMA dica de novo ao tentar comprar um desses —
+// o arquivo que já tinha rodado, não o que faltava. Conferido contra o
+// `insert` de cada .sql, não de memória — e há teste (shop-sql.test.ts)
+// cruzando os dois lados para isso não regredir em silêncio outra vez.
+export const SQL_DO_ITEM: Record<string, string> = {
   "pet-cachorro": "office_3d.sql",
   sofa: "office_v7.sql",
   poltrona: "office_v7.sql",
@@ -149,6 +157,22 @@ const SQL_DO_ITEM: Record<string, string> = {
   "chapeu-aureola": "avatar_acessorios.sql",
   "oculos-grau": "avatar_acessorios.sql",
   "oculos-escuros": "avatar_acessorios.sql",
+  "parede-cinza": "office_v4.sql",
+  "parede-preta": "office_v4.sql",
+  "parede-papel": "office_v4.sql",
+  relogio: "office_v4.sql",
+  prateleira: "office_v4.sql",
+  "led-rgb": "office_v4.sql",
+  "setup-notebook": "office_v4.sql",
+  "piso-madeira-escura": "office_v5.sql",
+  "piso-porcelanato": "office_v5.sql",
+  "piso-cimento": "office_v5.sql",
+  "parede-terracota": "office_v6.sql",
+  "parede-mostarda": "office_v6.sql",
+  "parede-oliva": "office_v6.sql",
+  "parede-cimento": "office_v6.sql",
+  "parede-tijolinho": "office_v6.sql",
+  "parede-ripada": "office_v6.sql",
 }
 
 export type BuyErrorCode = "SALDO_INSUFICIENTE" | "JA_COMPRADO" | "ITEM_INEXISTENTE"

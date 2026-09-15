@@ -325,6 +325,20 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 >
 > **Uma armadilha ao conferir isso**: `shop_items` tem RLS `for select to authenticated`, então
 > uma consulta anônima devolve LISTA VAZIA em vez de erro — parece tabela vazia e não é.
+>
+> **A dica de QUAL `.sql` rodar tinha o mesmo bug do beagle, espalhado (14/09).** O teste de
+> 28/08 garante que existe uma linha em ALGUM `.sql` — não que a mensagem de erro aponte o
+> arquivo certo. `SQL_DO_ITEM` (o mapa usado nessa mensagem) nunca tinha entrada para relógio,
+> prateleira, LED, setup-notebook nem para nenhuma parede/piso além dos três primeiros — 16
+> itens ao todo. Quem já tivesse `coins_shop.sql` rodado (onde nasce a maioria) e tentasse
+> comprar um desses recebia a MESMA dica de novo, achava que já tinha feito o passo pedido e
+> ficava sem saber por que a compra continuava falhando.
+>
+> `shop-sql.test.ts` ganhou duas checagens: toda entrada de `SQL_DO_ITEM` bate com o arquivo
+> onde o item REALMENTE está inserido, e todo item SEM entrada mora mesmo no fallback
+> (`coins_shop.sql`) — as duas lidas direto dos `.sql`, não de memória. A segunda foi quem
+> achou os 17 itens: a primeira só prova que as entradas que existem estão certas, não que
+> nada falta.
 
 > **A cena voltou a ocupar a largura toda (31/08), e a loja ganhou três seções.** A prévia 3D
 > tinha virado uma coluna FIXA à esquerda, com a loja ao lado — resolvia um problema real (ao

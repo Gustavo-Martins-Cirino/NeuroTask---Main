@@ -57,8 +57,13 @@ para o dia seguinte),
 `foto-perfil` (o recorte quadrado central, o que se aceita e o carimbo anti-cache),
 `gamification` (anti-farm),
 `i18n` (o dicionário pt/en: nenhum texto vazio, as duas línguas com as mesmas chaves, e a
-varredura que pega "tradução de fachada" — a frase que ficou igual nos dois idiomas) e
-`enfase` (o negrito dentro da frase traduzida, e que marca sobrando não quebra a tela),
+varredura que pega "tradução de fachada" — a frase que ficou igual nos dois idiomas),
+`enfase` (o negrito dentro da frase traduzida, e que marca sobrando não quebra a tela) e
+`locale-fixo` (varre o AST de `app`/`components`/`lib`/`hooks` atrás de `"pt-BR"`/`"en-US"`
+escritos à mão — o locale vazando por baixo de uma tela já traduzida, com as exceções
+legítimas nomeadas uma a uma, motivo incluído),
+`atalhos-neuro` (as sugestões da tela vazia da Neuro IA: sanear, tapar no teto de seis,
+reconhecer o padrão — e que "nunca mexeu" e "apagou tudo" são estados diferentes),
 `ia-agora` (a data que a Neuro recebe: por extenso e em ISO,
 com o mês já delimitado — "28/08" obrigava o modelo a adivinhar dia/mês),
 `ia-duplicata` (quando a Neuro recusa criar por já existir: mesmo título E mesmo dia, com
@@ -91,6 +96,11 @@ O Escritório 3D tem um bloco à parte (`office-bg`, `office-camera`, `office-ce
 diferente: ele **mede a geometria** da cena — se a mão do boneco pousa no teclado, se o
 antebraço passa por cima da mesa. É o olho que falta, já que ninguém consegue ver um
 render num teste. Rodam em Node puro: construir malhas do three.js não exige WebGL.
+
+A loja cosmética do Escritório tem `shop-sql`: cruza o catálogo (`lib/shop.ts`) com os
+`insert` dos `.sql` em [supabase/](supabase/) — item novo na loja sem a linha correspondente
+no banco compilaria e apareceria na vitrine normalmente, e só falharia na hora da COMPRA
+(`ITEM_INEXISTENTE`), sem nenhum teste de frontend pegando antes.
 
 A config é `vitest.config.mts` — a extensão `.mts` é obrigatória, porque o Vite 7 é
 ESM-only e o `package.json` não é `type: module`.
