@@ -76,12 +76,14 @@ export async function composeSnapshot(
 export type ShareOutcome = "shared" | "downloaded" | "cancelled"
 
 // Compartilha o PNG (Web Share nativo, celular) ou baixa (desktop / sem share).
-export async function shareOrDownload(blob: Blob, filename: string): Promise<ShareOutcome> {
+// O título é passado de fora: módulo puro não fala idioma, e este é o único
+// texto de verdade que o Web Share nativo mostra.
+export async function shareOrDownload(blob: Blob, filename: string, title: string): Promise<ShareOutcome> {
   const file = new File([blob], filename, { type: "image/png" })
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
   if (nav.canShare?.({ files: [file] })) {
     try {
-      await nav.share({ files: [file], title: "Meu escritório no NeuroTask 🏢" })
+      await nav.share({ files: [file], title })
       return "shared"
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return "cancelled"

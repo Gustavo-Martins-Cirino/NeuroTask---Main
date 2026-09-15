@@ -1571,85 +1571,130 @@ vira ruído.
 > Os feriados continuam vindo da API pública (Nager.Date, calendário brasileiro): nome de
 > feriado é nome próprio de um país, não texto de interface.
 
-- [ ] **Espalhar a tradução pelo resto do app.** O padrão está de pé e testado (66 testes em
-      `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Já passaram: agenda pública, moldura
-      (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas**,
-      **calendário** (grade, painel do dia e o diálogo de bloco), **importar/exportar**
-      (`agenda-io` + o diálogo `ics-import-dialog`), **assinar no Google/Outlook**
-      (`calendar-feed`), **Amigos inteiro** (`invite-dialog` + `friends-section`: perfil,
-      privacidade, busca, sugeridos, lista, agenda do dia, visita e convites), a **Neuro IA**
-      (chat, atalhos da tela vazia e conversa por voz — ver nota de 14/09 abaixo) e o retrato
-      de perfil (`foto-perfil-campo`, ver nota de 14/09 abaixo). Falta o
-      miolo do **Escritório**. É trabalho de dias, e melhor feito por área, uma de cada vez,
-      para cada fatia poder ser conferida no olho antes da seguinte.
-      **`errors-panel` fica de fora, e é decisão, não pendência**: é o painel de erros do
-      DONO em Configurações — só renderiza algo quando `data.owner` é verdadeiro, ou seja,
-      só quem está logado com `OWNER_EMAIL` chega a ver esse texto. Mesma régua de
-      `app/admin/page.tsx`, já nomeada em `lib/locale-fixo.test.ts`: uma pessoa só abre, e ela
-      fala português.
-      **A Neuro IA: resolvida (14/09)** — chat de texto (`app/app/ai/page.tsx`), os quatro
-      atalhos editáveis da tela vazia (`atalhos-neuro.tsx`) e a conversa por voz
-      (`voice-conversation.tsx`), numa seção nova do dicionário (`Dicionario.ia`).
-      **O que ficou de fora, e é decisão, não esquecimento**: o que a PRÓPRIA IA escreve —
-      as respostas do modelo — continua sempre em português, porque o system prompt de
-      `app/api/ai/route.ts` não é bilíngue. Traduzir a interface não resolve isso: é a IA
-      falando, não texto fixo do app, e ensiná-la a responder no idioma de quem usa é um
-      item à parte (prompt + o regex de `needsConfirm`, que hoje só reconhece "posso
-      confirmar?" em português). Continua tudo funcionando para quem usa em português, que
-      é o único idioma real de uso hoje; só falta a interface, e é isso que este item fecha.
-      **Os quatro atalhos-padrão saíram de `lib/atalhos-neuro.ts` para o dicionário**
-      (`Dicionario.ia.atalhosPadrao`) — o módulo puro continuou só com a REGRA (sanear, tapar
-      no teto, reconhecer o padrão) e passou a recebê-lo por parâmetro; antes ele guardava as
-      quatro frases em português, direto, o que é exatamente o que "módulo puro não fala
-      idioma" proíbe. `leAtalhos` e `ehPadrao` mudaram de assinatura por causa disso, e o
-      teste ganhou um padrão de mentira (`PADRAO_TESTE`) para não depender do dicionário.
-      **O retrato de perfil: resolvido (14/09)** — `foto-perfil-campo.tsx`, em
-      Configurações → Perfil (o lápis que troca entre foto/bonequinho/iniciais). Foi na mesma
-      leva por ser pequeno e por o `OPCOES` do arquivo guardar `rotulo` em português direto no
-      módulo — o mesmo problema que os atalhos da Neuro IA tinham, resolvido do mesmo jeito
-      (a lista virou `ICONES`, sem texto, e o rótulo sai de `Dicionario.configuracoes.perfil.foto`).
-      **A armadilha do calendário foi respondida (31/08): as duas listas NÃO viram uma só.**
-      Elas não são a mesma coisa — a tarefa repete `daily | weekly | monthly | yearly |
-      every:N` e é `nextOccurrence` que empurra o PRAZO ao concluir; o bloco repete na GRADE
-      e tem `weekdays`, que tarefa nenhuma tem. Fundir ofereceria "mensalmente" a um bloco
-      que não sabe repetir assim, e "dias úteis" a uma tarefa cujo `nextOccurrence`
-      devolveria null — ela repetiria na tela e nunca avançaria de prazo. O que se unificou
-      foi o VOCABULÁRIO: as três chaves em comum saem do mesmo lugar do dicionário, e só
-      `diasUteis` é do bloco. Há teste cobrando isso.
-      A ajuda da região lista o que **falta**, não o que já foi: a lista do que falta encolhe
-      até sumir sozinha, e a outra envelhecia a cada fatia — é ela que muda a cada fatia
-      entregue.
-      **E ela envelheceu de qualquer jeito (11/09), duas vezes**: o calendário e as notas já
-      estavam traduzidos e continuavam listados como pendentes, porque nada cobrava a
-      atualização. Agora cobra — há teste que exige que a tela entregue SAIA da frase e que
-      as que faltam continuem nomeadas. Ao fechar uma fatia, acrescente a tela à lista
-      `JA_TRADUZIDAS` de `lib/i18n.test.ts` e o teste pede o resto.
-      **O locale vazava por baixo da tradução (11/09), três vezes.** A tela ficava traduzida
-      e a DATA continuava em português: a prévia do importador de .ics, os convites de Amigos
-      e o nome do mês na visão de ano do calendário — este último com os dias da semana já
-      vindo do dicionário na linha debaixo. Nenhum teste pegava, porque não há o que quebrar:
-      a função devolve string e a tela renderiza, só na língua errada. Virou
-      `lib/locale-fixo.test.ts`, que varre o AST das quatro pastas e aponta arquivo e linha;
-      as exceções legítimas estão nomeadas lá, uma por uma, com o motivo.
-      **Os dois locales de VOZ: resolvidos (14/09), antes da fatia da Neuro IA.** Eram bug de
-      verdade para quem usa em inglês, não só tradução: o `lang` do TTS/STT em
-      `voice-conversation.tsx` estava fixo em `"pt-BR"` (reconhecimento, síntese e o filtro de
-      vozes do sistema), e `app/api/ai/transcribe/route.ts` sempre mandava `language: "pt"` ao
-      Whisper — quem apertasse o microfone com o app em inglês era transcrito como se
-      estivesse falando português, tanto na conversa ao vivo quanto no botão de microfone do
-      chat escrito.
-      Os dois agora leem `useIdioma()`/`useLocale()` (`hooks/use-idioma`). A rota de
-      transcrição passou a receber o idioma pelo `FormData` (validado contra `"en"`, com
-      `"pt"` de reserva — cliente antigo em cache continua funcionando). Dentro do componente,
-      os valores entram por REF pelo mesmo motivo do histórico da conversa: as funções que
-      abrem o microfone nascem num efeito que só reage a `open`, e sem ref ficariam presas ao
-      idioma de quando a conversa começou. A saída de `lib/locale-fixo.test.ts` perdeu a
-      exceção de `voice-conversation.tsx`, que não tem mais locale escrito à mão.
-      Enquanto o app não estiver todo traduzido, o seletor continua dizendo o que faz de
-      fato: **região e formato**, nunca "idioma".
-      Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar
-      24h como o Brasil, a derivação acima deixa de servir e a região passa a ser o dado
-      guardado, com o formato saindo dela.
+> **A tradução do app: completa (14/09).** O padrão está de pé e testado (96 testes em
+> `lib/i18n.test.ts` + 9 em `lib/enfase.test.ts`). Passaram, na ordem: agenda pública, moldura
+> (dock e títulos), Configurações, dashboard, Tarefas, Favoritos, **Notas**,
+> **calendário** (grade, painel do dia e o diálogo de bloco), **importar/exportar**
+> (`agenda-io` + o diálogo `ics-import-dialog`), **assinar no Google/Outlook**
+> (`calendar-feed`), **Amigos inteiro** (`invite-dialog` + `friends-section`: perfil,
+> privacidade, busca, sugeridos, lista, agenda do dia, visita e convites), a **Neuro IA**
+> (chat, atalhos da tela vazia e conversa por voz), o retrato de perfil
+> (`foto-perfil-campo`) e por fim o **Escritório** — ver notas de 14/09 abaixo para as três
+> últimas. Não sobra nenhuma tela em português; a ajuda da região deixou de prometer
+> tradução pendente (ver o parágrafo mais abaixo).
+>
+> **`errors-panel` fica de fora, e é decisão, não pendência**: é o painel de erros do
+> DONO em Configurações — só renderiza algo quando `data.owner` é verdadeiro, ou seja,
+> só quem está logado com `OWNER_EMAIL` chega a ver esse texto. Mesma régua de
+> `app/admin/page.tsx`, já nomeada em `lib/locale-fixo.test.ts`: uma pessoa só abre, e ela
+> fala português.
+>
+> **O Escritório: resolvido (14/09), em duas fatias.** Primeiro o editor de avatar
+> (`avatar-editor.tsx`): corpo, cabelo, pele, roupa, calça e fones. Os arrays `HAIR_STYLES` /
+> `OUTFITS` / `BODY_TYPES` de `lib/avatar.ts` guardavam rótulo em português direto no
+> módulo — o mesmo problema, pela terceira vez (depois dos atalhos da Neuro IA e do retrato de
+> perfil) — e viraram arrays de valor puro, com o rótulo saindo do dicionário pela chave.
+>
+> Depois a tela e a loja (`app/app/office/page.tsx` + `lib/shop.ts`), a parte grande: 47 itens
+> na vitrine, cada um com nome e descrição em português direto no `CATALOG`. Nome e descrição
+> saíram para `Dicionario.escritorio.loja.itens`, indexado por um tipo novo — `ShopItemId`, a
+> união dos 47 ids — para que item novo sem entrada no dicionário não compile, em vez de
+> aparecer na loja sem nome. `CATEGORY_LABELS` virou `Dicionario.escritorio.loja.categorias`
+> pela mesma razão. Os presets de cor de fundo (`lib/office-bg.ts`, 8 opções) seguiram o
+> desenho de `lib/nota-cor.ts`: o campo passou de `label` (texto) para `chave` (um id como
+> `"lavanda"`), preservando o HEX gravado no `localStorage` de quem já escolheu uma cor — só o
+> nome exibido mudou de dono. O erro de compra (`buyItem`) parou de devolver texto pronto e
+> passou a devolver um `errorCode` (mais o nome do `.sql` que falta, quando for
+> `ITEM_INEXISTENTE`); quem traduz agora é a tela, que tem o dicionário. A cena 3D
+> (`office-scene-3d.tsx`) não precisou de nada: é canvas puro, sem um `aria-label` sequer.
+>
+> **Um texto escapou da primeira varredura**: o título que o Web Share nativo do celular
+> mostra ao compartilhar a foto do escritório (`lib/office-snapshot.ts`), cravado dentro de
+> `shareOrDownload`. Só apareceu ao reler o arquivo depois de fechar a tela e o `shop.ts` —
+> nenhuma das duas varreduras de string olha para dentro de `lib/office-snapshot.ts`, porque a
+> maior parte dele é canvas 2D. Virou parâmetro (`title: string`), igual aos outros módulos.
+>
+> **A Neuro IA: resolvida (14/09)** — chat de texto (`app/app/ai/page.tsx`), os quatro
+> atalhos editáveis da tela vazia (`atalhos-neuro.tsx`) e a conversa por voz
+> (`voice-conversation.tsx`), numa seção nova do dicionário (`Dicionario.ia`).
+>
+> **O que ficou de fora, e é decisão, não esquecimento**: o que a PRÓPRIA IA escreve —
+> as respostas do modelo — continua sempre em português, porque o system prompt de
+> `app/api/ai/route.ts` não é bilíngue. Traduzir a interface não resolve isso: é a IA
+> falando, não texto fixo do app, e ensiná-la a responder no idioma de quem usa é um
+> item à parte (prompt + o regex de `needsConfirm`, que hoje só reconhece "posso
+> confirmar?" em português). Continua tudo funcionando para quem usa em português, que
+> é o único idioma real de uso hoje; só faltava a interface, e foi isso que este item fechou.
+>
+> **Os quatro atalhos-padrão saíram de `lib/atalhos-neuro.ts` para o dicionário**
+> (`Dicionario.ia.atalhosPadrao`) — o módulo puro continuou só com a REGRA (sanear, tapar
+> no teto, reconhecer o padrão) e passou a recebê-lo por parâmetro; antes ele guardava as
+> quatro frases em português, direto, o que é exatamente o que "módulo puro não fala
+> idioma" proíbe. `leAtalhos` e `ehPadrao` mudaram de assinatura por causa disso, e o
+> teste ganhou um padrão de mentira (`PADRAO_TESTE`) para não depender do dicionário.
+>
+> **O retrato de perfil: resolvido (14/09)** — `foto-perfil-campo.tsx`, em
+> Configurações → Perfil (o lápis que troca entre foto/bonequinho/iniciais). Foi na mesma
+> leva por ser pequeno e por o `OPCOES` do arquivo guardar `rotulo` em português direto no
+> módulo — o mesmo problema que os atalhos da Neuro IA tinham, resolvido do mesmo jeito
+> (a lista virou `ICONES`, sem texto, e o rótulo sai de `Dicionario.configuracoes.perfil.foto`).
+>
+> **A armadilha do calendário foi respondida (31/08): as duas listas NÃO viram uma só.**
+> Elas não são a mesma coisa — a tarefa repete `daily | weekly | monthly | yearly |
+> every:N` e é `nextOccurrence` que empurra o PRAZO ao concluir; o bloco repete na GRADE
+> e tem `weekdays`, que tarefa nenhuma tem. Fundir ofereceria "mensalmente" a um bloco
+> que não sabe repetir assim, e "dias úteis" a uma tarefa cujo `nextOccurrence`
+> devolveria null — ela repetiria na tela e nunca avançaria de prazo. O que se unificou
+> foi o VOCABULÁRIO: as três chaves em comum saem do mesmo lugar do dicionário, e só
+> `diasUteis` é do bloco. Há teste cobrando isso.
+>
+> **A ajuda da região listava o que FALTAVA, e chegou a ZERO (14/09).** A ideia desde o
+> início era essa: a lista do que falta encolhe até sumir sozinha, e é a frase da ajuda que
+> muda a cada fatia entregue — não o contrário. Com o Escritório, ela sumiu de verdade, e o
+> teste em `lib/i18n.test.ts` mudou de forma para acompanhar: em vez de cobrar que UMA lista de
+> telas pendentes ainda apareça na frase, agora cobra que a frase não mencione mais tradução
+> pendente nenhuma (`not.toMatch(/tradu/)`). Se um dia entrar tela nova sem tradução, o teste
+> quebra e é hora de voltar ao formato antigo (lista do que falta, nomeada).
+>
+> **E ela envelheceu em silêncio duas vezes antes disso (11/09)**: o calendário e as notas já
+> estavam traduzidos e continuavam listados como pendentes, porque nada cobrava a
+> atualização. Um teste passou a exigir que a tela entregue SAÍSSE da frase — e foi esse
+> mesmo teste, reforçado, que acusou quando a lista finalmente chegou a zero.
+>
+> **O locale vazava por baixo da tradução (11/09), três vezes.** A tela ficava traduzida
+> e a DATA continuava em português: a prévia do importador de .ics, os convites de Amigos
+> e o nome do mês na visão de ano do calendário — este último com os dias da semana já
+> vindo do dicionário na linha debaixo. Nenhum teste pegava, porque não há o que quebrar:
+> a função devolve string e a tela renderiza, só na língua errada. Virou
+> `lib/locale-fixo.test.ts`, que varre o AST das quatro pastas e aponta arquivo e linha;
+> as exceções legítimas estão nomeadas lá, uma por uma, com o motivo.
+>
+> **Os dois locales de VOZ: resolvidos (14/09), antes da fatia da Neuro IA.** Eram bug de
+> verdade para quem usa em inglês, não só tradução: o `lang` do TTS/STT em
+> `voice-conversation.tsx` estava fixo em `"pt-BR"` (reconhecimento, síntese e o filtro de
+> vozes do sistema), e `app/api/ai/transcribe/route.ts` sempre mandava `language: "pt"` ao
+> Whisper — quem apertasse o microfone com o app em inglês era transcrito como se
+> estivesse falando português, tanto na conversa ao vivo quanto no botão de microfone do
+> chat escrito.
+>
+> Os dois agora leem `useIdioma()`/`useLocale()` (`hooks/use-idioma`). A rota de
+> transcrição passou a receber o idioma pelo `FormData` (validado contra `"en"`, com
+> `"pt"` de reserva — cliente antigo em cache continua funcionando). Dentro do componente,
+> os valores entram por REF pelo mesmo motivo do histórico da conversa: as funções que
+> abrem o microfone nascem num efeito que só reage a `open`, e sem ref ficariam presas ao
+> idioma de quando a conversa começou. A saída de `lib/locale-fixo.test.ts` perdeu a
+> exceção de `voice-conversation.tsx`, que não tem mais locale escrito à mão.
+>
+> **O seletor continua dizendo "região e formato", nunca "idioma" — e isso não mudou com a
+> tradução completa.** A frase em CLAUDE.md sempre foi condicional a sobrar tela em
+> português; virou tentador renomear o rótulo agora que não sobra nenhuma. Não é só um texto:
+> o app teria que aceitar região e idioma como dois eixos INDEPENDENTES (hoje `idiomaDaRegiao`
+> os trava juntos — só existem as combinações BR+pt e US+en), e isso é redesenho de dado, não
+> tradução de string. Fica como decisão em aberto, não com esta rodada.
+>
+> Quando uma terceira região entrar, é `lib/regiao.ts` que muda primeiro — se ela usar
+> 24h como o Brasil, a derivação acima deixa de servir e a região passa a ser o dado
+> guardado, com o formato saindo dela.
 
 #### Os arquivos de código da pasta
 

@@ -12,23 +12,30 @@ export const OFFICE_BG_DEFAULT: OfficeBg = "auto"
 export const AUTO_LIGHT = "#e7ebf2"
 export const AUTO_DARK = "#20232e"
 
+/**
+ * O nome de cada preset — que é também a CHAVE dele no dicionário
+ * (Dicionario.escritorio.fundoNomes). Não há campo `label` aqui de propósito:
+ * módulo puro não fala idioma (mesma regra de `lib/nota-cor.ts`).
+ */
+export type ChaveFundoOffice = "automatico" | "ceu" | "lavanda" | "pessego" | "menta" | "argila" | "noite" | "grafite"
+
 export interface OfficeBgOption {
   id: OfficeBg
-  label: string
+  chave: ChaveFundoOffice
   /** Cor (ou gradiente) da bolinha no seletor. */
   swatch: string
 }
 
 export const OFFICE_BG_OPTIONS: OfficeBgOption[] = [
   // "Automático" segue o tema — meia bolinha clara, meia escura pra sinalizar.
-  { id: "auto", label: "Automático (tema)", swatch: `linear-gradient(135deg, ${AUTO_LIGHT} 0 50%, ${AUTO_DARK} 50% 100%)` },
-  { id: "#dfeaf4", label: "Céu", swatch: "#dfeaf4" },
-  { id: "#e7dcef", label: "Lavanda", swatch: "#e7dcef" },
-  { id: "#f0dcc8", label: "Pêssego", swatch: "#f0dcc8" },
-  { id: "#d9ead9", label: "Menta", swatch: "#d9ead9" },
-  { id: "#e9d5cf", label: "Argila", swatch: "#e9d5cf" },
-  { id: "#2b2f4a", label: "Noite", swatch: "#2b2f4a" },
-  { id: "#1b1b20", label: "Grafite", swatch: "#1b1b20" },
+  { id: "auto", chave: "automatico", swatch: `linear-gradient(135deg, ${AUTO_LIGHT} 0 50%, ${AUTO_DARK} 50% 100%)` },
+  { id: "#dfeaf4", chave: "ceu", swatch: "#dfeaf4" },
+  { id: "#e7dcef", chave: "lavanda", swatch: "#e7dcef" },
+  { id: "#f0dcc8", chave: "pessego", swatch: "#f0dcc8" },
+  { id: "#d9ead9", chave: "menta", swatch: "#d9ead9" },
+  { id: "#e9d5cf", chave: "argila", swatch: "#e9d5cf" },
+  { id: "#2b2f4a", chave: "noite", swatch: "#2b2f4a" },
+  { id: "#1b1b20", chave: "grafite", swatch: "#1b1b20" },
 ]
 
 // Cor livre: um hex que não é nenhum dos presets acima (nem o "auto"). É o que

@@ -14,13 +14,23 @@ import { composeSnapshot, shareOrDownload, snapshotFilename } from "@/lib/office
 import { useOfficeCelebration } from "@/hooks/use-office-celebration"
 
 // R3F usa WebGL: só no cliente (ssr:false), carregado sob demanda no 3D.
+// Função nomeada (não uma seta anônima) de propósito: o `loading` do dynamic
+// renderiza isto como um componente de verdade, e ele precisa do dicionário.
+function CarregandoCena3D() {
+  const traducao = useDicionario()
+  return (
+    <div className="flex aspect-[480/340] items-center justify-center text-sm text-muted-foreground">
+      {traducao.escritorio.carregando3d}
+    </div>
+  )
+}
 const OfficeScene3D = dynamic(
   () => import("@/components/office-scene-3d").then((m) => m.OfficeScene3D),
-  { ssr: false, loading: () => <div className="flex aspect-[480/340] items-center justify-center text-sm text-muted-foreground">Carregando 3D…</div> }
+  { ssr: false, loading: CarregandoCena3D }
 )
 import { toast } from "sonner"
 import {
-  CATALOG, CATEGORY_LABELS, EXCLUSIVE_CATEGORIES,
+  CATALOG, EXCLUSIVE_CATEGORIES,
   fetchShopState, buyItem, setEquipped, equipExclusive,
   type ShopCategory, type ShopItem,
 } from "@/lib/shop"
@@ -63,7 +73,7 @@ export default function OfficePage() {
   const handleShare = async () => {
     const canvas = sceneWrapRef.current?.querySelector("canvas")
     if (!canvas) {
-      toast.error("Abra o escritório em 3D para gerar a imagem.")
+      toast.error(traducao.escritorio.abraParaGerarImagem)
       return
     }
     setSharing(true)
@@ -71,11 +81,11 @@ export default function OfficePage() {
       const bg = resolveOfficeBg(officeBg, resolvedTheme === "dark")
       const blob = await composeSnapshot(canvas as HTMLCanvasElement, { bg, nivel })
       if (!blob) throw new Error("sem imagem")
-      const outcome = await shareOrDownload(blob, snapshotFilename())
-      if (outcome === "downloaded") toast.success("Imagem do escritório baixada! 📸")
-      else if (outcome === "shared") toast.success("Escritório compartilhado! 📸")
+      const outcome = await shareOrDownload(blob, snapshotFilename(), traducao.escritorio.tituloCompartilhamento)
+      if (outcome === "downloaded") toast.success(traducao.escritorio.imagemBaixada)
+      else if (outcome === "shared") toast.success(traducao.escritorio.imagemCompartilhada)
     } catch {
-      toast.error("Não consegui gerar a imagem.")
+      toast.error(traducao.escritorio.erroGerarImagem)
     } finally {
       setSharing(false)
     }
@@ -124,9 +134,15 @@ export default function OfficePage() {
 
   const handleBuy = async (item: ShopItem) => {
     setBusyItem(item.id)
-    const { coins: newCoins, error } = await buyItem(item.id)
-    if (error) {
-      toast.error(error)
+    const { coins: newCoins, errorCode, arquivoSql, errorBruto } = await buyItem(item.id)
+    if (errorCode || errorBruto) {
+      const erros = traducao.escritorio.loja.erros
+      const msg =
+        errorCode === "SALDO_INSUFICIENTE" ? erros.saldoInsuficiente
+        : errorCode === "JA_COMPRADO" ? erros.jaComprado
+        : errorCode === "ITEM_INEXISTENTE" ? erros.itemInexistente(arquivoSql ?? "coins_shop.sql")
+        : errorBruto!
+      toast.error(msg)
       setBusyItem(null)
       return
     }
@@ -146,7 +162,7 @@ export default function OfficePage() {
       setOwned((prev) => new Map(prev).set(item.id, true))
     }
     setBusyItem(null)
-    toast.success(`${item.emoji} ${item.name} é seu! Já está no escritório.`)
+    toast.success(traducao.escritorio.loja.itemComprado(item.emoji, traducao.escritorio.loja.itens[item.id].nome))
   }
 
   const handleToggle = async (item: ShopItem) => {
@@ -222,8 +238,8 @@ export default function OfficePage() {
                 type="button"
                 onClick={handleShare}
                 disabled={sharing}
-                title="Salvar / compartilhar imagem do escritório"
-                aria-label="Salvar ou compartilhar imagem do escritório"
+                title={traducao.escritorio.salvarCompartilharImagem}
+                aria-label={traducao.escritorio.salvarCompartilharImagem}
                 className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60 disabled:opacity-60"
               >
                 {sharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
@@ -238,7 +254,7 @@ export default function OfficePage() {
                   className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm"
                 >
                   <Eye className="h-3.5 w-3.5" />
-                  Prévia · {previewItem.name}
+                  {traducao.escritorio.loja.previa(traducao.escritorio.loja.itens[previewItem.id].nome)}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -248,12 +264,10 @@ export default function OfficePage() {
                   largura toda ela cabe inteira, e as cores descem para a linha de
                   baixo — que é o que `flex-wrap` já estava esperando. */}
               <p className="min-w-0 basis-full truncate text-xs text-muted-foreground sm:flex-1 sm:basis-auto">
-                {ownedCount === 0
-                  ? "Seu cantinho começa simples — decore-o com a sua produtividade."
-                  : `${ownedCount} ${ownedCount === 1 ? "item conquistado" : "itens conquistados"}`}
+                {ownedCount === 0 ? traducao.escritorio.vazio : traducao.escritorio.itensConquistados(ownedCount)}
               </p>
               {/* Cor de fundo do escritório (preferência do dispositivo) */}
-              <div className="flex shrink-0 items-center gap-1.5" title="Cor de fundo">
+              <div className="flex shrink-0 items-center gap-1.5" title={traducao.escritorio.corDeFundo}>
                 <Palette className="h-3.5 w-3.5 text-muted-foreground" />
                 <div className="flex items-center gap-1">
                   {OFFICE_BG_OPTIONS.map((o) => (
@@ -261,8 +275,8 @@ export default function OfficePage() {
                       key={o.id}
                       type="button"
                       onClick={() => setOfficeBg(o.id)}
-                      title={o.label}
-                      aria-label={`Fundo: ${o.label}`}
+                      title={traducao.escritorio.fundoNomes[o.chave]}
+                      aria-label={traducao.escritorio.fundoAria(traducao.escritorio.fundoNomes[o.chave])}
                       aria-pressed={officeBg === o.id}
                       className={cn(
                         // 20px de bolinha é menor que a ponta de um dedo. No celular elas
@@ -281,8 +295,8 @@ export default function OfficePage() {
                     const custom = ehFundoPersonalizado(officeBg)
                     return (
                       <label
-                        title="Cor personalizada"
-                        aria-label="Fundo: cor personalizada"
+                        title={traducao.escritorio.corPersonalizada}
+                        aria-label={traducao.escritorio.fundoCorPersonalizadaAria}
                         className={cn(
                           "relative h-5 w-5 cursor-pointer rounded-full border transition-transform hover:scale-110",
                           custom ? "border-primary ring-2 ring-primary/40" : "border-border/60"
@@ -310,7 +324,7 @@ export default function OfficePage() {
                 className="flex h-7 shrink-0 items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
               >
                 <Pencil className="h-3 w-3" />
-                Editar avatar
+                {traducao.escritorio.editarAvatar}
               </button>
             </div>
           </motion.div>
@@ -319,7 +333,7 @@ export default function OfficePage() {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">Loja</h2>
+              <h2 className="text-sm font-semibold">{traducao.escritorio.loja.titulo}</h2>
               <div className="ml-auto flex flex-wrap items-center gap-1.5">
                 {CATEGORY_ORDER.map((c) => (
                   <button
@@ -333,7 +347,7 @@ export default function OfficePage() {
                         : "border-border/50 text-muted-foreground hover:border-border"
                     )}
                   >
-                    {CATEGORY_LABELS[c]}
+                    {traducao.escritorio.loja.categorias[c]}
                   </button>
                 ))}
               </div>
@@ -347,6 +361,7 @@ export default function OfficePage() {
                 const isEquipped = owned.get(item.id) === true
                 const canAfford = coins >= item.price
                 const busy = busyItem === item.id
+                const info = traducao.escritorio.loja.itens[item.id]
                 return (
                   <motion.div
                     key={item.id}
@@ -364,7 +379,7 @@ export default function OfficePage() {
                       <span className="text-2xl leading-none">{item.emoji}</span>
                       {isOwned ? (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                          {isEquipped ? "No escritório" : "Guardado"}
+                          {isEquipped ? traducao.escritorio.loja.noEscritorio : traducao.escritorio.loja.guardado}
                         </span>
                       ) : (
                         <span
@@ -379,8 +394,8 @@ export default function OfficePage() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold">{item.name}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">{item.desc}</p>
+                      <p className="truncate text-xs font-semibold">{info.nome}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">{info.desc}</p>
                     </div>
                     <button
                       type="button"
@@ -403,16 +418,16 @@ export default function OfficePage() {
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : isOwned ? (
                         isEquipped ? (
-                          "Guardar"
+                          traducao.escritorio.loja.guardar
                         ) : (
                           <>
-                            <Check className="h-3.5 w-3.5" /> Equipar
+                            <Check className="h-3.5 w-3.5" /> {traducao.escritorio.loja.equipar}
                           </>
                         )
                       ) : canAfford ? (
-                        "Comprar"
+                        traducao.escritorio.loja.comprar
                       ) : (
-                        "Moedas insuficientes"
+                        traducao.escritorio.loja.moedasInsuficientes
                       )}
                     </button>
                   </motion.div>
@@ -432,7 +447,7 @@ export default function OfficePage() {
           setAvatarCfg(cfg)
           setAvatarOpen(false)
           saveAvatar(cfg)
-          toast.success("Avatar atualizado! ✨")
+          toast.success(traducao.escritorio.loja.avatarAtualizado)
         }}
       />
     </div>

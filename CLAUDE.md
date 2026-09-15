@@ -187,13 +187,15 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   devolve **chave** e o dicionário devolve o texto — é assim em `saudacao`, `nivel-faixa`,
   `regiao` e `task-recurrence`. O idioma dentro do app sai da região (`hooks/use-idioma`),
   que já sai do formato de hora; em `/agenda/<token>` sai do navegador de quem abre.
-- **A tradução avança por área, e ainda não terminou.** Já passaram: agenda pública, dock e
+- **A tradução do app está completa (14/09).** Todas as telas passaram: agenda pública, dock e
   títulos, Configurações (incl. `foto-perfil-campo`), dashboard, Tarefas, Favoritos, Notas,
-  calendário, importar/exportar de agenda, assinar agenda no Google/Outlook, Amigos inteiro e
-  a Neuro IA (chat, atalhos e conversa por voz). Falta só o **Escritório** — o ROADMAP tem a
-  lista e as armadilhas. `errors-panel` fica de fora de propósito: é o painel de erros do
-  DONO, mesma régua do `app/admin/page.tsx` (uma pessoa só abre, e ela fala português).
-  Enquanto sobrar tela em português, o seletor diz **"região e formato"**, nunca "idioma".
+  calendário, importar/exportar de agenda, assinar agenda no Google/Outlook, Amigos inteiro, a
+  Neuro IA (chat, atalhos e conversa por voz) e o Escritório (tela, editor de avatar e a loja
+  de 47 itens) — o ROADMAP tem o histórico e as armadilhas de cada fatia. `errors-panel` fica
+  de fora de propósito: é o painel de erros do DONO, mesma régua do `app/admin/page.tsx` (uma
+  pessoa só abre, e ela fala português). O seletor continua dizendo **"região e formato"**,
+  nunca "idioma" — trocar o rótulo pediria desacoplar região de idioma (hoje um implica o
+  outro), o que é redesenho de dado e ficou registrado no ROADMAP como decisão em aberto.
   **O que a própria IA escreve não entra nisso**: as respostas do modelo saem sempre em
   português (o system prompt de `app/api/ai/route.ts` não é bilíngue) — é conteúdo dinâmico,
   não interface, e ensiná-la a responder no idioma de quem usa é um item à parte do ROADMAP.

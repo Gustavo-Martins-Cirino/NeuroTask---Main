@@ -499,13 +499,17 @@ describe("importar e exportar agenda", () => {
   })
 })
 
-// A ajuda da região promete o que FALTA traduzir, e essa lista encolhe a cada
-// fatia. Ela envelheceu em silêncio duas vezes (o calendário e as notas já
-// estavam traduzidos e continuavam listados), porque nada cobrava a atualização.
-// Agora cobra: ao entregar uma área, acrescente-a aqui e o teste exige que ela
-// saia da frase.
+// A ajuda da região promete o que FALTA traduzir, e essa lista encolheu a
+// cada fatia até sumir. Ela envelheceu em silêncio duas vezes (o calendário e
+// as notas já estavam traduzidos e continuavam listados), porque nada cobrava
+// a atualização — daí o teste abaixo.
+//
+// Com o Escritório (14/09) a lista chegou a ZERO: todas as telas estão
+// traduzidas, e a ajuda não promete mais nada pendente. Se um dia entrar tela
+// nova sem tradução, a frase muda para nomeá-la — e aí volta a fazer sentido
+// reescrever este describe no formato antigo (JA_TRADUZIDAS × o que falta).
 describe("a ajuda da região envelhece sozinha", () => {
-  const JA_TRADUZIDAS = (d: Dicionario) => [
+  const TODAS_AS_TELAS = (d: Dicionario) => [
     d.telas.inicio,
     d.telas.tarefas,
     d.telas.favoritos,
@@ -514,25 +518,23 @@ describe("a ajuda da região envelhece sozinha", () => {
     d.telas.configuracoes,
     d.telas.amigos,
     d.telas.neuroIa,
+    d.telas.escritorio,
   ]
 
-  it("nenhuma tela já traduzida continua na lista do que falta", () => {
+  it("nenhuma tela traduzida aparece na ajuda como se ainda faltasse", () => {
     for (const [nome, d] of IDIOMAS) {
       const ajuda = d.configuracoes.aparencia.regiaoAjuda.toLowerCase()
-      for (const tela of JA_TRADUZIDAS(d)) {
+      for (const tela of TODAS_AS_TELAS(d)) {
         expect(ajuda, `${nome}: ${tela} já foi traduzida e ainda aparece na ajuda`)
           .not.toContain(tela.toLowerCase())
       }
     }
   })
 
-  it("as que faltam continuam nomeadas — a frase não pode virar promessa vazia", () => {
+  it("nada falta mais: a ajuda não promete tradução pendente", () => {
     for (const [nome, d] of IDIOMAS) {
       const ajuda = d.configuracoes.aparencia.regiaoAjuda.toLowerCase()
-      for (const tela of [d.telas.escritorio]) {
-        expect(ajuda, `${nome}: ${tela} falta traduzir e não está na ajuda`)
-          .toContain(tela.toLowerCase())
-      }
+      expect(ajuda, `${nome}: a ajuda ainda fala de tradução em andamento`).not.toMatch(/tradu/)
     }
   })
 })

@@ -29,26 +29,27 @@ import { createClient } from "@/lib/supabase/client"
 export type ShopCategory =
   | "vida" | "luz" | "enfeite" | "movel" | "cadeira" | "setup" | "parede" | "piso" | "chapeu" | "oculos"
 
+/**
+ * O id de cada item — e também a CHAVE dele em `Dicionario.escritorio.loja.itens`.
+ * Sendo união e não `string`, o dicionário só compila se nomear TODOS: item
+ * novo sem entrada no dicionário vira erro de compilação, não uma vitrine
+ * com um card sem nome.
+ */
+export type ShopItemId =
+  | "oculos-grau" | "oculos-escuros" | "chapeu-bone" | "chapeu-social" | "chapeu-gorro" | "chapeu-capuz"
+  | "chapeu-coroa" | "chapeu-aureola" | "planta-pequena" | "luminaria" | "quadro-montanhas" | "tapete"
+  | "planta-grande" | "estante" | "mesa-centro" | "sofa" | "poltrona" | "quadro-neon" | "janela-cidade"
+  | "pet-gato" | "pet-cachorro" | "trofeu" | "cadeira-ergonomica" | "cadeira-gamer" | "relogio"
+  | "prateleira" | "led-rgb" | "setup-notebook" | "setup-duplo" | "setup-ultrawide" | "parede-azul"
+  | "parede-verde" | "parede-rosa" | "parede-cinza" | "parede-preta" | "parede-papel" | "parede-terracota"
+  | "parede-mostarda" | "parede-oliva" | "parede-cimento" | "parede-tijolinho" | "parede-ripada"
+  | "piso-madeira" | "piso-carpete" | "piso-madeira-escura" | "piso-porcelanato" | "piso-cimento"
+
 export interface ShopItem {
-  id: string
-  name: string
+  id: ShopItemId
   price: number
   category: ShopCategory
   emoji: string
-  desc: string
-}
-
-export const CATEGORY_LABELS: Record<ShopCategory, string> = {
-  chapeu: "Chapéus",
-  oculos: "Óculos",
-  vida: "Plantas e bichos",
-  luz: "Luz",
-  enfeite: "Enfeites",
-  movel: "Móveis",
-  cadeira: "Cadeira",
-  setup: "Setup",
-  parede: "Parede",
-  piso: "Piso",
 }
 
 // Slots exclusivos: equipar um desequipa os irmãos (vida, luz e enfeite são livres).
@@ -57,54 +58,56 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
 export const EXCLUSIVE_CATEGORIES: ShopCategory[] = ["cadeira", "setup", "parede", "piso", "chapeu", "oculos"]
 
 // Metadados visuais por id — preço aqui é só exibição; o cobrado é o do banco.
+// Nome e descrição NÃO moram aqui: módulo puro não fala idioma, e vivem em
+// Dicionario.escritorio.loja (itens e categorias), pela mesma chave `id`.
 export const CATALOG: ShopItem[] = [
-  { id: "oculos-grau", name: "Óculos de grau", price: 35, category: "oculos", emoji: "👓", desc: "Ar de quem lê muito" },
-  { id: "oculos-escuros", name: "Óculos escuros", price: 70, category: "oculos", emoji: "🕶️", desc: "Foco em modo estiloso" },
-  { id: "chapeu-bone", name: "Boné", price: 45, category: "chapeu", emoji: "🧢", desc: "Clássico de todo dia" },
-  { id: "chapeu-social", name: "Chapéu social", price: 90, category: "chapeu", emoji: "🎩", desc: "Elegância no home office" },
-  { id: "chapeu-gorro", name: "Gorro de lã", price: 60, category: "chapeu", emoji: "🧶", desc: "Com barra enrolada e pompom" },
-  { id: "chapeu-capuz", name: "Capuz", price: 130, category: "chapeu", emoji: "🥷", desc: "Modo concentração, sem falar com ninguém" },
-  { id: "chapeu-coroa", name: "Coroa dourada", price: 220, category: "chapeu", emoji: "👑", desc: "Para quem reina na rotina" },
-  { id: "chapeu-aureola", name: "Auréola", price: 260, category: "chapeu", emoji: "😇", desc: "Paira acima da cabeça, acesa" },
-  { id: "planta-pequena", name: "Plantinha", price: 20, category: "vida", emoji: "🪴", desc: "Um toque de vida na mesa" },
-  { id: "luminaria", name: "Luminária", price: 30, category: "luz", emoji: "💡", desc: "Luz quentinha de canto" },
-  { id: "quadro-montanhas", name: "Quadro · Montanhas", price: 40, category: "enfeite", emoji: "🖼️", desc: "Paisagem pra respirar" },
-  { id: "tapete", name: "Tapete", price: 50, category: "enfeite", emoji: "🟫", desc: "Conforto sob os pés" },
-  { id: "planta-grande", name: "Planta grande", price: 60, category: "vida", emoji: "🌿", desc: "Uma costela-de-adão no canto" },
-  { id: "estante", name: "Estante de livros", price: 80, category: "movel", emoji: "📚", desc: "Sua biblioteca pessoal" },
-  { id: "mesa-centro", name: "Mesa de centro", price: 70, category: "movel", emoji: "🪵", desc: "Com um livro e uma caneca em cima" },
-  { id: "sofa", name: "Sofá", price: 170, category: "movel", emoji: "🛋️", desc: "Dois lugares encostados na parede" },
-  { id: "poltrona", name: "Poltrona", price: 120, category: "movel", emoji: "🪑", desc: "Solta no chão, virada para a mesa" },
-  { id: "quadro-neon", name: "Neon \"focus\"", price: 90, category: "luz", emoji: "🔆", desc: "Letreiro neon na parede" },
-  { id: "janela-cidade", name: "Janela · Cidade", price: 100, category: "enfeite", emoji: "🌆", desc: "Vista para a cidade" },
-  { id: "pet-gato", name: "Gato de estimação", price: 120, category: "vida", emoji: "🐈", desc: "Companhia de produtividade" },
-  { id: "pet-cachorro", name: "Cachorro (Beagle)", price: 120, category: "vida", emoji: "🐕", desc: "Um beagle 3D que se mexe no tapete" },
-  { id: "trofeu", name: "Troféu dourado", price: 150, category: "enfeite", emoji: "🏆", desc: "Prova de que você chegou longe" },
-  { id: "cadeira-ergonomica", name: "Cadeira ergonômica", price: 60, category: "cadeira", emoji: "🪑", desc: "Adeus, dor nas costas" },
-  { id: "cadeira-gamer", name: "Cadeira gamer", price: 130, category: "cadeira", emoji: "🎮", desc: "Vermelha e imponente" },
-  { id: "relogio", name: "Relógio de parede", price: 45, category: "enfeite", emoji: "🕙", desc: "O tempo passando na parede" },
-  { id: "prateleira", name: "Prateleira", price: 75, category: "enfeite", emoji: "🪟", desc: "Livros, vaso e caneca em cima" },
-  { id: "led-rgb", name: "Fita de LED RGB", price: 140, category: "luz", emoji: "🌈", desc: "Contorna o teto com cor" },
-  { id: "setup-notebook", name: "Setup · Notebook", price: 90, category: "setup", emoji: "💻", desc: "Só o laptop, mesa limpa" },
-  { id: "setup-duplo", name: "Setup · 2 monitores", price: 110, category: "setup", emoji: "🖥️", desc: "Produtividade em dobro" },
-  { id: "setup-ultrawide", name: "Setup · Ultrawide", price: 200, category: "setup", emoji: "📺", desc: "O monitor dos sonhos" },
-  { id: "parede-azul", name: "Parede azul", price: 40, category: "parede", emoji: "🔵", desc: "Tom sereno de foco" },
-  { id: "parede-verde", name: "Parede verde", price: 40, category: "parede", emoji: "🟢", desc: "Verde floresta calmante" },
-  { id: "parede-rosa", name: "Parede rosa", price: 40, category: "parede", emoji: "🩷", desc: "Rosa suave e acolhedor" },
-  { id: "parede-cinza", name: "Parede cinza", price: 40, category: "parede", emoji: "⚪", desc: "Concreto sóbrio" },
-  { id: "parede-preta", name: "Parede preta", price: 55, category: "parede", emoji: "⚫", desc: "Fundo escuro, foco no que brilha" },
-  { id: "parede-papel", name: "Papel listrado", price: 70, category: "parede", emoji: "📜", desc: "Listras verticais, não só cor" },
-  { id: "parede-terracota", name: "Parede terracota", price: 40, category: "parede", emoji: "🟠", desc: "Barro quente e fechado" },
-  { id: "parede-mostarda", name: "Parede mostarda", price: 40, category: "parede", emoji: "🟡", desc: "Amarelo queimado, sem gritar" },
-  { id: "parede-oliva", name: "Parede oliva", price: 40, category: "parede", emoji: "🫒", desc: "Verde escuro de estúdio" },
-  { id: "parede-cimento", name: "Cimento queimado", price: 110, category: "parede", emoji: "🪨", desc: "Manchado, como concreto polido" },
-  { id: "parede-tijolinho", name: "Tijolinho", price: 130, category: "parede", emoji: "🧱", desc: "Fiada aparente, junta e tudo" },
-  { id: "parede-ripada", name: "Ripado de madeira", price: 150, category: "parede", emoji: "🪵", desc: "Réguas verticais com fresta" },
-  { id: "piso-madeira", name: "Piso de madeira", price: 30, category: "piso", emoji: "🪵", desc: "Tábua corrida, com emenda" },
-  { id: "piso-carpete", name: "Carpete", price: 30, category: "piso", emoji: "🧶", desc: "Piso macio azulado" },
-  { id: "piso-madeira-escura", name: "Madeira escura", price: 55, category: "piso", emoji: "🟫", desc: "Tábua em tom nogueira" },
-  { id: "piso-porcelanato", name: "Porcelanato", price: 90, category: "piso", emoji: "⬜", desc: "Ladrilho grande com rejunte" },
-  { id: "piso-cimento", name: "Cimento queimado", price: 110, category: "piso", emoji: "🪨", desc: "Liso, cinza e sem emenda" },
+  { id: "oculos-grau", price: 35, category: "oculos", emoji: "👓" },
+  { id: "oculos-escuros", price: 70, category: "oculos", emoji: "🕶️" },
+  { id: "chapeu-bone", price: 45, category: "chapeu", emoji: "🧢" },
+  { id: "chapeu-social", price: 90, category: "chapeu", emoji: "🎩" },
+  { id: "chapeu-gorro", price: 60, category: "chapeu", emoji: "🧶" },
+  { id: "chapeu-capuz", price: 130, category: "chapeu", emoji: "🥷" },
+  { id: "chapeu-coroa", price: 220, category: "chapeu", emoji: "👑" },
+  { id: "chapeu-aureola", price: 260, category: "chapeu", emoji: "😇" },
+  { id: "planta-pequena", price: 20, category: "vida", emoji: "🪴" },
+  { id: "luminaria", price: 30, category: "luz", emoji: "💡" },
+  { id: "quadro-montanhas", price: 40, category: "enfeite", emoji: "🖼️" },
+  { id: "tapete", price: 50, category: "enfeite", emoji: "🟫" },
+  { id: "planta-grande", price: 60, category: "vida", emoji: "🌿" },
+  { id: "estante", price: 80, category: "movel", emoji: "📚" },
+  { id: "mesa-centro", price: 70, category: "movel", emoji: "🪵" },
+  { id: "sofa", price: 170, category: "movel", emoji: "🛋️" },
+  { id: "poltrona", price: 120, category: "movel", emoji: "🪑" },
+  { id: "quadro-neon", price: 90, category: "luz", emoji: "🔆" },
+  { id: "janela-cidade", price: 100, category: "enfeite", emoji: "🌆" },
+  { id: "pet-gato", price: 120, category: "vida", emoji: "🐈" },
+  { id: "pet-cachorro", price: 120, category: "vida", emoji: "🐕" },
+  { id: "trofeu", price: 150, category: "enfeite", emoji: "🏆" },
+  { id: "cadeira-ergonomica", price: 60, category: "cadeira", emoji: "🪑" },
+  { id: "cadeira-gamer", price: 130, category: "cadeira", emoji: "🎮" },
+  { id: "relogio", price: 45, category: "enfeite", emoji: "🕙" },
+  { id: "prateleira", price: 75, category: "enfeite", emoji: "🪟" },
+  { id: "led-rgb", price: 140, category: "luz", emoji: "🌈" },
+  { id: "setup-notebook", price: 90, category: "setup", emoji: "💻" },
+  { id: "setup-duplo", price: 110, category: "setup", emoji: "🖥️" },
+  { id: "setup-ultrawide", price: 200, category: "setup", emoji: "📺" },
+  { id: "parede-azul", price: 40, category: "parede", emoji: "🔵" },
+  { id: "parede-verde", price: 40, category: "parede", emoji: "🟢" },
+  { id: "parede-rosa", price: 40, category: "parede", emoji: "🩷" },
+  { id: "parede-cinza", price: 40, category: "parede", emoji: "⚪" },
+  { id: "parede-preta", price: 55, category: "parede", emoji: "⚫" },
+  { id: "parede-papel", price: 70, category: "parede", emoji: "📜" },
+  { id: "parede-terracota", price: 40, category: "parede", emoji: "🟠" },
+  { id: "parede-mostarda", price: 40, category: "parede", emoji: "🟡" },
+  { id: "parede-oliva", price: 40, category: "parede", emoji: "🫒" },
+  { id: "parede-cimento", price: 110, category: "parede", emoji: "🪨" },
+  { id: "parede-tijolinho", price: 130, category: "parede", emoji: "🧱" },
+  { id: "parede-ripada", price: 150, category: "parede", emoji: "🪵" },
+  { id: "piso-madeira", price: 30, category: "piso", emoji: "🪵" },
+  { id: "piso-carpete", price: 30, category: "piso", emoji: "🧶" },
+  { id: "piso-madeira-escura", price: 55, category: "piso", emoji: "🟫" },
+  { id: "piso-porcelanato", price: 90, category: "piso", emoji: "⬜" },
+  { id: "piso-cimento", price: 110, category: "piso", emoji: "🪨" },
 ]
 
 export interface OwnedItem {
@@ -148,25 +151,28 @@ const SQL_DO_ITEM: Record<string, string> = {
   "oculos-escuros": "avatar_acessorios.sql",
 }
 
-const BUY_ERRORS: Record<string, string> = {
-  SALDO_INSUFICIENTE: "Moedas insuficientes — conclua mais tarefas! 💪",
-  JA_COMPRADO: "Você já tem esse item.",
+export type BuyErrorCode = "SALDO_INSUFICIENTE" | "JA_COMPRADO" | "ITEM_INEXISTENTE"
+
+export interface BuyResult {
+  coins?: number
+  errorCode?: BuyErrorCode
+  /** Só com errorCode ITEM_INEXISTENTE: o .sql que falta rodar. */
+  arquivoSql?: string
+  /** Nenhum código bateu — a tela decide o que fazer com o texto cru do servidor. */
+  errorBruto?: string
 }
 
-function erroDeCompra(code: string, itemId: string): string | undefined {
-  if (BUY_ERRORS[code]) return BUY_ERRORS[code]
-  if (code === "ITEM_INEXISTENTE") {
-    return `Este item ainda não existe no banco. Rode supabase/${SQL_DO_ITEM[itemId] ?? "coins_shop.sql"} no Supabase.`
-  }
-  return undefined
-}
-
-export async function buyItem(itemId: string): Promise<{ coins?: number; error?: string }> {
+// Devolve CÓDIGO, não texto: quem traduz é a tela, que tem o dicionário — este
+// módulo só sabe ler a mensagem do Postgres e separar "o quê" de "por quê".
+export async function buyItem(itemId: string): Promise<BuyResult> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("buy_item", { p_item_id: itemId })
   if (error) {
-    const code = ["SALDO_INSUFICIENTE", "JA_COMPRADO", "ITEM_INEXISTENTE"].find((k) => error.message.includes(k))
-    return { error: (code && erroDeCompra(code, itemId)) || error.message }
+    const code = (["SALDO_INSUFICIENTE", "JA_COMPRADO", "ITEM_INEXISTENTE"] as const)
+      .find((k) => error.message.includes(k))
+    if (code === "ITEM_INEXISTENTE") return { errorCode: code, arquivoSql: SQL_DO_ITEM[itemId] ?? "coins_shop.sql" }
+    if (code) return { errorCode: code }
+    return { errorBruto: error.message }
   }
   return { coins: typeof data === "number" ? data : 0 }
 }

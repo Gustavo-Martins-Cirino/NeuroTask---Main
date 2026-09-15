@@ -7,6 +7,8 @@ import { type TaskPriority } from "@/lib/types"
 import { type ChaveCorDeNota } from "@/lib/nota-cor"
 import { type VisaoDoCalendario } from "@/lib/calendario-visao"
 import { type HairStyle, type Outfit, type BodyType } from "@/lib/avatar"
+import { type ShopCategory, type ShopItemId } from "@/lib/shop"
+import { type ChaveFundoOffice } from "@/lib/office-bg"
 
 // Tradução do app — a primeira fatia.
 //
@@ -688,10 +690,28 @@ export interface Dicionario {
     podeFalarAVontade: string
     toqueMicUseFones: string
   }
-  /** O Escritório 3D — por enquanto só o editor de avatar (a cena e a loja
-   *  entram numa fatia seguinte). */
+  /** O Escritório 3D: a cena não tem texto nenhum (é canvas puro) — o que
+   *  falava era a tela, o editor de avatar e a loja. */
   escritorio: {
     editarAvatar: string
+    carregando3d: string
+    salvarCompartilharImagem: string
+    abraParaGerarImagem: string
+    /** Título que o Web Share nativo do celular mostra ao compartilhar a imagem. */
+    tituloCompartilhamento: string
+    imagemBaixada: string
+    imagemCompartilhada: string
+    erroGerarImagem: string
+    /** "Seu cantinho começa simples…" — sem nenhum item comprado ainda. */
+    vazio: string
+    /** "3 itens conquistados" — singular e plural são frases diferentes em inglês. */
+    itensConquistados: (n: number) => string
+    corDeFundo: string
+    corPersonalizada: string
+    fundoCorPersonalizadaAria: string
+    fundoAria: (nome: string) => string
+    /** Nome de cada preset, pela CHAVE de `lib/office-bg.ts`. */
+    fundoNomes: Record<ChaveFundoOffice, string>
     avatarEditor: {
       corpo: string
       cabelo: string
@@ -707,6 +727,31 @@ export interface Dicionario {
       cabeloEstilos: Record<HairStyle, string>
       roupas: Record<Outfit, string>
       corpoTipos: Record<BodyType, string>
+    }
+    loja: {
+      titulo: string
+      /** Nome de cada categoria, pela CHAVE de `lib/shop.ts`. */
+      categorias: Record<ShopCategory, string>
+      /** "Prévia · Sofá" — ao passar o mouse num item da loja. */
+      previa: (nome: string) => string
+      noEscritorio: string
+      guardado: string
+      guardar: string
+      equipar: string
+      comprar: string
+      moedasInsuficientes: string
+      /** "🛋️ Sofá é seu! Já está no escritório." */
+      itemComprado: (emoji: string, nome: string) => string
+      avatarAtualizado: string
+      /** Nome e descrição de cada item, pela CHAVE de `lib/shop.ts` (ShopItemId).
+       *  Sendo união e não `string`, item novo sem entrada aqui não compila. */
+      itens: Record<ShopItemId, { nome: string; desc: string }>
+      erros: {
+        saldoInsuficiente: string
+        jaComprado: string
+        /** O nome do .sql que falta rodar entra no meio da frase. */
+        itemInexistente: (arquivo: string) => string
+      }
     }
   }
 }
@@ -879,8 +924,7 @@ export const pt: Dicionario = {
       sistema: "Sistema",
       regiao: "Região",
       regioes: { BR: "Brasil", US: "Estados Unidos" },
-      regiaoAjuda:
-        "Decide como as horas aparecem e em que idioma o app fala. A tradução está em andamento — ainda falta o Escritório.",
+      regiaoAjuda: "Decide como as horas aparecem e em que idioma o app fala.",
     },
     rotina: {
       titulo: "Rotina",
@@ -1296,6 +1340,29 @@ export const pt: Dicionario = {
   },
   escritorio: {
     editarAvatar: "Editar avatar",
+    carregando3d: "Carregando 3D…",
+    salvarCompartilharImagem: "Salvar / compartilhar imagem do escritório",
+    abraParaGerarImagem: "Abra o escritório em 3D para gerar a imagem.",
+    tituloCompartilhamento: "Meu escritório no NeuroTask 🏢",
+    imagemBaixada: "Imagem do escritório baixada! 📸",
+    imagemCompartilhada: "Escritório compartilhado! 📸",
+    erroGerarImagem: "Não consegui gerar a imagem.",
+    vazio: "Seu cantinho começa simples — decore-o com a sua produtividade.",
+    itensConquistados: (n) => `${n} ${n === 1 ? "item conquistado" : "itens conquistados"}`,
+    corDeFundo: "Cor de fundo",
+    corPersonalizada: "Cor personalizada",
+    fundoCorPersonalizadaAria: "Fundo: cor personalizada",
+    fundoAria: (nome) => `Fundo: ${nome}`,
+    fundoNomes: {
+      automatico: "Automático (tema)",
+      ceu: "Céu",
+      lavanda: "Lavanda",
+      pessego: "Pêssego",
+      menta: "Menta",
+      argila: "Argila",
+      noite: "Noite",
+      grafite: "Grafite",
+    },
     avatarEditor: {
       corpo: "Corpo",
       cabelo: "Cabelo",
@@ -1323,6 +1390,84 @@ export const pt: Dicionario = {
       corpoTipos: {
         m: "Masculino",
         f: "Feminino",
+      },
+    },
+    loja: {
+      titulo: "Loja",
+      categorias: {
+        chapeu: "Chapéus",
+        oculos: "Óculos",
+        vida: "Plantas e bichos",
+        luz: "Luz",
+        enfeite: "Enfeites",
+        movel: "Móveis",
+        cadeira: "Cadeira",
+        setup: "Setup",
+        parede: "Parede",
+        piso: "Piso",
+      },
+      previa: (nome) => `Prévia · ${nome}`,
+      noEscritorio: "No escritório",
+      guardado: "Guardado",
+      guardar: "Guardar",
+      equipar: "Equipar",
+      comprar: "Comprar",
+      moedasInsuficientes: "Moedas insuficientes",
+      itemComprado: (emoji, nome) => `${emoji} ${nome} é seu! Já está no escritório.`,
+      avatarAtualizado: "Avatar atualizado! ✨",
+      itens: {
+        "oculos-grau": { nome: "Óculos de grau", desc: "Ar de quem lê muito" },
+        "oculos-escuros": { nome: "Óculos escuros", desc: "Foco em modo estiloso" },
+        "chapeu-bone": { nome: "Boné", desc: "Clássico de todo dia" },
+        "chapeu-social": { nome: "Chapéu social", desc: "Elegância no home office" },
+        "chapeu-gorro": { nome: "Gorro de lã", desc: "Com barra enrolada e pompom" },
+        "chapeu-capuz": { nome: "Capuz", desc: "Modo concentração, sem falar com ninguém" },
+        "chapeu-coroa": { nome: "Coroa dourada", desc: "Para quem reina na rotina" },
+        "chapeu-aureola": { nome: "Auréola", desc: "Paira acima da cabeça, acesa" },
+        "planta-pequena": { nome: "Plantinha", desc: "Um toque de vida na mesa" },
+        luminaria: { nome: "Luminária", desc: "Luz quentinha de canto" },
+        "quadro-montanhas": { nome: "Quadro · Montanhas", desc: "Paisagem pra respirar" },
+        tapete: { nome: "Tapete", desc: "Conforto sob os pés" },
+        "planta-grande": { nome: "Planta grande", desc: "Uma costela-de-adão no canto" },
+        estante: { nome: "Estante de livros", desc: "Sua biblioteca pessoal" },
+        "mesa-centro": { nome: "Mesa de centro", desc: "Com um livro e uma caneca em cima" },
+        sofa: { nome: "Sofá", desc: "Dois lugares encostados na parede" },
+        poltrona: { nome: "Poltrona", desc: "Solta no chão, virada para a mesa" },
+        "quadro-neon": { nome: "Neon \"focus\"", desc: "Letreiro neon na parede" },
+        "janela-cidade": { nome: "Janela · Cidade", desc: "Vista para a cidade" },
+        "pet-gato": { nome: "Gato de estimação", desc: "Companhia de produtividade" },
+        "pet-cachorro": { nome: "Cachorro (Beagle)", desc: "Um beagle 3D que se mexe no tapete" },
+        trofeu: { nome: "Troféu dourado", desc: "Prova de que você chegou longe" },
+        "cadeira-ergonomica": { nome: "Cadeira ergonômica", desc: "Adeus, dor nas costas" },
+        "cadeira-gamer": { nome: "Cadeira gamer", desc: "Vermelha e imponente" },
+        relogio: { nome: "Relógio de parede", desc: "O tempo passando na parede" },
+        prateleira: { nome: "Prateleira", desc: "Livros, vaso e caneca em cima" },
+        "led-rgb": { nome: "Fita de LED RGB", desc: "Contorna o teto com cor" },
+        "setup-notebook": { nome: "Setup · Notebook", desc: "Só o laptop, mesa limpa" },
+        "setup-duplo": { nome: "Setup · 2 monitores", desc: "Produtividade em dobro" },
+        "setup-ultrawide": { nome: "Setup · Ultrawide", desc: "O monitor dos sonhos" },
+        "parede-azul": { nome: "Parede azul", desc: "Tom sereno de foco" },
+        "parede-verde": { nome: "Parede verde", desc: "Verde floresta calmante" },
+        "parede-rosa": { nome: "Parede rosa", desc: "Rosa suave e acolhedor" },
+        "parede-cinza": { nome: "Parede cinza", desc: "Concreto sóbrio" },
+        "parede-preta": { nome: "Parede preta", desc: "Fundo escuro, foco no que brilha" },
+        "parede-papel": { nome: "Papel listrado", desc: "Listras verticais, não só cor" },
+        "parede-terracota": { nome: "Parede terracota", desc: "Barro quente e fechado" },
+        "parede-mostarda": { nome: "Parede mostarda", desc: "Amarelo queimado, sem gritar" },
+        "parede-oliva": { nome: "Parede oliva", desc: "Verde escuro de estúdio" },
+        "parede-cimento": { nome: "Cimento queimado", desc: "Manchado, como concreto polido" },
+        "parede-tijolinho": { nome: "Tijolinho", desc: "Fiada aparente, junta e tudo" },
+        "parede-ripada": { nome: "Ripado de madeira", desc: "Réguas verticais com fresta" },
+        "piso-madeira": { nome: "Piso de madeira", desc: "Tábua corrida, com emenda" },
+        "piso-carpete": { nome: "Carpete", desc: "Piso macio azulado" },
+        "piso-madeira-escura": { nome: "Madeira escura", desc: "Tábua em tom nogueira" },
+        "piso-porcelanato": { nome: "Porcelanato", desc: "Ladrilho grande com rejunte" },
+        "piso-cimento": { nome: "Cimento queimado", desc: "Liso, cinza e sem emenda" },
+      },
+      erros: {
+        saldoInsuficiente: "Moedas insuficientes — conclua mais tarefas! 💪",
+        jaComprado: "Você já tem esse item.",
+        itemInexistente: (arquivo) => `Este item ainda não existe no banco. Rode supabase/${arquivo} no Supabase.`,
       },
     },
   },
@@ -1496,8 +1641,7 @@ export const en: Dicionario = {
       sistema: "System",
       regiao: "Region",
       regioes: { BR: "Brazil", US: "United States" },
-      regiaoAjuda:
-        "Sets how times are shown and which language the app speaks. Translation is under way — the Office is still to come.",
+      regiaoAjuda: "Sets how times are shown and which language the app speaks.",
     },
     rotina: {
       titulo: "Routine",
@@ -1911,6 +2055,29 @@ export const en: Dicionario = {
   },
   escritorio: {
     editarAvatar: "Edit avatar",
+    carregando3d: "Loading 3D…",
+    salvarCompartilharImagem: "Save / share office image",
+    abraParaGerarImagem: "Open the 3D office to generate the image.",
+    tituloCompartilhamento: "My office on NeuroTask 🏢",
+    imagemBaixada: "Office image downloaded! 📸",
+    imagemCompartilhada: "Office shared! 📸",
+    erroGerarImagem: "Couldn't generate the image.",
+    vazio: "Your corner starts simple — decorate it with your productivity.",
+    itensConquistados: (n) => `${n} ${n === 1 ? "item earned" : "items earned"}`,
+    corDeFundo: "Background colour",
+    corPersonalizada: "Custom colour",
+    fundoCorPersonalizadaAria: "Background: custom colour",
+    fundoAria: (nome) => `Background: ${nome}`,
+    fundoNomes: {
+      automatico: "Automatic (theme)",
+      ceu: "Sky",
+      lavanda: "Lavender",
+      pessego: "Peach",
+      menta: "Mint",
+      argila: "Clay",
+      noite: "Night",
+      grafite: "Graphite",
+    },
     avatarEditor: {
       corpo: "Body",
       cabelo: "Hair",
@@ -1938,6 +2105,84 @@ export const en: Dicionario = {
       corpoTipos: {
         m: "Male",
         f: "Female",
+      },
+    },
+    loja: {
+      titulo: "Shop",
+      categorias: {
+        chapeu: "Hats",
+        oculos: "Glasses",
+        vida: "Plants & pets",
+        luz: "Light",
+        enfeite: "Decor",
+        movel: "Furniture",
+        cadeira: "Chair",
+        setup: "Setup",
+        parede: "Wall",
+        piso: "Floor",
+      },
+      previa: (nome) => `Preview · ${nome}`,
+      noEscritorio: "In the office",
+      guardado: "Stored",
+      guardar: "Store",
+      equipar: "Equip",
+      comprar: "Buy",
+      moedasInsuficientes: "Not enough coins",
+      itemComprado: (emoji, nome) => `${emoji} ${nome} is yours! Already in the office.`,
+      avatarAtualizado: "Avatar updated! ✨",
+      itens: {
+        "oculos-grau": { nome: "Reading glasses", desc: "Looks like you read a lot" },
+        "oculos-escuros": { nome: "Sunglasses", desc: "Focus, but make it stylish" },
+        "chapeu-bone": { nome: "Cap", desc: "An everyday classic" },
+        "chapeu-social": { nome: "Top hat", desc: "Elegance for the home office" },
+        "chapeu-gorro": { nome: "Wool beanie", desc: "With a rolled brim and a pompom" },
+        "chapeu-capuz": { nome: "Hood", desc: "Focus mode, talking to no one" },
+        "chapeu-coroa": { nome: "Golden crown", desc: "For whoever rules the routine" },
+        "chapeu-aureola": { nome: "Halo", desc: "Floats above the head, glowing" },
+        "planta-pequena": { nome: "Small plant", desc: "A touch of life on the desk" },
+        luminaria: { nome: "Lamp", desc: "Warm light in the corner" },
+        "quadro-montanhas": { nome: "Frame · Mountains", desc: "A landscape to breathe in" },
+        tapete: { nome: "Rug", desc: "Comfort underfoot" },
+        "planta-grande": { nome: "Large plant", desc: "A swiss cheese plant in the corner" },
+        estante: { nome: "Bookshelf", desc: "Your personal library" },
+        "mesa-centro": { nome: "Coffee table", desc: "With a book and a mug on top" },
+        sofa: { nome: "Sofa", desc: "Two seats against the wall" },
+        poltrona: { nome: "Armchair", desc: "Loose on the floor, facing the desk" },
+        "quadro-neon": { nome: "\"Focus\" neon", desc: "A neon sign on the wall" },
+        "janela-cidade": { nome: "Window · City", desc: "A view over the city" },
+        "pet-gato": { nome: "Pet cat", desc: "Productivity company" },
+        "pet-cachorro": { nome: "Dog (Beagle)", desc: "A 3D beagle that moves on the rug" },
+        trofeu: { nome: "Golden trophy", desc: "Proof you've come far" },
+        "cadeira-ergonomica": { nome: "Ergonomic chair", desc: "Goodbye, back pain" },
+        "cadeira-gamer": { nome: "Gaming chair", desc: "Red and imposing" },
+        relogio: { nome: "Wall clock", desc: "Time passing on the wall" },
+        prateleira: { nome: "Shelf", desc: "Books, a vase and a mug on top" },
+        "led-rgb": { nome: "RGB LED strip", desc: "Outlines the ceiling with colour" },
+        "setup-notebook": { nome: "Setup · Laptop", desc: "Just the laptop, clean desk" },
+        "setup-duplo": { nome: "Setup · 2 monitors", desc: "Double the productivity" },
+        "setup-ultrawide": { nome: "Setup · Ultrawide", desc: "The dream monitor" },
+        "parede-azul": { nome: "Blue wall", desc: "A serene, focused tone" },
+        "parede-verde": { nome: "Green wall", desc: "Calming forest green" },
+        "parede-rosa": { nome: "Pink wall", desc: "Soft and cosy pink" },
+        "parede-cinza": { nome: "Grey wall", desc: "Sober concrete" },
+        "parede-preta": { nome: "Black wall", desc: "Dark backdrop, focus on what shines" },
+        "parede-papel": { nome: "Striped wallpaper", desc: "Vertical stripes, not just colour" },
+        "parede-terracota": { nome: "Terracotta wall", desc: "Warm, enclosed clay" },
+        "parede-mostarda": { nome: "Mustard wall", desc: "Burnt yellow, without shouting" },
+        "parede-oliva": { nome: "Olive wall", desc: "Dark studio green" },
+        "parede-cimento": { nome: "Burnt cement", desc: "Mottled, like polished concrete" },
+        "parede-tijolinho": { nome: "Exposed brick", desc: "Visible courses, mortar and all" },
+        "parede-ripada": { nome: "Wood slats", desc: "Vertical slats with a gap" },
+        "piso-madeira": { nome: "Wood floor", desc: "Running boards, with seams" },
+        "piso-carpete": { nome: "Carpet", desc: "Soft, bluish flooring" },
+        "piso-madeira-escura": { nome: "Dark wood", desc: "Walnut-toned boards" },
+        "piso-porcelanato": { nome: "Porcelain tile", desc: "Large tile with grout" },
+        "piso-cimento": { nome: "Burnt cement", desc: "Smooth, grey and seamless" },
+      },
+      erros: {
+        saldoInsuficiente: "Not enough coins — finish more tasks! 💪",
+        jaComprado: "You already have this item.",
+        itemInexistente: (arquivo) => `This item doesn't exist in the database yet. Run supabase/${arquivo} on Supabase.`,
       },
     },
   },
