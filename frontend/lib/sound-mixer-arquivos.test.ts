@@ -12,17 +12,17 @@ import { join } from "node:path"
 
 const RAIZ = process.cwd()
 
-function declarados(): { label: string; src: string }[] {
+function declarados(): { id: string; src: string }[] {
   const src = readFileSync(join(RAIZ, "components", "sound-mixer.tsx"), "utf8")
-  return [...src.matchAll(/\{ id: "[^"]+", label: "([^"]+)", src: "([^"]+)"/g)]
-    .map((m) => ({ label: m[1], src: m[2] }))
+  return [...src.matchAll(/\{ id: "([^"]+)", src: "([^"]+)"/g)]
+    .map((m) => ({ id: m[1], src: m[2] }))
 }
 
 describe("sons do mixer", () => {
   it("todo som declarado tem o arquivo dele", () => {
     const semArquivo = declarados()
       .filter((s) => !existsSync(join(RAIZ, "public", s.src)))
-      .map((s) => `${s.label} → ${s.src}`)
+      .map((s) => `${s.id} → ${s.src}`)
     expect(semArquivo).toEqual([])
   })
 

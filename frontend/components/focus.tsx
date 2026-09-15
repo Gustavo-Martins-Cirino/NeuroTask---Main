@@ -3,7 +3,7 @@
 import { createContext, useContext, useCallback, useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { createClient } from "@/lib/supabase/client"
-import { GRADIENT_PRESETS, type GradientPreset } from "@/lib/focus-gradient"
+import { GRADIENT_PRESETS, type GradientPreset, type IdAmbiente } from "@/lib/focus-gradient"
 import { useRealtime } from "@/hooks/use-realtime"
 import { awardXp, taskXpAmount } from "@/lib/gamification"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
@@ -14,6 +14,7 @@ import type { Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Play, Pause, X, Check, RotateCcw, Activity, Minus, Plus, Palette, Music, Youtube, Minimize2, Maximize2 } from "lucide-react"
+import { useDicionario } from "@/hooks/use-idioma"
 
 interface FocusContextValue {
   openFocus: (task?: Task | null, minutes?: number) => void
@@ -35,8 +36,7 @@ const FocusGradient = dynamic(
 )
 
 interface Ambient {
-  id: string
-  name: string
+  id: IdAmbiente
   bg: string
   mode: "themed" | "dark" | "light"
   clock: boolean
@@ -55,18 +55,17 @@ const AMBIENTS: Ambient[] = [
   // O desfoque CHEIO fica: é ele que separa "ver que o app está atrás" de "ler o
   // que está atrás". Baixando o desfoque junto, as tarefas viravam legíveis
   // durante o foco — o oposto do que esta tela existe para fazer.
-  { id: "transparent", name: "Transparente", bg: "bg-background/35 backdrop-blur-xl", mode: "themed", clock: false },
-  { id: "black", name: "Preto", bg: "bg-neutral-950", mode: "dark", clock: false },
-  { id: "gray", name: "Cinza", bg: "bg-neutral-700", mode: "dark", clock: false },
+  { id: "transparent", bg: "bg-background/35 backdrop-blur-xl", mode: "themed", clock: false },
+  { id: "black", bg: "bg-neutral-950", mode: "dark", clock: false },
+  { id: "gray", bg: "bg-neutral-700", mode: "dark", clock: false },
   // "Claro" era `bg-neutral-100` (#f5f5f5) ao lado de "Branco" (#ffffff): na tela
   // cheia, a mesma cor com dois nomes. Agora é um papel quente — a diferença
   // entre os dois vira TEMPERATURA, que se enxerga, e não meio ponto de brilho.
-  { id: "light", name: "Papel", bg: "bg-[#f2ece1]", mode: "light", clock: false },
-  { id: "white", name: "Branco", bg: "bg-white", mode: "light", clock: false },
-  { id: "clock", name: "Relógio", bg: "bg-neutral-950", mode: "dark", clock: true },
+  { id: "light", bg: "bg-[#f2ece1]", mode: "light", clock: false },
+  { id: "white", bg: "bg-white", mode: "light", clock: false },
+  { id: "clock", bg: "bg-neutral-950", mode: "dark", clock: true },
   ...GRADIENT_PRESETS.map((g) => ({
     id: g.id,
-    name: g.name,
     bg: "", // a cor vem do próprio canvas (e do fallback dele)
     mode: g.mode,
     clock: false,
@@ -117,6 +116,7 @@ function AnalogClock({ stroke }: { stroke: string }) {
 
 export function FocusProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
+  const textos = useDicionario().foco
   const [inProgress, setInProgress] = useState<Task | null>(null)
   /** Id da tarefa cujo aviso foi dispensado — some ao trocar de tarefa. */
   const [dispensado, setDispensado] = useState<string | null>(null)
@@ -263,11 +263,11 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
               </span>
-              <span className="flex-1 text-xs font-medium uppercase tracking-wide text-blue-500">Em andamento</span>
+              <span className="flex-1 text-xs font-medium uppercase tracking-wide text-blue-500">{textos.emAndamento}</span>
               <button
                 type="button"
                 onClick={() => setDispensado(inProgress.id)}
-                aria-label="Dispensar o aviso"
+                aria-label={textos.dispensarAviso}
                 className="-mr-1 -mt-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <X className="h-4 w-4" />
@@ -277,13 +277,13 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             {inProgressRemaining !== null && (
               <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
                 {inProgressRemaining >= 0
-                  ? `${pad(Math.floor(inProgressRemaining / 60000))}:${pad(Math.floor((inProgressRemaining % 60000) / 1000))} restantes`
-                  : "Tempo estimado esgotado"}
+                  ? textos.restantes(`${pad(Math.floor(inProgressRemaining / 60000))}:${pad(Math.floor((inProgressRemaining % 60000) / 1000))}`)
+                  : textos.tempoEsgotado}
               </p>
             )}
             <button onClick={() => openFocus(inProgress)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02]">
               <Activity className="h-4 w-4" />
-              Entrar no foco
+              {textos.entrarNoFoco}
             </button>
           </motion.div>
         )}
@@ -305,16 +305,16 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             )}
 
             <div className="absolute right-6 top-6 flex items-center gap-1">
-              <button onClick={() => { setMinimized(true); setPanel("none") }} aria-label="Minimizar" className={cn("rounded-full p-2 transition-colors", ctrl)}>
+              <button onClick={() => { setMinimized(true); setPanel("none") }} aria-label={textos.minimizar} className={cn("rounded-full p-2 transition-colors", ctrl)}>
                 <Minimize2 className="h-5 w-5" />
               </button>
-              <button onClick={() => { setOpen(false); setMinimized(false) }} aria-label="Cancelar foco" className={cn("rounded-full p-2 transition-colors", ctrl)}>
+              <button onClick={() => { setOpen(false); setMinimized(false) }} aria-label={textos.cancelarFoco} className={cn("rounded-full p-2 transition-colors", ctrl)}>
                 <X className="h-6 w-6" />
               </button>
             </div>
 
             <div className="mb-2 text-center">
-              <p className={cn("text-xs uppercase tracking-[0.3em]", soft)}>Foco ativo</p>
+              <p className={cn("text-xs uppercase tracking-[0.3em]", soft)}>{textos.focoAtivo}</p>
               {focusTask && <h2 className="mt-1 text-2xl font-bold">{focusTask.title}</h2>}
             </div>
 
@@ -339,14 +339,14 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             <AnimatePresence>
               {!running && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-6 flex items-center gap-3 overflow-hidden">
-                  <button onClick={() => setDurationMin(durationMin - 5)} className={cn("flex h-9 w-9 items-center justify-center rounded-full transition-colors", ctrl)}>
+                  <button onClick={() => setDurationMin(durationMin - 5)} aria-label={textos.menosCinco} className={cn("flex h-9 w-9 items-center justify-center rounded-full transition-colors", ctrl)}>
                     <Minus className="h-4 w-4" />
                   </button>
                   <div className="flex flex-col items-center">
                     <input type="range" min={5} max={120} step={5} value={durationMin} onChange={(e) => setDurationMin(Number(e.target.value))} className={cn("w-56 max-w-[60vw] cursor-pointer", m === "light" ? "accent-neutral-900" : m === "themed" ? "accent-primary" : "accent-white")} />
                     <span className={cn("mt-1 text-xs", soft)}>{durationMin} min</span>
                   </div>
-                  <button onClick={() => setDurationMin(durationMin + 5)} className={cn("flex h-9 w-9 items-center justify-center rounded-full transition-colors", ctrl)}>
+                  <button onClick={() => setDurationMin(durationMin + 5)} aria-label={textos.maisCinco} className={cn("flex h-9 w-9 items-center justify-center rounded-full transition-colors", ctrl)}>
                     <Plus className="h-4 w-4" />
                   </button>
                 </motion.div>
@@ -354,10 +354,10 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             </AnimatePresence>
 
             <div className="mt-6 flex items-center gap-4">
-              <button onClick={reset} className={cn("rounded-full p-3 transition-colors", ctrl)}>
+              <button onClick={reset} aria-label={textos.recomecar} className={cn("rounded-full p-3 transition-colors", ctrl)}>
                 <RotateCcw className="h-5 w-5" />
               </button>
-              <button onClick={() => setRunning((r) => !r)} className={cn("flex h-16 w-16 items-center justify-center rounded-full transition-transform hover:scale-105", solid)}>
+              <button onClick={() => setRunning((r) => !r)} aria-label={running ? textos.pausar : textos.iniciar} className={cn("flex h-16 w-16 items-center justify-center rounded-full transition-transform hover:scale-105", solid)}>
                 {running ? <Pause className="h-7 w-7" /> : <Play className="ml-1 h-7 w-7" />}
               </button>
               <div className="w-11" />
@@ -366,7 +366,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             {focusTask && (
               <button onClick={completeTask} className={cn("mt-8 flex items-center gap-2 rounded-full border px-6 py-2.5 text-sm font-medium transition-colors", m === "light" ? "border-black/20 hover:bg-black/5" : m === "themed" ? "border-border hover:bg-accent" : "border-white/20 hover:bg-white/10")}>
                 <Check className="h-4 w-4" />
-                Concluir tarefa
+                {textos.concluirTarefa}
               </button>
             )}
 
@@ -376,7 +376,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               <AnimatePresence>
                 {panel === "ambient" && (
                   <motion.div initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.97 }} className={cn("w-60 rounded-2xl border p-4 shadow-xl", panelCls)}>
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">Ambiente</p>
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.ambiente}</p>
                     <div className="grid grid-cols-3 gap-2">
                       {AMBIENTS.map((a, i) => (
                         <button key={a.id} onClick={() => setAmbient(i)} className="flex flex-col items-center gap-1">
@@ -397,11 +397,11 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                           >
                             {a.gradient && (
                               <span className="absolute bottom-0.5 right-0.5 rounded-sm bg-black/45 px-1 text-[8px] font-semibold leading-tight text-white">
-                                animado
+                                {textos.animado}
                               </span>
                             )}
                           </span>
-                          <span className="text-[10px] opacity-70">{a.name}</span>
+                          <span className="text-[10px] opacity-70">{textos.ambientes[a.id]}</span>
                         </button>
                       ))}
                     </div>
@@ -412,22 +412,22 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               {/* Painéis Sons e YouTube — mantidos montados enquanto o foco está
                   aberto (áudio persiste, inclusive com o Foco minimizado) */}
               <div className={cn("w-[min(92vw,640px)] rounded-2xl border p-4 shadow-xl", panelCls, panel === "sounds" ? "block" : "hidden")}>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">Mixer de sons</p>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.mixerDeSons}</p>
                 <SoundMixer />
               </div>
               <div className={cn("w-[min(92vw,640px)] rounded-2xl border p-4 shadow-xl", panelCls, panel === "youtube" ? "block" : "hidden")}>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">Música do YouTube</p>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.musicaDoYoutube}</p>
                 <YouTubePlayer />
               </div>
 
               <div className="flex items-center gap-2 self-end">
-                <button onClick={() => setPanel((p) => (p === "sounds" ? "none" : "sounds"))} className={cn("rounded-full border p-3 transition-colors", panel === "sounds" ? solid : cn("border-transparent", ctrl))} title="Sons">
+                <button onClick={() => setPanel((p) => (p === "sounds" ? "none" : "sounds"))} className={cn("rounded-full border p-3 transition-colors", panel === "sounds" ? solid : cn("border-transparent", ctrl))} title={textos.sons}>
                   <Music className="h-5 w-5" />
                 </button>
-                <button onClick={() => setPanel((p) => (p === "youtube" ? "none" : "youtube"))} className={cn("rounded-full border p-3 transition-colors", panel === "youtube" ? solid : cn("border-transparent", ctrl))} title="Música do YouTube">
+                <button onClick={() => setPanel((p) => (p === "youtube" ? "none" : "youtube"))} className={cn("rounded-full border p-3 transition-colors", panel === "youtube" ? solid : cn("border-transparent", ctrl))} title={textos.musicaDoYoutube}>
                   <Youtube className="h-5 w-5" />
                 </button>
-                <button onClick={() => setPanel((p) => (p === "ambient" ? "none" : "ambient"))} className={cn("rounded-full border p-3 transition-colors", panel === "ambient" ? solid : cn("border-transparent", ctrl))} title="Ambiente">
+                <button onClick={() => setPanel((p) => (p === "ambient" ? "none" : "ambient"))} className={cn("rounded-full border p-3 transition-colors", panel === "ambient" ? solid : cn("border-transparent", ctrl))} title={textos.ambiente}>
                   <Palette className="h-5 w-5" />
                 </button>
               </div>
@@ -444,7 +444,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 12 }}
             onClick={() => setMinimized(false)}
-            aria-label="Restaurar modo foco"
+            aria-label={textos.restaurar}
             className="fixed bottom-20 right-4 z-[110] flex items-center gap-3 overflow-hidden rounded-2xl border border-border/50 bg-card/90 px-4 py-3 shadow-lg backdrop-blur-xl transition-transform hover:scale-[1.03] md:bottom-6 md:right-6"
           >
             <span className="relative flex h-2.5 w-2.5 shrink-0">

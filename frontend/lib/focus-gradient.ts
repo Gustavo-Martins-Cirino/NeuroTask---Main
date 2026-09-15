@@ -3,9 +3,20 @@
 // e pronto. Aqui mora só o que é determinístico: os presets e a regra de
 // velocidade. O canvas em si vive em components/focus-gradient.tsx.
 
+/** Os ambientes que se mexem. O NOME de cada um mora no dicionário (`foco.ambientes`). */
+export type IdGradiente = "aurora" | "brasa" | "mare" | "algodao"
+
+/**
+ * Os ambientes parados, definidos em components/focus.tsx. O tipo mora aqui, e
+ * não no componente, porque o dicionário precisa dele para exigir um nome por
+ * ambiente — e o dicionário não importa componente.
+ */
+export type IdAmbienteEstatico = "transparent" | "black" | "gray" | "light" | "white" | "clock"
+
+export type IdAmbiente = IdAmbienteEstatico | IdGradiente
+
 export interface GradientPreset {
-  id: string
-  name: string
+  id: IdGradiente
   /** Cor de fundo enquanto o canvas carrega (e o fallback sem animação). */
   fallback: string
   type: "plane" | "sphere" | "waterPlane"
@@ -22,22 +33,22 @@ export interface GradientPreset {
 
 export const GRADIENT_PRESETS: GradientPreset[] = [
   {
-    id: "aurora", name: "Aurora", fallback: "#0b1026", type: "waterPlane",
+    id: "aurora", fallback: "#0b1026", type: "waterPlane",
     color1: "#1a2a6c", color2: "#3ba9c9", color3: "#7b2ff7",
     speed: 0.4, density: 1.3, strength: 3.4, mode: "dark",
   },
   {
-    id: "brasa", name: "Brasa", fallback: "#2a1208", type: "plane",
+    id: "brasa", fallback: "#2a1208", type: "plane",
     color1: "#3a1206", color2: "#e0632a", color3: "#f2b035",
     speed: 0.32, density: 1.1, strength: 3.0, mode: "dark",
   },
   {
-    id: "mare", name: "Maré", fallback: "#062a33", type: "waterPlane",
+    id: "mare", fallback: "#062a33", type: "waterPlane",
     color1: "#04303b", color2: "#0f8b8d", color3: "#8fd9c4",
     speed: 0.28, density: 1.4, strength: 3.2, mode: "dark",
   },
   {
-    id: "algodao", name: "Algodão", fallback: "#f3e8f7", type: "sphere",
+    id: "algodao", fallback: "#f3e8f7", type: "sphere",
     color1: "#ffd9e8", color2: "#cfe3ff", color3: "#f6f0d8",
     speed: 0.24, density: 0.9, strength: 2.4, mode: "light",
   },

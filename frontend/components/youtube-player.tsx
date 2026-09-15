@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Youtube, Play, Star, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useDicionario } from "@/hooks/use-idioma"
+import { enfatizar } from "@/lib/enfase"
 
 // Player do YouTube EMBUTIDO (embed oficial) — toca vídeo/live direto do
 // YouTube dentro do app, sem copiar/hospedar áudio (respeita direitos autorais;
@@ -49,6 +51,7 @@ function toEmbedSrc(raw: string): string | null {
 }
 
 export function YouTubePlayer() {
+  const t = useDicionario().foco.youtube
   const [input, setInput] = useState("")
   const [current, setCurrent] = useState("")
   const [favs, setFavs] = useState<Fav[]>([])
@@ -114,7 +117,7 @@ export function YouTubePlayer() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Cole o link do YouTube (vídeo ou live)…"
+          placeholder={t.placeholder}
           className="min-w-0 flex-1 rounded-lg border border-neutral-400/30 bg-black/5 px-3 py-2 text-sm outline-none placeholder:opacity-50 focus:border-neutral-400/60"
         />
         <button
@@ -122,13 +125,13 @@ export function YouTubePlayer() {
           disabled={!inputValido}
           className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.03] disabled:opacity-40"
         >
-          <Play className="h-4 w-4" /> Tocar
+          <Play className="h-4 w-4" /> {t.tocar}
         </button>
         <button
           type="button"
           onClick={alternarFavorito}
           disabled={!srcAlvo}
-          title={jaFavoritado ? "Remover dos favoritos" : "Favoritar este link"}
+          title={jaFavoritado ? t.removerDosFavoritos : t.favoritar}
           className="flex shrink-0 items-center justify-center rounded-lg border border-neutral-400/30 px-3 transition-colors hover:bg-black/5 disabled:opacity-40"
         >
           <Star className={cn("h-4 w-4", jaFavoritado && "fill-amber-400 text-amber-400")} />
@@ -152,7 +155,7 @@ export function YouTubePlayer() {
                 </button>
                 <button
                   onClick={() => removerFavorito(f.id)}
-                  title="Remover"
+                  title={t.remover}
                   className="rounded-full p-0.5 opacity-50 transition hover:bg-black/10 hover:opacity-100"
                 >
                   <X className="h-3 w-3" />
@@ -179,7 +182,7 @@ export function YouTubePlayer() {
           <div className="flex max-w-xs flex-col items-center gap-2 px-4 opacity-60">
             <Youtube className="h-7 w-7" />
             <span className="text-xs leading-relaxed">
-              Cole um link, dê <b>Tocar</b> e clique na <b>★</b> pra favoritar. O áudio continua enquanto você trabalha — é só deixar o Foco <b>minimizado</b>.
+              {enfatizar(t.ajuda)}
             </span>
           </div>
         </div>

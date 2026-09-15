@@ -105,6 +105,7 @@ describe("dicionário inteiro", () => {
     "configuracoes.importarExportar.dialogo.ondeAchar",
     "configuracoes.assinar.ondeColar",
     "ia.semSuporteVoz",
+    "foco.youtube.ajuda",
   ])
 
   it("nenhuma marca de ênfase sobra num texto fixo", () => {
@@ -695,5 +696,30 @@ describe("amigos — a seção inteira", () => {
   it("Lvl não se traduz, e o número entra", () => {
     expect(pt.amigos.visita.nivel(7)).toBe(en.amigos.visita.nivel(7))
     expect(pt.amigos.visita.nivel(7)).toContain("7")
+  })
+})
+
+describe("Modo Foco", () => {
+  it("os nomes de ambiente, de seção e de som mudam de idioma", () => {
+    expect(en.foco.ambientes.light).not.toBe(pt.foco.ambientes.light)
+    expect(en.foco.mixer.secoes.music).not.toBe(pt.foco.mixer.secoes.music)
+    expect(en.foco.mixer.faixas.rain).not.toBe(pt.foco.mixer.faixas.rain)
+  })
+
+  // Gênero musical que o português já diz em inglês não se traduz: "Lo-fi" em
+  // português é "Lo-fi". É o erro oposto ao de cima, e o mais fácil de cometer
+  // numa varredura — como "Neuro IA" e "Dashboard".
+  it("gênero que já é inglês fica igual nos dois", () => {
+    expect(en.foco.mixer.faixas.lofi).toBe(pt.foco.mixer.faixas.lofi)
+    expect(en.foco.mixer.faixas.chillhop).toBe(pt.foco.mixer.faixas.chillhop)
+  })
+
+  it("o nome da faixa entra no rótulo do leitor de tela", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(d.foco.mixer.ativar("Chuva"), nome).toContain("Chuva")
+      expect(d.foco.mixer.desativar("Chuva"), nome).toContain("Chuva")
+      expect(d.foco.mixer.volumeDe("Chuva"), nome).toContain("Chuva")
+      expect(d.foco.restantes("12:30"), nome).toContain("12:30")
+    }
   })
 })

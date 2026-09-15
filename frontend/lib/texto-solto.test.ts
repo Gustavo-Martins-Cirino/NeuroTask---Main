@@ -33,6 +33,7 @@ const ARQUIVO_INTEIRO: Record<string, string> = {
 /** Textos que são iguais em qualquer idioma. Casam o texto INTEIRO, nunca um pedaço. */
 const TEXTOS_LIVRES: Record<string, string> = {
   NeuroTask: "a marca",
+  YouTube: "a marca",
   Lvl: "abreviação igual nos dois idiomas (ver i18n.test.ts)",
   XP: "unidade do jogo",
   min: "abreviação de minutos, igual em português e inglês",
@@ -53,9 +54,6 @@ const PENDENTES: Record<string, string> = {
   "app/reset-password/page.tsx": "fatia do login e cadastro",
   "app/auth/error/page.tsx": "fatia do login e cadastro",
   "components/social-login.tsx": "fatia do login e cadastro",
-  "components/focus.tsx": "fatia do Modo Foco",
-  "components/sound-mixer.tsx": "fatia do Modo Foco",
-  "components/youtube-player.tsx": "fatia do Modo Foco",
   "components/getting-started.tsx": "fatia do que sobrou dentro das telas",
   "components/metricas-dashboard.tsx": "fatia do que sobrou dentro das telas",
   "components/enquete.tsx": "fatia do que sobrou dentro das telas",

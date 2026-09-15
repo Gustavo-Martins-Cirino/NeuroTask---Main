@@ -4,9 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react"
 
 export type SoundCategory = "ambient" | "music" | "noise"
 
+/**
+ * As faixas do mixer. O NOME de cada uma mora no dicionário (`foco.mixer.faixas`),
+ * indexado por este id — faixa nova sem nome nos dois idiomas não compila.
+ */
+export type IdFaixa =
+  | "rain" | "cafe" | "forest" | "waves" | "fire" | "birds" | "stream" | "snow" | "train" | "flight" | "library" | "space"
+  | "classical-piano" | "classical-piano2" | "classical-orchestral" | "dark-ambience" | "dungeon-synth"
+  | "lofi" | "lofi2" | "chillhop" | "study" | "study2" | "study-music"
+  | "binaural" | "brown"
+
 export interface MixerTrackConfig {
   id: string
-  label: string
   src?: string
   synth?: "white" | "brown"
   category?: SoundCategory

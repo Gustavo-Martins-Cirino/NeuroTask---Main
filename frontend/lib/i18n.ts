@@ -11,6 +11,8 @@ import { type ShopCategory, type ShopItemId } from "@/lib/shop"
 import { type ChaveFundoOffice } from "@/lib/office-bg"
 import { type IdPassoOnboarding } from "@/lib/onboarding"
 import { type TextosDeErroDoFeedback, type TipoDeFeedback } from "@/lib/feedback"
+import { type IdAmbiente } from "@/lib/focus-gradient"
+import { type IdFaixa, type SoundCategory } from "@/hooks/use-sound-mixer"
 
 // Tradução do app — a primeira fatia.
 //
@@ -131,6 +133,59 @@ export interface Dicionario {
       pular: string
       comecar: string
       proximo: string
+    }
+  }
+  /**
+   * O Modo Foco inteiro: o overlay, o cartão "em andamento", o mixer de sons e o
+   * player do YouTube. É global como a moldura — montado no AppShell, fora de
+   * qualquer tela —, e pelo mesmo motivo ficou de fora das fatias por tela.
+   */
+  foco: {
+    emAndamento: string
+    dispensarAviso: string
+    /** "12:30 restantes" — o tempo chega pronto, em mm:ss. */
+    restantes: (tempo: string) => string
+    tempoEsgotado: string
+    entrarNoFoco: string
+    minimizar: string
+    cancelarFoco: string
+    focoAtivo: string
+    /** Os botões só-ícone do timer: sem rótulo, o leitor de tela lia "botão". */
+    menosCinco: string
+    maisCinco: string
+    recomecar: string
+    iniciar: string
+    pausar: string
+    concluirTarefa: string
+    ambiente: string
+    /** Selo da miniatura de ambiente que se mexe. */
+    animado: string
+    ambientes: Record<IdAmbiente, string>
+    mixerDeSons: string
+    musicaDoYoutube: string
+    sons: string
+    restaurar: string
+    mixer: {
+      secoes: Record<SoundCategory, string>
+      faixas: Record<IdFaixa, string>
+      ativar: (nome: string) => string
+      desativar: (nome: string) => string
+      volumeDe: (nome: string) => string
+      arquivoNaoEncontrado: string
+      volumeGeral: string
+      continuarTodos: string
+      pararTodos: string
+      continuar: string
+      parar: string
+    }
+    youtube: {
+      placeholder: string
+      tocar: string
+      favoritar: string
+      removerDosFavoritos: string
+      remover: string
+      /** Tem ênfase (§): passa por `enfatizar`. */
+      ajuda: string
     }
   }
   inicio: {
@@ -973,6 +1028,88 @@ export const pt: Dicionario = {
       proximo: "Próximo",
     },
   },
+  foco: {
+    emAndamento: "Em andamento",
+    dispensarAviso: "Dispensar o aviso",
+    restantes: (tempo) => `${tempo} restantes`,
+    tempoEsgotado: "Tempo estimado esgotado",
+    entrarNoFoco: "Entrar no foco",
+    minimizar: "Minimizar",
+    cancelarFoco: "Cancelar foco",
+    focoAtivo: "Foco ativo",
+    menosCinco: "Menos 5 minutos",
+    maisCinco: "Mais 5 minutos",
+    recomecar: "Recomeçar",
+    iniciar: "Iniciar",
+    pausar: "Pausar",
+    concluirTarefa: "Concluir tarefa",
+    ambiente: "Ambiente",
+    animado: "animado",
+    ambientes: {
+      transparent: "Transparente",
+      black: "Preto",
+      gray: "Cinza",
+      light: "Papel",
+      white: "Branco",
+      clock: "Relógio",
+      aurora: "Aurora",
+      brasa: "Brasa",
+      mare: "Maré",
+      algodao: "Algodão",
+    },
+    mixerDeSons: "Mixer de sons",
+    musicaDoYoutube: "Música do YouTube",
+    sons: "Sons",
+    restaurar: "Restaurar modo foco",
+    mixer: {
+      secoes: { ambient: "Sons", music: "Músicas", noise: "Foco" },
+      faixas: {
+        rain: "Chuva",
+        cafe: "Cafeteria",
+        forest: "Floresta",
+        waves: "Ondas do mar",
+        fire: "Fogueira",
+        birds: "Pássaros",
+        stream: "Riacho",
+        snow: "Neve",
+        train: "Trem",
+        flight: "Voo",
+        library: "Biblioteca",
+        space: "Espaço",
+        "classical-piano": "Clássica · Piano",
+        "classical-piano2": "Clássica · Piano 2",
+        "classical-orchestral": "Clássica · Orquestra",
+        "dark-ambience": "Dark ambient",
+        "dungeon-synth": "Dungeon synth",
+        lofi: "Lo-fi",
+        lofi2: "Lo-fi 2",
+        chillhop: "Chillhop",
+        study: "Concentração",
+        study2: "Fluxo",
+        "study-music": "Imersão",
+        binaural: "Binaural",
+        brown: "Ruído marrom",
+      },
+      ativar: (nome) => `Ativar ${nome}`,
+      desativar: (nome) => `Desativar ${nome}`,
+      volumeDe: (nome) => `Volume de ${nome}`,
+      arquivoNaoEncontrado: "Arquivo não encontrado",
+      volumeGeral: "Volume geral",
+      continuarTodos: "Continuar todos os sons",
+      pararTodos: "Parar todos os sons",
+      continuar: "Continuar",
+      parar: "Parar",
+    },
+    youtube: {
+      placeholder: "Cole o link do YouTube (vídeo ou live)…",
+      tocar: "Tocar",
+      favoritar: "Favoritar este link",
+      removerDosFavoritos: "Remover dos favoritos",
+      remover: "Remover",
+      ajuda:
+        "Cole um link, dê §Tocar§ e clique na §★§ pra favoritar. O áudio continua enquanto você trabalha — é só deixar o Foco §minimizado§.",
+    },
+  },
   inicio: {
     saudacoes: { ola: "Olá", bomDia: "Bom dia", boaTarde: "Boa tarde", boaNoite: "Boa noite" },
     faixas: {
@@ -1760,6 +1897,88 @@ export const en: Dicionario = {
       pular: "Skip",
       comecar: "Get started",
       proximo: "Next",
+    },
+  },
+  foco: {
+    emAndamento: "In progress",
+    dispensarAviso: "Dismiss",
+    restantes: (tempo) => `${tempo} left`,
+    tempoEsgotado: "Estimated time is up",
+    entrarNoFoco: "Start focusing",
+    minimizar: "Minimize",
+    cancelarFoco: "Cancel focus",
+    focoAtivo: "Focusing",
+    menosCinco: "5 minutes less",
+    maisCinco: "5 minutes more",
+    recomecar: "Restart",
+    iniciar: "Start",
+    pausar: "Pause",
+    concluirTarefa: "Complete task",
+    ambiente: "Ambience",
+    animado: "animated",
+    ambientes: {
+      transparent: "Transparent",
+      black: "Black",
+      gray: "Gray",
+      light: "Paper",
+      white: "White",
+      clock: "Clock",
+      aurora: "Aurora",
+      brasa: "Embers",
+      mare: "Tide",
+      algodao: "Cotton",
+    },
+    mixerDeSons: "Sound mixer",
+    musicaDoYoutube: "YouTube music",
+    sons: "Sounds",
+    restaurar: "Restore focus mode",
+    mixer: {
+      secoes: { ambient: "Sounds", music: "Music", noise: "Focus" },
+      faixas: {
+        rain: "Rain",
+        cafe: "Coffee shop",
+        forest: "Forest",
+        waves: "Ocean waves",
+        fire: "Campfire",
+        birds: "Birds",
+        stream: "Stream",
+        snow: "Snow",
+        train: "Train",
+        flight: "Flight",
+        library: "Library",
+        space: "Space",
+        "classical-piano": "Classical · Piano",
+        "classical-piano2": "Classical · Piano 2",
+        "classical-orchestral": "Classical · Orchestra",
+        "dark-ambience": "Dark ambient",
+        "dungeon-synth": "Dungeon synth",
+        lofi: "Lo-fi",
+        lofi2: "Lo-fi 2",
+        chillhop: "Chillhop",
+        study: "Concentration",
+        study2: "Flow",
+        "study-music": "Immersion",
+        binaural: "Binaural",
+        brown: "Brown noise",
+      },
+      ativar: (nome) => `Turn on ${nome}`,
+      desativar: (nome) => `Turn off ${nome}`,
+      volumeDe: (nome) => `${nome} volume`,
+      arquivoNaoEncontrado: "File not found",
+      volumeGeral: "Master volume",
+      continuarTodos: "Resume all sounds",
+      pararTodos: "Stop all sounds",
+      continuar: "Resume",
+      parar: "Stop",
+    },
+    youtube: {
+      placeholder: "Paste a YouTube link (video or live)…",
+      tocar: "Play",
+      favoritar: "Add this link to favorites",
+      removerDosFavoritos: "Remove from favorites",
+      remover: "Remove",
+      ajuda:
+        "Paste a link, hit §Play§ and click the §★§ to save it. The audio keeps playing while you work — just leave Focus §minimized§.",
     },
   },
   inicio: {

@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { useSoundMixer, type MixerTrackConfig, type SoundCategory } from "@/hooks/use-sound-mixer"
+import { useSoundMixer, type IdFaixa, type MixerTrackConfig, type SoundCategory } from "@/hooks/use-sound-mixer"
+import { useDicionario } from "@/hooks/use-idioma"
 import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
@@ -11,7 +12,10 @@ import {
   Volume2, Pause, Play, type LucideIcon,
 } from "lucide-react"
 
-type TrackDef = MixerTrackConfig & { category: SoundCategory; icon: LucideIcon }
+// O nome de cada faixa mora no dicionário (`foco.mixer.faixas`). A config que
+// vai para o hook fica sem ele, e continua sendo constante de MÓDULO: se ela
+// fosse refeita ao trocar de idioma, a identidade mudaria e o áudio reiniciaria.
+type TrackDef = Omit<MixerTrackConfig, "id"> & { id: IdFaixa; category: SoundCategory; icon: LucideIcon }
 
 // Som declarado aqui PRECISA ter o arquivo em public/sounds — o botão aparece na
 // tela e clicar nele não faz absolutamente nada quando o arquivo falta. Aconteceu
@@ -20,42 +24,38 @@ type TrackDef = MixerTrackConfig & { category: SoundCategory; icon: LucideIcon }
 // re-adicionar a linha, e lib/sound-mixer-arquivos.test.ts vigia as duas pontas.
 const TRACKS: TrackDef[] = [
   // Sons ambientes (loop contínuo)
-  { id: "rain", label: "Chuva", src: "/sounds/rain.mp3", category: "ambient", icon: CloudRain },
-  { id: "cafe", label: "Cafeteria", src: "/sounds/cafe.mp3", category: "ambient", icon: Coffee },
-  { id: "forest", label: "Floresta", src: "/sounds/forest.mp3", category: "ambient", icon: TreePine },
-  { id: "waves", label: "Ondas do mar", src: "/sounds/waves.mp3", category: "ambient", icon: Waves },
-  { id: "fire", label: "Fogueira", src: "/sounds/fire.mp3", category: "ambient", icon: Flame },
-  { id: "birds", label: "Pássaros", src: "/sounds/birds.mp3", category: "ambient", icon: Bird },
-  { id: "stream", label: "Riacho", src: "/sounds/stream.mp3", category: "ambient", icon: Droplets },
-  { id: "snow", label: "Neve", src: "/sounds/snow.mp3", category: "ambient", icon: Snowflake },
-  { id: "train", label: "Trem", src: "/sounds/train.mp3", category: "ambient", icon: TrainFront },
-  { id: "flight", label: "Voo", src: "/sounds/flight.mp3", category: "ambient", icon: PlaneTakeoff },
-  { id: "library", label: "Biblioteca", src: "/sounds/library.mp3", category: "ambient", icon: BookOpen },
-  { id: "space", label: "Espaço", src: "/sounds/space.mp3", category: "ambient", icon: Rocket },
+  { id: "rain", src: "/sounds/rain.mp3", category: "ambient", icon: CloudRain },
+  { id: "cafe", src: "/sounds/cafe.mp3", category: "ambient", icon: Coffee },
+  { id: "forest", src: "/sounds/forest.mp3", category: "ambient", icon: TreePine },
+  { id: "waves", src: "/sounds/waves.mp3", category: "ambient", icon: Waves },
+  { id: "fire", src: "/sounds/fire.mp3", category: "ambient", icon: Flame },
+  { id: "birds", src: "/sounds/birds.mp3", category: "ambient", icon: Bird },
+  { id: "stream", src: "/sounds/stream.mp3", category: "ambient", icon: Droplets },
+  { id: "snow", src: "/sounds/snow.mp3", category: "ambient", icon: Snowflake },
+  { id: "train", src: "/sounds/train.mp3", category: "ambient", icon: TrainFront },
+  { id: "flight", src: "/sounds/flight.mp3", category: "ambient", icon: PlaneTakeoff },
+  { id: "library", src: "/sounds/library.mp3", category: "ambient", icon: BookOpen },
+  { id: "space", src: "/sounds/space.mp3", category: "ambient", icon: Rocket },
   // Músicas (repetem com crossfade, sem corte abrupto)
-  { id: "classical-piano", label: "Clássica · Piano", src: "/sounds/classical-piano.mp3", category: "music", icon: Piano },
-  { id: "classical-piano2", label: "Clássica · Piano 2", src: "/sounds/classical-piano2.mp3", category: "music", icon: Piano },
-  { id: "classical-orchestral", label: "Clássica · Orquestra", src: "/sounds/classical-orchestral.mp3", category: "music", icon: Music2 },
-  { id: "dark-ambience", label: "Dark ambient", src: "/sounds/dark-ambience.mp3", category: "music", icon: Skull },
-  { id: "dungeon-synth", label: "Dungeon synth", src: "/sounds/dungeon-synth.mp3", category: "music", icon: Castle },
-  { id: "lofi", label: "Lo-fi", src: "/sounds/lofi.mp3", category: "music", icon: Headphones },
-  { id: "lofi2", label: "Lo-fi 2", src: "/sounds/lofi2.mp3", category: "music", icon: Headphones },
-  { id: "chillhop", label: "Chillhop", src: "/sounds/chillhop.mp3", category: "music", icon: Music2 },
-  { id: "study", label: "Concentração", src: "/sounds/study.mp3", category: "music", icon: GraduationCap },
-  { id: "study2", label: "Fluxo", src: "/sounds/study2.mp3", category: "music", icon: GraduationCap },
-  { id: "study-music", label: "Imersão", src: "/sounds/study-music.mp3", category: "music", icon: GraduationCap },
+  { id: "classical-piano", src: "/sounds/classical-piano.mp3", category: "music", icon: Piano },
+  { id: "classical-piano2", src: "/sounds/classical-piano2.mp3", category: "music", icon: Piano },
+  { id: "classical-orchestral", src: "/sounds/classical-orchestral.mp3", category: "music", icon: Music2 },
+  { id: "dark-ambience", src: "/sounds/dark-ambience.mp3", category: "music", icon: Skull },
+  { id: "dungeon-synth", src: "/sounds/dungeon-synth.mp3", category: "music", icon: Castle },
+  { id: "lofi", src: "/sounds/lofi.mp3", category: "music", icon: Headphones },
+  { id: "lofi2", src: "/sounds/lofi2.mp3", category: "music", icon: Headphones },
+  { id: "chillhop", src: "/sounds/chillhop.mp3", category: "music", icon: Music2 },
+  { id: "study", src: "/sounds/study.mp3", category: "music", icon: GraduationCap },
+  { id: "study2", src: "/sounds/study2.mp3", category: "music", icon: GraduationCap },
+  { id: "study-music", src: "/sounds/study-music.mp3", category: "music", icon: GraduationCap },
   // Foco (ruídos e frequências)
-  { id: "binaural", label: "Binaural", src: "/sounds/bineural.mp3", category: "noise", icon: Brain },
-  { id: "brown", label: "Ruído marrom", src: "/sounds/brown-noise.mp3", category: "noise", icon: Wind },
+  { id: "binaural", src: "/sounds/bineural.mp3", category: "noise", icon: Brain },
+  { id: "brown", src: "/sounds/brown-noise.mp3", category: "noise", icon: Wind },
 ]
 
-const SECTIONS: { category: SoundCategory; label: string }[] = [
-  { category: "ambient", label: "Sons" },
-  { category: "music", label: "Músicas" },
-  { category: "noise", label: "Foco" },
-]
+const SECTIONS: SoundCategory[] = ["ambient", "music", "noise"]
 
-const CONFIGS: MixerTrackConfig[] = TRACKS.map(({ id, label, src, synth, category }) => ({ id, label, src, synth, category }))
+const CONFIGS: MixerTrackConfig[] = TRACKS.map(({ id, src, synth, category }) => ({ id, src, synth, category }))
 
 function Equalizer() {
   return (
@@ -74,6 +74,7 @@ function Equalizer() {
 
 export function SoundMixer() {
   const { tracks, toggleTrack, setVolume, masterVolume, setMasterVolume, pauseAll, resumeAll, paused, prime } = useSoundMixer(CONFIGS)
+  const textos = useDicionario().foco.mixer
   const primedRef = useRef(false)
 
   // Retoma o mix salvo na primeira interação do usuário
@@ -92,6 +93,7 @@ export function SoundMixer() {
   const renderCard = (t: TrackDef) => {
     const st = tracks[t.id]
     const Icon = t.icon
+    const nome = textos.faixas[t.id]
     return (
       <div
         key={t.id}
@@ -102,13 +104,13 @@ export function SoundMixer() {
       >
         <button
           onClick={() => toggleTrack(t.id)}
-          aria-label={`${st.active ? "Desativar" : "Ativar"} ${t.label}`}
+          aria-label={st.active ? textos.desativar(nome) : textos.ativar(nome)}
           aria-pressed={st.active}
           className="flex w-full items-center justify-between gap-2"
         >
           <span className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium">
             <Icon className="h-4 w-4 shrink-0" />
-            <span className="truncate">{t.label}</span>
+            <span className="truncate">{nome}</span>
           </span>
           {st.active ? <Equalizer /> : <span className={cn("h-2 w-2 shrink-0 rounded-full", st.unavailable ? "bg-amber-500" : "bg-current/30")} />}
         </button>
@@ -116,7 +118,7 @@ export function SoundMixer() {
         {st.active && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-2">
             <Slider
-              aria-label={`Volume de ${t.label}`}
+              aria-label={textos.volumeDe(nome)}
               value={[Math.round(st.volume * 100)]}
               min={0}
               max={100}
@@ -126,7 +128,7 @@ export function SoundMixer() {
         )}
 
         {st.unavailable && !st.active && (
-          <p className="mt-1 text-[10px] opacity-60">Arquivo não encontrado</p>
+          <p className="mt-1 text-[10px] opacity-60">{textos.arquivoNaoEncontrado}</p>
         )}
       </div>
     )
@@ -138,7 +140,7 @@ export function SoundMixer() {
       <div className="mb-4 flex items-center gap-3">
         <Volume2 className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
         <Slider
-          aria-label="Volume geral"
+          aria-label={textos.volumeGeral}
           value={[Math.round(masterVolume * 100)]}
           min={0}
           max={100}
@@ -148,24 +150,24 @@ export function SoundMixer() {
         <button
           onClick={paused ? resumeAll : pauseAll}
           disabled={!anyActive}
-          aria-label={paused ? "Continuar todos os sons" : "Parar todos os sons"}
+          aria-label={paused ? textos.continuarTodos : textos.pararTodos}
           className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium opacity-70 transition-opacity hover:opacity-100 disabled:opacity-30"
         >
           {paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
-          {paused ? "Continuar" : "Parar"}
+          {paused ? textos.continuar : textos.parar}
         </button>
       </div>
 
       {/* Seções: Sons · Músicas · Ruídos */}
       <div className="-mr-1 max-h-[52vh] space-y-4 overflow-y-auto pr-1 scrollbar-thin">
-        {SECTIONS.map((sec) => {
-          const items = TRACKS.filter((t) => t.category === sec.category)
+        {SECTIONS.map((categoria) => {
+          const items = TRACKS.filter((t) => t.category === categoria)
           if (items.length === 0) return null
           const activeCount = items.filter((t) => tracks[t.id]?.active).length
           return (
-            <div key={sec.category} className="space-y-2">
+            <div key={categoria} className="space-y-2">
               <div className="flex items-center gap-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider opacity-50">{sec.label}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider opacity-50">{textos.secoes[categoria]}</p>
                 {activeCount > 0 && (
                   <span className="rounded-full bg-current/15 px-1.5 text-[9px] font-semibold tabular-nums opacity-70">{activeCount}</span>
                 )}

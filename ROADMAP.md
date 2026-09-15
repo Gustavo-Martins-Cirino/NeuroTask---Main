@@ -1799,6 +1799,34 @@ vira ruído.
 > inteiro (x=12 a 364), a frase do rodapé quebra ao lado do botão sem cortar, e nenhum texto
 > ficou em português.
 
+> **Fatia 2 — o Modo Foco: feita (15/09).** O overlay inteiro (timer, controles, "concluir
+> tarefa"), o cartão "em andamento", o painel de ambientes, o mixer com as 25 faixas e o
+> player do YouTube.
+>
+> **Os nomes saíram de dentro dos dados.** Cada ambiente e cada faixa carregava o rótulo em
+> português no próprio objeto — inclusive os quatro gradientes animados, dentro de um módulo
+> puro (`lib/focus-gradient`). Viraram ids tipados (`IdAmbiente`, `IdFaixa`), e o dicionário
+> é indexado por eles: faixa ou ambiente novo sem nome nos dois idiomas não compila. Gênero
+> musical que o português já diz em inglês ("Lo-fi", "Chillhop", "Dark ambient") ficou igual
+> nos dois de propósito, com teste — traduzir nome próprio é o erro oposto, e o mais fácil.
+>
+> **A config do mixer continua sendo constante de módulo, e isso não é detalhe.** O hook
+> recebe a lista de faixas e reage à identidade dela; montá-la com os nomes traduzidos a
+> faria mudar a cada troca de idioma, e o áudio reiniciaria. Como o hook nunca usou o rótulo,
+> ele saiu da config — os nomes entram só no render. O teste dos arquivos de som lia o
+> componente por regex exigindo `label:` entre `id` e `src`, e foi ajustado junto; o guarda
+> dele, que cobra ter achado mais de 15 sons, é o que teria acusado.
+>
+> **De quebra, quatro botões ganharam rótulo**: menos e mais 5 minutos, recomeçar e
+> iniciar/pausar eram só ícone, e o leitor de tela anunciava "botão" e mais nada.
+>
+> **Uma lição de processo**: na primeira rodada o guarda do JSX acusou dois textos soltos — e
+> eram da BANCADA de medição temporária, não da fatia. Bancada também não pode ter texto solto.
+>
+> Conferido em build de produção a 390px com o app em inglês, abrindo os três painéis: nenhuma
+> palavra em português (nem nos `aria-label`, inclusive os do mixer escondido), nenhum elemento
+> fora da tela e nenhum erro de JS.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do
