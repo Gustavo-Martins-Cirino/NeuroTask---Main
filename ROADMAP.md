@@ -816,6 +816,25 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > deviam: livros na estante aberta, tábua com emenda deslocada no piso, fiada do tijolinho,
 > cabo entrando no plugue.
 
+> **O troféu era um funil (15/09).** Eram três peças: um bloco, um palito e um cone abrindo
+> para cima — a silhueta de um funil espetado num tijolo. Numa folha de contato do catálogo
+> (cada item da loja renderizado sozinho, no ângulo da câmera do app), foi o que mais destoava
+> da cena, e é dos itens caros (150).
+>
+> O que faz um troféu ser lido como troféu não é ser dourado, são as **alças**: sem elas a
+> mesma silhueta serve para taça, funil e abajur. Depois delas vêm a barriga arredondada (cone
+> reto é funil) e a plaquinha no pedestal, que é o que diz "prêmio" e não "enfeite". O
+> pedestal ganhou dois degraus, e a taça encaixa no colar sem degrau: o raio da esfera na
+> altura do colar vale exatamente o topo dele, e é isso que impede a ponta da esfera de boiar.
+>
+> A altura e o lugar na mesa não mudaram (o topo segue a ~18 cm do tampo, no canto da
+> frente), então a varredura de colisão de 01/09 — que tinha tirado o troféu de baixo da
+> cúpula da luminária — continua passando nos quatro níveis.
+>
+> **Da mesma folha de contato, ainda por mexer**: o **tapete** é um disco liso de uma cor só
+> (lê como poça, não como tecido) e o **quadro das montanhas** sai quase branco, com a
+> montanha apagada. Ficam como os próximos candidatos; o resto do catálogo está à altura.
+
 ### Camada visual — ShaderGradient · Lenis · three.js · GSAP
 
 > Quatro repositórios de referência, escolhidos em 10/08/2026:

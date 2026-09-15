@@ -1273,9 +1273,37 @@ export function buildEscritorio(opts: EscritorioOpts = {}): Group {
     // só em x não resolvia, porque a cúpula avança até x=-0,18. O que libera é
     // sair em Y: ela ocupa de 1,38 para trás, e aqui o troféu fica na frente.
     const x = -0.66, y = 1.29 + dy
-    g.add(box("Trofeu_Base", [0.1, 0.1, 0.03], [x, y, TAMPO_Z + 0.015], tmat([0.29, 0.21, 0.14])))
-    g.add(cyl("Trofeu_Haste", 0.014, 0.06, [x, y, TAMPO_Z + 0.06], ouro))
-    g.add(cyl("Trofeu_Taca", 0.028, 0.09, [x, y, TAMPO_Z + 0.135], ouro, undefined, 0.07))
+    const mMadeira = tmat([0.29, 0.21, 0.14])
+    const z = TAMPO_Z
+
+    // Antes eram TRÊS peças: um bloco, um palito e um cone que abre para cima —
+    // ou seja, um funil espetado num tijolo. O que faz um troféu ser lido como
+    // troféu não é ser dourado, são as ALÇAS: sem elas a mesma silhueta serve
+    // para taça, funil e abajur. Depois delas vêm a barriga arredondada (cone
+    // reto é funil) e a plaquinha, que é o que diz "prêmio" e não "enfeite".
+
+    // Pedestal em dois degraus. Um bloco só lê como caixote.
+    g.add(box("Trofeu_Base", [0.11, 0.11, 0.022], [x, y, z + 0.011], mMadeira))
+    g.add(box("Trofeu_Base_Topo", [0.085, 0.085, 0.016], [x, y, z + 0.03], mMadeira))
+    g.add(box("Trofeu_Placa", [0.058, 0.005, 0.013], [x, y - 0.056, z + 0.0145], ouro))
+
+    // Pé, haste e colar: a transição do pedestal para a taça.
+    g.add(cyl("Trofeu_Pe", 0.026, 0.012, [x, y, z + 0.044], ouro, undefined, 0.018))
+    g.add(cyl("Trofeu_Haste", 0.011, 0.048, [x, y, z + 0.074], ouro))
+    g.add(cyl("Trofeu_Colar", 0.02, 0.012, [x, y, z + 0.104], ouro, undefined, 0.03))
+
+    // A taça: barriga de esfera achatada. O raio dela em z+0,110 vale
+    // exatamente os 0,03 do topo do colar — é assim que uma encaixa na outra
+    // sem degrau e sem a ponta da esfera boiando no ar.
+    g.add(sph("Trofeu_Taca", 0.042, [x, y, z + 0.135], ouro, [1, 1, 0.85]))
+    g.add(cyl("Trofeu_Boca", 0.03, 0.025, [x, y, z + 0.1725], ouro, undefined, 0.046))
+
+    for (const lado of [1, -1]) {
+      // O torus nasce deitado (plano XY é o chão daqui); girado 90° em X ele
+      // fica em pé, de lado — que é a posição de uma alça.
+      g.add(anel(`Trofeu_Alca_${lado === 1 ? "Direita" : "Esquerda"}`, 0.024, 0.005,
+        [x + lado * 0.044, y, z + 0.15], ouro, [Math.PI / 2, 0, 0], [1, 1.2, 1]))
+    }
   }
 
   // Relógio de parede: na parede do FUNDO, na vaga que sobrou da fileira.
