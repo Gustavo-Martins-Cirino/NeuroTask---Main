@@ -208,28 +208,44 @@ repositório:
 > (`full_name || name`), e por ali editar o nome nas Configurações não surtia efeito — a tela
 > gravava `name` e o cabeçalho continuava lendo `full_name`.
 
-- [ ] **A landing pública não aparece para ninguém em produção — e é cache de borda. (Achado
-      17/09, medido no deploy, não no código.)** Pedir `https://neuro-task-main.vercel.app/` sem
-      cookie nenhum responde **307 para `/app`**, que responde 307 para `/login`. Quem chega pela
-      primeira vez nunca vê a página que existe para convencê-lo — vê um formulário de entrar.
+- [x] **A landing pública não existia — agora existe. Feita (17/09).**
 
-      O código do proxy está **certo**: `/` só vai para `/app` quando `user` existe
-      (`lib/supabase/middleware.ts`), e `/` está de fora da lista que manda deslogado para o
-      login. O que está errado é a resposta ser guardada. Os cabeçalhos do 307:
-      `x-vercel-cache: HIT`, `age: 58`, `cache-control: public, max-age=0, must-revalidate` e um
-      `vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch` —
-      **sem `cookie`**. Ou seja: a decisão depende do cookie de sessão, e a resposta é cacheada
-      sem variar por ele. O 307 de uma visita logada vira o 307 de todo mundo. Medido quatro
-      vezes, inclusive com query aleatória para furar o cache: sempre HIT, sempre 307.
+      **Correção de um diagnóstico meu, antes de tudo:** eu tinha escrito aqui que a causa era
+      cache de borda, porque o 307 de `/` voltava com `x-vercel-cache: HIT` e um `vary` sem
+      `cookie`. Estava errado, e a diferença importa: o `x-vercel-cache: HIT` era **consequência**
+      (um 307 pré-renderizado sendo servido do cache), não causa. A causa estava no repositório o
+      tempo todo — `app/page.tsx` era isto, e só isto, desde o commit inicial:
 
-      O conserto tem duas formas, e a escolha é de projeto: (a) o proxy marcar a resposta de
-      redirecionamento como `private, no-store` para ela nunca ser guardada; ou (b) o proxy
-      parar de redirecionar `/` e deixar a landing decidir — ela já é pública e já sabe se há
-      sessão. A (b) é mais barata de raciocinar, porque tira uma resposta que varia por cookie
-      de um lugar que cacheia por caminho.
+      ```tsx
+      import { redirect } from "next/navigation"
+      export default function Page() { redirect("/app") }
+      ```
 
-      **Não mexi**: é comportamento de produção, envolve auth e cache, e eu não consigo testar o
-      lado logado daqui sem uma conta. Fica medido e escrito para a decisão ser sua.
+      Cinco linhas, nunca tocadas (`git log -- frontend/app/page.tsx` dá um commit só). A
+      "Landing pública" que o CLAUDE.md anunciava **nunca foi construída**: era uma intenção
+      descrita como se fosse fato. Todo visitante novo ia para `/app`, que o manda para `/login`.
+      Lição para mim: medi o sintoma em produção e parei de investigar cedo demais, porque a
+      primeira pista (um cabeçalho de cache) já contava uma história plausível.
+
+      O proxy já estava escrito esperando a landing: `/` é a **única** rota que ele não manda
+      para o login quando não há sessão, e manda para `/app` quando há. Então bastou a página
+      existir — nenhuma mudança de proxy, de cache ou de auth.
+
+      A página reusa o `AuthBackdrop` das telas de entrada: a landing e o login são a mesma
+      porta, e ele é CSS puro — numa primeira visita, às vezes em rede ruim, um canvas atrasaria
+      justamente a tela que precisa convencer. Seis cartões descrevendo o que **existe hoje**
+      (tarefas com hora, Neuro IA, Modo Foco, Escritório, Amigos, lembretes), mais a promessa de
+      privacidade da agenda compartilhada, que é verdadeira e verificável no código.
+
+      Duas decisões: (1) o idioma segue `useIdioma()`, igual ao login — seguir o navegador só
+      aqui faria a landing falar inglês e o login, um clique depois, falar português; (2) o
+      seletor de região está no rodapé, porque quem chega ainda não escolheu nada e, sem ele,
+      quem lê em inglês não teria como sair do português antes de criar a conta.
+
+      Medida em build de produção nos dois idiomas e em duas larguras (390px e 1280px): `lang`
+      correto, ênfase do título virando `<strong>` (nenhum `§` vazando), nada fora da tela além
+      do brilho decorativo do fundo — que é `aria-hidden`, fica recortado pelo `overflow: hidden`
+      e não gera rolagem horizontal —, e nenhum erro de JS.
 
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário

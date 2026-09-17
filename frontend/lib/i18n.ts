@@ -233,6 +233,35 @@ export interface Dicionario {
    * e não do navegador de quem abre. Ver ROADMAP: com o Chrome em inglês, a
    * outra regra poria o login em inglês e o app em português.
    */
+  /**
+   * A landing pública, em `/`. É a única tela que alguém vê ANTES de decidir se
+   * quer o app, então cada frase aqui é uma promessa que o produto cumpre — as
+   * seis abaixo descrevem o que existe hoje, não o que está no ROADMAP.
+   *
+   * O idioma segue a mesma regra do login (`useIdioma`): a preferência guardada
+   * neste navegador, e português quando não há nenhuma. Seguir o idioma do
+   * navegador só aqui faria a landing falar inglês e o login, um clique depois,
+   * falar português.
+   */
+  landing: {
+    /** Tem ênfase (§). */
+    heroTitulo: string
+    heroSubtitulo: string
+    criarConta: string
+    entrar: string
+    jaTenhoConta: string
+    recursos: {
+      tarefas: { titulo: string; texto: string }
+      ia: { titulo: string; texto: string }
+      foco: { titulo: string; texto: string }
+      escritorio: { titulo: string; texto: string }
+      amigos: { titulo: string; texto: string }
+      lembretes: { titulo: string; texto: string }
+    }
+    privacidadeTitulo: string
+    privacidadeTexto: string
+    rodape: string
+  }
   entrada: {
     email: string
     emailPlaceholder: string
@@ -1369,6 +1398,44 @@ export const pt: Dicionario = {
         "Cole um link, dê §Tocar§ e clique na §★§ pra favoritar. O áudio continua enquanto você trabalha — é só deixar o Foco §minimizado§.",
     },
   },
+  landing: {
+    heroTitulo: "Suas tarefas, seu tempo §e uma IA que age§",
+    heroSubtitulo:
+      "Escreva o que precisa fazer, marque a hora e deixe o resto acontecer. O NeuroTask junta lista, calendário e uma assistente que mexe no app de verdade.",
+    criarConta: "Criar conta",
+    entrar: "Entrar",
+    jaTenhoConta: "Já tenho conta",
+    recursos: {
+      tarefas: {
+        titulo: "Tarefas com hora marcada",
+        texto: "Toda tarefa com horário vira um bloco no calendário, sem você marcar duas vezes. Arraste para mudar, repita por dia ou por semana.",
+      },
+      ia: {
+        titulo: "Neuro IA",
+        texto: "Peça em português e ela cria, edita e remarca de verdade — por escrito ou por voz. Ela pergunta antes de agir, e não transforma desabafo em tarefa.",
+      },
+      foco: {
+        titulo: "Modo Foco",
+        texto: "Timer, sons ambientes e paisagens para segurar a atenção. Minimize e ele continua contando enquanto você anda pelo app.",
+      },
+      escritorio: {
+        titulo: "Um escritório que cresce",
+        texto: "Concluir rende XP e moedas, e as moedas mobiliam uma sala em 3D. É o seu progresso virando um lugar em vez de um número.",
+      },
+      amigos: {
+        titulo: "Amigos e horários",
+        texto: "Veja quem está livre agora e proponha um compromisso. Aceitar cria o bloco na agenda dos dois.",
+      },
+      lembretes: {
+        titulo: "Lembretes onde você estiver",
+        texto: "No navegador, no celular com o app fechado, e no Telegram — onde uma mensagem qualquer já vira tarefa.",
+      },
+    },
+    privacidadeTitulo: "A sua agenda continua sua",
+    privacidadeTexto:
+      "O link de agenda que você manda para alguém de fora mostra só as faixas ocupadas. Nunca o que você faz nelas — nem o título, porque a consulta nem chega a pedir.",
+    rodape: "Um projeto pessoal, feito com cuidado.",
+  },
   entrada: {
     email: "Email",
     emailPlaceholder: "seu@email.com",
@@ -2469,6 +2536,44 @@ export const en: Dicionario = {
       ajuda:
         "Paste a link, hit §Play§ and click the §★§ to save it. The audio keeps playing while you work — just leave Focus §minimized§.",
     },
+  },
+  landing: {
+    heroTitulo: "Your tasks, your time §and an AI that acts§",
+    heroSubtitulo:
+      "Write down what you need to do, set a time, and let the rest happen. NeuroTask brings together a list, a calendar and an assistant that really works the app.",
+    criarConta: "Create account",
+    entrar: "Sign in",
+    jaTenhoConta: "I already have an account",
+    recursos: {
+      tarefas: {
+        titulo: "Tasks with a time",
+        texto: "Any task with a time also becomes a block on the calendar, without you entering it twice. Drag to move it, repeat it daily or weekly.",
+      },
+      ia: {
+        titulo: "Neuro AI",
+        texto: "Ask, and it creates, edits and reschedules for real — by typing or by voice. It asks before acting, and it won't turn venting into a to-do.",
+      },
+      foco: {
+        titulo: "Focus mode",
+        texto: "A timer, ambient sounds and scenes to hold your attention. Minimize it and it keeps counting while you move around the app.",
+      },
+      escritorio: {
+        titulo: "An office that grows",
+        texto: "Finishing things earns XP and coins, and coins furnish a room in 3D. It's your progress becoming a place instead of a number.",
+      },
+      amigos: {
+        titulo: "Friends and free hours",
+        texto: "See who's free right now and propose a time. Accepting creates the block on both calendars.",
+      },
+      lembretes: {
+        titulo: "Reminders wherever you are",
+        texto: "In the browser, on your phone with the app closed, and on Telegram — where any message already becomes a task.",
+      },
+    },
+    privacidadeTitulo: "Your schedule stays yours",
+    privacidadeTexto:
+      "The schedule link you send to someone outside shows only the busy hours. Never what you're doing in them — not even the title, because the query never asks for it.",
+    rodape: "A personal project, made with care.",
   },
   entrada: {
     email: "Email",

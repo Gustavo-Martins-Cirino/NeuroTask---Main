@@ -35,7 +35,7 @@ frontend/
 │   ├── admin/page.tsx        # Painel do dono (server component, gate por OWNER_EMAIL)
 │   ├── login/page.tsx
 │   ├── signup/page.tsx
-│   ├── page.tsx              # Landing pública
+│   ├── page.tsx              # Landing pública (17/09; antes era só um redirect p/ /app)
 │   └── globals.css           # Tokens de cor (oklch), tema claro/escuro
 ├── components/
 │   ├── app-shell.tsx         # Layout wrapper: Dock + main content
@@ -132,6 +132,7 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 
 | Rota | Status |
 |------|--------|
+| `/` | **Pública, sem login** — a landing. Quem já tem sessão nem passa por ela: o proxy manda para `/app`. É a única rota que o proxy **não** manda para o login quando não há sessão. Mesmo fundo das telas de entrada (`AuthBackdrop`), e tudo que ela promete existe |
 | `/app` | Dashboard (stats + quick actions) |
 | `/app/tasks` | Lista de tarefas com filtros e tabs |
 | `/app/calendar` | Calendário / time blocking |

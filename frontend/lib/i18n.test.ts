@@ -110,6 +110,7 @@ describe("dicionário inteiro", () => {
     "entrada.cadastro.naoChegou",
     "entrada.senhaNova.soOMaisRecente",
     "amigos.dica",
+    "landing.heroTitulo",
   ])
 
   it("nenhuma marca de ênfase sobra num texto fixo", () => {
@@ -872,5 +873,34 @@ describe("o que fala fora de uma tela", () => {
     expect(en.configuracoes.importarExportar.dialogo.semTitulo).not.toBe(
       pt.configuracoes.importarExportar.dialogo.semTitulo
     )
+  })
+})
+
+describe("a landing", () => {
+  it("muda de idioma inteira", () => {
+    expect(en.landing.heroSubtitulo).not.toBe(pt.landing.heroSubtitulo)
+    expect(en.landing.privacidadeTexto).not.toBe(pt.landing.privacidadeTexto)
+    for (const id of Object.keys(pt.landing.recursos) as (keyof typeof pt.landing.recursos)[]) {
+      expect(en.landing.recursos[id].titulo, id).not.toBe(pt.landing.recursos[id].titulo)
+      expect(en.landing.recursos[id].texto, id).not.toBe(pt.landing.recursos[id].texto)
+    }
+  })
+
+  // "NeuroTask" e "Neuro IA" são nome próprio: o produto não muda de nome em
+  // inglês. Só o "IA" vira "AI", porque ali é a sigla, não o nome.
+  it("o nome do produto não é traduzido", () => {
+    expect(en.landing.heroSubtitulo).toContain("NeuroTask")
+    expect(pt.landing.heroSubtitulo).toContain("NeuroTask")
+    expect(pt.landing.recursos.ia.titulo).toBe("Neuro IA")
+    expect(en.landing.recursos.ia.titulo).toBe("Neuro AI")
+  })
+
+  // Os seis cartões existem porque os seis recursos existem. Se alguém tirar um
+  // do app, este teste não avisa — mas se tirar do dicionário, a tela quebraria
+  // calada, e aqui ela quebra antes.
+  it("são seis recursos, nos dois idiomas", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(Object.keys(d.landing.recursos), nome).toHaveLength(6)
+    }
   })
 })
