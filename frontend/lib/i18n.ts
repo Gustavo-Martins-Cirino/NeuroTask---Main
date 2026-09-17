@@ -271,6 +271,17 @@ export interface Dicionario {
     }
   }
   inicio: {
+    /** "Comece por aqui": o cartão de primeiros passos da conta nova. */
+    comecePorAqui: {
+      titulo: string
+      descricao: string
+      dispensar: string
+      passos: Record<"criarTarefa" | "concluirTarefa" | "montarDia", { rotulo: string; acao: string }>
+      exploreTambem: string
+      planejarComIa: string
+      trazerAgenda: string
+      seuEscritorio: string
+    }
     /** Saudação: a hora escolhe a chave (lib/saudacao), aqui vira texto. */
     saudacoes: Record<ChaveSaudacao, string>
     /** Nome do degrau de nível; a chave vem de lib/nivel-faixa. */
@@ -303,6 +314,7 @@ export interface Dicionario {
     }
   }
   configuracoes: {
+    sugestoesDaRotina: string
     perfil: {
       titulo: string
       descricao: string
@@ -726,6 +738,11 @@ export interface Dicionario {
    * perfil vêm depois.
    */
   amigos: {
+    /**
+     * A dica no rodapé da tela. Tem ênfase (§). Cita os rótulos que a pessoa vê
+     * nos botões — em inglês o chip se chama "Schedule", não "Agenda".
+     */
+    dica: string
     /** Os cinco interruptores de privacidade, no alto da seção. */
     privacidade: {
       ocupadoLivre: string
@@ -887,6 +904,8 @@ export interface Dicionario {
   /** O Escritório 3D: a cena não tem texto nenhum (é canvas puro) — o que
    *  falava era a tela, o editor de avatar e a loja. */
   escritorio: {
+    /** Quando o navegador não tem WebGL: a sala não desenha, o resto da tela funciona. */
+    semWebgl: { titulo: string; texto: string }
     editarAvatar: string
     carregando3d: string
     salvarCompartilharImagem: string
@@ -1273,6 +1292,21 @@ export const pt: Dicionario = {
     },
   },
   inicio: {
+    comecePorAqui: {
+      titulo: "Comece por aqui",
+      descricao:
+        "O NeuroTask não é um calendário passivo — é um copiloto de rotina. Em 3 passos ele já começa a trabalhar pra você.",
+      dispensar: "Dispensar",
+      passos: {
+        criarTarefa: { rotulo: "Crie sua primeira tarefa", acao: "Criar tarefa" },
+        concluirTarefa: { rotulo: "Conclua uma tarefa — você ganha XP e moedas pro Escritório", acao: "Ver tarefas" },
+        montarDia: { rotulo: "Monte seu dia no calendário (ou importe algum!)", acao: "Abrir calendário" },
+      },
+      exploreTambem: "Explore também:",
+      planejarComIa: "Planejar o dia com a IA",
+      trazerAgenda: "Trazer minha agenda",
+      seuEscritorio: "Seu Escritório",
+    },
     saudacoes: { ola: "Olá", bomDia: "Bom dia", boaTarde: "Boa tarde", boaNoite: "Boa noite" },
     faixas: {
       comecando: "Começando",
@@ -1317,6 +1351,7 @@ export const pt: Dicionario = {
     },
   },
   configuracoes: {
+    sugestoesDaRotina: "Sugestões da sua rotina",
     perfil: {
       titulo: "Perfil",
       descricao: "Sua foto, nome e email",
@@ -1566,6 +1601,7 @@ export const pt: Dicionario = {
     },
   },
   amigos: {
+    dica: "§Dica:§ nos amigos, use §📅 Agenda§ para ver os horários ocupados de hoje (se a pessoa ativou o chip “Agenda”) e §➕ Convidar§ para propor um compromisso — quando aceito, ele entra no calendário de vocês dois automaticamente.",
     privacidade: {
       ocupadoLivre: "Ocupado/livre",
       escritorio: "Escritório",
@@ -1767,6 +1803,10 @@ export const pt: Dicionario = {
     toqueMicUseFones: "Toque no microfone para falar. Use fones para melhor resultado.",
   },
   escritorio: {
+    semWebgl: {
+      titulo: "Seu escritório precisa de 3D",
+      texto: "Este navegador está sem WebGL. A loja e o avatar continuam funcionando — abra em outro navegador para ver a sala.",
+    },
     editarAvatar: "Editar avatar",
     carregando3d: "Carregando 3D…",
     salvarCompartilharImagem: "Salvar / compartilhar imagem do escritório",
@@ -2224,6 +2264,20 @@ export const en: Dicionario = {
     },
   },
   inicio: {
+    comecePorAqui: {
+      titulo: "Start here",
+      descricao: "NeuroTask isn't a passive calendar — it's a routine copilot. In 3 steps it starts working for you.",
+      dispensar: "Dismiss",
+      passos: {
+        criarTarefa: { rotulo: "Create your first task", acao: "Create task" },
+        concluirTarefa: { rotulo: "Complete a task — you earn XP and coins for your Office", acao: "See tasks" },
+        montarDia: { rotulo: "Plan your day in the calendar (or import one!)", acao: "Open calendar" },
+      },
+      exploreTambem: "Explore too:",
+      planejarComIa: "Plan the day with the AI",
+      trazerAgenda: "Bring my calendar",
+      seuEscritorio: "Your Office",
+    },
     saudacoes: { ola: "Hello", bomDia: "Good morning", boaTarde: "Good afternoon", boaNoite: "Good evening" },
     faixas: {
       comecando: "Starting out",
@@ -2268,6 +2322,7 @@ export const en: Dicionario = {
     },
   },
   configuracoes: {
+    sugestoesDaRotina: "Suggestions from your routine",
     perfil: {
       titulo: "Profile",
       descricao: "Your photo, name and email",
@@ -2516,6 +2571,7 @@ export const en: Dicionario = {
     },
   },
   amigos: {
+    dica: "§Tip:§ on a friend, use §📅 Schedule§ to see today's busy hours (if they turned on the “Schedule” chip) and §➕ Invite§ to propose a meeting — once accepted, it goes into both your calendars automatically.",
     privacidade: {
       ocupadoLivre: "Busy/free",
       escritorio: "Office",
@@ -2716,6 +2772,10 @@ export const en: Dicionario = {
     toqueMicUseFones: "Tap the microphone to talk. Use headphones for best results.",
   },
   escritorio: {
+    semWebgl: {
+      titulo: "Your office needs 3D",
+      texto: "This browser has no WebGL. The shop and the avatar still work — open it in another browser to see the room.",
+    },
     editarAvatar: "Edit avatar",
     carregando3d: "Loading 3D…",
     salvarCompartilharImagem: "Save / share office image",

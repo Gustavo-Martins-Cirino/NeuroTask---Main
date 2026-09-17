@@ -1861,6 +1861,23 @@ vira ruído.
 > — a segunda herdou o `12h` que a primeira tinha gravado. O app fez o certo (seguiu a
 > preferência guardada); quem errou foi a bancada.
 
+> **Fatia 4a — o que sobrava dentro das telas, a parte simples: feita (15/09).** O cartão
+> "Comece por aqui" do dashboard, a dica do rodapé de Amigos, o título "Sugestões da sua rotina"
+> em Configurações e o aviso do Escritório para navegador sem WebGL (com o hook acima do retorno
+> antecipado, que é onde mora o React #310).
+>
+> A dica cita os botões pelo nome que eles têm em cada idioma — em inglês o chip se chama
+> "Schedule", não "Agenda" —, e há teste cobrando isso: dica que manda procurar um botão que não
+> existe é pior que dica nenhuma.
+>
+> A ênfase da dica trocou `<span className="font-medium text-foreground">` por `<strong>` (é o
+> que `enfatizar` produz), o que mudaria o peso para negrito cheio. O
+> `[&_strong]:font-medium [&_strong]:text-foreground` no parágrafo devolve o que era. Medido nos
+> dois idiomas: peso 500 e a cor do texto principal nos três trechos, como antes.
+>
+> Conferido em build de produção a 390px, em inglês e em português, cada um num contexto isolado:
+> nada fora da tela, nenhum erro de JS, e o português exatamente como estava.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

@@ -511,7 +511,7 @@ export default function SettingsPage() {
                 {suggestions.length > 0 && (
                   <div className="space-y-1.5 pt-1">
                     <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
-                      <Sparkles className="h-3.5 w-3.5" /> Sugestões da sua rotina
+                      <Sparkles className="h-3.5 w-3.5" /> {traducao.configuracoes.sugestoesDaRotina}
                     </p>
                     {suggestions.map((s) => (
                       <div

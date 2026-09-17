@@ -14,6 +14,7 @@ import {
   CELEBRATION_MS, buildConfetti, confettiAt, confettiOpacity, jumpHeight, bodyWiggle,
 } from "@/lib/office-celebration"
 import { useTheme } from "next-themes"
+import { useDicionario } from "@/hooks/use-idioma"
 import {
   buildEscritorio, buildPersonagem, recuoDaSala, PIVO_ANTEBRACO,
   type EscritorioExtras, type ParedeTipo, type PersonagemCores, type PersonagemVisual, type PisoTipo,
@@ -731,6 +732,7 @@ export function OfficeScene3D({
   // A hora do dia continua mandando na LUZ interna da cena (LIGHT[phase]), só
   // não no fundo. resolvedTheme pode vir undefined no 1º render → trata como claro.
   const { resolvedTheme } = useTheme()
+  const semWebgl = useDicionario().escritorio.semWebgl
   const bg = resolveOfficeBg(bgColor ?? "auto", resolvedTheme === "dark")
   const bgStyle = `linear-gradient(160deg, ${bg}, ${bg}cc)`
 
@@ -742,11 +744,8 @@ export function OfficeScene3D({
           style={{ width: "100%", aspectRatio: "480 / 340" }}
         >
           <span className="text-3xl">🪑</span>
-          <p className="text-sm font-medium text-white/90">Seu escritório precisa de 3D</p>
-          <p className="max-w-xs text-xs text-white/70">
-            Este navegador está sem WebGL. A loja e o avatar continuam funcionando — abra em
-            outro navegador para ver a sala.
-          </p>
+          <p className="text-sm font-medium text-white/90">{semWebgl.titulo}</p>
+          <p className="max-w-xs text-xs text-white/70">{semWebgl.texto}</p>
         </div>
       </div>
     )

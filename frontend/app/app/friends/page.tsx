@@ -4,6 +4,7 @@ import { Header } from "@/components/header"
 import { FriendsSection } from "@/components/friends-section"
 import { Users, CalendarClock } from "lucide-react"
 import { useDicionario } from "@/hooks/use-idioma"
+import { enfatizar } from "@/lib/enfase"
 
 export default function FriendsPage() {
   const traducao = useDicionario()
@@ -18,12 +19,8 @@ export default function FriendsPage() {
           {/* Como funciona */}
           <div className="flex items-start gap-3 rounded-2xl border border-border/50 bg-card p-4">
             <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              <span className="font-medium text-foreground">Dica:</span> nos amigos, use{" "}
-              <span className="font-medium text-foreground">📅 Agenda</span> para ver os horários
-              ocupados de hoje (se a pessoa ativou o chip &quot;Agenda&quot;) e{" "}
-              <span className="font-medium text-foreground">➕ Convidar</span> para propor um
-              compromisso — quando aceito, ele entra no calendário de vocês dois automaticamente.
+            <p className="text-xs leading-relaxed text-muted-foreground [&_strong]:font-medium [&_strong]:text-foreground">
+              {enfatizar(traducao.amigos.dica)}
             </p>
           </div>
         </div>

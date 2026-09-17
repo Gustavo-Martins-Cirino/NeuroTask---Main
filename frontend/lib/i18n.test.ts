@@ -109,6 +109,7 @@ describe("dicionário inteiro", () => {
     "entrada.login.olheOSpam",
     "entrada.cadastro.naoChegou",
     "entrada.senhaNova.soOMaisRecente",
+    "amigos.dica",
   ])
 
   it("nenhuma marca de ênfase sobra num texto fixo", () => {
@@ -751,6 +752,24 @@ describe("antes de entrar", () => {
       expect(d.entrada.social.criarContaCom("Google"), nome).toContain("Google")
       expect(d.entrada.social.erroProvedor("Apple"), nome).toContain("Apple")
       expect(d.entrada.cadastro.reenviadoAguarde(42), nome).toContain("42")
+    }
+  })
+})
+
+describe("o que sobrava dentro das telas", () => {
+  it("muda de idioma", () => {
+    expect(en.inicio.comecePorAqui.titulo).not.toBe(pt.inicio.comecePorAqui.titulo)
+    expect(en.amigos.dica).not.toBe(pt.amigos.dica)
+    expect(en.configuracoes.sugestoesDaRotina).not.toBe(pt.configuracoes.sugestoesDaRotina)
+    expect(en.escritorio.semWebgl.texto).not.toBe(pt.escritorio.semWebgl.texto)
+  })
+
+  // A dica cita botões pelo nome. Se o rótulo do chip mudar no dicionário e a
+  // dica não, ela passa a mandar a pessoa procurar um botão que não existe.
+  it("a dica de Amigos cita o chip pelo nome que ele tem em cada idioma", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const chip = (nome === "pt" ? "Agenda" : "Schedule")
+      expect(d.amigos.dica, nome).toContain(chip)
     }
   })
 })

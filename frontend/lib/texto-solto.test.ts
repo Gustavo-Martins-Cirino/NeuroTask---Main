@@ -49,12 +49,8 @@ const TEXTOS_LIVRES: Record<string, string> = {
  * pode.
  */
 const PENDENTES: Record<string, string> = {
-  "components/getting-started.tsx": "fatia do que sobrou dentro das telas",
   "components/metricas-dashboard.tsx": "fatia do que sobrou dentro das telas",
   "components/enquete.tsx": "fatia do que sobrou dentro das telas",
-  "components/office-scene-3d.tsx": "fatia do que sobrou dentro das telas",
-  "app/app/friends/page.tsx": "fatia do que sobrou dentro das telas",
-  "app/app/settings/page.tsx": "fatia do que sobrou dentro das telas",
   "app/error.tsx": "fatia das telas de erro",
   "app/app/error.tsx": "fatia das telas de erro",
   "app/global-error.tsx": "fatia das telas de erro",
