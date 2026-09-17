@@ -7,9 +7,10 @@ import { cn } from "@/lib/utils"
 import { duracaoDoMovimento } from "@/lib/movimento"
 import { createClient } from "@/lib/supabase/client"
 import { useTimeFormat } from "@/hooks/use-time-format"
+import { useDicionario, useLocale } from "@/hooks/use-idioma"
 import {
   concluidasPorDia, constanciaNaSemana, porHoraDoDia,
-  diaMaisConstante, horaMaisProdutiva, rotuloDeHora, totalNoPeriodo,
+  diaMaisConstante, horaMaisProdutiva, rotuloDeHora, totalNoPeriodo, ancoraDoRotulo,
   sentidoDaTroca, escalonamentoDasBarras,
   type PontoDia, type PontoSemana, type PontoHora,
 } from "@/lib/dashboard-metricas"
@@ -36,11 +37,8 @@ const SEMANAS = 4
 
 type Aba = "dias" | "semana" | "hora"
 
-const ABAS: { id: Aba; rotulo: string }[] = [
-  { id: "dias", rotulo: "Por dia" },
-  { id: "semana", rotulo: "Constância" },
-  { id: "hora", rotulo: "Melhor hora" },
-]
+/** O rótulo de cada aba mora no dicionário (`inicio.seusNumeros.abas`). */
+const ABAS: Aba[] = ["dias", "semana", "hora"]
 
 const ACENTO = "var(--chart-1)"
 const APOIO = "var(--muted-foreground)"
@@ -102,6 +100,16 @@ const BANDA_DICA = 28
 const ALTURA_AREA = ALTURA_TOTAL + BANDA_DICA
 /** Folga nas pontas da linha: r 4.5 da bolinha + 2px de anel, arredondado. */
 const MARGEM_LINHA = 7
+
+/**
+ * "17/08" em português, "08/17" em inglês — a partir da CHAVE do dia, e não do
+ * rótulo que lib/dashboard-metricas monta. Aquele é dia/mês, a ordem do
+ * português: em inglês ele lê como outra data, ou como data nenhuma.
+ */
+function rotuloDoDia(chave: string, locale: string): string {
+  const [ano, mes, dia] = chave.split("-").map(Number)
+  return new Date(ano, mes - 1, dia).toLocaleDateString(locale, { day: "2-digit", month: "2-digit" })
+}
 
 /**
  * Diz quando o gráfico já pode sair do zero e crescer até o valor.
@@ -187,6 +195,8 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
   const [ativo, setAtivo] = useState<number | null>(null)
   const semMovimento = useReducedMotion()
   const construido = useConstrucao(largura > 0)
+  const t = useDicionario().inicio.seusNumeros
+  const locale = useLocale()
 
   const maximo = Math.max(1, ...pontos.map((p) => p.total))
   // A margem existe pela PONTA: o último ponto cai no fim do eixo, e sem ela a
@@ -216,7 +226,7 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
           width={largura}
           height={ALTURA_TOTAL}
           role="img"
-          aria-label={`Tarefas concluídas por dia nos últimos ${pontos.length} dias`}
+          aria-label={t.graficoLinha(pontos.length)}
           onPointerMove={(e) => {
             const caixa = e.currentTarget.getBoundingClientRect()
             const i = Math.round((e.clientX - caixa.left - MARGEM_LINHA) / (passo || 1))
@@ -289,16 +299,16 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
               usa leitor de tela, sem custar um pixel de tela. */}
           {pontos.map((p, i) => (
             <circle key={p.chave} cx={xDe(i)} cy={yDe(p.total)} r={Math.max(8, passo / 2)} fill="transparent">
-              <title>{`${p.rotulo}: ${p.total} ${p.total === 1 ? "tarefa" : "tarefas"}`}</title>
+              <title>{`${rotuloDoDia(p.chave, locale)}: ${t.tarefas(p.total)}`}</title>
             </circle>
           ))}
 
           {/* Rótulo direto só nas pontas do eixo — o resto sai na dica. */}
           <text x={MARGEM_LINHA} y={ALTURA_PLOT + 15} className="fill-muted-foreground text-[10px]">
-            {pontos[0].rotulo}
+            {rotuloDoDia(pontos[0].chave, locale)}
           </text>
           <text x={largura - MARGEM_LINHA} y={ALTURA_PLOT + 15} textAnchor="end" className="fill-muted-foreground text-[10px]">
-            {pontos[ultimo].rotulo}
+            {rotuloDoDia(pontos[ultimo].chave, locale)}
           </text>
         </svg>
       )}
@@ -306,7 +316,7 @@ function GraficoLinha({ pontos }: { pontos: PontoDia[] }) {
       {ativo !== null && (
         <Dica x={xDe(ativo)} largura={largura}>
           <span className="font-medium">{pontos[ativo].total}</span>
-          <span className="text-muted-foreground"> em {pontos[ativo].rotulo}</span>
+          <span className="text-muted-foreground">{t.emDia(rotuloDoDia(pontos[ativo].chave, locale))}</span>
         </Dica>
       )}
     </motion.div>
@@ -332,6 +342,7 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
   const [ativo, setAtivo] = useState<number | null>(null)
   const semMovimento = useReducedMotion()
   const construido = useConstrucao(largura > 0)
+  const t = useDicionario().inicio.seusNumeros
   const passoDaBarra = escalonamentoDasBarras(colunas.length)
 
   const maximo = Math.max(...colunas.map((c) => c.valor), 0.0001)
@@ -348,7 +359,7 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
       className="relative pt-7"
     >
       {largura > 0 && (
-        <svg width={largura} height={ALTURA_TOTAL} role="img" aria-label="Gráfico de colunas">
+        <svg width={largura} height={ALTURA_TOTAL} role="img" aria-label={t.graficoColunas}>
           <line x1={0} y1={ALTURA_PLOT} x2={largura} y2={ALTURA_PLOT} stroke="var(--border)" strokeWidth="1" />
 
           {colunas.map((c, i) => {
@@ -397,8 +408,8 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
                 )}
                 {rotulo && (
                   <text
-                    x={centro} y={ALTURA_PLOT + 15}
-                    textAnchor="middle"
+                    x={ancoraDoRotulo(centro, largura).x} y={ALTURA_PLOT + 15}
+                    textAnchor={ancoraDoRotulo(centro, largura).ancora}
                     className="pointer-events-none fill-muted-foreground text-[10px]"
                   >
                     {rotulo}
@@ -427,6 +438,7 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
 export function MetricasDashboard() {
   const supabase = createClient()
   const formato = useTimeFormat()
+  const t = useDicionario().inicio.seusNumeros
   const semMovimento = useReducedMotion()
   const [aberta, setAberta] = useState(false)
   const [aba, setAba] = useState<Aba>("dias")
@@ -463,10 +475,10 @@ export function MetricasDashboard() {
   const vazio = datas !== null && datas.length === 0
 
   const colunasSemana: Coluna[] = porSemana.map((p: PontoSemana) => ({
-    chave: p.rotulo,
-    rotulo: p.rotulo,
+    chave: String(p.indice),
+    rotulo: t.diasCurtos[p.indice],
     valor: p.taxa,
-    descricao: `${p.diasComAlgo} de ${p.diasContados} ${p.diasContados === 1 ? "vez" : "vezes"}`,
+    descricao: t.vezes(p.diasComAlgo, p.diasContados),
     destaque: melhorDia !== null && p.indice === melhorDia.indice,
   }))
 
@@ -474,26 +486,20 @@ export function MetricasDashboard() {
     chave: String(p.hora),
     rotulo: rotuloDeHora(p.hora, doze),
     valor: p.total,
-    descricao: `${p.total} ${p.total === 1 ? "tarefa" : "tarefas"}`,
+    descricao: t.tarefas(p.total),
     destaque: melhorHora !== null && p.hora === melhorHora.hora,
   }))
 
   const manchete = () => {
-    if (datas === null) return "Carregando…"
-    if (vazio) return "Conclua algumas tarefas e os números aparecem aqui."
+    if (datas === null) return t.carregando
+    if (vazio) return t.vazio
     if (aba === "dias") {
-      return total === 0
-        ? `Nada concluído nos últimos ${DIAS_NA_LINHA} dias.`
-        : `${total} ${total === 1 ? "tarefa concluída" : "tarefas concluídas"} nos últimos ${DIAS_NA_LINHA} dias.`
+      return total === 0 ? t.nadaConcluido(DIAS_NA_LINHA) : t.concluidas(total, DIAS_NA_LINHA)
     }
     if (aba === "semana") {
-      return melhorDia
-        ? `Você aparece mais na ${nomeCompleto(melhorDia.rotulo)} — ${melhorDia.diasComAlgo} das últimas ${melhorDia.diasContados}.`
-        : "Ainda não dá para ver um padrão na semana."
+      return melhorDia ? t.apareceMais(melhorDia.indice, melhorDia.diasComAlgo, melhorDia.diasContados) : t.semPadraoSemana
     }
-    return melhorHora
-      ? `Você rende mais por volta das ${rotuloDeHora(melhorHora.hora, doze)}.`
-      : "Ainda não dá para ver um horário preferido."
+    return melhorHora ? t.rendeMais(rotuloDeHora(melhorHora.hora, doze)) : t.semHorario
   }
 
   // A altura do painel. A opacidade sai na frente dela ao fechar, para o
@@ -571,7 +577,7 @@ export function MetricasDashboard() {
 
   const trocarAba = (destino: Aba) => {
     if (destino === aba) return
-    setSentido(sentidoDaTroca(ABAS.findIndex((a) => a.id === aba), ABAS.findIndex((a) => a.id === destino)))
+    setSentido(sentidoDaTroca(ABAS.indexOf(aba), ABAS.indexOf(destino)))
     setAba(destino)
   }
 
@@ -584,7 +590,7 @@ export function MetricasDashboard() {
       >
         <TrendingUp className="h-4 w-4 text-muted-foreground" />
         <span className="flex-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Seus números
+          {t.titulo}
         </span>
         {/* A seta gira na mola do conteúdo, não num tempo próprio: ela é a
             primeira coisa a se mexer no clique, e é ela que anuncia com que
@@ -616,21 +622,21 @@ export function MetricasDashboard() {
               <motion.div variants={peca} className="flex flex-wrap gap-1.5">
                 {ABAS.map((a) => (
                   <button
-                    key={a.id}
-                    onClick={() => trocarAba(a.id)}
+                    key={a}
+                    onClick={() => trocarAba(a)}
                     className={cn(
                       "relative rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                      aba === a.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                      aba === a ? "text-primary" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    {aba === a.id && (
+                    {aba === a && (
                       <motion.span
                         layoutId="nt-metricas-aba"
                         className="absolute inset-0 rounded-full bg-primary/10"
                         transition={{ type: "spring", stiffness: 400, damping: 35 }}
                       />
                     )}
-                    <span className="relative">{a.rotulo}</span>
+                    <span className="relative">{t.abas[a]}</span>
                   </button>
                 ))}
               </motion.div>
@@ -687,7 +693,7 @@ export function MetricasDashboard() {
                         )}
                         {aba === "hora" && (
                           // De 24 rótulos cabem uns 6 sem colidir; a dica carrega o resto.
-                          <GraficoColunas colunas={colunasHora} rotulosDoEixo={(i) => (i % 4 === 0 ? `${i}h` : null)} />
+                          <GraficoColunas colunas={colunasHora} rotulosDoEixo={(i) => (i % 4 === 0 ? rotuloDeHora(i, doze) : null)} />
                         )}
                       </div>
                     )}
@@ -700,12 +706,4 @@ export function MetricasDashboard() {
       </AnimatePresence>
     </div>
   )
-}
-
-function nomeCompleto(abreviado: string): string {
-  const mapa: Record<string, string> = {
-    Seg: "segunda", Ter: "terça", Qua: "quarta", Qui: "quinta",
-    Sex: "sexta", Sáb: "sábado", Dom: "domingo",
-  }
-  return mapa[abreviado] ?? abreviado
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import {
   chaveDoDia, concluidasPorDia, constanciaNaSemana, porHoraDoDia,
   diaMaisConstante, horaMaisProdutiva, rotuloDeHora, totalNoPeriodo,
-  sentidoDaTroca, escalonamentoDasBarras, JANELA_CONSTRUCAO,
+  sentidoDaTroca, escalonamentoDasBarras, JANELA_CONSTRUCAO, ancoraDoRotulo,
   DIAS_DA_SEMANA,
 } from "./dashboard-metricas"
 
@@ -196,5 +196,35 @@ describe("escalonamentoDasBarras", () => {
     expect(escalonamentoDasBarras(1)).toBe(0)
     expect(escalonamentoDasBarras(0)).toBe(0)
     expect(escalonamentoDasBarras(NaN)).toBe(0)
+  })
+})
+
+describe("âncora do rótulo do eixo", () => {
+  // O caso que motivou a função: 24 horas em 317px de cartão, "12 AM" no i=0.
+  const largura = 317
+  const centroDaHora = (i: number) => (largura / 24) * (i + 0.5)
+
+  it("a primeira hora encosta na borda esquerda em vez de ser cortada", () => {
+    expect(ancoraDoRotulo(centroDaHora(0), largura)).toEqual({ x: 0, ancora: "start" })
+  })
+
+  it("o miolo continua centralizado na barra", () => {
+    for (const i of [4, 8, 12, 16, 20]) {
+      const { x, ancora } = ancoraDoRotulo(centroDaHora(i), largura)
+      expect(ancora, `hora ${i}`).toBe("middle")
+      expect(x, `hora ${i}`).toBeCloseTo(centroDaHora(i))
+    }
+  })
+
+  // Sete dias dão faixas largas: nada ali precisa encostar, e a regra não pode
+  // mexer no que já estava certo.
+  it("os dias da semana ficam todos centralizados", () => {
+    for (let i = 0; i < 7; i++) {
+      expect(ancoraDoRotulo((largura / 7) * (i + 0.5), largura).ancora, `dia ${i}`).toBe("middle")
+    }
+  })
+
+  it("a última faixa encosta na borda direita", () => {
+    expect(ancoraDoRotulo(largura - 2, largura)).toEqual({ x: largura, ancora: "end" })
   })
 })

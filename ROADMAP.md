@@ -1878,6 +1878,42 @@ vira ruído.
 > Conferido em build de produção a 390px, em inglês e em português, cada um num contexto isolado:
 > nada fora da tela, nenhum erro de JS, e o português exatamente como estava.
 
+> **Fatia 4b — "Seus números" e a enquete: feita (17/09).** As duas telas que tinham texto
+> vindo de módulo puro, e é o que as tornou a edição mais arriscada da rodada: `lib/enquete.ts`
+> guardava as perguntas escritas em português, e `metricas-dashboard` montava frases somando
+> pedaços.
+>
+> A enquete virou lista de **ids** (`IdPergunta`) e o texto passou para o dicionário. A resposta,
+> porém, continua gravada **em português** — casada pela POSIÇÃO da opção, não pelo texto lido na
+> tela. O motivo é que a resposta é feedback que eu leio no painel do dono: se ela fosse gravada
+> no idioma de quem respondeu, o mesmo "Curiosidade" chegaria em duas grafias e viraria duas
+> linhas no agrupamento. Há teste cobrando a posição nos dois idiomas — se alguém reordenar as
+> opções de um idioma só, o teste quebra antes de o banco encher de resposta trocada.
+>
+> Três erros de português apareceram enquanto eu traduzia, todos anteriores à tradução:
+> "Você aparece mais **na sábado** — 3 **das últimas** 4" (sábado e domingo são masculinos; os
+> outros cinco dias, femininos) e "por volta **das 1h**" (é "da 1h"). Agora o gênero e o artigo
+> saem de função no dicionário, com teste para os sete dias e para a virada de 1h→10h.
+>
+> O eixo de datas lia errado em inglês: "17/08" é 8 de agosto para quem lê em inglês, não 17 de
+> agosto. Passou a sair pelo `locale` (`09/17` em inglês, `17/09` em português) — e isso, sim, a
+> tradução quebrou e consertou no mesmo movimento.
+>
+> A medição cobrou o preço de traduzir um gráfico: **"12 AM" é quase três vezes mais largo que
+> "0h"** e o primeiro rótulo do eixo das horas aparecia cortado, como "2 AM". Nas pontas o rótulo
+> agora encosta na borda em vez de estourar (`ancoraDoRotulo`, puro e testado); no miolo nada
+> mudou. O gráfico de linha já fazia isso desde sempre — era só o de colunas que centralizava
+> tudo, inclusive o que não cabia.
+>
+> Conferido em build de produção a 390px, nas três abas e nos dois idiomas, com as conclusões
+> forjadas para cair no **sábado** (o caso do "na sábado") e nas **13h** (o caso do artigo):
+> nada fora da tela, nenhum erro de JS, nenhum português vazando no inglês.
+>
+> Fica anotado o que a medição mostrou e eu não mexi: os gráficos de coluna se anunciam ao leitor
+> de tela como "Gráfico de colunas", genérico, enquanto o de linha se descreve inteiro ("Tarefas
+> concluídas por dia nos últimos 14 dias"). É acessibilidade, não tradução, e entra na fatia de
+> quem for cuidar dos rótulos de leitor de tela.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

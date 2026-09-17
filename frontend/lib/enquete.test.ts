@@ -10,16 +10,11 @@ const PASSADA_A_SEMANA = AGORA + (DIAS_DE_SILENCIO * 24 + 1) * 3_600_000
 const VAZIO: EstadoEnquete = { respondidas: [], adiadoAte: 0 }
 
 describe("as perguntas", () => {
-  it("têm id único, texto e opções que cabem num toque", () => {
-    const ids = new Set(PERGUNTAS.map((p) => p.id))
-    expect(ids.size).toBe(PERGUNTAS.length)
-    for (const p of PERGUNTAS) {
-      expect(p.texto.length).toBeGreaterThan(10)
-      expect(p.opcoes.length).toBeGreaterThanOrEqual(2)
-      // Mais que quatro e a pessoa passa a LER a enquete em vez de responder.
-      expect(p.opcoes.length).toBeLessThanOrEqual(4)
-      expect(new Set(p.opcoes).size).toBe(p.opcoes.length)
-    }
+  // O texto e as opções moram no dicionário e são cobrados em lib/i18n.test.ts
+  // — inclusive que inglês e português têm as mesmas opções na mesma ordem.
+  it("têm id único", () => {
+    expect(PERGUNTAS.length).toBeGreaterThan(0)
+    expect(new Set(PERGUNTAS).size).toBe(PERGUNTAS.length)
   })
 })
 
@@ -32,30 +27,30 @@ describe("saneiaEstado", () => {
 
   it("descarta id que não existe mais no código", () => {
     // Tirar uma pergunta da lista não pode virar erro para quem já a respondeu.
-    const e = saneiaEstado({ respondidas: [PERGUNTAS[0].id, "pergunta-que-saiu"], adiadoAte: 0 })
-    expect(e.respondidas).toEqual([PERGUNTAS[0].id])
+    const e = saneiaEstado({ respondidas: [PERGUNTAS[0], "pergunta-que-saiu"], adiadoAte: 0 })
+    expect(e.respondidas).toEqual([PERGUNTAS[0]])
   })
 
   it("não guarda id repetido nem adiamento impossível", () => {
-    const e = saneiaEstado({ respondidas: [PERGUNTAS[0].id, PERGUNTAS[0].id], adiadoAte: Number.NaN })
-    expect(e.respondidas).toEqual([PERGUNTAS[0].id])
+    const e = saneiaEstado({ respondidas: [PERGUNTAS[0], PERGUNTAS[0]], adiadoAte: Number.NaN })
+    expect(e.respondidas).toEqual([PERGUNTAS[0]])
     expect(e.adiadoAte).toBe(0)
   })
 })
 
 describe("proximaPergunta", () => {
   it("começa pela primeira e segue a ordem declarada", () => {
-    expect(proximaPergunta(VAZIO, AGORA)?.id).toBe(PERGUNTAS[0].id)
-    const depois = comResposta(VAZIO, PERGUNTAS[0].id, AGORA)
-    expect(proximaPergunta(depois, PASSADA_A_SEMANA)?.id).toBe(PERGUNTAS[1].id)
+    expect(proximaPergunta(VAZIO, AGORA)).toBe(PERGUNTAS[0])
+    const depois = comResposta(VAZIO, PERGUNTAS[0], AGORA)
+    expect(proximaPergunta(depois, PASSADA_A_SEMANA)).toBe(PERGUNTAS[1])
   })
 
   it("nunca repete uma já respondida", () => {
     let estado = VAZIO
     let quando = AGORA
     for (const p of PERGUNTAS) {
-      expect(proximaPergunta(estado, quando)?.id).toBe(p.id)
-      estado = comResposta(estado, p.id, quando)
+      expect(proximaPergunta(estado, quando)).toBe(p)
+      estado = comResposta(estado, p, quando)
       quando += (DIAS_DE_SILENCIO * 24 + 1) * 3_600_000
     }
     expect(proximaPergunta(estado, quando)).toBeNull()
@@ -72,34 +67,34 @@ describe("proximaPergunta", () => {
   it("passado o prazo, ela volta — e volta na mesma pergunta", () => {
     const estado = adiado(VAZIO, AGORA)
     const depois = AGORA + (DIAS_DE_SILENCIO * 24 + 1) * 3_600_000
-    expect(proximaPergunta(estado, depois)?.id).toBe(PERGUNTAS[0].id)
+    expect(proximaPergunta(estado, depois)).toBe(PERGUNTAS[0])
   })
 
   it("responder compra a semana inteira de silêncio — era o bug", () => {
     // O código antigo gravava `adiadoAte: 0` com um comentário dizendo o
     // contrário: a pergunta seguinte aparecia na visita imediata.
-    const estado = comResposta(VAZIO, PERGUNTAS[0].id, AGORA)
-    expect(estado.respondidas).toEqual([PERGUNTAS[0].id])
+    const estado = comResposta(VAZIO, PERGUNTAS[0], AGORA)
+    expect(estado.respondidas).toEqual([PERGUNTAS[0]])
     expect(proximaPergunta(estado, AGORA)).toBeNull()
     expect(proximaPergunta(estado, AGORA + 3 * 86_400_000)).toBeNull()
-    expect(proximaPergunta(estado, PASSADA_A_SEMANA)?.id).toBe(PERGUNTAS[1].id)
+    expect(proximaPergunta(estado, PASSADA_A_SEMANA)).toBe(PERGUNTAS[1])
   })
 
   it("só ter APARECIDO já cala a semana — quem ignorou não é perguntado de novo", () => {
     const estado = mostrada(VAZIO, AGORA)
     expect(proximaPergunta(estado, AGORA + 86_400_000)).toBeNull()
-    expect(proximaPergunta(estado, PASSADA_A_SEMANA)?.id).toBe(PERGUNTAS[0].id)
+    expect(proximaPergunta(estado, PASSADA_A_SEMANA)).toBe(PERGUNTAS[0])
   })
 })
 
 describe("comResposta", () => {
   it("responder de novo não duplica o id", () => {
-    const uma = comResposta(VAZIO, PERGUNTAS[0].id, AGORA)
-    expect(comResposta(uma, PERGUNTAS[0].id, AGORA).respondidas).toEqual([PERGUNTAS[0].id])
+    const uma = comResposta(VAZIO, PERGUNTAS[0], AGORA)
+    expect(comResposta(uma, PERGUNTAS[0], AGORA).respondidas).toEqual([PERGUNTAS[0]])
   })
 
   it("responder depois de ter adiado reinicia a semana a partir da resposta", () => {
-    const estado = comResposta(adiado(VAZIO, AGORA), PERGUNTAS[0].id, AGORA + 1000)
+    const estado = comResposta(adiado(VAZIO, AGORA), PERGUNTAS[0], AGORA + 1000)
     expect(estado.adiadoAte).toBe(AGORA + 1000 + DIAS_DE_SILENCIO * 86_400_000)
   })
 })
@@ -115,16 +110,17 @@ describe("adiado", () => {
   })
 
   it("não apaga o que já foi respondido", () => {
-    const estado = adiado(comResposta(VAZIO, PERGUNTAS[0].id, AGORA), AGORA)
-    expect(estado.respondidas).toEqual([PERGUNTAS[0].id])
+    const estado = adiado(comResposta(VAZIO, PERGUNTAS[0], AGORA), AGORA)
+    expect(estado.respondidas).toEqual([PERGUNTAS[0]])
   })
 })
 
 describe("mensagemDaResposta", () => {
   it("sai legível no painel do dono, sem ferramenta no meio", () => {
-    const linha = mensagemDaResposta(PERGUNTAS[0], PERGUNTAS[0].opcoes[1])
-    expect(linha).toContain(PERGUNTAS[0].texto)
-    expect(linha).toContain(PERGUNTAS[0].opcoes[1])
+    const pergunta = "O que te fez abrir o NeuroTask hoje?"
+    const linha = mensagemDaResposta(pergunta, "Curiosidade")
+    expect(linha).toContain(pergunta)
+    expect(linha).toContain("Curiosidade")
     expect(linha.startsWith("[enquete]")).toBe(true)
   })
 })

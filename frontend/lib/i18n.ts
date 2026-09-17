@@ -10,6 +10,7 @@ import { type HairStyle, type Outfit, type BodyType } from "@/lib/avatar"
 import { type ShopCategory, type ShopItemId } from "@/lib/shop"
 import { type ChaveFundoOffice } from "@/lib/office-bg"
 import { type IdPassoOnboarding } from "@/lib/onboarding"
+import { type IdPergunta } from "@/lib/enquete"
 import { type TextosDeErroDoFeedback, type TipoDeFeedback } from "@/lib/feedback"
 import { type IdAmbiente } from "@/lib/focus-gradient"
 import { type IdFaixa, type SoundCategory } from "@/hooks/use-sound-mixer"
@@ -271,6 +272,39 @@ export interface Dicionario {
     }
   }
   inicio: {
+    /**
+     * A enquete de uma pergunta. As opções casam por POSIÇÃO com as do português:
+     * a resposta é gravada sempre em português (quem lê é o dono), então os dois
+     * idiomas precisam ter as mesmas opções na mesma ordem — há teste.
+     */
+    enquete: {
+      rotulo: string
+      obrigado: string
+      agoraNao: string
+      perguntas: Record<IdPergunta, { texto: string; opcoes: string[] }>
+    }
+    /** "Seus números": a seção de métricas do dashboard, fechada por padrão. */
+    seusNumeros: {
+      titulo: string
+      abas: Record<"dias" | "semana" | "hora", string>
+      carregando: string
+      vazio: string
+      nadaConcluido: (dias: number) => string
+      concluidas: (total: number, dias: number) => string
+      /** O dia vem pelo ÍNDICE (0 = segunda): em português o artigo e a concordância mudam com ele. */
+      apareceMais: (indice: number, feitos: number, contados: number) => string
+      semPadraoSemana: string
+      /** A hora chega formatada ("14h", "2 PM"); em português, "da 1h" e "das 2h". */
+      rendeMais: (hora: string) => string
+      semHorario: string
+      /** Segunda primeiro, na mesma ordem do `indice` de lib/dashboard-metricas. */
+      diasCurtos: string[]
+      vezes: (feitos: number, contados: number) => string
+      tarefas: (n: number) => string
+      emDia: (rotulo: string) => string
+      graficoLinha: (dias: number) => string
+      graficoColunas: string
+    }
     /** "Comece por aqui": o cartão de primeiros passos da conta nova. */
     comecePorAqui: {
       titulo: string
@@ -1292,6 +1326,55 @@ export const pt: Dicionario = {
     },
   },
   inicio: {
+    enquete: {
+      rotulo: "Enquete rápida",
+      obrigado: "Obrigado! Isso ajuda mais do que parece.",
+      agoraNao: "Agora não",
+      perguntas: {
+        "por-que-abriu": {
+          texto: "O que te fez abrir o NeuroTask hoje?",
+          opcoes: ["Ver o que eu tinha para fazer", "Anotar algo novo", "Um lembrete me chamou", "Curiosidade"],
+        },
+        "faria-falta": {
+          texto: "Se o app sumisse amanhã, o que faria falta?",
+          opcoes: ["As tarefas e o calendário", "A Neuro IA", "O Escritório e o nível", "Nada ainda"],
+        },
+        atrapalhou: {
+          texto: "O que mais te atrapalhou até agora?",
+          opcoes: ["Achar as coisas", "Ficou lento ou travou", "Não entendi o que fazer", "Nada me atrapalhou"],
+        },
+        "seus-numeros": {
+          texto: "“Seus números”, no início, te contou algo que você não sabia?",
+          opcoes: ["Sim, me surpreendeu", "Interessante, mas não mudei nada", "Nunca abri"],
+        },
+      },
+    },
+    seusNumeros: {
+      titulo: "Seus números",
+      abas: { dias: "Por dia", semana: "Constância", hora: "Melhor hora" },
+      carregando: "Carregando…",
+      vazio: "Conclua algumas tarefas e os números aparecem aqui.",
+      nadaConcluido: (dias) => `Nada concluído nos últimos ${dias} dias.`,
+      concluidas: (total, dias) =>
+        `${total} ${total === 1 ? "tarefa concluída" : "tarefas concluídas"} nos últimos ${dias} dias.`,
+      apareceMais: (indice, feitos, contados) => {
+        // Sábado e domingo são masculinos: "no sábado — 3 dos últimos 4". A frase
+        // antiga tinha "na" e "das últimas" fixos, e dizia "na sábado".
+        const masculino = indice >= 5
+        const dia = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"][indice] ?? ""
+        return `Você aparece mais ${masculino ? "no" : "na"} ${dia} — ${feitos} ${masculino ? "dos últimos" : "das últimas"} ${contados}.`
+      },
+      semPadraoSemana: "Ainda não dá para ver um padrão na semana.",
+      // "da 1h", "da 0h", "das 10h": o singular é quando o número mostrado é 0 ou 1.
+      rendeMais: (hora) => `Você rende mais por volta ${/^[01](?!\d)/.test(hora) ? "da" : "das"} ${hora}.`,
+      semHorario: "Ainda não dá para ver um horário preferido.",
+      diasCurtos: ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+      vezes: (feitos, contados) => `${feitos} de ${contados} ${contados === 1 ? "vez" : "vezes"}`,
+      tarefas: (n) => `${n} ${n === 1 ? "tarefa" : "tarefas"}`,
+      emDia: (rotulo) => ` em ${rotulo}`,
+      graficoLinha: (dias) => `Tarefas concluídas por dia nos últimos ${dias} dias`,
+      graficoColunas: "Gráfico de colunas",
+    },
     comecePorAqui: {
       titulo: "Comece por aqui",
       descricao:
@@ -2264,6 +2347,50 @@ export const en: Dicionario = {
     },
   },
   inicio: {
+    enquete: {
+      rotulo: "Quick poll",
+      obrigado: "Thanks! It helps more than it seems.",
+      agoraNao: "Not now",
+      perguntas: {
+        "por-que-abriu": {
+          texto: "What made you open NeuroTask today?",
+          opcoes: ["See what I had to do", "Write down something new", "A reminder called me", "Curiosity"],
+        },
+        "faria-falta": {
+          texto: "If the app disappeared tomorrow, what would you miss?",
+          opcoes: ["The tasks and the calendar", "Neuro IA", "The Office and my level", "Nothing yet"],
+        },
+        atrapalhou: {
+          texto: "What got in your way the most so far?",
+          opcoes: ["Finding things", "It got slow or froze", "I didn't understand what to do", "Nothing got in my way"],
+        },
+        "seus-numeros": {
+          texto: "Did “Your numbers”, on the home screen, tell you something you didn't know?",
+          opcoes: ["Yes, it surprised me", "Interesting, but I changed nothing", "Never opened it"],
+        },
+      },
+    },
+    seusNumeros: {
+      titulo: "Your numbers",
+      abas: { dias: "Per day", semana: "Consistency", hora: "Best hour" },
+      carregando: "Loading…",
+      vazio: "Complete a few tasks and the numbers show up here.",
+      nadaConcluido: (dias) => `Nothing completed in the last ${dias} days.`,
+      concluidas: (total, dias) => `${total} ${total === 1 ? "task" : "tasks"} completed in the last ${dias} days.`,
+      apareceMais: (indice, feitos, contados) => {
+        const dia = ["Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"][indice] ?? ""
+        return `You show up most on ${dia} — ${feitos} of the last ${contados}.`
+      },
+      semPadraoSemana: "No weekly pattern to see yet.",
+      rendeMais: (hora) => `You're most productive around ${hora}.`,
+      semHorario: "No favorite time of day to see yet.",
+      diasCurtos: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      vezes: (feitos, contados) => `${feitos} of ${contados} ${contados === 1 ? "time" : "times"}`,
+      tarefas: (n) => `${n} ${n === 1 ? "task" : "tasks"}`,
+      emDia: (rotulo) => ` on ${rotulo}`,
+      graficoLinha: (dias) => `Tasks completed per day over the last ${dias} days`,
+      graficoColunas: "Column chart",
+    },
     comecePorAqui: {
       titulo: "Start here",
       descricao: "NeuroTask isn't a passive calendar — it's a routine copilot. In 3 steps it starts working for you.",

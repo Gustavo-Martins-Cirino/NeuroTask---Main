@@ -773,3 +773,56 @@ describe("o que sobrava dentro das telas", () => {
     }
   })
 })
+
+describe("dashboard: a enquete e Seus números", () => {
+  // A resposta é gravada em português pela POSIÇÃO da opção escolhida. Se o
+  // inglês tiver outra quantidade de opções, quem responde em inglês grava a
+  // resposta errada no painel do dono — e ninguém veria.
+  it("as opções da enquete casam por posição nos dois idiomas", () => {
+    for (const [id, p] of Object.entries(pt.inicio.enquete.perguntas)) {
+      const e = en.inicio.enquete.perguntas[id as keyof typeof pt.inicio.enquete.perguntas]
+      expect(e.opcoes.length, id).toBe(p.opcoes.length)
+    }
+  })
+
+  it("toda pergunta cabe num toque: texto, de 2 a 4 opções, sem repetir", () => {
+    for (const [nome, d] of IDIOMAS) {
+      for (const [id, p] of Object.entries(d.inicio.enquete.perguntas)) {
+        expect(p.texto.length, `${nome}: ${id}`).toBeGreaterThan(10)
+        expect(p.opcoes.length, `${nome}: ${id}`).toBeGreaterThanOrEqual(2)
+        // Mais que quatro e a pessoa passa a LER a enquete em vez de responder.
+        expect(p.opcoes.length, `${nome}: ${id}`).toBeLessThanOrEqual(4)
+        expect(new Set(p.opcoes).size, `${nome}: ${id}`).toBe(p.opcoes.length)
+      }
+    }
+  })
+
+  // Era "Você aparece mais na sábado — 3 das últimas 4": artigo e concordância fixos.
+  it("em português o artigo e a concordância seguem o dia", () => {
+    expect(pt.inicio.seusNumeros.apareceMais(0, 3, 4)).toContain("na segunda")
+    expect(pt.inicio.seusNumeros.apareceMais(0, 3, 4)).toContain("das últimas 4")
+    expect(pt.inicio.seusNumeros.apareceMais(5, 3, 4)).toContain("no sábado")
+    expect(pt.inicio.seusNumeros.apareceMais(6, 3, 4)).toContain("dos últimos 4")
+  })
+
+  it("da 1h e da 0h são singulares; das 10h e das 12 PM, plurais", () => {
+    expect(pt.inicio.seusNumeros.rendeMais("1h")).toContain("da 1h")
+    expect(pt.inicio.seusNumeros.rendeMais("0h")).toContain("da 0h")
+    expect(pt.inicio.seusNumeros.rendeMais("1 PM")).toContain("da 1 PM")
+    expect(pt.inicio.seusNumeros.rendeMais("10h")).toContain("das 10h")
+    expect(pt.inicio.seusNumeros.rendeMais("12 PM")).toContain("das 12 PM")
+  })
+
+  it("sete dias, segunda primeiro, nos dois idiomas", () => {
+    for (const [nome, d] of IDIOMAS) expect(d.inicio.seusNumeros.diasCurtos, nome).toHaveLength(7)
+    expect(pt.inicio.seusNumeros.diasCurtos[0]).toBe("Seg")
+    expect(en.inicio.seusNumeros.diasCurtos[0]).toBe("Mon")
+  })
+
+  it("singular e plural mudam nos números", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(d.inicio.seusNumeros.tarefas(1), nome).not.toBe(d.inicio.seusNumeros.tarefas(2).replace("2", "1"))
+      expect(d.inicio.seusNumeros.vezes(1, 1), nome).not.toBe(d.inicio.seusNumeros.vezes(1, 2).replace("2", "1"))
+    }
+  })
+})

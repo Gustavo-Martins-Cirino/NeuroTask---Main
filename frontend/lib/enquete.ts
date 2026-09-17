@@ -15,14 +15,10 @@
 
 export const CHAVE_ENQUETE = "enquete_v1"
 
-export interface Pergunta {
-  id: string
-  texto: string
-  opcoes: readonly string[]
-}
-
 /**
- * As perguntas, na ordem em que serão feitas.
+ * As perguntas, na ordem em que serão feitas. Só o id: o texto e as opções moram
+ * no dicionário (`inicio.enquete.perguntas`), indexados por ele — pergunta nova
+ * sem texto nos dois idiomas não compila.
  *
  * Elas moram no código de propósito: quem muda a pergunta é quem faz o deploy, e
  * uma tabela no banco só para isso custaria SQL à mão, RLS e uma tela de edição
@@ -31,28 +27,9 @@ export interface Pergunta {
  * A régua de cada uma: responder tem de ser um toque, e a resposta tem de mudar
  * alguma decisão. Pergunta cuja resposta não muda nada sai da lista.
  */
-export const PERGUNTAS: readonly Pergunta[] = [
-  {
-    id: "por-que-abriu",
-    texto: "O que te fez abrir o NeuroTask hoje?",
-    opcoes: ["Ver o que eu tinha para fazer", "Anotar algo novo", "Um lembrete me chamou", "Curiosidade"],
-  },
-  {
-    id: "faria-falta",
-    texto: "Se o app sumisse amanhã, o que faria falta?",
-    opcoes: ["As tarefas e o calendário", "A Neuro IA", "O Escritório e o nível", "Nada ainda"],
-  },
-  {
-    id: "atrapalhou",
-    texto: "O que mais te atrapalhou até agora?",
-    opcoes: ["Achar as coisas", "Ficou lento ou travou", "Não entendi o que fazer", "Nada me atrapalhou"],
-  },
-  {
-    id: "seus-numeros",
-    texto: "“Seus números”, no início, te contou algo que você não sabia?",
-    opcoes: ["Sim, me surpreendeu", "Interessante, mas não mudei nada", "Nunca abri"],
-  },
-]
+export const PERGUNTAS = ["por-que-abriu", "faria-falta", "atrapalhou", "seus-numeros"] as const
+
+export type IdPergunta = (typeof PERGUNTAS)[number]
 
 export interface EstadoEnquete {
   /** Ids já respondidos. */
@@ -92,7 +69,7 @@ function silencioAte(agoraMs: number, dias: number = DIAS_DE_SILENCIO): number {
 export function saneiaEstado(bruto: unknown): EstadoEnquete {
   if (!bruto || typeof bruto !== "object") return VAZIO
   const o = bruto as Record<string, unknown>
-  const conhecidas = new Set(PERGUNTAS.map((p) => p.id))
+  const conhecidas = new Set<string>(PERGUNTAS)
   const respondidas = Array.isArray(o.respondidas)
     ? [...new Set(o.respondidas.filter((id): id is string => typeof id === "string" && conhecidas.has(id)))]
     : []
@@ -110,10 +87,10 @@ export function saneiaEstado(bruto: unknown): EstadoEnquete {
  * pergunta no lugar é exatamente o incômodo que faz a pessoa parar de responder
  * qualquer uma.
  */
-export function proximaPergunta(estado: EstadoEnquete, agoraMs: number): Pergunta | null {
+export function proximaPergunta(estado: EstadoEnquete, agoraMs: number): IdPergunta | null {
   if (Number.isFinite(agoraMs) && agoraMs < estado.adiadoAte) return null
   const feitas = new Set(estado.respondidas)
-  return PERGUNTAS.find((p) => !feitas.has(p.id)) ?? null
+  return PERGUNTAS.find((id) => !feitas.has(id)) ?? null
 }
 
 /**
@@ -147,7 +124,10 @@ export function mostrada(estado: EstadoEnquete, agoraMs: number): EstadoEnquete 
 /**
  * A linha que vai para a tabela `feedback`. Escrita para ser LIDA no painel do
  * dono sem nenhuma ferramenta no meio — é ali que ela vai ser olhada.
+ *
+ * Recebe os textos já escolhidos: quem chama grava em PORTUGUÊS, pela posição da
+ * opção, seja qual for o idioma de quem respondeu (ver components/enquete.tsx).
  */
-export function mensagemDaResposta(pergunta: Pergunta, resposta: string): string {
-  return `[enquete] ${pergunta.texto} → ${resposta}`
+export function mensagemDaResposta(pergunta: string, resposta: string): string {
+  return `[enquete] ${pergunta} → ${resposta}`
 }

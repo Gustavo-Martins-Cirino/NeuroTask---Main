@@ -49,8 +49,6 @@ const TEXTOS_LIVRES: Record<string, string> = {
  * pode.
  */
 const PENDENTES: Record<string, string> = {
-  "components/metricas-dashboard.tsx": "fatia do que sobrou dentro das telas",
-  "components/enquete.tsx": "fatia do que sobrou dentro das telas",
   "app/error.tsx": "fatia das telas de erro",
   "app/app/error.tsx": "fatia das telas de erro",
   "app/global-error.tsx": "fatia das telas de erro",

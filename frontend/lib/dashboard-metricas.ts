@@ -191,3 +191,28 @@ export function escalonamentoDasBarras(total: number): number {
   if (!Number.isFinite(total) || total <= 1) return 0
   return Math.min(PASSO_MAXIMO, JANELA_CONSTRUCAO / (total - 1))
 }
+
+/**
+ * Onde ancorar o rótulo do eixo horizontal.
+ *
+ * Centralizar no meio da faixa é o certo — menos nas pontas, onde o texto sai
+ * pela borda e o SVG corta sem avisar. Em português o primeiro rótulo das horas
+ * é "0h" e passava raspando; em inglês virou "12 AM", quase três vezes mais
+ * largo, e aparecia como "2 AM". Na ponta, então, o rótulo ENCOSTA na borda em
+ * vez de estourar: perde o alinhamento exato com a barra e ganha as letras.
+ *
+ * A meia-largura é estimada, não medida: medir de verdade pede
+ * `getComputedTextLength()` depois de pintar, e um rótulo que se move depois de
+ * aparecer é pior que um rótulo dois pixels fora do centro. O valor cobre o mais
+ * largo que existe hoje nos eixos ("12 AM", "09/17") a 10px.
+ */
+const MEIA_LARGURA_ROTULO = 16
+
+export function ancoraDoRotulo(
+  centro: number,
+  largura: number
+): { x: number; ancora: "start" | "middle" | "end" } {
+  if (centro < MEIA_LARGURA_ROTULO) return { x: 0, ancora: "start" }
+  if (centro > largura - MEIA_LARGURA_ROTULO) return { x: largura, ancora: "end" }
+  return { x: centro, ancora: "middle" }
+}

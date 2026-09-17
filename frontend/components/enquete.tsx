@@ -7,9 +7,11 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
   CHAVE_ENQUETE, adiado, comResposta, mensagemDaResposta, mostrada, proximaPergunta, saneiaEstado,
-  type EstadoEnquete, type Pergunta,
+  type EstadoEnquete, type IdPergunta,
 } from "@/lib/enquete"
 import { colunaFaltante, envioSemColuna, MAX_TENTATIVAS } from "@/lib/feedback"
+import { useDicionario } from "@/hooks/use-idioma"
+import { dicionario } from "@/lib/i18n"
 
 // A enquete de uma pergunta, no início. As regras puras (quais perguntas, quando
 // perguntar, quanto tempo calar) moram em lib/enquete.ts; aqui ficam a tela e o
@@ -36,10 +38,11 @@ const SEGUNDOS_DO_OBRIGADO = 12
 
 export function Enquete() {
   const [estado, setEstado] = useState<EstadoEnquete | null>(null)
-  const [pergunta, setPergunta] = useState<Pergunta | null>(null)
+  const [pergunta, setPergunta] = useState<IdPergunta | null>(null)
   const [respondida, setRespondida] = useState(false)
   const [sumiu, setSumiu] = useState(false)
   const semMovimento = useReducedMotion()
+  const t = useDicionario().inicio.enquete
 
   useEffect(() => {
     let vivo = true
@@ -68,16 +71,20 @@ export function Enquete() {
     createClient().auth.updateUser({ data: { [CHAVE_ENQUETE]: novo } }).catch(() => {})
   }
 
-  const responder = async (opcao: string) => {
+  const responder = async (indice: number) => {
     if (!pergunta || !estado) return
     setRespondida(true)
-    guardar(comResposta(estado, pergunta.id, Date.now()))
+    guardar(comResposta(estado, pergunta, Date.now()))
 
+    // Gravada SEMPRE em português, pela posição da opção: quem lê é o dono, no
+    // painel dele, e uma resposta em cada idioma embaralharia a leitura. Por
+    // isso o teste do dicionário exige as mesmas opções, na mesma ordem.
+    const registro = dicionario("pt").inicio.enquete.perguntas[pergunta]
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     let envio: Record<string, unknown> = {
       user_id: user?.id ?? null,
-      message: mensagemDaResposta(pergunta, opcao),
+      message: mensagemDaResposta(registro.texto, registro.opcoes[indice] ?? String(indice)),
       // A resposta entra como feedback comum: sem tabela nova, sem RLS nova, e
       // o painel do dono já a mostra junto com o resto.
       kind: "geral",
@@ -121,40 +128,40 @@ export function Enquete() {
     <AnimatePresence initial={false}>
       {!sumiu && (
       <motion.section
-        key={respondida ? "obrigado" : pergunta.id}
+        key={respondida ? "obrigado" : pergunta}
         initial={semMovimento ? { opacity: 0 } : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
         transition={transicao}
-        aria-label="Enquete rápida"
+        aria-label={t.rotulo}
         className="rounded-2xl border border-border/50 bg-card/60 p-4"
       >
         {respondida ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Check className="h-4 w-4 text-primary" />
-            Obrigado! Isso ajuda mais do que parece.
+            {t.obrigado}
           </p>
         ) : (
           <>
             <div className="mb-3 flex items-start gap-2">
               <MessageSquareQuote className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <p className="flex-1 text-sm font-medium leading-snug">{pergunta.texto}</p>
+              <p className="flex-1 text-sm font-medium leading-snug">{t.perguntas[pergunta].texto}</p>
               <button
                 type="button"
                 onClick={agoraNao}
-                title="Agora não"
+                title={t.agoraNao}
                 className="-mr-1 -mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <X className="h-4 w-4" />
-                <span className="sr-only">Agora não</span>
+                <span className="sr-only">{t.agoraNao}</span>
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {pergunta.opcoes.map((o) => (
+              {t.perguntas[pergunta].opcoes.map((o, indice) => (
                 <button
-                  key={o}
+                  key={indice}
                   type="button"
-                  onClick={() => responder(o)}
+                  onClick={() => responder(indice)}
                   className={cn(
                     "rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium",
                     "transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
