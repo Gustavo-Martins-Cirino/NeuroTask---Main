@@ -16,6 +16,7 @@ import { nomeDeExibicao } from "@/lib/nome-usuario"
 import { motion } from "framer-motion"
 import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Send, CalendarSync, CalendarClock, Share2 } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
+import { explicaFalha } from "@/lib/falha"
 import { generateTelegramCode, fetchTelegramLinks, unlinkTelegram, type TelegramLink } from "@/lib/telegram"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
 import { SeletorRegiao } from "@/components/seletor-regiao"
@@ -151,7 +152,10 @@ export default function SettingsPage() {
       toast(traducao.configuracoes.notificacoes.toastDesativadas)
     } else {
       const err = await enablePush()
-      if (err) toast.error(traducao.configuracoes.notificacoes.erroAtivar, { description: err })
+      if (err)
+        toast.error(traducao.configuracoes.notificacoes.erroAtivar, {
+          description: explicaFalha(err, traducao.configuracoes.notificacoes.erros),
+        })
       else {
         setPushOn(true)
         toast.success(traducao.configuracoes.notificacoes.toastAtivadas, {
@@ -256,10 +260,14 @@ export default function SettingsPage() {
     setRoutineSaving(true)
     const err = await saveRoutine(routine)
     setRoutineSaving(false)
-    if (!err) {
-      setRoutineSaved(true)
-      setTimeout(() => setRoutineSaved(false), 1800)
+    // Antes, salvar sem conseguir não dizia nada: o selo de "salvo" simplesmente
+    // não aparecia, e quem clicou ficava sem saber se o app tinha entendido.
+    if (err) {
+      toast.error(explicaFalha(err, traducao.configuracoes.rotina.erros))
+      return
     }
+    setRoutineSaved(true)
+    setTimeout(() => setRoutineSaved(false), 1800)
   }
 
   useEffect(() => {
@@ -475,7 +483,7 @@ export default function SettingsPage() {
                             : "border-border/50 text-muted-foreground hover:border-border"
                         )}
                       >
-                        {c.label}
+                        {traducao.configuracoes.rotina.categorias[c.value]}
                       </button>
                     ))}
                     <span className="ml-auto flex items-center gap-1">
@@ -524,7 +532,7 @@ export default function SettingsPage() {
                                 traducao.configuracoes.rotina.sugestaoNova(
                                   s.title,
                                   s.days,
-                                  ACTIVITY_CATEGORIES.find((c) => c.value === s.category)?.label.toLowerCase() ?? s.category,
+                                  traducao.configuracoes.rotina.categorias[s.category].toLowerCase(),
                                   s.minutes
                                 )
                               )

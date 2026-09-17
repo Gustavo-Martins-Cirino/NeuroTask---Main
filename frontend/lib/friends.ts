@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import { falhaPelaMensagem, type Falha as FalhaDe } from "@/lib/falha"
 import { faixasDoDia, fundir, type BlocoBruto, type FaixaOcupada } from "@/lib/faixas-ocupadas"
 
 // Apelidos históricos: friends-section e invite-dialog importam BusyRange daqui.
@@ -94,24 +95,11 @@ export type MotivoDeFalha =
   | "conviteInvalido"
   | "conviteInexistente"
 
-export interface Falha {
-  motivo: MotivoDeFalha | "desconhecido"
-  /** Só existe no `desconhecido`: a mensagem que o banco devolveu. */
-  cru?: string
-}
+export type Falha = FalhaDe<MotivoDeFalha>
 
-export type TextosDeFalha = Record<MotivoDeFalha, string> & { generico: string }
-
-export function explicaFalha(falha: Falha, textos: TextosDeFalha): string {
-  if (falha.motivo === "desconhecido") return falha.cru || textos.generico
-  return textos[falha.motivo]
-}
-
-/** A RPC devolve o motivo DENTRO da mensagem de erro do Postgres. */
-function motivoNaMensagem(msg: string, mapa: Record<string, MotivoDeFalha>): Falha {
-  const chave = Object.keys(mapa).find((k) => msg.includes(k))
-  return chave ? { motivo: mapa[chave] } : { motivo: "desconhecido", cru: msg }
-}
+// Re-exportado para quem mostra o erro não precisar saber que a forma é geral:
+// quem lida com Amigos importa tudo de Amigos.
+export { explicaFalha } from "@/lib/falha"
 
 export async function claimUsername(username: string, displayName: string | null): Promise<{ profile?: MyProfile; error?: Falha }> {
   const supabase = createClient()
@@ -185,7 +173,7 @@ const REQUEST_ERRORS: Record<string, MotivoDeFalha> = {
 export async function sendFriendRequest(toUserId: string): Promise<{ result?: "pending" | "accepted"; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("send_friend_request", { p_to: toUserId })
-  if (error) return { error: motivoNaMensagem(error.message, REQUEST_ERRORS) }
+  if (error) return { error: falhaPelaMensagem(error.message, REQUEST_ERRORS) }
   return { result: data as "pending" | "accepted" }
 }
 
@@ -224,7 +212,7 @@ function startOfDay(day?: string): Date {
 export async function fetchFriendBusyToday(friendId: string): Promise<{ ranges?: BusyRange[]; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("friend_schedule", { p_friend: friendId })
-  if (error) return { error: motivoNaMensagem(error.message, SCHEDULE_ERRORS) }
+  if (error) return { error: falhaPelaMensagem(error.message, SCHEDULE_ERRORS) }
   return { ranges: faixasDoDia((data ?? []) as ScheduleRow[], startOfDay()) }
 }
 
@@ -300,7 +288,7 @@ export async function suggestCommonFreeSlots(
 ): Promise<{ slots?: FreeSlot[]; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("friend_schedule", { p_friend: friendId })
-  if (error) return { error: motivoNaMensagem(error.message, SCHEDULE_ERRORS) }
+  if (error) return { error: falhaPelaMensagem(error.message, SCHEDULE_ERRORS) }
   const dayStart = startOfDay(day)
   const friendBusy = faixasDoDia((data ?? []) as ScheduleRow[], dayStart)
   const myBusy = await fetchMyBusyForDay(dayStart)
@@ -315,6 +303,6 @@ const OFFICE_ERRORS: Record<string, MotivoDeFalha> = {
 export async function fetchFriendOffice(friendId: string): Promise<{ office?: FriendOffice; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("friend_office", { p_friend: friendId })
-  if (error) return { error: motivoNaMensagem(error.message, OFFICE_ERRORS) }
+  if (error) return { error: falhaPelaMensagem(error.message, OFFICE_ERRORS) }
   return { office: data as FriendOffice }
 }

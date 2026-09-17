@@ -405,6 +405,15 @@ export interface Dicionario {
       regiaoAjuda: string
     }
     rotina: {
+      /** O nome de cada categoria de atividade — a cor mora em `lib/routine.ts`. */
+      categorias: {
+        preparo: string
+        deslocamento: string
+        refeicao: string
+        outro: string
+      }
+      /** Por que salvar a rotina não deu certo. */
+      erros: { precisaLogin: string; generico: string }
       titulo: string
       descricao: string
       sonoDesejado: string
@@ -487,6 +496,15 @@ export interface Dicionario {
     }
     compartilharAgenda: { titulo: string; descricao: string }
     notificacoes: {
+      /** Por que ativar não deu certo. `lib/push.ts` devolve o motivo como id. */
+      erros: {
+        semSuporte: string
+        permissaoNegada: string
+        semChave: string
+        inscricaoInvalida: string
+        precisaLogin: string
+        generico: string
+      }
       titulo: string
       descricao: string
       nesteDispositivo: string
@@ -1527,6 +1545,16 @@ export const pt: Dicionario = {
       regiaoAjuda: "Decide como as horas aparecem e em que idioma o app fala.",
     },
     rotina: {
+      categorias: {
+        preparo: "Preparo",
+        deslocamento: "Deslocamento",
+        refeicao: "Refeição",
+        outro: "Outro",
+      },
+      erros: {
+        precisaLogin: "Você precisa estar logado",
+        generico: "Não deu para salvar a rotina agora.",
+      },
       titulo: "Rotina",
       descricao: "Seus tempos pessoais — usados pelo planejamento e pelos avisos do calendário",
       sonoDesejado: "Sono desejado",
@@ -1601,6 +1629,15 @@ export const pt: Dicionario = {
       descricao: "Um link para quem precisa marcar horário com você — sem conta, e sem ver o que você faz",
     },
     notificacoes: {
+      erros: {
+        semSuporte:
+          "Este navegador não suporta notificações push. No iPhone, adicione o app à tela de início primeiro.",
+        permissaoNegada: "Permissão de notificações negada no navegador.",
+        semChave: "Chave de push não configurada no servidor.",
+        inscricaoInvalida: "Inscrição de push inválida.",
+        precisaLogin: "Você precisa estar logado.",
+        generico: "Falha ao ativar as notificações.",
+      },
       titulo: "Notificações",
       descricao: "Lembretes e check-ins mesmo com o app fechado",
       nesteDispositivo: "Notificações neste dispositivo",
@@ -2574,6 +2611,16 @@ export const en: Dicionario = {
       regiaoAjuda: "Sets how times are shown and which language the app speaks.",
     },
     rotina: {
+      categorias: {
+        preparo: "Getting ready",
+        deslocamento: "Commute",
+        refeicao: "Meal",
+        outro: "Other",
+      },
+      erros: {
+        precisaLogin: "You need to be signed in",
+        generico: "Couldn't save your routine right now.",
+      },
       titulo: "Routine",
       descricao: "Your personal timings — used by planning and by the calendar warnings",
       sonoDesejado: "Target sleep",
@@ -2648,6 +2695,15 @@ export const en: Dicionario = {
       descricao: "A link for whoever needs to book time with you — no account, and no view of what you do",
     },
     notificacoes: {
+      erros: {
+        semSuporte:
+          "This browser doesn't support push notifications. On iPhone, add the app to your home screen first.",
+        permissaoNegada: "Notifications were denied in the browser.",
+        semChave: "Push key isn't set up on the server.",
+        inscricaoInvalida: "Invalid push subscription.",
+        precisaLogin: "You need to be signed in.",
+        generico: "Couldn't turn notifications on.",
+      },
       titulo: "Notifications",
       descricao: "Reminders and check-ins even with the app closed",
       nesteDispositivo: "Notifications on this device",

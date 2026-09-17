@@ -1979,6 +1979,41 @@ vira ruído.
 > recebe escrito), `telegram-commands` (a ajuda do bot, que não sabe de região) e as duas strings
 > internas de `voice-conversation`.
 
+> **Fatia 6b — notificações push e rotina: feita (17/09).** Saiu daqui a forma genérica de "deu
+> errado" (`lib/falha.ts`): a 6a tinha escrito essa lógica dentro de `friends.ts`, e três módulos
+> já precisavam dela. Uma cópia por módulo diverge no dia em que alguém mexer numa delas — então
+> `Falha<M>`, `explicaFalha`, `falhaPelaMensagem` e `falhaDaExcecao` moram num lugar só, com
+> teste próprio.
+>
+> O `NoInfer` no primeiro parâmetro de `explicaFalha` não é enfeite: sem ele o TypeScript
+> escolhia o tipo do motivo pela CHAMADA, e um motivo que o dicionário não conhece passava
+> compilando. Com ele, quem manda é o dicionário.
+>
+> `lib/push.ts` passou a distinguir cinco motivos. `semChave` e `semSuporte` pareciam a mesma
+> coisa e não são para quem lê: um é o servidor que não foi configurado (e só eu conserto), o
+> outro é o aparelho da pessoa (e ela conserta, adicionando o app à tela de início no iPhone).
+>
+> **Um defeito apareceu no caminho: salvar a rotina falhava calado.** O `saveRoutine` já devolvia
+> a mensagem de erro, e a tela jogava fora — o selo de "salvo" simplesmente não aparecia, e quem
+> clicou ficava sem saber se o app tinha entendido. Agora há toast.
+>
+> As categorias de atividade (Preparo/Deslocamento/Refeição/Outro) perderam o `label` do módulo:
+> a cor continua em `lib/routine.ts`, o nome foi para o dicionário. Este é o caso que explica por
+> que a fatia 6 existe: o `{c.label}` estava no JSX, mas o texto chegava por VARIÁVEL, e o guarda
+> `texto-solto` só enxerga letra escrita ali. Guarda nenhum pega isso — o que pega é a regra de
+> `lib/` não falar idioma.
+>
+> Medido em build de produção a 390px, Configurações inteira nos dois idiomas. O erro de push é
+> de verdade: em Chrome headless a permissão nasce negada, então `enablePush` para no
+> `requestPermission()` e devolve `permissaoNegada`. O toast leu "Could not turn it on /
+> Notifications were denied in the browser." e "Não deu para ativar / Permissão de notificações
+> negada no navegador.", e as quatro categorias apareceram traduzidas. Nenhum erro de JS.
+>
+> **Uma limitação do inventário, para quem continuar:** a varredura que achou as 49 strings casa
+> por ACENTO. "Escolha um arquivo de imagem." (em `lib/foto-perfil.ts`) não tem nenhum e passou
+> despercebida — o número é piso, não total. Quem fechar a fatia 6 deve reler os módulos que
+> sobraram com o olho, não só com o script.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

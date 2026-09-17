@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import { falhaDaExcecao, type Falha } from "@/lib/falha"
 
 // Notificações push (funcionam com o app fechado).
 // Inscreve este dispositivo e salva a inscrição no Supabase; o servidor
@@ -28,16 +29,27 @@ export async function getPushStatus(): Promise<boolean> {
   }
 }
 
-// Retorna null em caso de sucesso; senão, a mensagem de erro
-export async function enablePush(): Promise<string | null> {
-  if (!pushSupported()) {
-    return "Este navegador não suporta notificações push. No iPhone, adicione o app à tela de início primeiro."
-  }
+/**
+ * Por que ativar não deu certo, como id — `null` quando deu.
+ *
+ * `semChave` e `semSuporte` não são a mesma coisa para quem lê: um é o servidor
+ * que não foi configurado (e só eu conserto), o outro é o aparelho da pessoa
+ * (e ela conserta, adicionando o app à tela de início no iPhone).
+ */
+export type MotivoDePush =
+  | "semSuporte"
+  | "permissaoNegada"
+  | "semChave"
+  | "inscricaoInvalida"
+  | "precisaLogin"
+
+export async function enablePush(): Promise<Falha<MotivoDePush> | null> {
+  if (!pushSupported()) return { motivo: "semSuporte" }
   const perm = await Notification.requestPermission()
-  if (perm !== "granted") return "Permissão de notificações negada no navegador."
+  if (perm !== "granted") return { motivo: "permissaoNegada" }
 
   const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-  if (!key) return "Chave de push não configurada no servidor."
+  if (!key) return { motivo: "semChave" }
 
   try {
     const reg = await navigator.serviceWorker.register("/sw.js")
@@ -50,11 +62,11 @@ export async function enablePush(): Promise<string | null> {
       }))
 
     const json = sub.toJSON()
-    if (!json.keys?.p256dh || !json.keys?.auth) return "Inscrição de push inválida."
+    if (!json.keys?.p256dh || !json.keys?.auth) return { motivo: "inscricaoInvalida" }
 
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return "Você precisa estar logado."
+    if (!user) return { motivo: "precisaLogin" }
 
     // O fuso vai junto: quem sabe onde este aparelho está é ele mesmo. O
     // servidor roda em UTC e os lembretes são hora de parede sem fuso, então
@@ -71,9 +83,9 @@ export async function enablePush(): Promise<string | null> {
       },
       { onConflict: "endpoint" }
     )
-    return error?.message ?? null
+    return error ? { motivo: "desconhecido", cru: error.message } : null
   } catch (e) {
-    return e instanceof Error ? e.message : "Falha ao ativar as notificações."
+    return falhaDaExcecao(e)
   }
 }
 

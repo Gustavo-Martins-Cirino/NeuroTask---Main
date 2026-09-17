@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import type { Falha } from "@/lib/falha"
 
 // Perfil de rotina — tempos pessoais do usuário (Fase 2 · copiloto).
 // Usado pelo planejamento retroativo e pelos avisos do calendário.
@@ -31,14 +32,16 @@ export async function fetchRoutine(): Promise<RoutineProfile> {
   }
 }
 
-export async function saveRoutine(profile: RoutineProfile): Promise<string | null> {
+export type MotivoDeRotina = "precisaLogin"
+
+export async function saveRoutine(profile: RoutineProfile): Promise<Falha<MotivoDeRotina> | null> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return "Você precisa estar logado"
+  if (!user) return { motivo: "precisaLogin" }
   const { error } = await supabase
     .from("routine_profile")
     .upsert({ user_id: user.id, ...profile, updated_at: new Date().toISOString() })
-  return error?.message ?? null
+  return error ? { motivo: "desconhecido", cru: error.message } : null
 }
 
 // ---- Atividades de rotina (biblioteca nomeada com duração) ----
@@ -52,11 +55,14 @@ export interface RoutineActivity {
   duration_minutes: number
 }
 
-export const ACTIVITY_CATEGORIES: { value: ActivityCategory; label: string; color: string }[] = [
-  { value: "preparo", label: "Preparo", color: "#8b5cf6" },
-  { value: "deslocamento", label: "Deslocamento", color: "#06b6d4" },
-  { value: "refeicao", label: "Refeição", color: "#f97316" },
-  { value: "outro", label: "Outro", color: "#6366f1" },
+// Sem `label`: o nome de cada categoria mora no dicionário
+// (`configuracoes.rotina.categorias`), a cor mora aqui. A ordem é a que aparece
+// na fileira de botões.
+export const ACTIVITY_CATEGORIES: { value: ActivityCategory; color: string }[] = [
+  { value: "preparo", color: "#8b5cf6" },
+  { value: "deslocamento", color: "#06b6d4" },
+  { value: "refeicao", color: "#f97316" },
+  { value: "outro", color: "#6366f1" },
 ]
 
 export function categoryColor(category: string): string {
