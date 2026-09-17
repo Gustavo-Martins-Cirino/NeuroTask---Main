@@ -197,9 +197,12 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   uma com o motivo: `errors-panel` e `app/admin` (painel do DONO, uma pessoa só abre e ela fala
   português) e `app/global-error.tsx` (a tela de último recurso — quanto menos ela importar,
   maior a chance de aparecer quando o layout raiz quebra).
-  **O que ainda falta são as frases escritas dentro de `lib/`** — `friends`, `push`, `routine`,
-  `invites`, `ics`, `avatar`, `foto-perfil` —, que a varredura do JSX não enxerga e que o ROADMAP
-  lista. O seletor continua dizendo **"região e formato"**,
+  As frases que moravam dentro de `lib/` (`friends`, `invites`, `push`, `routine`, `ics`,
+  `avatar`, `foto-perfil`, `office-snapshot`) foram na última fatia: esses módulos **devolvem
+  motivo**, não frase — `Falha<M>` e `explicaFalha` em `lib/falha.ts` —, e quem mostra escolhe o
+  texto no dicionário. Duas armadilhas ficaram anotadas no ROADMAP: o guarda **não** vê texto que
+  chega por variável (`{c.label}`), e o inventário do que faltava foi feito por varredura de
+  acento, então era piso e não total. O seletor continua dizendo **"região e formato"**,
   nunca "idioma" — trocar o rótulo pediria desacoplar região de idioma (hoje um implica o
   outro), o que é redesenho de dado e ficou registrado no ROADMAP como decisão em aberto.
   **O que a própria IA escreve não entra nisso**: as respostas do modelo saem sempre em

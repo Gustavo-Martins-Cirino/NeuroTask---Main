@@ -2089,13 +2089,20 @@ vira ruído.
 > "Escolha um arquivo de imagem.", "Conseguiu fazer?", "Reagendar" nem "Lembrete · NeuroTask" —
 > todas achadas com o olho, lendo os módulos que ela apontava. O número 49 sempre foi piso.
 
-- [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
-      que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
-      login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do
-      `locale-fixo`: varre o AST atrás de texto com letra no JSX e nos atributos visíveis, com
-      as exceções nomeadas e o motivo de cada uma. Para o login há uma escolha a registrar:
-      quem ainda não entrou não tem região — vale a preferência guardada neste navegador, se
-      houver, e senão o idioma do navegador (a regra que a agenda pública já usa).
+- [x] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda. Feito (17/09), em
+      seis fatias.** A ordem foi o caminho até a escolha do idioma: moldura global → Modo Foco →
+      login e cadastro → o que sobrava dentro das telas → telas de erro → o texto escrito dentro
+      de `lib/`. O guarda (`lib/texto-solto.test.ts`) é irmão do `locale-fixo`: varre o AST atrás
+      de texto com letra no JSX e nos atributos visíveis, com as exceções nomeadas e o motivo de
+      cada uma, e **sua lista de pendentes está vazia**. As notas de cada fatia estão logo acima,
+      na ordem em que aconteceram.
+
+      Duas coisas ficaram registradas e valem para quem continuar: (1) o guarda vê letra escrita
+      no JSX, e **não** vê texto que chega por variável — o `{c.label}` das categorias de rotina
+      passava por ele; o que pega isso é a regra de `lib/` não falar idioma, não um teste.
+      (2) O inventário do que faltava foi feito por varredura de ACENTO, e por isso era piso, e
+      não total: "Escolha um arquivo de imagem.", "Conseguiu fazer?" e "Reagendar" só apareceram
+      lendo os módulos.
 
 #### Os arquivos de código da pasta
 
