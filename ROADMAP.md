@@ -208,6 +208,29 @@ repositório:
 > (`full_name || name`), e por ali editar o nome nas Configurações não surtia efeito — a tela
 > gravava `name` e o cabeçalho continuava lendo `full_name`.
 
+- [ ] **A landing pública não aparece para ninguém em produção — e é cache de borda. (Achado
+      17/09, medido no deploy, não no código.)** Pedir `https://neuro-task-main.vercel.app/` sem
+      cookie nenhum responde **307 para `/app`**, que responde 307 para `/login`. Quem chega pela
+      primeira vez nunca vê a página que existe para convencê-lo — vê um formulário de entrar.
+
+      O código do proxy está **certo**: `/` só vai para `/app` quando `user` existe
+      (`lib/supabase/middleware.ts`), e `/` está de fora da lista que manda deslogado para o
+      login. O que está errado é a resposta ser guardada. Os cabeçalhos do 307:
+      `x-vercel-cache: HIT`, `age: 58`, `cache-control: public, max-age=0, must-revalidate` e um
+      `vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch` —
+      **sem `cookie`**. Ou seja: a decisão depende do cookie de sessão, e a resposta é cacheada
+      sem variar por ele. O 307 de uma visita logada vira o 307 de todo mundo. Medido quatro
+      vezes, inclusive com query aleatória para furar o cache: sempre HIT, sempre 307.
+
+      O conserto tem duas formas, e a escolha é de projeto: (a) o proxy marcar a resposta de
+      redirecionamento como `private, no-store` para ela nunca ser guardada; ou (b) o proxy
+      parar de redirecionar `/` e deixar a landing decidir — ela já é pública e já sabe se há
+      sessão. A (b) é mais barata de raciocinar, porque tira uma resposta que varia por cookie
+      de um lugar que cacheia por caminho.
+
+      **Não mexi**: é comportamento de produção, envolve auth e cache, e eu não consigo testar o
+      lado logado daqui sem uma conta. Fica medido e escrito para a decisão ser sua.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura
