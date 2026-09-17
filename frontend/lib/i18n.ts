@@ -394,6 +394,23 @@ export interface Dicionario {
       salvo: string
       /** O retrato: foto enviada / bonequinho do Escritório / iniciais. */
       foto: {
+        /** O arquivo escolhido, recusado antes de qualquer envio. */
+        arquivoNaoEhImagem: string
+        arquivoGrande: (mb: number) => string
+        /**
+         * Por que o envio não deu certo. Os quatro motivos do bucket dizem para
+         * rodar o SQL de propósito: é o que conserta, e quem lê isso sou eu.
+         */
+        erros: {
+          precisaLogin: string
+          navegadorNaoPreparou: string
+          naoConverteu: string
+          bucketAusente: string
+          semPermissao: string
+          grandeDemaisNoBucket: string
+          formatoRecusado: string
+          generico: string
+        }
         retrato: string
         usandoFoto: string
         usandoBoneco: string
@@ -1551,6 +1568,22 @@ export const pt: Dicionario = {
       salvar: "Salvar",
       salvo: "Salvo",
       foto: {
+        arquivoNaoEhImagem: "Escolha um arquivo de imagem.",
+        arquivoGrande: (mb) => `A imagem passa de ${mb} MB.`,
+        erros: {
+          precisaLogin: "Faça login novamente para trocar a foto.",
+          navegadorNaoPreparou: "Este navegador não conseguiu preparar a imagem.",
+          naoConverteu: "Não foi possível converter a imagem.",
+          bucketAusente:
+            "O espaço das fotos ainda não existe no Supabase. Rode supabase/foto_perfil.sql no SQL Editor — ele cria o bucket e libera o acesso.",
+          semPermissao:
+            "Sem permissão para gravar a foto. Rode supabase/foto_perfil.sql no Supabase — ele cria as políticas de acesso ao bucket.",
+          grandeDemaisNoBucket:
+            "A imagem ficou grande demais para o bucket. Confira o file_size_limit em supabase/foto_perfil.sql.",
+          formatoRecusado:
+            "O formato da imagem não é aceito pelo bucket. Rode supabase/foto_perfil.sql, que permite JPEG.",
+          generico: "Não deu para enviar a foto agora. Tente de novo em instantes.",
+        },
         retrato: "Seu retrato",
         usandoFoto: "Usando sua foto",
         usandoBoneco: "Usando seu personagem do Escritório",
@@ -2630,6 +2663,22 @@ export const en: Dicionario = {
       salvar: "Save",
       salvo: "Saved",
       foto: {
+        arquivoNaoEhImagem: "Pick an image file.",
+        arquivoGrande: (mb) => `The image is over ${mb} MB.`,
+        erros: {
+          precisaLogin: "Sign in again to change your photo.",
+          navegadorNaoPreparou: "This browser couldn't prepare the image.",
+          naoConverteu: "The image couldn't be converted.",
+          bucketAusente:
+            "The photo storage doesn't exist in Supabase yet. Run supabase/foto_perfil.sql in the SQL Editor — it creates the bucket and opens access.",
+          semPermissao:
+            "No permission to save the photo. Run supabase/foto_perfil.sql in Supabase — it creates the bucket access policies.",
+          grandeDemaisNoBucket:
+            "The image ended up too large for the bucket. Check file_size_limit in supabase/foto_perfil.sql.",
+          formatoRecusado:
+            "The bucket doesn't accept this image format. Run supabase/foto_perfil.sql, which allows JPEG.",
+          generico: "Couldn't upload the photo right now. Try again in a moment.",
+        },
         retrato: "Your portrait",
         usandoFoto: "Using your photo",
         usandoBoneco: "Using your Office character",

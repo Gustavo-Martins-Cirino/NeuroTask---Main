@@ -3,7 +3,7 @@ import {
   chaveDoDia, concluidasPorDia, constanciaNaSemana, porHoraDoDia,
   diaMaisConstante, horaMaisProdutiva, rotuloDeHora, totalNoPeriodo,
   sentidoDaTroca, escalonamentoDasBarras, JANELA_CONSTRUCAO, ancoraDoRotulo,
-  DIAS_DA_SEMANA,
+  DIAS_NA_SEMANA,
 } from "./dashboard-metricas"
 
 // Todas as datas vêm do construtor LOCAL de propósito: é o que faz o teste dar o
@@ -58,16 +58,19 @@ describe("concluidasPorDia", () => {
     ])
   })
 
-  it("o rótulo é dd/mm", () => {
-    expect(concluidasPorDia([], em(2026, 1, 5), 1)[0].rotulo).toBe("05/01")
+  // A data escrita saiu daqui: quem a monta é `rotuloDoDia`, que recebe o
+  // locale — em inglês "05/01" lê 1 de maio. O módulo guarda a CHAVE.
+  it("a chave do dia é ano-mês-dia, estável em qualquer idioma", () => {
+    expect(concluidasPorDia([], em(2026, 1, 5), 1)[0].chave).toBe("2026-01-05")
   })
 })
 
 describe("constanciaNaSemana", () => {
   it("a semana começa na segunda", () => {
-    expect(DIAS_DA_SEMANA[0]).toBe("Seg")
-    expect(DIAS_DA_SEMANA[6]).toBe("Dom")
-    expect(constanciaNaSemana([], SEGUNDA).map((p) => p.rotulo)).toEqual([...DIAS_DA_SEMANA])
+    // O nome do dia vem do dicionário pelo `indice`; aqui só a ORDEM importa —
+    // 0 é segunda, 6 é domingo, e é isso que o dicionário assume.
+    expect(constanciaNaSemana([], SEGUNDA).map((p) => p.indice)).toEqual([0, 1, 2, 3, 4, 5, 6])
+    expect(DIAS_NA_SEMANA).toBe(7)
   })
 
   it("conta em quantas segundas houve algo, não quantas tarefas", () => {
@@ -136,7 +139,7 @@ describe("as manchetes", () => {
       em(2026, 8, 17),                                   // uma segunda
     ]
     const melhor = diaMaisConstante(constanciaNaSemana(datas, SEGUNDA, 4))
-    expect(melhor?.rotulo).toBe("Sex")
+    expect(melhor?.indice).toBe(4) // 0 = segunda, então 4 = sexta
     expect(melhor?.diasComAlgo).toBe(3)
   })
 

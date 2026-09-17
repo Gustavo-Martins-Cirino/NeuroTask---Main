@@ -10,7 +10,8 @@ import {
   enviarFotoPerfil, removerFotoPerfil, fetchRetrato, salvarAvatarModo,
   RETRATO_UPDATED_EVENT, type Retrato,
 } from "@/lib/avatar"
-import { erroDoArquivo } from "@/lib/foto-perfil"
+import { problemaDoArquivo, FalhaDaFoto, TAMANHO_MAXIMO_MB } from "@/lib/foto-perfil"
+import { explicaFalha } from "@/lib/falha"
 import { parseAvatarModo, type AvatarModo } from "@/lib/avatar-modo"
 import { useDicionario } from "@/hooks/use-idioma"
 
@@ -94,9 +95,9 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
 
   const enviar = async (arquivo: File | undefined) => {
     if (!arquivo) return
-    const problema = erroDoArquivo(arquivo)
+    const problema = problemaDoArquivo(arquivo)
     if (problema) {
-      toast.error(problema)
+      toast.error(problema === "grandeDemais" ? t.arquivoGrande(TAMANHO_MAXIMO_MB) : t.arquivoNaoEhImagem)
       return
     }
     setOcupado("enviando")
@@ -109,7 +110,7 @@ export function FotoPerfilCampo({ nome }: { nome: string | null | undefined }) {
       setAberto(false)
       toast.success(t.fotoAtualizada)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t.erroEnviarFoto)
+      toast.error(e instanceof FalhaDaFoto ? explicaFalha(e.falha, t.erros) : t.erroEnviarFoto)
     } finally {
       setOcupado(null)
       // Sem isto, escolher o MESMO arquivo de novo (depois de um erro) não

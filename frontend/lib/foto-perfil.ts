@@ -1,3 +1,5 @@
+import type { Falha } from "@/lib/falha"
+
 // As contas da foto de perfil: o recorte, o que se aceita e onde o arquivo mora.
 // Puro de propósito — o envio em si (canvas, Storage, user_metadata) fica em
 // lib/avatar.ts, junto do resto do I/O do retrato. Mesma divisão de
@@ -47,31 +49,63 @@ export interface ErroDeUpload {
   error?: string
 }
 
-export function explicaErroUpload(err: ErroDeUpload | null | undefined): string {
+/**
+ * Por que a foto não subiu, como id.
+ *
+ * Os três primeiros são do lado de cá (o navegador de quem usa); os quatro
+ * seguintes são do bucket, e quase sempre querem dizer a mesma coisa: o
+ * `foto_perfil.sql` nunca foi rodado. Essa distinção é a única que interessa a
+ * quem lê o aviso — um ela resolve, o outro sou eu que resolvo.
+ */
+export type MotivoDaFoto =
+  | "precisaLogin"
+  | "navegadorNaoPreparou"
+  | "naoConverteu"
+  | "bucketAusente"
+  | "semPermissao"
+  | "grandeDemaisNoBucket"
+  | "formatoRecusado"
+
+export function motivoDoUpload(err: ErroDeUpload | null | undefined): Falha<MotivoDaFoto> {
   const texto = `${err?.message ?? ""} ${err?.error ?? ""}`.toLowerCase()
   const status = String(err?.statusCode ?? err?.status ?? "")
 
-  if (texto.includes("bucket")) {
-    return "O espaço das fotos ainda não existe no Supabase. Rode supabase/foto_perfil.sql no SQL Editor — ele cria o bucket e libera o acesso."
-  }
+  if (texto.includes("bucket")) return { motivo: "bucketAusente" }
   if (texto.includes("row-level security") || texto.includes("violates") || texto.includes("unauthorized") || status === "403") {
-    return "Sem permissão para gravar a foto. Rode supabase/foto_perfil.sql no Supabase — ele cria as políticas de acesso ao bucket."
+    return { motivo: "semPermissao" }
   }
   if (texto.includes("exceeded") || texto.includes("maximum allowed size") || texto.includes("too large") || status === "413") {
-    return "A imagem ficou grande demais para o bucket. Confira o file_size_limit em supabase/foto_perfil.sql."
+    return { motivo: "grandeDemaisNoBucket" }
   }
   if (texto.includes("mime") || texto.includes("not allowed") || texto.includes("invalid_mime")) {
-    return "O formato da imagem não é aceito pelo bucket. Rode supabase/foto_perfil.sql, que permite JPEG."
+    return { motivo: "formatoRecusado" }
   }
-  return err?.message || "Não deu para enviar a foto agora. Tente de novo em instantes."
+  return { motivo: "desconhecido", cru: err?.message }
 }
 
-/** O que o arquivo escolhido tem de errado, em português, ou `null` se está bom. */
-export function erroDoArquivo(arquivo: { type: string; size: number }): string | null {
-  if (!arquivo.type.startsWith("image/")) return "Escolha um arquivo de imagem."
-  if (arquivo.size > TAMANHO_MAXIMO_BYTES) {
-    return `A imagem passa de ${Math.round(TAMANHO_MAXIMO_BYTES / 1024 / 1024)} MB.`
+/**
+ * A exceção que o envio lança carregando o motivo.
+ *
+ * Continua sendo `Error` porque o envio é uma função que já lançava e a tela já
+ * tinha `try/catch` em volta — trocar isso por um retorno mudaria o fluxo de
+ * quem chama sem ganhar nada.
+ */
+export class FalhaDaFoto extends Error {
+  constructor(readonly falha: Falha<MotivoDaFoto>) {
+    super(falha.motivo)
+    this.name = "FalhaDaFoto"
   }
+}
+
+/** O limite em MB, para o aviso poder dizer o número sem recalculá-lo. */
+export const TAMANHO_MAXIMO_MB = Math.round(TAMANHO_MAXIMO_BYTES / 1024 / 1024)
+
+/** O que o arquivo escolhido tem de errado, ou `null` se está bom. */
+export type ProblemaDoArquivo = "naoEhImagem" | "grandeDemais"
+
+export function problemaDoArquivo(arquivo: { type: string; size: number }): ProblemaDoArquivo | null {
+  if (!arquivo.type.startsWith("image/")) return "naoEhImagem"
+  if (arquivo.size > TAMANHO_MAXIMO_BYTES) return "grandeDemais"
   return null
 }
 

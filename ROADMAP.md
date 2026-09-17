@@ -2044,6 +2044,51 @@ vira ruído.
 > `"X" terminou` não têm acento nenhum. O mesmo vale para o título da notificação do sistema
 > ("Lembrete · NeuroTask"). Quem fechar a fatia 6 lê os módulos, não só o relatório.
 
+> **Fatia 6d — a foto de perfil, e o fim da fatia 6: feita (17/09).** `lib/foto-perfil.ts`
+> devolve motivo (`motivoDoUpload`, `problemaDoArquivo`) e `lib/avatar.ts` lança `FalhaDaFoto`
+> carregando esse motivo. Continua sendo uma exceção, e não um retorno, porque o envio já lançava
+> e a tela já tinha `try/catch` em volta: trocar o fluxo não ganharia nada.
+>
+> Os quatro motivos do bucket seguem dizendo "rode o `foto_perfil.sql`" nos dois idiomas, e há
+> teste cobrando isso. Não é descuido: quem lê esse aviso sou eu, e o nome do arquivo é o mesmo
+> em qualquer língua. O limite de tamanho saiu da frase e virou `TAMANHO_MAXIMO_MB`, que o
+> dicionário recebe — antes o "12 MB" estava escrito na frase, e mudar a constante deixaria o
+> aviso mentindo.
+>
+> **Dois rótulos mortos foram embora de `lib/dashboard-metricas.ts`.** Desde a 4b a tela lê os
+> nomes dos dias e as datas do dicionário, e os `rotulo` que o módulo montava ("Seg", "17/09")
+> viraram texto em português que ninguém mostrava. `DIAS_DA_SEMANA` virou `DIAS_NA_SEMANA = 7`:
+> sobrou a contagem, que é o que o módulo realmente sabe. Nome escrito num módulo puro é convite
+> para alguém voltar a mostrá-lo — e "17/09" lido em inglês é 9 de setembro, o defeito que a 4b
+> consertou.
+>
+> Medido a 390px nos dois idiomas, por um caminho que **não toca a rede**: escolher um arquivo que
+> não é imagem faz `problemaDoArquivo` devolver `naoEhImagem` antes de qualquer envio. O aviso leu
+> "Pick an image file." e "Escolha um arquivo de imagem." — e essa é, por acaso, exatamente a
+> frase que a varredura por acento nunca tinha achado. "Seus números" foi remedido depois da
+> limpeza dos rótulos: as três abas, as duas manchetes e os dois formatos de data, intactos.
+>
+> ---
+>
+> **A fatia 6 fecha aqui, e o que sobrou não é interface.** Das 49 strings, as que restam são,
+> nomeadamente:
+>
+> - `lib/ia-agora.ts` e `lib/backward-plan.ts` — o que a Neuro IA **recebe** escrito (a data por
+>   extenso, os nomes padrão do plano reverso) e as notas que ela lê. O modelo responde em
+>   português porque o system prompt é português; traduzir só a entrada deixaria a conversa
+>   bilíngue pela metade. Entra no item da IA, abaixo.
+> - `components/voice-conversation.tsx` — `"tts indisponível"` e `"erro de áudio"` são mensagens de
+>   exceção interna, capturadas, que ninguém lê. E o botão "No" envia a palavra `"não"` para a IA:
+>   está certo hoje (ela fala português), e vira defeito no dia em que ela falar os dois — mais um
+>   fio do mesmo item.
+> - `lib/telegram-commands.ts` — a ajuda do bot. O Telegram não conta de onde a mensagem vem, e o
+>   vínculo guarda o fuso, não o idioma. Dar idioma ao bot é decidir onde essa preferência mora,
+>   o que é assunto próprio.
+>
+> **E a lição do inventário, para não se perder:** a varredura casa por ACENTO. Ela não achou
+> "Escolha um arquivo de imagem.", "Conseguiu fazer?", "Reagendar" nem "Lembrete · NeuroTask" —
+> todas achadas com o olho, lendo os módulos que ela apontava. O número 49 sempre foi piso.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

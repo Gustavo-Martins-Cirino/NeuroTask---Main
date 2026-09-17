@@ -1,12 +1,14 @@
 import { describe, it, expect } from "vitest"
 import {
   recorteQuadrado,
-  erroDoArquivo,
+  problemaDoArquivo,
   caminhoDaFoto,
   urlComCarimbo,
-  explicaErroUpload,
+  motivoDoUpload,
   TAMANHO_MAXIMO_BYTES,
+  TAMANHO_MAXIMO_MB,
 } from "./foto-perfil"
+import { pt, en } from "./i18n"
 
 describe("recorteQuadrado", () => {
   it("imagem já quadrada não é cortada", () => {
@@ -44,24 +46,26 @@ describe("recorteQuadrado", () => {
   })
 })
 
-describe("erroDoArquivo", () => {
+describe("problemaDoArquivo", () => {
   it("aceita imagem dentro do limite", () => {
-    expect(erroDoArquivo({ type: "image/png", size: 900_000 })).toBeNull()
-    expect(erroDoArquivo({ type: "image/heic", size: 3_000_000 })).toBeNull()
+    expect(problemaDoArquivo({ type: "image/png", size: 900_000 })).toBeNull()
+    expect(problemaDoArquivo({ type: "image/heic", size: 3_000_000 })).toBeNull()
   })
 
   it("recusa o que não é imagem", () => {
-    expect(erroDoArquivo({ type: "application/pdf", size: 1000 })).toMatch(/imagem/i)
-    expect(erroDoArquivo({ type: "video/mp4", size: 1000 })).toMatch(/imagem/i)
+    expect(problemaDoArquivo({ type: "application/pdf", size: 1000 })).toBe("naoEhImagem")
+    expect(problemaDoArquivo({ type: "video/mp4", size: 1000 })).toBe("naoEhImagem")
   })
 
-  it("recusa imagem grande demais, e diz o limite em MB", () => {
-    const erro = erroDoArquivo({ type: "image/jpeg", size: TAMANHO_MAXIMO_BYTES + 1 })
-    expect(erro).toMatch(/12 MB/)
+  // O limite em MB saiu daqui: o módulo diz QUE passou do limite, o dicionário
+  // diz de quanto ele é (e o número vem de `TAMANHO_MAXIMO_MB`, logo abaixo).
+  it("recusa imagem grande demais", () => {
+    expect(problemaDoArquivo({ type: "image/jpeg", size: TAMANHO_MAXIMO_BYTES + 1 })).toBe("grandeDemais")
+    expect(problemaDoArquivo({ type: "image/jpeg", size: TAMANHO_MAXIMO_BYTES })).toBeNull()
   })
 
   it("o limite em si passa — o erro é passar dele, não alcançá-lo", () => {
-    expect(erroDoArquivo({ type: "image/jpeg", size: TAMANHO_MAXIMO_BYTES })).toBeNull()
+    expect(problemaDoArquivo({ type: "image/jpeg", size: TAMANHO_MAXIMO_BYTES })).toBeNull()
   })
 })
 
@@ -76,38 +80,64 @@ describe("caminhoDaFoto", () => {
   })
 })
 
-describe("explicaErroUpload", () => {
-  it("bucket ausente é o caso mais comum: manda rodar o SQL", () => {
-    const msg = explicaErroUpload({ message: "Bucket not found", statusCode: "404" })
-    expect(msg).toMatch(/foto_perfil\.sql/)
-    expect(msg).not.toMatch(/bucket not found/i)
+describe("motivoDoUpload", () => {
+  it("bucket ausente é o caso mais comum", () => {
+    expect(motivoDoUpload({ message: "Bucket not found", statusCode: "404" })).toEqual({ motivo: "bucketAusente" })
   })
 
-  it("falta de política (RLS/403) também aponta o SQL", () => {
-    expect(explicaErroUpload({ message: "new row violates row-level security policy" }))
-      .toMatch(/foto_perfil\.sql/)
-    expect(explicaErroUpload({ message: "Unauthorized", status: 403 }))
-      .toMatch(/foto_perfil\.sql/)
+  it("falta de política (RLS/403) tem motivo próprio", () => {
+    expect(motivoDoUpload({ message: "new row violates row-level security policy" })).toEqual({
+      motivo: "semPermissao",
+    })
+    expect(motivoDoUpload({ message: "Unauthorized", status: 403 })).toEqual({ motivo: "semPermissao" })
   })
 
-  it("arquivo grande demais fala do limite do bucket", () => {
-    expect(explicaErroUpload({ message: "The object exceeded the maximum allowed size" }))
-      .toMatch(/grande demais/)
+  it("arquivo grande demais e mime recusado se separam", () => {
+    expect(motivoDoUpload({ message: "The object exceeded the maximum allowed size" })).toEqual({
+      motivo: "grandeDemaisNoBucket",
+    })
+    expect(motivoDoUpload({ message: "mime type image/png is not allowed" })).toEqual({ motivo: "formatoRecusado" })
   })
 
-  it("mime recusado explica o formato", () => {
-    expect(explicaErroUpload({ message: "mime type image/png is not allowed" }))
-      .toMatch(/formato/)
-  })
-
+  // A mensagem crua do Storage é feia e em inglês, mas diz o que houve: ela
+  // sobrevive em `cru` e é o que a tela mostra quando não há motivo conhecido.
   it("erro desconhecido preserva a mensagem original", () => {
-    expect(explicaErroUpload({ message: "algo estranho aconteceu" }))
-      .toBe("algo estranho aconteceu")
+    expect(motivoDoUpload({ message: "algo estranho aconteceu" })).toEqual({
+      motivo: "desconhecido",
+      cru: "algo estranho aconteceu",
+    })
   })
 
-  it("sem mensagem nenhuma, cai num texto genérico", () => {
-    expect(explicaErroUpload(null)).toMatch(/tente de novo/i)
-    expect(explicaErroUpload({})).toMatch(/tente de novo/i)
+  it("sem mensagem nenhuma, sobra só o desconhecido", () => {
+    expect(motivoDoUpload(null)).toEqual({ motivo: "desconhecido", cru: undefined })
+    expect(motivoDoUpload({})).toEqual({ motivo: "desconhecido", cru: undefined })
+  })
+})
+
+describe("os avisos da foto, nos dois idiomas", () => {
+  it("o limite em MB vem do módulo, não escrito na frase", () => {
+    expect(pt.configuracoes.perfil.foto.arquivoGrande(TAMANHO_MAXIMO_MB)).toContain(String(TAMANHO_MAXIMO_MB))
+    expect(en.configuracoes.perfil.foto.arquivoGrande(TAMANHO_MAXIMO_MB)).toContain(String(TAMANHO_MAXIMO_MB))
+    expect(TAMANHO_MAXIMO_MB).toBe(Math.round(TAMANHO_MAXIMO_BYTES / 1024 / 1024))
+  })
+
+  // Os quatro motivos do bucket dizem o que fazer, e o que fazer é rodar o SQL.
+  // Quem lê isso sou eu — em qualquer idioma, o nome do arquivo é o mesmo.
+  it("os motivos do bucket continuam apontando o SQL nos dois idiomas", () => {
+    for (const d of [pt, en]) {
+      const e = d.configuracoes.perfil.foto.erros
+      expect(e.bucketAusente).toContain("foto_perfil.sql")
+      expect(e.semPermissao).toContain("foto_perfil.sql")
+      expect(e.grandeDemaisNoBucket).toContain("foto_perfil.sql")
+      expect(e.formatoRecusado).toContain("foto_perfil.sql")
+    }
+  })
+
+  it("cada motivo se diz diferente em cada idioma", () => {
+    const motivos = Object.keys(pt.configuracoes.perfil.foto.erros) as (keyof typeof pt.configuracoes.perfil.foto.erros)[]
+    for (const m of motivos) {
+      expect(en.configuracoes.perfil.foto.erros[m], m).not.toBe(pt.configuracoes.perfil.foto.erros[m])
+    }
   })
 })
 

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/client"
 import { type AvatarModo } from "@/lib/avatar-modo"
 import { acessoriosEquipados, type AvatarAccessories } from "@/lib/avatar-accessories"
 import {
-  recorteQuadrado, caminhoDaFoto, urlComCarimbo, explicaErroUpload, LADO_FOTO, QUALIDADE_JPEG,
+  recorteQuadrado, caminhoDaFoto, urlComCarimbo, motivoDoUpload, FalhaDaFoto, LADO_FOTO, QUALIDADE_JPEG,
 } from "@/lib/foto-perfil"
 
 // Avatar editável do Escritório (paper-doll 2D). A configuração mora em
@@ -131,13 +131,13 @@ async function paraJpegQuadrado(arquivo: File): Promise<Blob> {
     canvas.width = LADO_FOTO
     canvas.height = LADO_FOTO
     const ctx = canvas.getContext("2d")
-    if (!ctx) throw new Error("Este navegador não conseguiu preparar a imagem.")
+    if (!ctx) throw new FalhaDaFoto({ motivo: "navegadorNaoPreparou" })
     ctx.drawImage(bitmap, sx, sy, lado, lado, 0, 0, LADO_FOTO, LADO_FOTO)
 
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", QUALIDADE_JPEG)
     )
-    if (!blob) throw new Error("Não foi possível converter a imagem.")
+    if (!blob) throw new FalhaDaFoto({ motivo: "naoConverteu" })
     return blob
   } finally {
     // Sem isto a imagem decodificada fica na memória até o coletor passar — e
@@ -150,7 +150,7 @@ async function paraJpegQuadrado(arquivo: File): Promise<Blob> {
 export async function enviarFotoPerfil(arquivo: File): Promise<string> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Faça login novamente para trocar a foto.")
+  if (!user) throw new FalhaDaFoto({ motivo: "precisaLogin" })
 
   const jpeg = await paraJpegQuadrado(arquivo)
   const caminho = caminhoDaFoto(user.id)
@@ -162,7 +162,7 @@ export async function enviarFotoPerfil(arquivo: File): Promise<string> {
     // O original em inglês fica no console para depurar; a pessoa recebe a
     // versão que diz o que fazer (quase sempre: rodar o foto_perfil.sql).
     console.error("Falha ao subir a foto de perfil:", erroUpload)
-    throw new Error(explicaErroUpload(erroUpload))
+    throw new FalhaDaFoto(motivoDoUpload(erroUpload))
   }
 
   const { data } = supabase.storage.from(BUCKET_FOTOS).getPublicUrl(caminho)

@@ -16,9 +16,16 @@
 // jogaria metade das noites para o dia seguinte. Como os testes constroem as
 // datas com o construtor local, eles dão o mesmo resultado em qualquer máquina.
 
-/** Segunda primeiro: a pergunta é sobre a semana de trabalho, e domingo no meio
- *  da fileira quebraria a leitura de "onde eu sumo". */
-export const DIAS_DA_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"] as const
+/**
+ * Segunda primeiro: a pergunta é sobre a semana de trabalho, e domingo no meio
+ * da fileira quebraria a leitura de "onde eu sumo". O `indice` de cada ponto
+ * segue esta ordem, e é por ele que o dicionário acha o nome do dia.
+ *
+ * Aqui mora só a CONTAGEM. Até a tradução isto era uma lista de nomes escritos
+ * ("Seg", "Ter", ...) que o módulo carregava e ninguém mais mostrava — e nome
+ * escrito num módulo puro é convite para alguém voltar a mostrá-lo.
+ */
+export const DIAS_NA_SEMANA = 7
 
 /** getDay() dá 0=domingo; aqui 0=segunda. */
 function indiceSemana(d: Date): number {
@@ -40,7 +47,6 @@ export function chaveDoDia(d: Date): string {
 export interface PontoDia {
   chave: string
   /** "17/08" — o eixo só mostra alguns, mas a dica do gráfico mostra todos. */
-  rotulo: string
   total: number
 }
 
@@ -58,11 +64,9 @@ export function concluidasPorDia(datas: Date[], hoje: Date, dias = 14): PontoDia
   for (let i = dias - 1; i >= 0; i--) {
     const d = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - i)
     const chave = chaveDoDia(d)
-    pontos.push({
-      chave,
-      rotulo: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`,
-      total: contagem.get(chave) ?? 0,
-    })
+    // Só a chave: a data escrita sai de `rotuloDoDia`, que sabe o locale — em
+    // inglês "17/09" é 9 de setembro, e essa leitura já esteve errada aqui.
+    pontos.push({ chave, total: contagem.get(chave) ?? 0 })
   }
   return pontos
 }
@@ -73,7 +77,6 @@ export function concluidasPorDia(datas: Date[], hoje: Date, dias = 14): PontoDia
 
 export interface PontoSemana {
   indice: number
-  rotulo: string
   /** Em quantas dessas segundas (terças…) houve pelo menos uma conclusão. */
   diasComAlgo: number
   /** Quantas já passaram na janela — pode ser menor que `semanas` perto da borda. */
@@ -88,8 +91,8 @@ export interface PontoSemana {
 export function constanciaNaSemana(datas: Date[], hoje: Date, semanas = 4): PontoSemana[] {
   const comAlgo = new Set(datas.map(chaveDoDia))
 
-  const pontos: PontoSemana[] = DIAS_DA_SEMANA.map((rotulo, indice) => ({
-    indice, rotulo, diasComAlgo: 0, diasContados: 0, taxa: 0,
+  const pontos: PontoSemana[] = Array.from({ length: DIAS_NA_SEMANA }, (_, indice) => ({
+    indice, diasComAlgo: 0, diasContados: 0, taxa: 0,
   }))
 
   for (let i = 0; i < semanas * 7; i++) {
