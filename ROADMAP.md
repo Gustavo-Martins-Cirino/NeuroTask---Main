@@ -1914,6 +1914,40 @@ vira ruído.
 > concluídas por dia nos últimos 14 dias"). É acessibilidade, não tradução, e entra na fatia de
 > quem for cuidar dos rótulos de leitor de tela.
 
+> **Fatia 5 — as telas de erro e o 404: feita (17/09). Com isso a lista de pendentes do guarda
+> ficou vazia: não sobrou JSX por traduzir.** `app/error.tsx` (rotas públicas), `app/app/error.tsx`
+> (dentro do app) e `app/not-found.tsx`. As duas de fora do AppShell sincronizam o `lang` do
+> documento por conta própria — quem faz isso no resto do app é o AppShell, e sem ele a página
+> ficaria escrita em inglês e anunciada como portuguesa ao leitor de tela.
+>
+> O `not-found` deixou de ser componente de servidor e virou de cliente. Não tinha escolha: o
+> idioma mora no navegador (na região guardada no `localStorage`), e o servidor não tem como
+> saber dele antes de responder.
+>
+> **A `global-error.tsx` fica de fora, e é decisão, não esquecimento.** Ela é a tela de último
+> recurso: substitui o `<html>` inteiro quando o layout raiz quebra, e hoje importa só o
+> reportador de erro. Fazê-la importar um dicionário de 2.600 linhas aumenta a chance de a
+> própria tela de socorro quebrar junto — e uma tela de socorro que não aparece é pior que uma
+> tela de socorro em português. Ela saiu de PENDENTES e entrou em ARQUIVO_INTEIRO, com o motivo
+> escrito ao lado, que é o lugar onde a decisão sobrevive a quem a tomou.
+>
+> **O 404 só aparece para quem está logado**, e isso a medição mostrou: pedir `/rota-que-nao-existe`
+> deslogado devolve um redirecionamento (medido: `opaqueredirect`, terminando em `/login`), porque
+> o proxy manda para o login tudo que não seja `/`, `/login`, `/signup`, `/auth`, `/reset-password`
+> ou `/agenda/`. Quem nunca entrou no app não vê esta tela — vê o login. Fica anotado como
+> comportamento, não como defeito: mudar isso é decidir que endereço inexistente responde 404 a
+> qualquer um, o que é outra conversa (hoje o app não conta nem o que existe).
+>
+> A régua destas telas virou teste: a culpa é do app, nunca de quem está lendo ("o erro é nosso,
+> não seu" / "the error is ours, not yours"). Se alguém reescrever para "você fez algo errado", o
+> teste quebra — e o conserto é o texto.
+>
+> Conferido em build de produção a 390px, nos dois idiomas, cada um num contexto isolado: os três
+> títulos e os quatro botões no idioma certo, o `lang` do documento certo nos dois, nada fora da
+> tela, nenhum erro de JS. O harness reporta erro ao montar, como as telas de verdade fazem — os
+> dois envios foram **bloqueados antes de sair**, para o `error_log` de produção não guardar erro
+> que eu inventei.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

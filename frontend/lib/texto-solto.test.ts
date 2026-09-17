@@ -28,6 +28,8 @@ const ATRIBUTOS_VISIVEIS = new Set(["title", "placeholder", "aria-label", "alt",
 const ARQUIVO_INTEIRO: Record<string, string> = {
   "app/admin/page.tsx": "painel do dono: uma pessoa só o abre, e ela fala português (mesma régua do locale-fixo)",
   "components/errors-panel.tsx": "idem — o painel de erros do dono em Configurações",
+  "app/global-error.tsx":
+    "a tela de último recurso: substitui o <html> quando o layout raiz quebra, e quanto menos importar, maior a chance de aparecer — fica em português",
 }
 
 /** Textos que são iguais em qualquer idioma. Casam o texto INTEIRO, nunca um pedaço. */
@@ -47,13 +49,12 @@ const TEXTOS_LIVRES: Record<string, string> = {
  * arquivos daqui, e o penúltimo teste quebra se alguém esquecer de tirar um que
  * já está limpo — lista do que falta que envelhece é alguém achando que ali
  * pode.
+ *
+ * Vazia desde 17/09: não sobrou JSX por traduzir. As exceções continuam em
+ * ARQUIVO_INTEIRO, cada uma com o motivo — e o que ainda falta não é JSX, são as
+ * frases escritas dentro de `lib/`, que esta varredura não enxerga.
  */
-const PENDENTES: Record<string, string> = {
-  "app/error.tsx": "fatia das telas de erro",
-  "app/app/error.tsx": "fatia das telas de erro",
-  "app/global-error.tsx": "fatia das telas de erro",
-  "app/not-found.tsx": "fatia das telas de erro",
-}
+const PENDENTES: Record<string, string> = {}
 
 /** Caminho relativo com barra normal, para a chave bater nos dois sistemas. */
 function chave(caminho: string): string {

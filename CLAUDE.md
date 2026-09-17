@@ -187,13 +187,19 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   devolve **chave** e o dicionário devolve o texto — é assim em `saudacao`, `nivel-faixa`,
   `regiao` e `task-recurrence`. O idioma dentro do app sai da região (`hooks/use-idioma`),
   que já sai do formato de hora; em `/agenda/<token>` sai do navegador de quem abre.
-- **A tradução do app está completa (14/09).** Todas as telas passaram: agenda pública, dock e
-  títulos, Configurações (incl. `foto-perfil-campo`), dashboard, Tarefas, Favoritos, Notas,
-  calendário, importar/exportar de agenda, assinar agenda no Google/Outlook, Amigos inteiro, a
-  Neuro IA (chat, atalhos e conversa por voz) e o Escritório (tela, editor de avatar e a loja
-  de 47 itens) — o ROADMAP tem o histórico e as armadilhas de cada fatia. `errors-panel` fica
-  de fora de propósito: é o painel de erros do DONO, mesma régua do `app/admin/page.tsx` (uma
-  pessoa só abre, e ela fala português). O seletor continua dizendo **"região e formato"**,
+- **A tradução do JSX está completa (17/09) — e "completa" aqui quer dizer que existe um guarda
+  dizendo isso, não que alguém olhou e achou que sim.** Este parágrafo já afirmou o mesmo em
+  14/09 e era falso: uma varredura do AST achou **205 textos soltos** dentro de telas dadas como
+  traduzidas. Daí nasceu `lib/texto-solto.test.ts`, irmão do `locale-fixo`: ele lê o JSX e os
+  atributos visíveis de todo `.tsx` e quebra em texto com letra. As telas passaram em fatias
+  (moldura, Modo Foco, entrada, o que sobrava, "Seus números" e enquete, telas de erro) e a lista
+  de pendentes do guarda está **vazia**. As exceções continuam nomeadas no próprio teste, cada
+  uma com o motivo: `errors-panel` e `app/admin` (painel do DONO, uma pessoa só abre e ela fala
+  português) e `app/global-error.tsx` (a tela de último recurso — quanto menos ela importar,
+  maior a chance de aparecer quando o layout raiz quebra).
+  **O que ainda falta são as frases escritas dentro de `lib/`** — `friends`, `push`, `routine`,
+  `invites`, `ics`, `avatar`, `foto-perfil` —, que a varredura do JSX não enxerga e que o ROADMAP
+  lista. O seletor continua dizendo **"região e formato"**,
   nunca "idioma" — trocar o rótulo pediria desacoplar região de idioma (hoje um implica o
   outro), o que é redesenho de dado e ficou registrado no ROADMAP como decisão em aberto.
   **O que a própria IA escreve não entra nisso**: as respostas do modelo saem sempre em

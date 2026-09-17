@@ -826,3 +826,21 @@ describe("dashboard: a enquete e Seus números", () => {
     }
   })
 })
+
+describe("as telas de erro", () => {
+  it("mudam de idioma", () => {
+    expect(en.erro.publico.titulo).not.toBe(pt.erro.publico.titulo)
+    expect(en.erro.app.texto).not.toBe(pt.erro.app.texto)
+    expect(en.erro.naoEncontrada.titulo).not.toBe(pt.erro.naoEncontrada.titulo)
+    expect(en.erro.tentarDeNovo).not.toBe(pt.erro.tentarDeNovo)
+  })
+
+  // A régua destas telas: a culpa é do app, não de quem está lendo. Se a frase
+  // virar "você fez algo errado", o conserto é o texto, não o teste.
+  it("não culpam quem está lendo", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(d.erro.publico.texto.toLowerCase(), nome).toMatch(/nosso|ours/)
+      expect(d.erro.app.texto.toLowerCase(), nome).toMatch(/nosso|ours/)
+    }
+  })
+})

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { RotateCw, House, TriangleAlert } from "lucide-react"
 import { reportarErro } from "@/lib/error-report"
+import { useDicionario } from "@/hooks/use-idioma"
 
 // Erro dentro do app logado. Fica DENTRO do AppShell, então o dock continua na
 // tela: a pessoa sai andando pra outra rota em vez de ficar presa. Sem isso,
@@ -17,6 +18,8 @@ export default function AppError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const t = useDicionario().erro
+
   useEffect(() => {
     console.error("[app] erro não tratado:", error)
     reportarErro(error, "boundary-app", error.digest)
@@ -33,10 +36,9 @@ export default function AppError({
           <TriangleAlert className="h-5 w-5 text-destructive" />
         </span>
 
-        <h1 className="text-lg font-semibold">Essa parte quebrou</h1>
+        <h1 className="text-lg font-semibold">{t.app.titulo}</h1>
         <p className="text-sm text-muted-foreground">
-          O erro é nosso, não seu — e o resto do app continua funcionando. Tente de novo;
-          se persistir, me conte o que você estava fazendo aqui.
+          {t.app.texto}
         </p>
 
         {error.digest && (
@@ -52,14 +54,14 @@ export default function AppError({
             className="flex h-9 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
             <RotateCw className="h-3.5 w-3.5" />
-            Tentar de novo
+            {t.tentarDeNovo}
           </button>
           <Link
             href="/app"
             className="flex h-9 items-center gap-1.5 rounded-xl border border-border/50 px-4 text-sm font-medium transition-colors hover:bg-accent"
           >
             <House className="h-3.5 w-3.5" />
-            Ir para o início
+            {t.app.irParaOInicio}
           </Link>
         </div>
       </motion.div>

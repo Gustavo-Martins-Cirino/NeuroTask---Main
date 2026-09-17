@@ -69,6 +69,21 @@ export interface Dicionario {
    *
    * "Neuro IA" é nome próprio: não traduz em idioma nenhum.
    */
+  /**
+   * As telas de erro e o 404. Ficam fora do AppShell (menos a do app), então
+   * cada uma cuida do `lang` do documento por conta.
+   *
+   * A `global-error` NÃO usa isto de propósito: ela substitui o `<html>` quando
+   * o layout raiz quebra, e quanto menos ela carregar, maior a chance de
+   * aparecer. Fica em português, com o motivo em lib/texto-solto.test.ts.
+   */
+  erro: {
+    publico: { titulo: string; texto: string }
+    app: { titulo: string; texto: string; irParaOInicio: string }
+    naoEncontrada: { titulo: string; texto: string }
+    tentarDeNovo: string
+    voltarAoInicio: string
+  }
   telas: {
     inicio: string
     /** O mesmo lugar, como o dock o chama. */
@@ -1079,6 +1094,24 @@ export const pt: Dicionario = {
     rodape: (dono) =>
       `${dono} compartilhou só os horários. O que ocupa cada faixa — título, local ou com quem — nunca sai do app.`,
     donoAnonimo: "Esta pessoa",
+  },
+  erro: {
+    publico: {
+      titulo: "Algo deu errado",
+      texto: "O erro é nosso, não seu. Tentar de novo costuma resolver.",
+    },
+    app: {
+      titulo: "Essa parte quebrou",
+      texto:
+        "O erro é nosso, não seu — e o resto do app continua funcionando. Tente de novo; se persistir, me conte o que você estava fazendo aqui.",
+      irParaOInicio: "Ir para o início",
+    },
+    naoEncontrada: {
+      titulo: "Página não encontrada",
+      texto: "O endereço que você tentou acessar não existe ou foi movido.",
+    },
+    tentarDeNovo: "Tentar de novo",
+    voltarAoInicio: "Voltar ao início",
   },
   telas: {
     inicio: "Início",
@@ -2100,6 +2133,24 @@ export const en: Dicionario = {
     rodape: (dono) =>
       `${dono} shared only the hours. What fills each slot — title, place or with whom — never leaves the app.`,
     donoAnonimo: "This person",
+  },
+  erro: {
+    publico: {
+      titulo: "Something went wrong",
+      texto: "The error is ours, not yours. Trying again usually fixes it.",
+    },
+    app: {
+      titulo: "This part broke",
+      texto:
+        "The error is ours, not yours — and the rest of the app keeps working. Try again; if it sticks around, tell me what you were doing here.",
+      irParaOInicio: "Go to home",
+    },
+    naoEncontrada: {
+      titulo: "Page not found",
+      texto: "The address you tried doesn't exist or has moved.",
+    },
+    tentarDeNovo: "Try again",
+    voltarAoInicio: "Back to home",
   },
   telas: {
     inicio: "Home",
