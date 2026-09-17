@@ -1948,6 +1948,37 @@ vira ruído.
 > dois envios foram **bloqueados antes de sair**, para o `error_log` de produção não guardar erro
 > que eu inventei.
 
+> **Fatia 6 — o texto que mora dentro de `lib/`. Começou (17/09) pelas falhas de Amigos e dos
+> convites.** O guarda do JSX não enxerga isto: são frases escritas dentro dos módulos, que
+> chegam à tela por um `toast.error(...)`. A varredura do AST achou **49 delas em 14 arquivos** —
+> menos do que parecia, e nem todas são interface.
+>
+> `lib/friends.ts` e `lib/invites.ts` já tinham o mapa `NAO_SAO_AMIGOS → "Vocês ainda não são
+> amigos."`; o que faltava era devolver o **id** e deixar o dicionário dar a frase, que é a forma
+> que `lib/feedback.ts` já usava. Agora existe `MotivoDeFalha` (11 motivos) e `explicaFalha`. Os
+> convites importam os motivos do vizinho de propósito: convite que falha porque a amizade sumiu
+> diz exatamente o que Amigos diria, e duas cópias da mesma frase divergem no dia em que uma for
+> reescrita.
+>
+> **O que o Postgres responde sem ser previsto continua aparecendo cru.** É feio e é melhor
+> assim: "relation ... does not exist" me diz o que houve; "não deu certo" não diz nada a
+> ninguém. O texto genérico só entra quando o banco falha sem mensagem nenhuma.
+>
+> Trocar o tipo de `string` para `Falha` fez o TypeScript apontar os cinco `toast.error(error)`
+> que ainda mostravam o objeto — que é o motivo de o tipo existir. Nenhum deles seria pego por
+> leitura.
+>
+> Medido pelo caminho inteiro, não pelo dicionário: o navegador abre Amigos, digita um @usuário e
+> clica em criar, deslogado. `claimUsername` para no `getUser()` e devolve `precisaLogin` **antes
+> de tocar no banco** — erro de verdade, nada forjado. O toast leu "You need to be signed in" em
+> inglês e "Você precisa estar logado" em português, sem erro de JS.
+>
+> **Ainda falta nesta fatia:** `push`, `avatar`, `foto-perfil`, `routine`, `ics` e
+> `office-snapshot` (mesma natureza: I/O que fala). E há um grupo que **não** é interface e
+> precisa de decisão à parte, não de tradução: `ia-agora` e `backward-plan` (o que a Neuro IA
+> recebe escrito), `telegram-commands` (a ajuda do bot, que não sabe de região) e as duas strings
+> internas de `voice-conversation`.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

@@ -72,19 +72,61 @@ export function normalizeUsername(raw: string): string {
     .slice(0, 20)
 }
 
-export async function claimUsername(username: string, displayName: string | null): Promise<{ profile?: MyProfile; error?: string }> {
+/**
+ * O que pode dar errado em Amigos e nos convites, como ID. Este módulo decide
+ * QUAL motivo; o dicionário (`amigos.erros`) decide como ele se diz — a mesma
+ * divisão de `lib/feedback.ts`.
+ *
+ * `desconhecido` é o que sobra: o Postgres respondeu algo que ninguém previu, e
+ * aí vale mais mostrar a mensagem crua dele do que uma frase genérica que não
+ * ajuda ninguém a entender o que houve.
+ */
+export type MotivoDeFalha =
+  | "precisaLogin"
+  | "usuarioCurto"
+  | "usuarioEmUso"
+  | "jaSaoAmigos"
+  | "voceMesmo"
+  | "usuarioInexistente"
+  | "naoSaoAmigos"
+  | "agendaPrivada"
+  | "escritorioPrivado"
+  | "conviteInvalido"
+  | "conviteInexistente"
+
+export interface Falha {
+  motivo: MotivoDeFalha | "desconhecido"
+  /** Só existe no `desconhecido`: a mensagem que o banco devolveu. */
+  cru?: string
+}
+
+export type TextosDeFalha = Record<MotivoDeFalha, string> & { generico: string }
+
+export function explicaFalha(falha: Falha, textos: TextosDeFalha): string {
+  if (falha.motivo === "desconhecido") return falha.cru || textos.generico
+  return textos[falha.motivo]
+}
+
+/** A RPC devolve o motivo DENTRO da mensagem de erro do Postgres. */
+function motivoNaMensagem(msg: string, mapa: Record<string, MotivoDeFalha>): Falha {
+  const chave = Object.keys(mapa).find((k) => msg.includes(k))
+  return chave ? { motivo: mapa[chave] } : { motivo: "desconhecido", cru: msg }
+}
+
+export async function claimUsername(username: string, displayName: string | null): Promise<{ profile?: MyProfile; error?: Falha }> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Você precisa estar logado" }
+  if (!user) return { error: { motivo: "precisaLogin" } }
   const clean = normalizeUsername(username)
-  if (clean.length < 3) return { error: "Use ao menos 3 caracteres (letras, números e _)" }
+  if (clean.length < 3) return { error: { motivo: "usuarioCurto" } }
   const { data, error } = await supabase
     .from("profiles")
     .insert({ user_id: user.id, username: clean, display_name: displayName?.trim() || null })
     .select()
     .single()
   if (error) {
-    return { error: error.message.includes("unique") || error.code === "23505" ? "Esse @usuário já foi escolhido — tente outro" : error.message }
+    const emUso = error.message.includes("unique") || error.code === "23505"
+    return { error: emUso ? { motivo: "usuarioEmUso" } : { motivo: "desconhecido", cru: error.message } }
   }
   return { profile: data }
 }
@@ -134,19 +176,16 @@ export async function updateCity(city: string): Promise<void> {
     .eq("user_id", user.id)
 }
 
-const REQUEST_ERRORS: Record<string, string> = {
-  JA_EXISTE: "Vocês já são amigos (ou o pedido já foi enviado).",
-  AUTO_AMIZADE: "Esse é você! 😄",
-  USUARIO_INEXISTENTE: "Usuário não encontrado.",
+const REQUEST_ERRORS: Record<string, MotivoDeFalha> = {
+  JA_EXISTE: "jaSaoAmigos",
+  AUTO_AMIZADE: "voceMesmo",
+  USUARIO_INEXISTENTE: "usuarioInexistente",
 }
 
-export async function sendFriendRequest(toUserId: string): Promise<{ result?: "pending" | "accepted"; error?: string }> {
+export async function sendFriendRequest(toUserId: string): Promise<{ result?: "pending" | "accepted"; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("send_friend_request", { p_to: toUserId })
-  if (error) {
-    const known = Object.keys(REQUEST_ERRORS).find((k) => error.message.includes(k))
-    return { error: known ? REQUEST_ERRORS[known] : error.message }
-  }
+  if (error) return { error: motivoNaMensagem(error.message, REQUEST_ERRORS) }
   return { result: data as "pending" | "accepted" }
 }
 
@@ -171,9 +210,9 @@ export async function removeFriendship(friendshipId: string): Promise<void> {
 // a agenda pública usa a MESMA conta, e ela não pode importar este arquivo
 // (aqui dentro vive o cliente do navegador).
 
-const SCHEDULE_ERRORS: Record<string, string> = {
-  NAO_SAO_AMIGOS: "Vocês ainda não são amigos.",
-  AGENDA_PRIVADA: "Esse amigo não compartilha a agenda.",
+const SCHEDULE_ERRORS: Record<string, MotivoDeFalha> = {
+  NAO_SAO_AMIGOS: "naoSaoAmigos",
+  AGENDA_PRIVADA: "agendaPrivada",
 }
 
 function startOfDay(day?: string): Date {
@@ -182,13 +221,10 @@ function startOfDay(day?: string): Date {
   return d
 }
 
-export async function fetchFriendBusyToday(friendId: string): Promise<{ ranges?: BusyRange[]; error?: string }> {
+export async function fetchFriendBusyToday(friendId: string): Promise<{ ranges?: BusyRange[]; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("friend_schedule", { p_friend: friendId })
-  if (error) {
-    const known = Object.keys(SCHEDULE_ERRORS).find((k) => error.message.includes(k))
-    return { error: known ? SCHEDULE_ERRORS[known] : error.message }
-  }
+  if (error) return { error: motivoNaMensagem(error.message, SCHEDULE_ERRORS) }
   return { ranges: faixasDoDia((data ?? []) as ScheduleRow[], startOfDay()) }
 }
 
@@ -261,30 +297,24 @@ export async function suggestCommonFreeSlots(
   day: string, // YYYY-MM-DD
   durationMinutes: number,
   max = 4
-): Promise<{ slots?: FreeSlot[]; error?: string }> {
+): Promise<{ slots?: FreeSlot[]; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("friend_schedule", { p_friend: friendId })
-  if (error) {
-    const known = Object.keys(SCHEDULE_ERRORS).find((k) => error.message.includes(k))
-    return { error: known ? SCHEDULE_ERRORS[known] : error.message }
-  }
+  if (error) return { error: motivoNaMensagem(error.message, SCHEDULE_ERRORS) }
   const dayStart = startOfDay(day)
   const friendBusy = faixasDoDia((data ?? []) as ScheduleRow[], dayStart)
   const myBusy = await fetchMyBusyForDay(dayStart)
   return { slots: freeSlotsForDay([...friendBusy, ...myBusy], dayStart, durationMinutes, max) }
 }
 
-const OFFICE_ERRORS: Record<string, string> = {
-  NAO_SAO_AMIGOS: "Vocês ainda não são amigos.",
-  ESCRITORIO_PRIVADO: "Esse amigo mantém o escritório privado.",
+const OFFICE_ERRORS: Record<string, MotivoDeFalha> = {
+  NAO_SAO_AMIGOS: "naoSaoAmigos",
+  ESCRITORIO_PRIVADO: "escritorioPrivado",
 }
 
-export async function fetchFriendOffice(friendId: string): Promise<{ office?: FriendOffice; error?: string }> {
+export async function fetchFriendOffice(friendId: string): Promise<{ office?: FriendOffice; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("friend_office", { p_friend: friendId })
-  if (error) {
-    const known = Object.keys(OFFICE_ERRORS).find((k) => error.message.includes(k))
-    return { error: known ? OFFICE_ERRORS[known] : error.message }
-  }
+  if (error) return { error: motivoNaMensagem(error.message, OFFICE_ERRORS) }
   return { office: data as FriendOffice }
 }

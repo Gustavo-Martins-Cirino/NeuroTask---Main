@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/date-picker"
 import { TimeSelect } from "@/components/time-select"
 import { sendMeetingInvite } from "@/lib/invites"
-import { suggestCommonFreeSlots, type FreeSlot } from "@/lib/friends"
+import { suggestCommonFreeSlots, explicaFalha, type FreeSlot } from "@/lib/friends"
 import { toast } from "sonner"
 import { CalendarPlus, Loader2, Video, MapPin, Sparkles } from "lucide-react"
 import { useDicionario } from "@/hooks/use-idioma"
@@ -80,7 +80,7 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
     const { slots: found, error } = await suggestCommonFreeSlots(friend.friend_id, date, durationMinutes)
     setSuggesting(false)
     if (error) {
-      toast.error(error)
+      toast.error(explicaFalha(error, traducao.amigos.erros))
       return
     }
     setSlots(found ?? [])
@@ -102,7 +102,7 @@ export function InviteDialog({ friend, onClose, onSent }: InviteDialogProps) {
     })
     setLoading(false)
     if (error) {
-      toast.error(error)
+      toast.error(explicaFalha(error, traducao.amigos.erros))
       return
     }
     toast.success(t.toastEnviado(friend.username))

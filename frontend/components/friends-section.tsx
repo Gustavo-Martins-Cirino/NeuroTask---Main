@@ -20,7 +20,7 @@ import {
   CalendarPlus, CalendarClock, Video, MapPin,
 } from "lucide-react"
 import {
-  fetchMyProfile, claimUsername, normalizeUsername, updatePrivacy, updateCity,
+  fetchMyProfile, claimUsername, normalizeUsername, updatePrivacy, updateCity, explicaFalha,
   searchUsers, sendFriendRequest, fetchMyFriends, acceptFriendRequest,
   removeFriendship, fetchFriendOffice, fetchSuggestedUsers, fetchFriendBusyToday,
   type MyProfile, type UserSearchResult, type SuggestedUser, type FriendEntry,
@@ -158,7 +158,7 @@ export function FriendsSection() {
     const { profile: p, error } = await claimUsername(claimName, null)
     setClaiming(false)
     if (error) {
-      toast.error(error)
+      toast.error(explicaFalha(error, t.erros))
       return
     }
     setProfile(p!)
@@ -169,7 +169,7 @@ export function FriendsSection() {
   const handleAdd = async (u: UserSearchResult) => {
     const { result, error } = await sendFriendRequest(u.user_id)
     if (error) {
-      toast.error(error)
+      toast.error(explicaFalha(error, t.erros))
       return
     }
     toast.success(result === "accepted" ? t.toastAgoraAmigos : t.toastPedidoEnviado(u.username))
@@ -195,7 +195,7 @@ export function FriendsSection() {
     const { office, error } = await fetchFriendOffice(f.friend_id)
     setVisitLoading(null)
     if (error) {
-      toast.error(error)
+      toast.error(explicaFalha(error, t.erros))
       return
     }
     setVisit(office!)
@@ -206,7 +206,7 @@ export function FriendsSection() {
     const { ranges, error } = await fetchFriendBusyToday(f.friend_id)
     setBusyLoading(null)
     if (error) {
-      toast.error(error)
+      toast.error(explicaFalha(error, t.erros))
       return
     }
     setBusyView({ friend: f, ranges: ranges! })
@@ -215,7 +215,7 @@ export function FriendsSection() {
   const handleRespondInvite = async (inv: MeetingInvite, accept: boolean) => {
     const { status, error } = await respondMeetingInvite(inv.id, accept)
     if (error) {
-      toast.error(error)
+      toast.error(explicaFalha(error, t.erros))
       return
     }
     if (status === "accepted") {

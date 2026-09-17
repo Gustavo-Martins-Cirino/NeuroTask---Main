@@ -788,6 +788,27 @@ export interface Dicionario {
    */
   amigos: {
     /**
+     * O que Amigos e os convites respondem quando não dá certo. `lib/friends.ts`
+     * devolve o motivo como id e `explicaFalha` escolhe aqui.
+     *
+     * `generico` só aparece se o banco falhar sem mensagem nenhuma — quando ele
+     * manda uma, é ela que aparece, porque a mensagem crua diz mais.
+     */
+    erros: {
+      precisaLogin: string
+      usuarioCurto: string
+      usuarioEmUso: string
+      jaSaoAmigos: string
+      voceMesmo: string
+      usuarioInexistente: string
+      naoSaoAmigos: string
+      agendaPrivada: string
+      escritorioPrivado: string
+      conviteInvalido: string
+      conviteInexistente: string
+      generico: string
+    }
+    /**
      * A dica no rodapé da tela. Tem ênfase (§). Cita os rótulos que a pessoa vê
      * nos botões — em inglês o chip se chama "Schedule", não "Agenda".
      */
@@ -1717,6 +1738,20 @@ export const pt: Dicionario = {
     },
   },
   amigos: {
+    erros: {
+      precisaLogin: "Você precisa estar logado",
+      usuarioCurto: "Use ao menos 3 caracteres (letras, números e _)",
+      usuarioEmUso: "Esse @usuário já foi escolhido — tente outro",
+      jaSaoAmigos: "Vocês já são amigos (ou o pedido já foi enviado).",
+      voceMesmo: "Esse é você! 😄",
+      usuarioInexistente: "Usuário não encontrado.",
+      naoSaoAmigos: "Vocês ainda não são amigos.",
+      agendaPrivada: "Esse amigo não compartilha a agenda.",
+      escritorioPrivado: "Esse amigo mantém o escritório privado.",
+      conviteInvalido: "Preencha o título e um horário válido.",
+      conviteInexistente: "Convite não encontrado (já respondido?).",
+      generico: "Não deu certo agora. Tente de novo.",
+    },
     dica: "§Dica:§ nos amigos, use §📅 Agenda§ para ver os horários ocupados de hoje (se a pessoa ativou o chip “Agenda”) e §➕ Convidar§ para propor um compromisso — quando aceito, ele entra no calendário de vocês dois automaticamente.",
     privacidade: {
       ocupadoLivre: "Ocupado/livre",
@@ -2749,6 +2784,20 @@ export const en: Dicionario = {
     },
   },
   amigos: {
+    erros: {
+      precisaLogin: "You need to be signed in",
+      usuarioCurto: "Use at least 3 characters (letters, numbers and _)",
+      usuarioEmUso: "That @username is taken — try another",
+      jaSaoAmigos: "You're already friends (or the request is on its way).",
+      voceMesmo: "That's you! 😄",
+      usuarioInexistente: "User not found.",
+      naoSaoAmigos: "You two aren't friends yet.",
+      agendaPrivada: "This friend doesn't share their schedule.",
+      escritorioPrivado: "This friend keeps their office private.",
+      conviteInvalido: "Fill in the title and a valid time.",
+      conviteInexistente: "Invite not found (already answered?).",
+      generico: "That didn't work. Try again.",
+    },
     dica: "§Tip:§ on a friend, use §📅 Schedule§ to see today's busy hours (if they turned on the “Schedule” chip) and §➕ Invite§ to propose a meeting — once accepted, it goes into both your calendars automatically.",
     privacidade: {
       ocupadoLivre: "Busy/free",

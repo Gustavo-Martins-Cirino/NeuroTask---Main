@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client"
+import type { Falha, MotivoDeFalha } from "@/lib/friends"
 
 // Convites de compromisso entre amigos (Amigos v2 — friends_agenda.sql).
 // Aceitar cria o bloco no calendário DOS DOIS (RPC no servidor).
@@ -16,15 +17,17 @@ export interface MeetingInvite {
   status: "pending" | "accepted" | "declined"
 }
 
-const INVITE_ERRORS: Record<string, string> = {
-  NAO_SAO_AMIGOS: "Vocês ainda não são amigos.",
-  CONVITE_INVALIDO: "Preencha o título e um horário válido.",
-  CONVITE_INEXISTENTE: "Convite não encontrado (já respondido?).",
+// Os motivos moram no vizinho: convite é parte da mesma tela, e um convite que
+// falha porque a amizade sumiu diz exatamente o mesmo que Amigos diria.
+const INVITE_ERRORS: Record<string, MotivoDeFalha> = {
+  NAO_SAO_AMIGOS: "naoSaoAmigos",
+  CONVITE_INVALIDO: "conviteInvalido",
+  CONVITE_INEXISTENTE: "conviteInexistente",
 }
 
-function translate(msg: string): string {
-  const known = Object.keys(INVITE_ERRORS).find((k) => msg.includes(k))
-  return known ? INVITE_ERRORS[known] : msg
+function falhaDe(msg: string): Falha {
+  const chave = Object.keys(INVITE_ERRORS).find((k) => msg.includes(k))
+  return chave ? { motivo: INVITE_ERRORS[chave] } : { motivo: "desconhecido", cru: msg }
 }
 
 export async function sendMeetingInvite(input: {
@@ -34,7 +37,7 @@ export async function sendMeetingInvite(input: {
   endsAt: Date
   meetingUrl?: string
   location?: string
-}): Promise<{ error?: string }> {
+}): Promise<{ error?: Falha }> {
   const supabase = createClient()
   const { error } = await supabase.rpc("send_meeting_invite", {
     p_to: input.toUserId,
@@ -44,7 +47,7 @@ export async function sendMeetingInvite(input: {
     p_url: input.meetingUrl ?? null,
     p_location: input.location ?? null,
   })
-  return error ? { error: translate(error.message) } : {}
+  return error ? { error: falhaDe(error.message) } : {}
 }
 
 export async function fetchMyInvites(): Promise<MeetingInvite[]> {
@@ -56,13 +59,13 @@ export async function fetchMyInvites(): Promise<MeetingInvite[]> {
 export async function respondMeetingInvite(
   inviteId: string,
   accept: boolean
-): Promise<{ status?: "accepted" | "declined"; error?: string }> {
+): Promise<{ status?: "accepted" | "declined"; error?: Falha }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc("respond_meeting_invite", {
     p_invite: inviteId,
     p_accept: accept,
   })
-  if (error) return { error: translate(error.message) }
+  if (error) return { error: falhaDe(error.message) }
   return { status: data as "accepted" | "declined" }
 }
 
