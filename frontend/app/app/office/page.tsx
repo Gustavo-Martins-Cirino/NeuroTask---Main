@@ -79,7 +79,7 @@ export default function OfficePage() {
     setSharing(true)
     try {
       const bg = resolveOfficeBg(officeBg, resolvedTheme === "dark")
-      const blob = await composeSnapshot(canvas as HTMLCanvasElement, { bg, nivel })
+      const blob = await composeSnapshot(canvas as HTMLCanvasElement, { bg, selo: traducao.escritorio.seloDaImagem(nivel) })
       if (!blob) throw new Error("sem imagem")
       const outcome = await shareOrDownload(blob, snapshotFilename(), traducao.escritorio.tituloCompartilhamento)
       if (outcome === "downloaded") toast.success(traducao.escritorio.imagemBaixada)

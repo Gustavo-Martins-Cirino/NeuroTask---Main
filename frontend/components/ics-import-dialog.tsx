@@ -36,6 +36,9 @@ function formatWhen(e: IcsEvent, f: TimeFormat, locale: string, diaInteiro: stri
 export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
   const traducao = useDicionario()
   const t = traducao.configuracoes.importarExportar.dialogo
+  // Evento de .ics sem SUMMARY: o nome de reserva entra AQUI, e é o mesmo que
+  // vai para o banco — o bloco fica com o nome no idioma de quem importou.
+  const nomeDoEvento = (e: IcsEvent) => e.title || t.semTitulo
   const locale = useLocale()
   const timeFormat = useTimeFormat()
   // Diário e semanal falam o vocabulário da tarefa; só "dias úteis" é daqui.
@@ -74,7 +77,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
       const dupeSet = new Set<number>()
       const selSet = new Set<number>()
       parsed.forEach((e, i) => {
-        if (existing.has(dedupeKey(e.title, e.start.toISOString()))) dupeSet.add(i)
+        if (existing.has(dedupeKey(nomeDoEvento(e), e.start.toISOString()))) dupeSet.add(i)
         else selSet.add(i) // pré-seleciona só os que ainda não existem
       })
       setEvents(parsed); setDupes(dupeSet); setSel(selSet)
@@ -108,7 +111,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
       const e = events[i]
       const desc = [e.description, e.location ? `📍 ${e.location}` : null].filter(Boolean).join("\n\n") || null
       return {
-        title: e.title,
+        title: nomeDoEvento(e),
         description: desc,
         start_time: e.start.toISOString(),
         end_time: e.end.toISOString(),
@@ -183,7 +186,7 @@ export function IcsImportDialog({ open, onOpenChange, onImported }: Props) {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1.5">
-                          <span className="truncate text-sm font-medium">{e.title}</span>
+                          <span className="truncate text-sm font-medium">{nomeDoEvento(e)}</span>
                           {e.recurrence && (
                             <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
                               <Repeat className="h-2.5 w-2.5" /> {rotuloRepeticao[e.recurrence]}

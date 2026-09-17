@@ -22,11 +22,12 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.closePath()
 }
 
-function drawBadge(ctx: CanvasRenderingContext2D, w: number, h: number, nivel: number) {
+// O selo chega pronto, escrito: o dicionário monta a frase, este módulo só
+// desenha. Medir a largura do texto é o motivo de ele não poder vir em pedaços.
+function drawBadge(ctx: CanvasRenderingContext2D, w: number, h: number, text: string) {
   const margin = Math.round(w * 0.022)
   const fs = Math.max(13, Math.round(w * 0.026))
   const padX = Math.round(fs * 0.7)
-  const text = `NeuroTask · Nível ${nivel}`
   ctx.font = `600 ${fs}px ui-sans-serif, system-ui, sans-serif`
   const tw = ctx.measureText(text).width
   const bw = tw + padX * 2
@@ -46,7 +47,7 @@ function drawBadge(ctx: CanvasRenderingContext2D, w: number, h: number, nivel: n
 // sala) sobre o fundo sólido, com vinheta e selo. Devolve um PNG.
 export async function composeSnapshot(
   source: HTMLCanvasElement,
-  opts: { bg: string; nivel: number }
+  opts: { bg: string; selo: string }
 ): Promise<Blob | null> {
   const w = source.width
   const h = source.height
@@ -68,7 +69,7 @@ export async function composeSnapshot(
   ctx.fillStyle = vg
   ctx.fillRect(0, 0, w, h)
 
-  drawBadge(ctx, w, h, opts.nivel)
+  drawBadge(ctx, w, h, opts.selo)
 
   return await new Promise<Blob | null>((resolve) => c.toBlob((b) => resolve(b), "image/png"))
 }

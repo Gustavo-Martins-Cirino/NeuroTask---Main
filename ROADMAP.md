@@ -2014,6 +2014,36 @@ vira ruído.
 > despercebida — o número é piso, não total. Quem fechar a fatia 6 deve reler os módulos que
 > sobraram com o olho, não só com o script.
 
+> **Fatia 6c — o que fala fora de uma tela: feita (17/09).** Os avisos de check-in (aparecem em
+> qualquer tela, inclusive como notificação do sistema), o selo desenhado na imagem que o
+> Escritório compartilha e o nome de reserva do evento de `.ics` sem `SUMMARY`.
+>
+> O `reminder-notifier` é o caso incômodo: o `fire()` que dispara o lembrete roda **fora de
+> componente** (é um `setTimeout`), onde não há hook. Ele passou a **receber** os textos em vez de
+> ir buscá-los — criar um leitor de idioma global só para ele seria uma segunda fonte da mesma
+> verdade, que é exatamente o que `useIdioma` existe para evitar.
+>
+> `lib/ics.ts` **deixou de batizar** o evento sem nome. Ele devolve título vazio e quem importa põe
+> o nome de reserva, porque esse nome vai para o BANCO: o bloco fica com o nome no idioma de quem
+> importou, como qualquer outro texto que a pessoa escreve no app. Um módulo de parsing não tem
+> como saber em que idioma alguém está lendo.
+>
+> O selo da imagem chega pronto, escrito, em vez de o módulo montar a frase: medir a largura do
+> texto (`measureText`) é o que obriga o desenho a receber a linha inteira, não pedaços.
+>
+> Medido em build de produção a 390px, nos dois idiomas. O bloco de tempo é forjado por
+> interceptação (terminou há 60s), porque o check-in só existe numa janela de dois minutos — o
+> código que o lê é o de verdade, contagem inclusive. O aviso leu `⏱️ "Ler o artigo" is over · Did
+> you get it done? · Reschedule · Did it ✅` e `⏱️ "Ler o artigo" terminou · Conseguiu fazer? ·
+> Reagendar · Concluí ✅`: o título do bloco atravessa intacto, que é o combinado — quem escreveu
+> foi a pessoa. O `.ics` sem `SUMMARY` apareceu como "(untitled)" e "(sem título)", com a data no
+> formato de cada idioma ("Jan 15 · 10:00 AM" contra "15 de jan. · 10:00"). Nenhum erro de JS.
+>
+> **Terceira confirmação de que a varredura por acento é piso, não teto:** das quatro frases do
+> aviso de check-in ela tinha achado UMA ("Concluí"); "Conseguiu fazer?", "Reagendar" e
+> `"X" terminou` não têm acento nenhum. O mesmo vale para o título da notificação do sistema
+> ("Lembrete · NeuroTask"). Quem fechar a fatia 6 lê os módulos, não só o relatório.
+
 - [ ] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda.** A mesma ordem
       que a tradução usou — o caminho até a escolha do idioma primeiro: moldura global →
       login e cadastro → o que sobrou dentro das telas → telas de erro. O guarda é irmão do

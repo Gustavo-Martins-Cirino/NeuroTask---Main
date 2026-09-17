@@ -92,7 +92,9 @@ function buildEvent(props: Record<string, Prop>): IcsEvent | null {
   const title = props["SUMMARY"] ? unescapeText(props["SUMMARY"].value).trim() : ""
   return {
     uid: props["UID"]?.value?.trim() || null,
-    title: title || "(sem título)",
+    // Pode vir vazio: o .ics não obriga SUMMARY. Quem exibe põe o nome de
+    // reserva, porque só ele sabe em que idioma a pessoa está lendo.
+    title,
     start: startP.date,
     end,
     allDay,

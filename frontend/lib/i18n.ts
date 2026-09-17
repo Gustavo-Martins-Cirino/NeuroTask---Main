@@ -111,6 +111,26 @@ export interface Dicionario {
    * texto solto no JSX (lib/texto-solto.test.ts).
    */
   moldura: {
+    /**
+     * Os avisos que aparecem em QUALQUER tela: o lembrete da hora marcada e o
+     * check-in de quando um bloco termina ("conseguiu fazer?").
+     *
+     * O `lembrete` é o único texto do app lido fora de um componente: quem o
+     * dispara é uma função solta, sem React por perto. Ele lê a região guardada
+     * na hora, e é por isso que ele existe como chave e não como hook.
+     */
+    checkin: {
+      lembrete: string
+      /** Título da notificação do SISTEMA, que aparece fora da janela do app. */
+      lembreteDoSistema: string
+      registrado: (titulo: string) => string
+      registradoDetalhe: string
+      reagendado: (titulo: string) => string
+      terminou: (titulo: string) => string
+      conseguiu: string
+      conclui: string
+      reagendar: string
+    }
     cabecalho: {
       alternarTema: string
       /** Título do botão do retrato enquanto o nome não carregou. */
@@ -450,6 +470,8 @@ export interface Dicionario {
       toastExportado: (n: number) => string
       /** O diálogo que a opção "Importar" abre. */
       dialogo: {
+        /** Evento de .ics sem SUMMARY — vira o nome do bloco no calendário. */
+        semTitulo: string
         titulo: string
         escolherArquivo: string
         /** Onde achar o .ics no Google — a ênfase marca o passo final. */
@@ -992,6 +1014,8 @@ export interface Dicionario {
   /** O Escritório 3D: a cena não tem texto nenhum (é canvas puro) — o que
    *  falava era a tela, o editor de avatar e a loja. */
   escritorio: {
+    /** O selo desenhado no canto da imagem que a pessoa compartilha. */
+    seloDaImagem: (nivel: number) => string
     /** Quando o navegador não tem WebGL: a sala não desenha, o resto da tela funciona. */
     semWebgl: { titulo: string; texto: string }
     editarAvatar: string
@@ -1167,6 +1191,17 @@ export const pt: Dicionario = {
     configuracoes: "Configurações",
   },
   moldura: {
+    checkin: {
+      lembrete: "🔔 Lembrete",
+      lembreteDoSistema: "Lembrete · NeuroTask",
+      registrado: (titulo) => `"${titulo}" registrado! 🎯`,
+      registradoDetalhe: "Isso alimenta seu autoconhecimento.",
+      reagendado: (titulo) => `"${titulo}" reagendado para agora.`,
+      terminou: (titulo) => `⏱️ "${titulo}" terminou`,
+      conseguiu: "Conseguiu fazer?",
+      conclui: "Concluí ✅",
+      reagendar: "Reagendar",
+    },
     cabecalho: {
       alternarTema: "Alternar tema",
       avatar: "Avatar",
@@ -1585,6 +1620,7 @@ export const pt: Dicionario = {
       nadaParaExportar: "Nenhum bloco pra exportar ainda.",
       toastExportado: (n) => `${n} ${n === 1 ? "bloco exportado" : "blocos exportados"} (.ics)`,
       dialogo: {
+        semTitulo: "(sem título)",
         titulo: "Importar agenda (.ics)",
         escolherArquivo: "Escolher arquivo .ics",
         ondeAchar:
@@ -1991,6 +2027,7 @@ export const pt: Dicionario = {
     toqueMicUseFones: "Toque no microfone para falar. Use fones para melhor resultado.",
   },
   escritorio: {
+    seloDaImagem: (nivel) => `NeuroTask · Nível ${nivel}`,
     semWebgl: {
       titulo: "Seu escritório precisa de 3D",
       texto: "Este navegador está sem WebGL. A loja e o avatar continuam funcionando — abra em outro navegador para ver a sala.",
@@ -2239,6 +2276,17 @@ export const en: Dicionario = {
     configuracoes: "Settings",
   },
   moldura: {
+    checkin: {
+      lembrete: "🔔 Reminder",
+      lembreteDoSistema: "Reminder · NeuroTask",
+      registrado: (titulo) => `"${titulo}" logged! 🎯`,
+      registradoDetalhe: "This feeds your self-knowledge.",
+      reagendado: (titulo) => `"${titulo}" moved to now.`,
+      terminou: (titulo) => `⏱️ "${titulo}" is over`,
+      conseguiu: "Did you get it done?",
+      conclui: "Did it ✅",
+      reagendar: "Reschedule",
+    },
     cabecalho: {
       alternarTema: "Toggle theme",
       avatar: "Avatar",
@@ -2651,6 +2699,7 @@ export const en: Dicionario = {
       nadaParaExportar: "No blocks to export yet.",
       toastExportado: (n) => `${n} ${n === 1 ? "block" : "blocks"} exported (.ics)`,
       dialogo: {
+        semTitulo: "(untitled)",
         titulo: "Import a calendar (.ics)",
         escolherArquivo: "Choose an .ics file",
         ondeAchar:
@@ -3055,6 +3104,7 @@ export const en: Dicionario = {
     toqueMicUseFones: "Tap the microphone to talk. Use headphones for best results.",
   },
   escritorio: {
+    seloDaImagem: (nivel) => `NeuroTask · Level ${nivel}`,
     semWebgl: {
       titulo: "Your office needs 3D",
       texto: "This browser has no WebGL. The shop and the avatar still work — open it in another browser to see the room.",

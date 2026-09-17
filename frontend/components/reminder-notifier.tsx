@@ -7,18 +7,19 @@ import { awardXp, taskXpAmount } from "@/lib/gamification"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { logActivity } from "@/lib/activity-log"
 import { toast } from "sonner"
+import { useDicionario } from "@/hooks/use-idioma"
 
 function localDateKey() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
-function fire(content: string) {
+function fire(content: string, textos: { lembrete: string; lembreteDoSistema: string }) {
   if (typeof window === "undefined") return
   if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("Lembrete · NeuroTask", { body: content, icon: "/favicon.ico" })
+    new Notification(textos.lembreteDoSistema, { body: content, icon: "/favicon.ico" })
   } else {
-    toast("🔔 Lembrete", { description: content })
+    toast(textos.lembrete, { description: content })
   }
 }
 
@@ -29,6 +30,7 @@ function fire(content: string) {
  */
 export function ReminderNotifier() {
   const supabase = createClient()
+  const t = useDicionario().moldura.checkin
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const schedule = useCallback(async () => {
@@ -55,12 +57,12 @@ export function ReminderNotifier() {
       if (delay <= 0) continue // horário já passou: não dispara atrasado
 
       const id = setTimeout(() => {
-        fire(r.content)
+        fire(r.content, t)
         localStorage.setItem(notifiedKey, "1")
       }, delay)
       timers.current.push(id)
     }
-  }, [supabase])
+  }, [supabase, t])
 
   useEffect(() => {
     schedule()
@@ -129,9 +131,9 @@ export function ReminderNotifier() {
           window.dispatchEvent(new Event("neurotask:tasks-changed"))
         }
       }
-      toast.success(`"${block.title}" registrado! 🎯`, { description: "Isso alimenta seu autoconhecimento." })
+      toast.success(t.registrado(block.title), { description: t.registradoDetalhe })
     },
-    [supabase]
+    [supabase, t]
   )
 
   const rescheduleFromCheckin = useCallback(
@@ -145,9 +147,9 @@ export function ReminderNotifier() {
         .from("time_blocks")
         .update({ start_time: newStart.toISOString(), end_time: newEnd.toISOString() })
         .eq("id", block.id)
-      toast.success(`"${block.title}" reagendado para agora.`)
+      toast.success(t.reagendado(block.title))
     },
-    [supabase]
+    [supabase, t]
   )
 
   useEffect(() => {
@@ -161,11 +163,11 @@ export function ReminderNotifier() {
         const key = `nt-checkin-${b.id}-${b.end_time}`
         if (localStorage.getItem(key)) continue
         localStorage.setItem(key, "1")
-        toast(`⏱️ "${b.title}" terminou`, {
-          description: "Conseguiu fazer?",
+        toast(t.terminou(b.title), {
+          description: t.conseguiu,
           duration: 60_000,
-          action: { label: "Concluí ✅", onClick: () => completeFromCheckin(b) },
-          cancel: { label: "Reagendar", onClick: () => rescheduleFromCheckin(b) },
+          action: { label: t.conclui, onClick: () => completeFromCheckin(b) },
+          cancel: { label: t.reagendar, onClick: () => rescheduleFromCheckin(b) },
         })
       }
     }, 30_000)

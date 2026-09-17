@@ -844,3 +844,33 @@ describe("as telas de erro", () => {
     }
   })
 })
+
+describe("o que fala fora de uma tela", () => {
+  it("os avisos de check-in mudam de idioma", () => {
+    expect(en.moldura.checkin.conseguiu).not.toBe(pt.moldura.checkin.conseguiu)
+    expect(en.moldura.checkin.conclui).not.toBe(pt.moldura.checkin.conclui)
+    expect(en.moldura.checkin.reagendado("X")).not.toBe(pt.moldura.checkin.reagendado("X"))
+    expect(en.moldura.checkin.lembreteDoSistema).not.toBe(pt.moldura.checkin.lembreteDoSistema)
+  })
+
+  // O título do bloco é de quem escreveu: ele aparece igual nos dois idiomas, e
+  // só a moldura da frase muda.
+  it("o título do bloco entra inteiro na frase, nos dois idiomas", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(d.moldura.checkin.terminou("Ler o artigo"), nome).toContain("Ler o artigo")
+      expect(d.moldura.checkin.registrado("Ler o artigo"), nome).toContain("Ler o artigo")
+    }
+  })
+
+  it("o selo da imagem do Escritório leva o nível e muda de idioma", () => {
+    expect(pt.escritorio.seloDaImagem(7)).toContain("7")
+    expect(en.escritorio.seloDaImagem(7)).toContain("7")
+    expect(en.escritorio.seloDaImagem(7)).not.toBe(pt.escritorio.seloDaImagem(7))
+  })
+
+  it("o nome de reserva do evento sem SUMMARY muda de idioma", () => {
+    expect(en.configuracoes.importarExportar.dialogo.semTitulo).not.toBe(
+      pt.configuracoes.importarExportar.dialogo.semTitulo
+    )
+  })
+})

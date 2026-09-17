@@ -146,3 +146,21 @@ describe("blocksToIcsEvents (banco → eventos)", () => {
     expect(e.recurrence).toBe("daily")
   })
 })
+
+describe("evento sem nome", () => {
+  // O módulo NÃO inventa "(sem título)": quem importa é que sabe em que idioma a
+  // pessoa está lendo, e o nome que ele escolher vai para o banco junto.
+  it("sem SUMMARY, o título vem vazio em vez de traduzido", () => {
+    const [e] = parseIcs(
+      wrap("BEGIN:VEVENT\r\nUID:sem-nome\r\nDTSTART:20260115T130000Z\r\nDTEND:20260115T140000Z\r\nEND:VEVENT")
+    )
+    expect(e.title).toBe("")
+  })
+
+  it("SUMMARY só com espaços conta como vazio", () => {
+    const [e] = parseIcs(
+      wrap("BEGIN:VEVENT\r\nUID:so-espaco\r\nSUMMARY:   \r\nDTSTART:20260115T130000Z\r\nDTEND:20260115T140000Z\r\nEND:VEVENT")
+    )
+    expect(e.title).toBe("")
+  })
+})
