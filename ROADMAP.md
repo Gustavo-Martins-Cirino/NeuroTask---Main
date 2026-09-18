@@ -2170,9 +2170,20 @@ vira ruído.
 > não é); (2) pedir para a IA PROCURAR algo sem ferramentas disponíveis faz ela responder "não
 > encontrei", corretamente, medindo outra coisa que não o idioma.
 >
-> **Ainda em português, e é o próximo passo deste item:** o `buildBriefing` — o panorama do dia é
-> 100% determinístico e vai direto para a tela, sem modelo no meio, então nenhuma instrução de
-> idioma o alcança.
+> **O `buildBriefing` ficou em português, e é escolha.** O panorama do dia é determinístico e vai
+> direto para a tela, sem modelo no meio, então nenhuma instrução de idioma o alcança — mas ele
+> está **parado**: nada chama `mode: "briefing"` desde que a Neuro deixou de falar primeiro
+> (23/08), e a nota daquele dia diz que ele ficou ali "pronto para quando o panorama voltar por
+> pedido". Traduzir agora seria escrever um punhado de frases no dicionário para código que
+> ninguém executa e cujo texto vai ser reescrito quando a feature voltar com outro formato.
+> **Quem trouxer o panorama de volta traz bilíngue** — é a única coisa que precisa ficar dita.
+>
+> **Um resultado negativo, para ninguém "consertar" o que funciona:** desconfiei do `fmtDM`, que
+> entrega datas como `05/09` DENTRO do resultado do plano reverso, direto para o modelo — o mesmo
+> formato ambíguo que a 4b corrigiu no gráfico. Medi com duas datas em que dia e mês são ambos
+> plausíveis (`05/09` e `03/04`), em conversa inglesa: o modelo respondeu "September 5th" e
+> "April 3rd", certos os dois, e ainda converteu `07:30` para `7:30 AM` por conta própria. O
+> contexto em português ao redor basta para ele saber a ordem. Não mexi.
 
 - [x] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda. Feito (17/09), em
       seis fatias.** A ordem foi o caminho até a escolha do idioma: moldura global → Modo Foco →
