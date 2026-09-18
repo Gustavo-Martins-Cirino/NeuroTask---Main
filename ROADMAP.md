@@ -254,9 +254,32 @@ repositório:
       `insert`), mas ninguém abriu. Vale conferir junto: navegador sem WebGL (o fallback existe
       em `office-scene-3d.tsx`, nunca foi visto rodando) e a tela de um celular real.
       Agora a conta nova é recebida por um **guia de boas-vindas** (`components/onboarding.tsx`,
-      montado no AppShell) — quatro passos com a tese, aparece uma vez por conta. Ele orienta,
-      mas **não substitui esta verificação**: continua faltando abrir de fato as telas vazias e
-      ver se o guia cai bem num celular real.
+      montado no AppShell) — quatro passos com a tese, aparece uma vez por conta.
+
+      **Metade disto foi verificada em 18/09, e o resultado é bom.** As oito telas foram abertas
+      a 390px com o banco respondendo VAZIO em tudo e uma sessão de conta nova (sem nome, sem
+      foto, sem `@usuário`, sem nada comprado): nenhuma tela em branco, **nenhum erro de JS**,
+      nada fora da tela e nenhuma rolagem horizontal em nenhuma delas. O dashboard vazio diz
+      "Nenhum bloco pela frente hoje" e "Nada com prazo para hoje"; a loja do Escritório mostra
+      os itens com "Moedas insuficientes"; o Escritório e a Neuro montam seus canvas. A leitura
+      do código estava certa — os `maybeSingle` aguentam.
+
+      **O fallback sem WebGL foi visto rodando pela primeira vez** (Chrome com `--disable-webgl`):
+      aparece "Seu escritório precisa de 3D · Este navegador está sem WebGL", o canvas não monta,
+      nada estoura, e a loja embaixo continua inteira e comprável.
+
+      Duas coisas pareceram defeito e NÃO eram — as duas pelo mesmo motivo, que vale guardar:
+      **elemento `fixed` numa captura `fullPage` é desenhado onde estaria no viewport original**,
+      ou seja, no meio do documento. O dock parecia cortar os cartões do dashboard: medido, ele é
+      barra de rodapé (`top: 787`, altura 57, encostando embaixo, largura cheia). O guia de
+      boas-vindas parecia tapar o aviso de WebGL: medido, é cartão `fixed` de 358px com 16px de
+      margem de cada lado, ocupando de 245 a 600 numa tela de 844 — cabe inteiro, botões
+      alcançáveis. **Nenhum dos dois é bug, e nenhum dos dois se vê numa captura de página
+      inteira.**
+
+      **O que ainda precisa de gente:** criar uma conta de verdade (o fluxo de e-mail e o
+      primeiro login não dá para forjar), e abrir num celular de verdade — toque, teclado
+      virtual subindo, e se o guia lê bem na mão.
 
 **Critério de pronto**: alguém que nunca viu o app abre, entende o que fazer sem você do
 lado, e volta no dia seguinte sozinho.
