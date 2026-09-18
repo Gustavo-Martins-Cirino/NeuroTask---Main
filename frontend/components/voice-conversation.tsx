@@ -7,6 +7,7 @@ import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { OndaSonora } from "@/components/onda-sonora"
 import { estadoDaOnda } from "@/lib/onda-sonora"
 import { useDicionario, useIdioma, useLocale } from "@/hooks/use-idioma"
+import { pedeConfirmacao, RESPOSTA_CURTA } from "@/lib/ia-idioma"
 import { enfatizar } from "@/lib/enfase"
 
 type Status = "idle" | "listening" | "thinking" | "speaking"
@@ -345,7 +346,12 @@ export function VoiceConversation({
         const res = await fetch("/api/ai", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history.slice(-6), mode: "voice", tz: new Date().getTimezoneOffset() }),
+          body: JSON.stringify({
+            messages: history.slice(-6),
+            mode: "voice",
+            tz: new Date().getTimezoneOffset(),
+            idioma: idiomaRef.current,
+          }),
         })
         const reply = (await res.text()).trim() || traducaoRef.current.ia.respostaFallback
         if (disposed) return
@@ -563,8 +569,7 @@ export function VoiceConversation({
   }
 
   const needsConfirm =
-    !resting && !ouvindo && status === "idle" && !!lastAssistant &&
-    /(posso confirmar|confirmar\?|confirma\?)/i.test(lastAssistant.content)
+    !resting && !ouvindo && status === "idle" && !!lastAssistant && pedeConfirmacao(lastAssistant.content)
 
   return (
     <AnimatePresence>
@@ -652,18 +657,19 @@ export function VoiceConversation({
                   <div className="mt-5 flex h-11 items-center justify-center gap-2">
                     {needsConfirm && (
                       <>
-                        {/* O valor enviado é sempre "sim"/"não": a IA só entende
-                            português hoje (o system prompt não é bilíngue), então
-                            o rótulo do botão traduz e o que ele manda não muda. */}
+                        {/* O rótulo é do dicionário (é o que a pessoa lê) e a
+                            palavra enviada é de `lib/ia-idioma` (é o que a IA
+                            recebe). Coincidem em cada idioma por motivos
+                            diferentes, e é por isso que moram separados. */}
                         <button
-                          onClick={() => submitRef.current("sim")}
+                          onClick={() => submitRef.current(RESPOSTA_CURTA[idioma].sim)}
                           className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
                         >
                           <Check className="h-4 w-4" />
                           {traducao.ia.sim}
                         </button>
                         <button
-                          onClick={() => submitRef.current("não")}
+                          onClick={() => submitRef.current(RESPOSTA_CURTA[idioma].nao)}
                           className="flex items-center gap-2 rounded-full border border-border/60 px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
                         >
                           <X className="h-4 w-4" />

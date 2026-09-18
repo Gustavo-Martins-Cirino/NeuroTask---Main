@@ -206,9 +206,14 @@ Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
   acento, então era piso e não total. O seletor continua dizendo **"região e formato"**,
   nunca "idioma" — trocar o rótulo pediria desacoplar região de idioma (hoje um implica o
   outro), o que é redesenho de dado e ficou registrado no ROADMAP como decisão em aberto.
-  **O que a própria IA escreve não entra nisso**: as respostas do modelo saem sempre em
-  português (o system prompt de `app/api/ai/route.ts` não é bilíngue) — é conteúdo dinâmico,
-  não interface, e ensiná-la a responder no idioma de quem usa é um item à parte do ROADMAP.
+  **O que a própria IA escreve entrou nisso em 18/09**: o `BASE_PROMPT` continua escrito em
+  português (é instrução para o modelo, não texto de tela), mas o idioma da RESPOSTA entra por
+  `instrucaoDeIdioma` (`lib/ia-idioma.ts`) com o que o cliente manda, como ÚLTIMA linha do prompt.
+  A instrução vai escrita na língua de destino, e manda explicitamente **não traduzir o que a
+  pessoa escreveu** — sem isso, "Comprar pão na padaria" virava "Buy bread at the bakery" e o
+  título traduzido ia para o banco. O `pedeConfirmacao` da conversa por voz reconhece os dois
+  idiomas sempre (o modelo às vezes responde na língua da última mensagem), e os botões Sim/Não
+  enviam a palavra do idioma — rótulo do dicionário, palavra enviada do `ia-idioma`.
 
 ## Funcionalidades da IA (Neuro IA)
 

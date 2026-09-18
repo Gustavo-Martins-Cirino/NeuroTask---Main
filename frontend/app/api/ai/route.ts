@@ -1,3 +1,5 @@
+import { dicionario, type Idioma } from "@/lib/i18n"
+import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
 import { createClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
@@ -11,7 +13,10 @@ interface ChatMessage {
   content: string
 }
 
-const BASE_PROMPT = `Você é a Neuro IA, assistente de produtividade do NeuroTask (tarefas, time blocking, gamificação). Português do Brasil, direta, calorosa, respostas curtas.
+// As instruções são em português porque foi assim que foram escritas e afinadas
+// — e não porque a resposta precise ser. O idioma da RESPOSTA entra no fim, por
+// `instrucaoDeIdioma`, com o que o cliente mandou (ver lib/ia-idioma).
+const BASE_PROMPT = `Você é a Neuro IA, assistente de produtividade do NeuroTask (tarefas, time blocking, gamificação). Direta, calorosa, respostas curtas.
 
 AGENDA: a seção "AGENDA" abaixo traz os dados REAIS do usuário e cobre HOJE E AMANHÃ. Para perguntas dentro dessa janela, responda direto por ela, SEM chamar ferramentas de listagem. Para qualquer coisa ALÉM dela — "esta semana", "este mês", "dia 15", "que compromissos eu tenho" —, chame list_time_blocks antes de responder: a agenda abaixo NÃO tem esses dias, e responder por ela seria dizer que não há nada. Nunca invente itens; se não houver, diga "não encontrei". Atrasada = somente o que estiver listado como atrasado (nunca calcule por datas). Seja proativa: aponte conflitos e intervalos curtos que vir na agenda.
 
@@ -866,8 +871,10 @@ async function runOpenAIAgent(
   messages: ChatMessage[],
   supabase: SupabaseClient,
   userId: string,
-  tzMin: number
+  tzMin: number,
+  idioma: Idioma
 ): Promise<string> {
+  const t = dicionario(idioma).ia
   const convo: OpenAIMessage[] = [
     { role: "system", content: system },
     ...messages.map((m) => ({ role: m.role, content: m.content })),
@@ -921,7 +928,7 @@ async function runOpenAIAgent(
       continue // deixa o modelo reagir aos resultados
     }
 
-    return msg.content ?? "Pronto."
+    return msg.content ?? t.erros.semTexto
   }
 
   // Esgotou as iterações: força uma resposta de texto (sem mais ferramentas)
@@ -932,8 +939,7 @@ async function runOpenAIAgent(
         ...convo,
         {
           role: "user",
-          content:
-            "Resuma para mim, em uma ou duas frases, o que você efetivamente conseguiu fazer com base nos resultados das ferramentas acima. Não chame mais ferramentas.",
+          content: pedidoDeResumo(idioma),
         },
       ],
       tool_choice: "none",
@@ -948,7 +954,7 @@ async function runOpenAIAgent(
     /* cai no fallback abaixo */
   }
 
-  return "Tentei executar as ações, mas algo deu errado. Confira o resultado e tente novamente."
+  return t.erros.acaoFalhou
 }
 
 // Streaming simples de texto (Gemini / Anthropic — sem ferramentas por enquanto)
@@ -1041,29 +1047,41 @@ async function streamText(
   })
 }
 
+/**
+ * O idioma das respostas de erro que saem ANTES de o corpo ser lido — 401 e 503.
+ * Elas não podem esperar pelo `body.idioma`: a 401 acontece antes de haver
+ * sessão, e ler o corpo duas vezes não é possível. O `Accept-Language` do
+ * navegador é a única pista que chega junto do pedido.
+ */
+function idiomaDoPedido(req: Request): Idioma {
+  return /\ben\b/i.test(req.headers.get("accept-language") ?? "") ? "en" : "pt"
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return new Response("Não autorizado", { status: 401 })
+  if (!user) return new Response(dicionario(idiomaDoPedido(req)).ia.erros.naoAutorizado, { status: 401 })
 
   const cfg = resolveProvider()
   if (!cfg) {
-    return new Response(
-      "A Neuro IA ainda não está configurada. Adicione GROQ_API_KEY (grátis em console.groq.com) ou GEMINI_API_KEY (grátis em aistudio.google.com) ao .env.local e reinicie o servidor.",
-      { status: 503 }
-    )
+    return new Response(dicionario(idiomaDoPedido(req)).ia.erros.naoConfigurada, { status: 503 })
   }
 
-  let body: { messages?: ChatMessage[]; dayNotes?: string; now?: string; mode?: string; tz?: number }
+  let body: { messages?: ChatMessage[]; dayNotes?: string; now?: string; mode?: string; tz?: number; idioma?: string }
   try {
     body = await req.json()
   } catch {
-    return new Response("Requisição inválida", { status: 400 })
+    return new Response(dicionario(idiomaDoPedido(req)).ia.erros.pedidoInvalido, { status: 400 })
   }
 
   let messages = (body.messages ?? []).filter(
     (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
   )
+
+  // Só "en" muda alguma coisa: qualquer outra coisa (ausente, lixo, idioma que o
+  // app não tem) cai no português, que é o que o app sempre fez.
+  const idioma: Idioma = body.idioma === "en" ? "en" : "pt"
+  const t = dicionario(idioma).ia
 
   let system = BASE_PROMPT
   // A data é montada AQUI, a partir do fuso que o cliente manda — o `body.now`
@@ -1086,15 +1104,20 @@ export async function POST(req: Request) {
     })
   }
 
-  if (messages.length === 0) return new Response("Envie ao menos uma mensagem", { status: 400 })
+  if (messages.length === 0) return new Response(t.erros.semMensagem, { status: 400 })
 
   // Injeta a agenda real compacta — fonte da verdade p/ perguntas sobre o dia
   system += `\n\n${await buildDayContext(supabase, body.tz ?? 0)}`
 
+  // O idioma fica por ÚLTIMO, depois do modo voz e da agenda: é a instrução que
+  // não pode ser diluída pelas que vêm depois, e o fim do prompt é onde o modelo
+  // olha primeiro quando duas instruções se cruzam.
+  system += `\n\n${instrucaoDeIdioma(idioma)}`
+
   // Groq → loop com ferramentas (cria/edita/exclui de verdade)
   if (cfg.provider === "groq") {
     try {
-      const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0)
+      const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0, idioma)
 
       // Limite do Groq atingido → tenta o Gemini como reserva (sem ferramentas)
       if (finalText === "__RATE_LIMIT__" && process.env.GEMINI_API_KEY) {
@@ -1114,7 +1137,7 @@ export async function POST(req: Request) {
       })
     } catch (e) {
       return new Response(
-        `Erro ao falar com a IA (groq). ${e instanceof Error ? e.message : ""}`.trim(),
+        `${t.erros.falhaAoFalar("groq")} ${e instanceof Error ? e.message : ""}`.trim(),
         { status: 502 }
       )
     }

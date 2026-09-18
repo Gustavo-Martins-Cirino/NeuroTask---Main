@@ -2128,6 +2128,52 @@ vira ruído.
 > "Escolha um arquivo de imagem.", "Conseguiu fazer?", "Reagendar" nem "Lembrete · NeuroTask" —
 > todas achadas com o olho, lendo os módulos que ela apontava. O número 49 sempre foi piso.
 
+> **A Neuro IA passou a responder no idioma de quem fala com ela (18/09).** Era o último fio da
+> tradução, e o que o CLAUDE.md descrevia como decisão em aberto: a interface inteira mudava de
+> idioma e a IA continuava em português, porque o `BASE_PROMPT` dizia "Português do Brasil" na
+> primeira linha.
+>
+> As instruções continuam escritas em português — foi assim que foram afinadas, e o modelo as lê
+> igual. O que mudou é que o idioma da RESPOSTA entra por `instrucaoDeIdioma` (`lib/ia-idioma.ts`),
+> com o que o cliente manda. Três decisões pequenas que fizeram diferença na medição:
+>
+> - **A instrução vai escrita no idioma de destino.** Pedir em português que ele responda em
+>   inglês é um pedido que ele traduz antes de obedecer; em inglês, ele só obedece.
+> - **Ela é a ÚLTIMA linha do prompt**, depois do modo voz e da agenda do dia. Instrução que fica
+>   no meio é diluída pelas que vêm depois.
+> - **"Nunca traduza o que a pessoa escreveu."** Sem essa frase, pedir uma tarefa chamada
+>   "Comprar pão na padaria" numa conversa em inglês devolvia "Buy bread at the bakery" — e esse
+>   título ia para o banco.
+>
+> O `needsConfirm` da conversa por voz reconhecia só "posso confirmar?". Agora reconhece os dois
+> idiomas **sempre**, e não só o da interface: o modelo às vezes responde na língua da última
+> mensagem, e botão de Sim/Não que não aparece, numa tela onde não dá para digitar, é pior que
+> botão sobrando. Os botões também passaram a **enviar** "yes"/"no" em inglês — o rótulo é do
+> dicionário (é o que a pessoa lê), a palavra enviada é do `ia-idioma` (é o que a IA recebe).
+>
+> Foram junto as frases que a rota responde **sem passar pelo modelo**, que continuariam em
+> português: 401, 503, pedido inválido, sem mensagem, falha ao falar com o provedor, o
+> `"Pronto."` de quando o modelo devolve texto vazio e o aviso de ação malsucedida. E o pedido de
+> resumo forçado — aquele que a rota injeta como fala do usuário quando as iterações de
+> ferramenta acabam — passou a mudar de idioma junto, porque uma fala do usuário em português
+> puxa a resposta de volta para o português.
+>
+> **Medido contra o modelo de verdade** (`openai/gpt-oss-120b`, o que o `.env.local` configura),
+> com o prompt lido do arquivo em vez de copiado: em inglês respondeu em inglês e terminou com
+> "Can I confirm?" — exatamente o que o `pedeConfirmacao` novo reconhece; em português respondeu
+> "Posso criar a tarefa 'Ligar para o dentista' para amanhã às 9h?"; e o pedido em inglês de criar
+> `"Comprar pão na padaria"` voltou em inglês **com o título intacto**.
+>
+> Duas armadilhas do banco de teste, que valem para a próxima medição: (1) `max_tokens: 220` sem
+> `reasoning_effort: "low"` devolve conteúdo VAZIO neste modelo — os tokens vão todos para o
+> raciocínio, e por um momento pareceu regressão minha (a rota já manda `reasoning_effort`, então
+> não é); (2) pedir para a IA PROCURAR algo sem ferramentas disponíveis faz ela responder "não
+> encontrei", corretamente, medindo outra coisa que não o idioma.
+>
+> **Ainda em português, e é o próximo passo deste item:** o `buildBriefing` — o panorama do dia é
+> 100% determinístico e vai direto para a tela, sem modelo no meio, então nenhuma instrução de
+> idioma o alcança.
+
 - [x] **Traduzir os textos soltos, em fatias, e fechar a porta com um guarda. Feito (17/09), em
       seis fatias.** A ordem foi o caminho até a escolha do idioma: moldura global → Modo Foco →
       login e cadastro → o que sobrava dentro das telas → telas de erro → o texto escrito dentro

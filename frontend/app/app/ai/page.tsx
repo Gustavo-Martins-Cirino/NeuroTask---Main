@@ -251,6 +251,7 @@ export default function AiPage() {
           messages: nextMessages.slice(-6),
           dayNotes,
           tz: new Date().getTimezoneOffset(),
+          idioma,
         }),
       })
 

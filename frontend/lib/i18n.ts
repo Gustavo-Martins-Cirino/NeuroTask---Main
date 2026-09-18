@@ -1001,6 +1001,25 @@ export interface Dicionario {
    * texto fixo do app: rótulos, erros de rede/microfone e o estado da conversa.
    */
   ia: {
+    /**
+     * O que a ROTA responde quando nem chega a falar com o modelo. Saem antes de
+     * o corpo do pedido ser lido, então o idioma delas vem do `Accept-Language`
+     * — a única pista que chega junto.
+     */
+    erros: {
+      naoAutorizado: string
+      /** Some para quem usa: é recado para mim, com o nome da variável. */
+      naoConfigurada: string
+      /** O corpo do pedido nem era JSON. Sai antes de tudo. */
+      pedidoInvalido: string
+      semMensagem: string
+      /** O provedor (groq/gemini) entra no texto: é o que me diz onde olhar. */
+      falhaAoFalar: (provedor: string) => string
+      /** As ferramentas rodaram e o modelo não conseguiu resumir o que fez. */
+      acaoFalhou: string
+      /** O modelo respondeu sem texto nenhum — e a tela não pode ficar vazia. */
+      semTexto: string
+    }
     /** Sinal de limite gratuito da IA, sem jargão técnico. */
     limiteAtingido: string
     /** Mesmo sinal, versão curta e falável — para a conversa ao vivo. */
@@ -2068,6 +2087,16 @@ export const pt: Dicionario = {
     },
   },
   ia: {
+    erros: {
+      naoAutorizado: "Não autorizado",
+      naoConfigurada:
+        "A Neuro IA ainda não está configurada. Adicione GROQ_API_KEY (grátis em console.groq.com) ou GEMINI_API_KEY (grátis em aistudio.google.com) ao .env.local e reinicie o servidor.",
+      pedidoInvalido: "Requisição inválida",
+      semMensagem: "Envie ao menos uma mensagem",
+      falhaAoFalar: (provedor) => `Erro ao falar com a IA (${provedor}).`,
+      acaoFalhou: "Tentei executar as ações, mas algo deu errado. Confira o resultado e tente novamente.",
+      semTexto: "Pronto.",
+    },
     limiteAtingido:
       "A Neuro está descansando 😴 O limite gratuito da IA chegou por agora — tente de novo em instantes.",
     limiteAtingidoVoz: "Estou descansando um pouquinho 😴 O limite gratuito da IA chegou por agora.",
@@ -3199,6 +3228,16 @@ export const en: Dicionario = {
     },
   },
   ia: {
+    erros: {
+      naoAutorizado: "Not authorized",
+      naoConfigurada:
+        "Neuro AI isn't set up yet. Add GROQ_API_KEY (free at console.groq.com) or GEMINI_API_KEY (free at aistudio.google.com) to .env.local and restart the server.",
+      pedidoInvalido: "Invalid request",
+      semMensagem: "Send at least one message",
+      falhaAoFalar: (provedor) => `Error talking to the AI (${provedor}).`,
+      acaoFalhou: "I tried to carry out the actions, but something went wrong. Check the result and try again.",
+      semTexto: "Done.",
+    },
     limiteAtingido:
       "Neuro is taking a nap 😴 The free AI limit was reached for now — try again in a moment.",
     limiteAtingidoVoz: "I'm taking a little nap 😴 The free AI limit was reached for now.",
