@@ -1,5 +1,6 @@
-import { dicionario, type Idioma } from "@/lib/i18n"
+import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
+import { recibo, type AcaoExecutada } from "@/lib/ia-recibo"
 import { createClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
@@ -865,6 +866,24 @@ async function groqChat(cfg: ProviderConfig, payload: Record<string, unknown>): 
 }
 
 // Loop agêntico para provedores compatíveis com OpenAI (Groq)
+/**
+ * Cola o recibo embaixo da resposta do modelo.
+ *
+ * Fica FORA do que o modelo escreve, e não no lugar: a frase dele é a conversa,
+ * o recibo é o comprovante. Juntar os dois numa coisa só devolveria ao modelo a
+ * chance de reescrever o comprovante — que é justamente o defeito.
+ */
+function comRecibo(
+  texto: string,
+  executadas: AcaoExecutada[],
+  tzMin: number,
+  t: Dicionario["ia"],
+  lacoEstourou: boolean
+): string {
+  const comprovante = recibo(executadas, tzMin, t.recibo, t.recibo.diasDaSemana, lacoEstourou)
+  return comprovante ? `${texto}\n\n${comprovante}` : texto
+}
+
 async function runOpenAIAgent(
   cfg: ProviderConfig,
   system: string,
@@ -875,6 +894,9 @@ async function runOpenAIAgent(
   idioma: Idioma
 ): Promise<string> {
   const t = dicionario(idioma).ia
+  // O que as ferramentas REALMENTE fizeram. O modelo escreve a resposta de
+  // cabeça; esta lista é o que aconteceu.
+  const executadas: AcaoExecutada[] = []
   const convo: OpenAIMessage[] = [
     { role: "system", content: system },
     ...messages.map((m) => ({ role: m.role, content: m.content })),
@@ -916,6 +938,7 @@ async function runOpenAIAgent(
           parsed = {}
         }
         const result = await executeTool(call.function.name, parsed, supabase, userId, tzMin)
+        executadas.push({ nome: call.function.name, args: parsed, resultado: result })
         console.log(
           `[neuro-ia] tool=${call.function.name} args=${JSON.stringify(parsed)} result=${JSON.stringify(result)}`
         )
@@ -928,7 +951,7 @@ async function runOpenAIAgent(
       continue // deixa o modelo reagir aos resultados
     }
 
-    return msg.content ?? t.erros.semTexto
+    return comRecibo(msg.content ?? t.erros.semTexto, executadas, tzMin, t, false)
   }
 
   // Esgotou as iterações: força uma resposta de texto (sem mais ferramentas)
@@ -948,13 +971,13 @@ async function runOpenAIAgent(
     if (res.ok) {
       const data = await res.json()
       const text = data.choices?.[0]?.message?.content
-      if (text) return text
+      if (text) return comRecibo(text, executadas, tzMin, t, true)
     }
   } catch {
     /* cai no fallback abaixo */
   }
 
-  return t.erros.acaoFalhou
+  return comRecibo(t.erros.acaoFalhou, executadas, tzMin, t, true)
 }
 
 // Streaming simples de texto (Gemini / Anthropic — sem ferramentas por enquanto)

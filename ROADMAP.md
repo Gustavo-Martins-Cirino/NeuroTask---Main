@@ -302,6 +302,34 @@ repositório:
 > `relative` ("next_monday", "+3d") e o backend resolver a data. Fica anotado como o próximo
 > degrau deste bug, se ele reaparecer.
 
+> **Bugs 2 e 3 dos 4: a IA afirmava o que não tinha conferido — agora existe recibo.** Do mesmo
+> relatório: *"pedi 6 blocos e ela confirmou os 6, mas só 1 existe"*; e o contrário,
+> *"respondeu 'esse horário conflita, quer ajustar?' e o bloco já estava salvo"*.
+>
+> Os dois têm a mesma causa: **quem escreve a confirmação é o modelo, de cabeça.** O laço de tool
+> calls tem teto de 4 voltas e, ao estourar, a rota pedia a ele um resumo do que tinha feito — ou
+> seja, pedia para ele lembrar. Ele lembra do que pediu, não do que aconteceu.
+>
+> `lib/ia-recibo.ts` (16 testes) monta, **no servidor**, a lista do que as ferramentas realmente
+> fizeram, e ela vai colada embaixo da resposta. Fica FORA do texto do modelo de propósito: a
+> frase dele é a conversa, o recibo é o comprovante — juntar os dois devolveria a ele a chance de
+> reescrever o comprovante, que é o defeito.
+>
+> O que isso muda em cada caso do relatório:
+> - **T49 (disse 6, criou 1):** o recibo lista uma linha. A discordância aparece na hora, em vez
+>   de ser descoberta dias depois abrindo o calendário.
+> - **T47 (disse que conflitava, e tinha criado):** o recibo diz "criei ... ⚠️ conflita com X".
+>   O aviso deixa de esconder que o bloco existe.
+> - **Laço estourado:** passa a avisar em texto ("parei no meio do seu pedido"), em vez de
+>   inventar um resumo. Era a sugestão literal do relatório.
+>
+> Cada linha traz **dia da semana + dd/mm + hora**, na parede de quem usa — o mesmo remédio do
+> bug 1, porque foi a frase sem data que escondeu aquele erro. E só ferramentas que ESCREVEM
+> entram: resposta que só leu a agenda não ganha comprovante, senão vira ruído.
+>
+> Sem markdown no recibo, de propósito: o relatório registrou que negrito não renderiza no chat
+> (aparece `**assim**`). Isso continua aberto, e é item de tela, não da IA.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

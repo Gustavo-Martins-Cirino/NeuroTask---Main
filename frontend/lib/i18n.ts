@@ -1012,6 +1012,21 @@ export interface Dicionario {
      * o corpo do pedido ser lido, então o idioma delas vem do `Accept-Language`
      * — a única pista que chega junto.
      */
+    /**
+     * O recibo do que a Neuro fez de verdade, montado pelo servidor e colado
+     * embaixo da resposta dela. Existe porque ela já afirmou ter criado seis
+     * blocos quando só um existia (relatório de 19/09).
+     */
+    recibo: {
+      titulo: string
+      naoTerminei: string
+      criou: string
+      atualizou: string
+      excluiu: string
+      falhou: string
+      /** Domingo primeiro, como `Date.getDay()`. */
+      diasDaSemana: readonly string[]
+    }
     erros: {
       naoAutorizado: string
       /** Some para quem usa: é recado para mim, com o nome da variável. */
@@ -2095,6 +2110,24 @@ export const pt: Dicionario = {
     },
   },
   ia: {
+    recibo: {
+      titulo: "No calendário ficou assim:",
+      naoTerminei:
+        "⚠️ Parei no meio do seu pedido — pode ter sobrado coisa. Me diga o que faltou que eu termino.",
+      criou: "criei",
+      atualizou: "atualizei",
+      excluiu: "excluí",
+      falhou: "não consegui",
+      diasDaSemana: [
+        "domingo",
+        "segunda-feira",
+        "terça-feira",
+        "quarta-feira",
+        "quinta-feira",
+        "sexta-feira",
+        "sábado",
+      ],
+    },
     erros: {
       naoAutorizado: "Não autorizado",
       naoConfigurada:
@@ -3238,6 +3271,15 @@ export const en: Dicionario = {
     },
   },
   ia: {
+    recibo: {
+      titulo: "Here's what's on the calendar now:",
+      naoTerminei: "⚠️ I stopped partway through — something may be missing. Tell me what's left and I'll finish.",
+      criou: "created",
+      atualizou: "updated",
+      excluiu: "deleted",
+      falhou: "couldn't",
+      diasDaSemana: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    },
     erros: {
       naoAutorizado: "Not authorized",
       naoConfigurada:
