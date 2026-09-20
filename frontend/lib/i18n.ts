@@ -1045,6 +1045,8 @@ export interface Dicionario {
       /** As ferramentas rodaram e o modelo não conseguiu resumir o que fez. */
       acaoFalhou: string
       /** O modelo respondeu sem texto nenhum — e a tela não pode ficar vazia. */
+      /** O provedor recusou por excesso de uso. Não é defeito, é espera. */
+      ocupada: string
       semTexto: string
     }
     /** Sinal de limite gratuito da IA, sem jargão técnico. */
@@ -2146,6 +2148,8 @@ export const pt: Dicionario = {
       semMensagem: "Envie ao menos uma mensagem",
       falhaAoFalar: (provedor) => `Erro ao falar com a IA (${provedor}).`,
       acaoFalhou: "Tentei executar as ações, mas algo deu errado. Confira o resultado e tente novamente.",
+      ocupada:
+        "A Neuro recebeu pedidos demais nos últimos instantes e precisa de um minuto para respirar. Tente de novo já já.",
       semTexto: "Pronto.",
     },
     limiteAtingido:
@@ -3302,6 +3306,7 @@ export const en: Dicionario = {
       semMensagem: "Send at least one message",
       falhaAoFalar: (provedor) => `Error talking to the AI (${provedor}).`,
       acaoFalhou: "I tried to carry out the actions, but something went wrong. Check the result and try again.",
+      ocupada: "Neuro got too many requests in the last moments and needs a minute to breathe. Try again shortly.",
       semTexto: "Done.",
     },
     limiteAtingido:

@@ -360,6 +360,37 @@ repositório:
 > perguntar "o que tenho quarta?" no app e conferir. **Vale repetir os casos T01, T02 e o do dia
 > 26/09 do relatório.**
 
+> **A Neuro caiu no meio do reteste (19/09, ~22h50) — e a causa é o teto de tokens do plano
+> gratuito.** A partir da 3ª mensagem, tudo virava erro, até um "Oi". O que apareceu na tela era
+> um JSON do Google dizendo que `gemini-2.0-flash` tinha sido desativado.
+>
+> **Esse JSON era o sintoma, não a doença.** O caminho é: Groq responde 429 → a rota cai no
+> Gemini de reserva → o modelo de reserva estava morto → o erro cru vazava para a tela. Três
+> defeitos empilhados, e os três foram consertados.
+>
+> **A conta que explica tudo**, medida: o system prompt + as definições de ferramenta somam
+> **~2.457 tokens por chamada**, e a resposta pode ir a 1.024 — ou seja, ~3.500 por mensagem. O
+> teto da chave do Groq é **8.000 tokens por MINUTO** (`x-ratelimit-limit-tokens`, conferido
+> agora: 943 de 1000 requisições sobrando, mas o teto que estoura é o de tokens). **Cabem duas
+> mensagens por minuto.** A terceira é 429 — exatamente o que o relatório registrou. Um pedido de
+> vários blocos é pior ainda: o laço de ferramentas reenvia a conversa inteira a cada volta.
+>
+> **O modelo de reserva foi escolhido medindo**, não pelo nome. Com esta chave: `gemini-2.5-flash`
+> e `gemini-2.5-flash-lite` respondem **404 "no longer available to new users"**;
+> `gemini-flash-latest` oscilou (503 "high demand" por 39s, depois 200); `gemini-3-flash-preview`
+> funcionou mas levou **23s**. O escolhido é **`gemini-flash-lite-latest`** — 5/5 entre 450ms e
+> 820ms. E é um **alias** de propósito: foi um modelo fixo sendo desativado que derrubou tudo.
+>
+> O erro do provedor passou a ir para o **log**, não para a tela; quem conversa lê "a Neuro
+> recebeu pedidos demais e precisa de um minuto" no lugar do JSON. E o bloco de datas que EU
+> engordei no conserto do bug 1 encolheu de ~448 para ~348 tokens (a lista de 14 dias virou uma
+> linha).
+>
+> **O que o código não resolve, e é decisão sua:** 8.000 tokens/minuto não sustenta este app. As
+> saídas são subir o plano do Groq, cortar as definições de ferramenta (~1.556 tokens, o maior
+> pedaço — mas mexer nelas muda comportamento) ou reduzir as voltas do laço, que quebraria os
+> pedidos de vários blocos. **Sem isso, o 429 volta no próximo reteste puxado.**
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

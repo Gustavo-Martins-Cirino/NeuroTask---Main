@@ -168,13 +168,18 @@ describe("o bloco de datas do prompt", () => {
 
   // O erro exato do relatório: ela disse que 22/09/2026 cai numa quinta.
   it("22/09/2026 aparece como terça, não como quinta", () => {
-    expect(texto).toContain("2026-09-22 (22/09) = terça-feira")
-    expect(texto).not.toContain("2026-09-22 (22/09) = quinta-feira")
+    expect(texto).toContain("22/09 ter")
+    expect(texto).not.toContain("22/09 qui")
   })
 
-  it("marca hoje e amanhã na lista dos 14 dias", () => {
-    expect(texto).toContain("2026-09-19 (19/09) = sábado — hoje")
-    expect(texto).toContain("2026-09-20 (20/09) = domingo — amanhã")
+  // A lista dos próximos dias é uma linha só, e é de propósito: cada chamada
+  // reenvia o prompt inteiro contra um teto de 8000 tokens por minuto.
+  it("os próximos dias cabem numa linha", () => {
+    const linha = texto.split(/\r?\n/).find((l) => l.startsWith("Os próximos dias:"))!
+    expect(linha).toBeDefined()
+    expect(linha).toContain("19/09 sáb")
+    expect(linha).toContain("20/09 dom")
+    expect(linha.split("·")).toHaveLength(14)
   })
 
   it("manda escrever a data na confirmação, e diz por quê", () => {
@@ -183,6 +188,6 @@ describe("o bloco de datas do prompt", () => {
   })
 
   it("cobre 14 dias, atravessando a virada do mês", () => {
-    expect(texto).toContain("2026-10-02")
+    expect(texto).toContain("02/10")
   })
 })

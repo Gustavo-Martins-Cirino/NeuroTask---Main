@@ -144,13 +144,14 @@ export function descreveAgora(agoraMs: number, tzMin: number): string {
       return `- ${nome} = ${chave} (${diaMesDaChave(chave)})${hoje_}`
     }),
     ``,
-    `Os próximos 14 dias, para conferir qualquer data:`,
-    ...Array.from({ length: 14 }, (_, i) => {
-      const chave = diaSomado(p, i)
-      const nome = DIAS[diaDaSemanaDaChave(chave)]
-      const marca = i === 0 ? " — hoje" : i === 1 ? " — amanhã" : ""
-      return `- ${chave} (${diaMesDaChave(chave)}) = ${nome}${marca}`
-    }),
+    // Os 14 dias cabem numa linha só, e precisam caber: cada chamada à Neuro
+    // reenvia este prompt inteiro, e o teto do provedor é de 8000 tokens por
+    // MINUTO. Em lista, isto custava ~250 tokens — quase uma chamada a mais.
+    `Os próximos dias: ` +
+      Array.from({ length: 14 }, (_, i) => {
+        const chave = diaSomado(p, i)
+        return `${diaMesDaChave(chave)} ${DIAS[diaDaSemanaDaChave(chave)].slice(0, 3)}`
+      }).join(" · "),
     ``,
     `Ao criar ou editar, escreva a data em ISO 8601 com este fuso (${fuso}).`,
     `Ao CONFIRMAR para o usuário, escreva sempre a data por extenso: o dia da`,

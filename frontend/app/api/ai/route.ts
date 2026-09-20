@@ -63,7 +63,15 @@ function resolveProvider(): ProviderConfig | null {
     return {
       provider: "gemini",
       apiKey: process.env.GEMINI_API_KEY,
-      model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+      // `-latest` de propósito: foi um modelo FIXO (gemini-2.0-flash) sendo
+      // desativado pelo Google que derrubou a Neuro em 19/09/2026 — e o erro
+      // aparecia como JSON cru na tela de quem usa. Alias não morre assim.
+      //
+      // Escolhido medindo, e não pelo nome: com esta chave, `gemini-2.5-flash`
+      // e `-flash-lite` respondem 404 ("no longer available to new users"),
+      // `gemini-flash-latest` oscilou (503 por 39s) e `gemini-3-flash-preview`
+      // levou 23s. O `flash-lite-latest` deu 5/5 entre 450ms e 820ms.
+      model: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
     }
   }
   if (process.env.ANTHROPIC_API_KEY) {
@@ -1022,7 +1030,8 @@ async function runOpenAIAgent(
 async function streamText(
   cfg: ProviderConfig,
   system: string,
-  messages: ChatMessage[]
+  messages: ChatMessage[],
+  idioma: Idioma = "pt"
 ): Promise<Response> {
   let upstream: Response
   let extract: (e: unknown) => string | null
@@ -1065,9 +1074,13 @@ async function streamText(
 
   if (!upstream.ok || !upstream.body) {
     const detail = await upstream.text().catch(() => "")
-    return new Response(`Erro ao falar com a IA (${cfg.provider}). ${detail}`.trim(), {
-      status: upstream.status || 502,
-    })
+    // O detalhe do provedor vai para o LOG, não para a tela. Em 19/09/2026 quem
+    // usava o app leu um JSON do Google dizendo que um modelo tinha sido
+    // desativado — informação que só serve para mim.
+    console.error(`[neuro-ia] ${cfg.provider} ${upstream.status}: ${detail.slice(0, 500)}`)
+    const textos = dicionario(idioma).ia.erros
+    const amigavel = upstream.status === 429 ? textos.ocupada : textos.falhaAoFalar(cfg.provider)
+    return new Response(amigavel, { status: upstream.status || 502 })
   }
 
   const decoder = new TextDecoder()
@@ -1185,25 +1198,36 @@ export async function POST(req: Request) {
         const gcfg: ProviderConfig = {
           provider: "gemini",
           apiKey: process.env.GEMINI_API_KEY,
-          model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+          // `-latest` de propósito: foi um modelo FIXO (gemini-2.0-flash) sendo
+      // desativado pelo Google que derrubou a Neuro em 19/09/2026 — e o erro
+      // aparecia como JSON cru na tela de quem usa. Alias não morre assim.
+      //
+      // Escolhido medindo, e não pelo nome: com esta chave, `gemini-2.5-flash`
+      // e `-flash-lite` respondem 404 ("no longer available to new users"),
+      // `gemini-flash-latest` oscilou (503 por 39s) e `gemini-3-flash-preview`
+      // levou 23s. O `flash-lite-latest` deu 5/5 entre 450ms e 820ms.
+      model: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
         }
         const fallbackSystem =
           system +
           "\n\nMODO RESERVA: as ferramentas estão temporariamente indisponíveis. Converse normalmente, mas NUNCA afirme ter criado/editado/excluído algo — se o usuário pedir uma ação, diga que fará assim que possível."
-        return streamText(gcfg, fallbackSystem, messages)
+        return streamText(gcfg, fallbackSystem, messages, idioma)
       }
 
       return new Response(sanitizeOut(finalText), {
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
       })
     } catch (e) {
+      console.error("[neuro-ia] groq:", e instanceof Error ? e.message : e)
       return new Response(
-        `${t.erros.falhaAoFalar("groq")} ${e instanceof Error ? e.message : ""}`.trim(),
+        // A mensagem do provedor fica no log: ela cita nome de modelo e cota, e
+        // quem está conversando não tem o que fazer com isso.
+        t.erros.falhaAoFalar("groq"),
         { status: 502 }
       )
     }
   }
 
   // Gemini / Anthropic → chat em streaming (sem ferramentas por enquanto)
-  return streamText(cfg, system, messages)
+  return streamText(cfg, system, messages, idioma)
 }
