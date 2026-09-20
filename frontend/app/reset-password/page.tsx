@@ -7,6 +7,7 @@ import Link from "next/link"
 import { AuthBackdrop } from "@/components/auth-backdrop"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { CampoSenha } from "@/components/campo-senha"
 import { Label } from "@/components/ui/label"
 import { KeyRound, Loader2, CheckCircle } from "lucide-react"
 import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
@@ -163,9 +164,8 @@ export default function ResetPasswordPage() {
           <form onSubmit={handleUpdate} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">{t.senhaNova.novaSenha}</Label>
-              <Input
+              <CampoSenha
                 id="password"
-                type="password"
                 placeholder={t.minimoSeisCaracteres}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -176,9 +176,8 @@ export default function ResetPasswordPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm">{t.senhaNova.confirmarNovaSenha}</Label>
-              <Input
+              <CampoSenha
                 id="confirm"
-                type="password"
                 placeholder={t.senhaNova.repitaSenha}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}

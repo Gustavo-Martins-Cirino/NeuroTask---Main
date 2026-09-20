@@ -263,6 +263,12 @@ export interface Dicionario {
     rodape: string
   }
   entrada: {
+    /**
+     * O botão de olho que revela a senha. É `aria-label` e `title` do botão —
+     * o rótulo muda com o estado, porque ele diz o que o clique VAI fazer.
+     */
+    mostrarSenha: string
+    ocultarSenha: string
     email: string
     emailPlaceholder: string
     senha: string
@@ -1456,6 +1462,8 @@ export const pt: Dicionario = {
     rodape: "Um projeto pessoal, feito com cuidado.",
   },
   entrada: {
+    mostrarSenha: "Mostrar senha",
+    ocultarSenha: "Ocultar senha",
     email: "Email",
     emailPlaceholder: "seu@email.com",
     senha: "Senha",
@@ -2605,6 +2613,8 @@ export const en: Dicionario = {
     rodape: "A personal project, made with care.",
   },
   entrada: {
+    mostrarSenha: "Show password",
+    ocultarSenha: "Hide password",
     email: "Email",
     emailPlaceholder: "you@email.com",
     senha: "Password",

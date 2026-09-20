@@ -247,6 +247,32 @@ repositório:
       do brilho decorativo do fundo — que é `aria-hidden`, fica recortado pelo `overflow: hidden`
       e não gera rolagem horizontal —, e nenhum erro de JS.
 
+> **O olho que mostra a senha (19/09), com os olhinhos que espiam.** Veio de quem testou:
+> *"na hora de criar a conta, fiquei em dúvida se coloquei o caractere certo"*. Campo de senha
+> que não deixa conferir cobra a dúvida na hora errada — o cadastro é onde o erro de digitação
+> custa mais caro, porque a pessoa nem sabe que errou até não conseguir entrar.
+>
+> `components/campo-senha.tsx` substituiu os **quatro** campos de senha do app (login, cadastro
+> e os dois de redefinir). E o olho é um **botão de verdade**, não um ícone clicável: chega-se
+> nele com Tab, ativa com Enter, tem `aria-pressed` e o `aria-label` diz o que o clique VAI fazer
+> ("Mostrar senha" / "Ocultar senha", traduzido). Quem navega por teclado ou leitor de tela é
+> justamente quem mais precisa conferir a letra que digitou.
+>
+> A graça: enquanto a senha está escondida, as pupilas **acompanham a escrita** da esquerda para
+> a direita, e o olho pisca em intervalo irregular (compasso fixo lê como relógio, não como
+> bicho). Ao revelar, os olhos se **fecham** — param de espiar o que já está à mostra.
+>
+> A geometria virou módulo puro (`lib/olho-senha.ts`, 13 testes) porque o bug silencioso aqui é a
+> pupila escapando da órbita: o `progressoDoTexto` satura em 14 caracteres — sem isso uma senha
+> longa empurraria o olhar para fora — e há teste varrendo os 101 pontos do percurso conferindo
+> que `hypot(x, y)` nunca passa do raio.
+>
+> **Com `prefers-reduced-motion` as pupilas ficam paradas no centro e o olho não pisca**, e o
+> botão continua funcionando igual. Medido: nos dois idiomas as pupilas andam (-2,13 → +2,13
+> conforme a senha cresce) e com `reduce` não andam. Medido também que o Tab do campo cai no
+> botão, que o Enter revela, que o campo vira `type="text"` e que o rótulo troca nos dois
+> idiomas. Nada fora da tela além do brilho decorativo do fundo, nenhum erro de JS.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

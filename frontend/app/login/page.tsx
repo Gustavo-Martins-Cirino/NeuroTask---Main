@@ -7,6 +7,7 @@ import Link from "next/link"
 import { AuthBackdrop } from "@/components/auth-backdrop"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { CampoSenha } from "@/components/campo-senha"
 import { Label } from "@/components/ui/label"
 import { Sparkles, Loader2 } from "lucide-react"
 import { SocialLogin, SeloUltimoUso, useUltimoMetodo } from "@/components/social-login"
@@ -119,9 +120,8 @@ export default function LoginPage() {
                 {t.login.esqueceuSenha}
               </Link>
             </div>
-            <Input
+            <CampoSenha
               id="password"
-              type="password"
               placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

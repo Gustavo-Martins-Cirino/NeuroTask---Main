@@ -7,6 +7,7 @@ import Link from "next/link"
 import { AuthBackdrop } from "@/components/auth-backdrop"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { CampoSenha } from "@/components/campo-senha"
 import { Label } from "@/components/ui/label"
 import { Sparkles, Loader2, CheckCircle } from "lucide-react"
 import { SocialLogin } from "@/components/social-login"
@@ -182,9 +183,8 @@ export default function SignupPage() {
 
           <div className="space-y-2">
             <Label htmlFor="password">{t.senha}</Label>
-            <Input
+            <CampoSenha
               id="password"
-              type="password"
               placeholder={t.minimoSeisCaracteres}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
