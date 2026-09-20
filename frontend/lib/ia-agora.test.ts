@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import {
   chaveDoDia, descreveAgora, diaSomado, paredeDoUsuario, sufixoDeFuso, ultimoDiaDoMes,
+  proximaOcorrencia, diaDaSemanaDaChave, diaMesDaChave,
 } from "./ia-agora"
 
 const BRASIL = 180   // UTC−3
@@ -116,5 +117,72 @@ describe("descreveAgora", () => {
   it("sai inteira mesmo com instante ou fuso impossível", () => {
     expect(() => descreveAgora(Number.NaN, Number.NaN)).not.toThrow()
     expect(descreveAgora(Date.UTC(2026, 7, 28, 12, 0), Number.NaN)).toContain("2026-08-28")
+  })
+})
+
+describe("dia da semana → data", () => {
+  // Sábado, 19/09/2026, 21h no Brasil — o dia e a hora do relatório de testes
+  // em que a IA mandou "na segunda" para quarta e jurou que 22/09 era quinta.
+  const SABADO = paredeDoUsuario(Date.UTC(2026, 8, 20, 0, 0), BRASIL)
+
+  it("acha a próxima ocorrência de cada dia", () => {
+    expect(proximaOcorrencia(SABADO, 1)).toBe("2026-09-21") // segunda
+    expect(proximaOcorrencia(SABADO, 2)).toBe("2026-09-22") // terça
+    expect(proximaOcorrencia(SABADO, 3)).toBe("2026-09-23") // quarta
+  })
+
+  // "No domingo", num sábado, é amanhã. O relatório registrou o app mandando
+  // para o domingo da semana seguinte.
+  it("domingo, num sábado, é amanhã", () => {
+    expect(proximaOcorrencia(SABADO, 0)).toBe("2026-09-20")
+  })
+
+  // Hoje conta: quem diz "no sábado" num sábado quer dizer hoje.
+  it("o dia de hoje é a própria data, não daqui a sete dias", () => {
+    expect(proximaOcorrencia(SABADO, 6)).toBe("2026-09-19")
+  })
+
+  it("dia da semana fora da faixa não quebra", () => {
+    expect(proximaOcorrencia(SABADO, 7)).toBe(proximaOcorrencia(SABADO, 0))
+    expect(proximaOcorrencia(SABADO, -1)).toBe(proximaOcorrencia(SABADO, 6))
+  })
+
+  it("lê o dia da semana de uma data solta", () => {
+    expect(diaDaSemanaDaChave("2026-09-22")).toBe(2) // terça, não quinta
+    expect(diaDaSemanaDaChave("2026-09-19")).toBe(6)
+  })
+
+  it("escreve dd/mm a partir da chave", () => {
+    expect(diaMesDaChave("2026-09-19")).toBe("19/09")
+    expect(diaMesDaChave("2026-10-01")).toBe("01/10")
+  })
+})
+
+describe("o bloco de datas do prompt", () => {
+  const texto = descreveAgora(Date.UTC(2026, 8, 20, 0, 0), BRASIL)
+
+  it("entrega a data de cada dia da semana, já calculada", () => {
+    expect(texto).toContain("segunda-feira = 2026-09-21")
+    expect(texto).toContain("terça-feira = 2026-09-22")
+  })
+
+  // O erro exato do relatório: ela disse que 22/09/2026 cai numa quinta.
+  it("22/09/2026 aparece como terça, não como quinta", () => {
+    expect(texto).toContain("2026-09-22 (22/09) = terça-feira")
+    expect(texto).not.toContain("2026-09-22 (22/09) = quinta-feira")
+  })
+
+  it("marca hoje e amanhã na lista dos 14 dias", () => {
+    expect(texto).toContain("2026-09-19 (19/09) = sábado — hoje")
+    expect(texto).toContain("2026-09-20 (20/09) = domingo — amanhã")
+  })
+
+  it("manda escrever a data na confirmação, e diz por quê", () => {
+    expect(texto).toMatch(/dd\/mm/)
+    expect(texto).toMatch(/esconde o erro/)
+  })
+
+  it("cobre 14 dias, atravessando a virada do mês", () => {
+    expect(texto).toContain("2026-10-02")
   })
 })

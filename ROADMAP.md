@@ -273,6 +273,35 @@ repositório:
 > botão, que o Enter revela, que o campo vira `type="text"` e que o rótulo troca nos dois
 > idiomas. Nada fora da tela além do brilho decorativo do fundo, nenhum erro de JS.
 
+> **Relatório de testes da NeuroIA × Calendário (19/09) — bug 1 dos 4: a IA errava o dia da
+> semana.** Mais de 50 mensagens, mais de 40 cenários, cada resposta conferida no calendário.
+> "Pedi 'na segunda' e o bloco foi pra quarta"; "pedi 'na quarta' e foi pro domingo"; e, perguntada
+> direto, ela respondeu que "22/09/2026 cai numa quinta-feira" — é terça.
+>
+> **A causa não era o modelo ser ruim de conta: era ele ter conta para fazer.** O `descreveAgora`
+> já entregava hoje/amanhã/ontem/+7 dias, mas dia-da-semana → data ficava por conta dele. E o
+> erro era invisível de propósito: a confirmação dizia só "na segunda-feira", sem a data, então
+> ninguém percebia até abrir o calendário.
+>
+> Agora o prompt leva a **próxima ocorrência de cada um dos sete dias** e os **próximos 14 dias
+> nomeados**, gerados no servidor a partir do fuso de quem usa. E manda escrever, na confirmação,
+> o dia da semana **e** o dd/mm — a frase sem data é o que escondia o defeito.
+>
+> Uma decisão que o relatório pediu: **"no domingo", num sábado, é amanhã.** `proximaOcorrencia`
+> conta hoje como ocorrência válida, então "no sábado" num sábado é hoje, e não daqui a sete dias.
+> Era o oposto do que acontecia (ia para o domingo da semana seguinte).
+>
+> Medido contra o modelo de verdade (`openai/gpt-oss-120b`), com o prompt montado do jeito que a
+> rota monta e a data fixada no sábado 19/09 21h — os cinco casos que falharam no relatório,
+> duas voltas cada: **10/10**. "Posso criar o bloco [TESTE] Reunião na segunda-feira, dia 21/09";
+> "no domingo, 20/09"; e a pergunta direta virou "22/09/2026 cai numa **terça-feira**".
+>
+> **O que isto NÃO garante:** é conserto de prompt. Ele tira a conta das mãos do modelo, mas não
+> a torna impossível — o relatório já tinha registrado que o erro dependia do contexto da
+> conversa. A garantia estrutural é a outra sugestão do relatório: a tool aceitar `weekday` /
+> `relative` ("next_monday", "+3d") e o backend resolver a data. Fica anotado como o próximo
+> degrau deste bug, se ele reaparecer.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

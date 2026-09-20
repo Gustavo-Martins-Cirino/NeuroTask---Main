@@ -79,6 +79,32 @@ export function ultimoDiaDoMes(ano: number, mes: number): number {
   return new Date(Date.UTC(ano, mes, 0)).getUTCDate()
 }
 
+/** O dia da semana (0 = domingo) de uma data "AAAA-MM-DD". */
+export function diaDaSemanaDaChave(chave: string): number {
+  const [a, m, d] = chave.split("-").map(Number)
+  return new Date(Date.UTC(a, m - 1, d)).getUTCDay()
+}
+
+/**
+ * A próxima ocorrência de um dia da semana, a partir de hoje.
+ *
+ * **Hoje conta.** Se hoje é sábado e alguém diz "no sábado", a resposta é hoje —
+ * e não daqui a sete dias. É a leitura que a maioria das pessoas faz, e o
+ * relatório de testes registrou o oposto acontecendo ("no domingo", num sábado,
+ * virou o domingo da semana seguinte).
+ */
+export function proximaOcorrencia(p: ParedeDoUsuario, diaDaSemana: number): string {
+  const alvo = ((Math.trunc(diaDaSemana) % 7) + 7) % 7
+  const delta = (alvo - p.diaDaSemana + 7) % 7
+  return diaSomado(p, delta)
+}
+
+/** "19/09" a partir de "2026-09-19" — como a resposta deve escrever a data. */
+export function diaMesDaChave(chave: string): string {
+  const [, m, d] = chave.split("-")
+  return `${d}/${m}`
+}
+
 /** Soma dias na parede e devolve "AAAA-MM-DD", atravessando mês e ano. */
 export function diaSomado(p: ParedeDoUsuario, dias: number): string {
   const d = new Date(Date.UTC(p.ano, p.mes - 1, p.dia))
@@ -108,6 +134,27 @@ export function descreveAgora(agoraMs: number, tzMin: number): string {
     `- ontem = ${diaSomado(p, -1)}`,
     `- daqui a 7 dias = ${diaSomado(p, 7)}`,
     `- o mês atual (${MESES[p.mes - 1]}) vai de ${p.ano}-${dois(p.mes)}-01 a ${fimDoMes}`,
+    ``,
+    `DIA DA SEMANA → DATA. É isto que "na segunda", "terça que vem" e "no domingo"`,
+    `significam. NUNCA calcule dia da semana: a lista abaixo já está pronta, e`,
+    `quando você calcula, erra sem perceber.`,
+    ...DIAS.map((nome, i) => {
+      const chave = proximaOcorrencia(p, i)
+      const hoje_ = chave === hoje ? " (é HOJE)" : ""
+      return `- ${nome} = ${chave} (${diaMesDaChave(chave)})${hoje_}`
+    }),
+    ``,
+    `Os próximos 14 dias, para conferir qualquer data:`,
+    ...Array.from({ length: 14 }, (_, i) => {
+      const chave = diaSomado(p, i)
+      const nome = DIAS[diaDaSemanaDaChave(chave)]
+      const marca = i === 0 ? " — hoje" : i === 1 ? " — amanhã" : ""
+      return `- ${chave} (${diaMesDaChave(chave)}) = ${nome}${marca}`
+    }),
+    ``,
     `Ao criar ou editar, escreva a data em ISO 8601 com este fuso (${fuso}).`,
+    `Ao CONFIRMAR para o usuário, escreva sempre a data por extenso: o dia da`,
+    `semana E o dd/mm, os dois vindos da lista acima. "na segunda-feira" sozinho`,
+    `esconde o erro — se a data estiver trocada, ninguém percebe.`,
   ].join("\n")
 }
