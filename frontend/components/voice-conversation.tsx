@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
+import { comNegrito } from "@/lib/negrito"
 import { OndaSonora } from "@/components/onda-sonora"
 import { estadoDaOnda } from "@/lib/onda-sonora"
 import { useDicionario, useIdioma, useLocale } from "@/hooks/use-idioma"
@@ -93,10 +94,7 @@ function RichText({ text }: { text: string }) {
       {lines.map((line, i) => {
         const bullet = /^\s*[-•]\s+/.test(line)
         const clean = line.replace(/^\s*[-•]\s+/, "")
-        const parts = clean.split(/(\*\*[^*]+\*\*)/g)
-        const content = parts.map((p, j) =>
-          p.startsWith("**") && p.endsWith("**") ? <strong key={j}>{p.slice(2, -2)}</strong> : <span key={j}>{p}</span>
-        )
+        const content = comNegrito(clean)
         return bullet ? (
           <div key={i} className="flex gap-2">
             <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-current opacity-50" />

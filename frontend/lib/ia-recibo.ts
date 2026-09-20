@@ -113,7 +113,10 @@ export function recibo(
     const quantos = typeof r.created === "number" ? ` (${r.created})` : ""
     const partes = [`✅ ${verbo}${quantos}`, titulo(a.args), momento ? `— ${momento}` : ""]
     const linha = partes.filter(Boolean).join(" ")
-    return r.warning ? `${linha}\n   ⚠️ ${r.warning}` : linha
+    // O aviso já costuma vir com o ⚠️ dele; pôr outro dá "⚠️ ⚠️" na tela.
+    if (!r.warning) return linha
+    const aviso = r.warning.replace(/^\s*⚠️\s*/, "")
+    return `${linha}\n   ⚠️ ${aviso}`
   })
 
   return [textos.titulo, ...linhas, ...(lacoEstourou ? [textos.naoTerminei] : [])].join("\n")

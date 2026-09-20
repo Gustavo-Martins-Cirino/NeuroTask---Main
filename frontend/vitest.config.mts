@@ -12,6 +12,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["lib/**/*.test.ts"],
+    // `.tsx` também: `lib/negrito.tsx` e `lib/enfase.tsx` devolvem nós do
+    // React e a regra deles é tão determinística quanto a dos outros — o que
+    // fica de fora é componente com DOM e rede, não arquivo com JSX.
+    include: ["lib/**/*.test.ts", "lib/**/*.test.tsx"],
   },
 })

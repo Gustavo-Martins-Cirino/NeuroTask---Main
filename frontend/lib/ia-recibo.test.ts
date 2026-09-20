@@ -64,6 +64,18 @@ describe("recibo", () => {
     expect(texto).toContain("conflita com")
   })
 
+  // O relatório de 20/09: "no aviso de conflito o emoji vem duplicado (⚠️ ⚠️)".
+  it("aviso que já traz o próprio ⚠️ não ganha um segundo", () => {
+    const texto = recibo(
+      [criar("X", "2026-09-21T12:00:00Z", { ok: true, warning: "⚠️ conflita com Trabalho" })],
+      BRASIL,
+      TEXTOS,
+      DIAS
+    )!
+    expect(texto).not.toContain("⚠️ ⚠️")
+    expect(texto).toContain("⚠️ conflita com Trabalho")
+  })
+
   it("ferramenta que falhou aparece como falha, não como sucesso", () => {
     const texto = recibo([criar("X", "2026-09-21T12:00:00Z", { ok: false, error: "sem permissão" })], BRASIL, TEXTOS, DIAS)!
     expect(texto).toContain("não consegui")

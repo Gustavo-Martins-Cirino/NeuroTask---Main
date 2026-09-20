@@ -13,6 +13,7 @@ import { AtalhosNeuro } from "@/components/atalhos-neuro"
 import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
 import { avancarRevelacao, revelacaoTerminou, PASSO_MS } from "@/lib/revelacao-resposta"
 import { fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
+import { comNegrito } from "@/lib/negrito"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -567,7 +568,9 @@ export default function AiPage() {
                             : "bg-card border border-border/50"
                         )}
                       >
-                        {texto || (
+                        {texto ? (
+                          comNegrito(texto)
+                        ) : (
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         )}
                       </div>

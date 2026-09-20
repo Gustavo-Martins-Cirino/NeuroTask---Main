@@ -391,6 +391,50 @@ repositório:
 > pedaço — mas mexer nelas muda comportamento) ou reduzir as voltas do laço, que quebraria os
 > pedidos de vários blocos. **Sem isso, o 429 volta no próximo reteste puxado.**
 
+> **Reteste 2 (20/09): três bugs confirmados consertados, e o reserva parou de mentir.** Dia da
+> semana **4 de 4** no dia certo; o conflito agora diz "criei" E avisa; a leitura da agenda
+> listou os 11 blocos de 21/09 com horário certo, recorrentes inclusive, e ainda apontou 2
+> conflitos reais. O recibo bateu com o calendário em todos os casos.
+>
+> **O que este commit conserta, tudo do reteste:**
+>
+> - **O modo de reserva prometia o que não podia cumprir** — "anotei aqui", "farei assim que o
+>   sistema voltar". Era instrução minha: o prompt do MODO RESERVA dizia literalmente *"diga que
+>   fará assim que possível"*. Agora ele diz que não consegue e pede para tentar em alguns
+>   minutos, com a lista de frases proibidas escrita: quem está do outro lado CONTA com o
+>   "anotei", e não há onde anotar — a conversa não deixa registro para ela.
+> - **O retry brigava com o teto.** Eram até 3 tentativas, cada uma reenviando o prompt inteiro,
+>   esperando até 16s entre elas: 32s de espera para cair no reserva do mesmo jeito. Agora é uma
+>   única nova tentativa, e só se o próprio Groq disser que a espera é curta (≤2s). Ceder rápido
+>   é melhor: o balde leva o minuto inteiro para encher, e segurar a pessoa olhando para a tela
+>   não o enche mais rápido.
+> - **A confirmação** passou a ter exceção explícita para "pode criar direto"/"sem confirmar" —
+>   e vale para a conversa toda, não só para a mensagem em que foi dito. A pergunta de
+>   confirmação também passa a levar dia da semana + dd/mm + hora.
+> - **O `⚠️ ⚠️` duplicado** no recibo (o aviso já trazia o seu).
+> - **O negrito com asteriscos.** O curioso: o app já TRATAVA `**` como marcação — `fecharMarcacao`
+>   existe para não deixar par partido durante a revelação, e a tela de VOZ já pintava. Só o chat
+>   de texto mostrava `m.content` cru. Agora os dois usam `lib/negrito.tsx` (9 testes), que monta
+>   nós do React e nunca HTML por string: o texto vem do modelo, que repete o que a pessoa
+>   escreveu.
+>
+> ---
+>
+> **O teto de tokens: o código chegou no limite do que consegue fazer.** Medido: as definições de
+> ferramenta custam ~1.556 tokens por chamada, e só ~336 delas são descrição — o resto é
+> **estrutura JSON do schema**, que não dá para encurtar sem tirar ferramenta. Com o BASE_PROMPT e
+> as datas, são **~2.457 tokens por chamada** contra um teto de **8.000 por minuto**. Duas
+> mensagens por minuto, e um pedido de vários blocos consome várias chamadas.
+>
+> A chave não está esgotada — conferida no meio do problema, tinha 999 de 1000 requisições e
+> 7.918 de 8.000 tokens livres. O que acontece é thrash: cada mensagem nova chega antes de o
+> balde encher.
+>
+> **As saídas, e nenhuma é código:** subir o plano do Groq (a única que resolve sem tirar nada),
+> reduzir o número de ferramentas, ou aceitar duas mensagens por minuto. **Enquanto isso não for
+> decidido, o reteste puxado vai voltar a cair no reserva** — agora, pelo menos, um reserva que
+> não mente.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

@@ -23,7 +23,9 @@ const BASE_PROMPT = `Você é a Neuro IA, assistente de produtividade do NeuroTa
 AGENDA: a seção "AGENDA" abaixo traz os dados REAIS do usuário e cobre HOJE E AMANHÃ. Para perguntas dentro dessa janela, responda direto por ela, SEM chamar ferramentas de listagem. Para qualquer coisa ALÉM dela — "esta semana", "este mês", "dia 15", "que compromissos eu tenho" —, chame list_time_blocks antes de responder: a agenda abaixo NÃO tem esses dias, e responder por ela seria dizer que não há nada. Nunca invente itens; se não houver, diga "não encontrei". Atrasada = somente o que estiver listado como atrasado (nunca calcule por datas). Seja proativa: aponte conflitos e intervalos curtos que vir na agenda.
 
 AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
-- Proponha e pergunte "Posso confirmar?" ANTES de criar/editar/excluir; só aja após "sim" explícito. Nunca diga que fez sem chamar a ferramenta; nunca escreva sintaxe de ferramenta no texto.
+- Proponha e pergunte "Posso confirmar?" ANTES de criar/editar/excluir; só aja após "sim" explícito.
+- EXCEÇÃO: se a pessoa já disse "pode criar direto", "sem confirmar", "não precisa perguntar" ou equivalente, não pergunte — execute de uma vez. O pedido dela vale para a conversa toda, não só para a mensagem em que foi dito.
+- Na pergunta de confirmação, escreva SEMPRE o dia da semana, o dd/mm e o horário. "Posso criar na segunda?" esconde a data; "Posso criar na segunda-feira, 21/09, às 18h?" deixa o erro à vista antes de ele virar bloco. Nunca diga que fez sem chamar a ferramenta; nunca escreva sintaxe de ferramenta no texto.
 - Desabafo ("estou cansado") não vira tarefa — apenas converse. Na dúvida (fala solta, transcrição estranha), pergunte.
 - Editar/excluir: liste antes para obter o id.
 - Tarefa com horário: coloque a hora no due_date (ISO 8601) — o app cria o bloco no calendário sozinho; NÃO chame create_time_block para a mesma coisa.
@@ -877,8 +879,17 @@ async function recoverFailedToolCalls(
 }
 
 // Chamada ao Groq com retry automático em caso de rate limit (429)
+/**
+ * Até quanto vale esperar um 429 antes de cair no reserva.
+ *
+ * Dois segundos é o que uma pessoa aguenta sem achar que travou. Acima disso a
+ * espera não paga: o balde de tokens leva o minuto inteiro para encher, e
+ * segurar a resposta não o enche mais rápido.
+ */
+const ESPERA_MAXIMA_MS = 2_000
+
 async function groqChat(cfg: ProviderConfig, payload: Record<string, unknown>): Promise<Response> {
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -897,15 +908,23 @@ async function groqChat(cfg: ProviderConfig, payload: Record<string, unknown>): 
 
     if (res.status !== 429) return res
 
-    // Lê o tempo sugerido pelo Groq e espera (limitado a 16s)
+    // 429 aqui é teto de TOKENS POR MINUTO, e insistir é o pior remédio: cada
+    // tentativa reenvia o prompt inteiro (~2.500 tokens) contra um teto de
+    // 8.000/min. Em 20/09/2026 isso deixou quem testava esperando 8,7s por
+    // resposta e preso no modo de reserva por cinco minutos.
+    //
+    // Então: só uma nova tentativa, e só se o próprio Groq disser que a espera
+    // é curta. Se for longa, ceder agora é melhor que segurar a pessoa olhando
+    // para a tela — o reserva responde, e a mensagem seguinte tenta o principal
+    // de novo com o balde já recomposto.
     const detail = await res.clone().text().catch(() => "")
     const m = detail.match(/try again in ([\d.]+)s/)
-    const waitMs = Math.min(16_000, Math.ceil((m ? parseFloat(m[1]) : 3) * 1000) + 300)
-    if (attempt < 2) {
-      await new Promise((r) => setTimeout(r, waitMs))
+    const esperaMs = Math.ceil((m ? parseFloat(m[1]) : 30) * 1000) + 200
+    if (attempt === 0 && esperaMs <= ESPERA_MAXIMA_MS) {
+      await new Promise((r) => setTimeout(r, esperaMs))
       continue
     }
-    return res // esgotou as tentativas
+    return res
   }
   // inalcançável, mas o TS exige
   return new Response("", { status: 500 })
@@ -1210,7 +1229,10 @@ export async function POST(req: Request) {
         }
         const fallbackSystem =
           system +
-          "\n\nMODO RESERVA: as ferramentas estão temporariamente indisponíveis. Converse normalmente, mas NUNCA afirme ter criado/editado/excluído algo — se o usuário pedir uma ação, diga que fará assim que possível."
+          "\n\nMODO RESERVA: as ferramentas estão fora do ar neste momento e você NÃO consegue criar, editar nem excluir nada.\n" +
+          "Você também não tem onde anotar: esta conversa não deixa registro para você, e quando as ferramentas voltarem você não vai lembrar de nada dela.\n" +
+          "Por isso é PROIBIDO dizer qualquer uma destas coisas: 'anotei', 'deixei salvo', 'guardei aqui', 'farei assim que o sistema voltar', 'já deixo pendente'. Todas são mentira, e quem está do outro lado vai contar com elas.\n" +
+          "Quando pedirem uma ação, diga que não consegue agora e peça para tentar de novo em alguns minutos. Conversar, explicar e responder perguntas sobre o que já existe continua valendo."
         return streamText(gcfg, fallbackSystem, messages, idioma)
       }
 
