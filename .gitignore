@@ -33,3 +33,6 @@ __pycache__/
 # para olhar num screenshot headless — sai bundle de 70 MB e PNG de 1 MB, nada
 # disso é código do app. Já entrou no repositório uma vez por `git add -A`.
 /frontend/scratch/
+
+# Script de apoio, de uso pontual: fica local (carrega id de usuário real).
+frontend/confere-conta.cjs
