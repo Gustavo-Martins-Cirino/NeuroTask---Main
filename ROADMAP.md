@@ -330,6 +330,36 @@ repositório:
 > Sem markdown no recibo, de propósito: o relatório registrou que negrito não renderiza no chat
 > (aparece `**assim**`). Isso continua aberto, e é item de tela, não da IA.
 
+> **Bug 4 dos 4: a leitura da agenda entregava linha de banco ao modelo.** Três sintomas, uma
+> causa. Do relatório: *"informa os horários em UTC, 3h a mais — o bloco das 07:00 ela diz que é
+> às 10:00"*; *"ignora os blocos recorrentes"*; *"sobre o dia 26/09, que tem 8 blocos, respondeu
+> 'não encontrei nenhum bloco'"*.
+>
+> O `list_time_blocks` fazia `select("id, title, start_time, end_time")` e devolvia as linhas
+> **cruas**: ISO em UTC, uma linha por série e sem recorte de dia. O modelo lia
+> `2026-09-21T10:00:00+00:00` e dizia 10:00 com toda a confiança do mundo. E bloco recorrente no
+> banco é **uma linha com uma regra** — quem não expande não vê a ocorrência de quarta, que é
+> exatamente o Jiu Jitsu, o Trabalho e a Faculdade que sumiram.
+>
+> `lib/ia-agenda.ts` (19 testes) expande as ocorrências e escreve as linhas na parede de quem
+> usa: `quarta-feira 23/09 07:00–08:00 Jiu Jitsu (toda semana)`. Nada de `getHours`/`getDay` lá
+> dentro — a rota roda no servidor, onde "local" é UTC, então toda conta passa pelo `tzMin`.
+>
+> A ferramenta ganhou `from`/`to` em AAAA-MM-DD, com as bordas do DIA de quem usa: pedir "26/09"
+> traz o 26/09 dele. E a consulta pega os recorrentes de qualquer idade **mais** os avulsos que
+> encostam na janela (`or`), porque buscar série antiga sem isso puxaria o histórico inteiro.
+>
+> **A agenda injetada em toda conversa tinha o mesmo buraco** e foi junto: ela filtrava por
+> `start_time` dentro de hoje/amanhã, então o recorrente de toda quarta não aparecia nem ali.
+> Agora as duas leituras passam pelo mesmo módulo — se a IA e o calendário discordarem, é um
+> lugar só para consertar.
+>
+> **O que NÃO foi medido contra o modelo:** este é o único dos quatro que eu não consegui provar
+> de ponta a ponta daqui, porque precisaria de uma conta com blocos recorrentes reais e a rota
+> exige sessão. Os 19 testes cobrem a expansão, o fuso e as bordas; o que falta é alguém
+> perguntar "o que tenho quarta?" no app e conferir. **Vale repetir os casos T01, T02 e o do dia
+> 26/09 do relatório.**
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

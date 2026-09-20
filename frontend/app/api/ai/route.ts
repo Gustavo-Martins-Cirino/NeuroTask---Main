@@ -1,10 +1,11 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
 import { recibo, type AcaoExecutada } from "@/lib/ia-recibo"
+import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
 import { createClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
-import { descreveAgora } from "@/lib/ia-agora"
+import { descreveAgora, sufixoDeFuso } from "@/lib/ia-agora"
 import { ehDuplicata, ehMesmoTitulo } from "@/lib/ia-duplicata"
 
 export const runtime = "nodejs"
@@ -156,8 +157,14 @@ const TOOLS = [
     function: {
       name: "list_time_blocks",
       description:
-        "Lista TODOS os blocos de tempo do usuário a partir de ontem, sem limite de data para a frente. É a única forma de enxergar além de hoje e amanhã — use para perguntas sobre a semana, o mês ou um dia específico.",
-      parameters: { type: "object", properties: {} },
+        "Lista os blocos de tempo do usuário numa janela de dias, JÁ no fuso dele e com os recorrentes expandidos (um item por ocorrência). É a única forma de enxergar além de hoje e amanhã. Para um dia só, passe o mesmo valor em from e to. Sem argumentos, cobre de hoje a daqui a 7 dias.",
+      parameters: {
+        type: "object",
+        properties: {
+          from: { type: "string", description: "Primeiro dia da janela, AAAA-MM-DD (inclusive)" },
+          to: { type: "string", description: "Último dia da janela, AAAA-MM-DD (inclusive)" },
+        },
+      },
     },
   },
   {
@@ -369,8 +376,7 @@ async function buildBriefing(supabase: SupabaseClient, tzMin: number): Promise<s
   const [blocksR, tasksR, remR] = await Promise.all([
     supabase
       .from("time_blocks")
-      .select("title, start_time, end_time")
-      .gte("start_time", dayStart.toISOString())
+      .select("title, start_time, end_time, is_recurring, recurrence_rule")
       .lt("start_time", twoDays.toISOString())
       .order("start_time", { ascending: true }),
     supabase.from("tasks").select("title, due_date").not("status", "in", "(completed,cancelled)").limit(30),
@@ -444,22 +450,23 @@ async function buildDayContext(supabase: SupabaseClient, tzMin: number): Promise
   const [blocksR, tasksR, remR] = await Promise.all([
     supabase
       .from("time_blocks")
-      .select("title, start_time, end_time")
-      .gte("start_time", dayStart.toISOString())
+      .select("title, start_time, end_time, is_recurring, recurrence_rule")
       .lt("start_time", twoDays.toISOString())
       .order("start_time", { ascending: true }),
     supabase.from("tasks").select("title, due_date").not("status", "in", "(completed,cancelled)").limit(20),
     supabase.from("reminders").select("content, remind_time").eq("remind_date", todayKey),
   ])
 
-  const blocks = blocksR.data ?? []
-  const hoje = blocks.filter((b) => new Date(b.start_time).getTime() < dayEnd.getTime())
-  const amanha = blocks.filter((b) => new Date(b.start_time).getTime() >= dayEnd.getTime())
+  // Expande os recorrentes aqui também: a seção de hoje/amanhã tinha o mesmo
+  // buraco da ferramenta, e por isso o Jiu Jitsu de toda quarta não aparecia.
+  const ocorrencias = ocorrenciasNaJanela(blocksR.data ?? [], dayStart.getTime(), twoDays.getTime(), tzMin)
+  const hoje = ocorrencias.filter((o) => o.inicio < dayEnd.getTime())
+  const amanha = ocorrencias.filter((o) => o.inicio >= dayEnd.getTime())
   const tasks = tasksR.data ?? []
   const overdue = tasks.filter((t) => t.due_date && new Date(t.due_date).getTime() < Date.now())
   const rem = remR.data ?? []
-  const fb = (b: { title: string; start_time: string; end_time: string }) =>
-    `${fmtHM(new Date(b.start_time), tzMin)}-${fmtHM(new Date(b.end_time), tzMin)} ${b.title}`
+  const fb = (o: { titulo: string; inicio: number; fim: number; regra: string | null }) =>
+    `${fmtHM(new Date(o.inicio), tzMin)}-${fmtHM(new Date(o.fim), tzMin)} ${o.titulo}${o.regra ? " (repete)" : ""}`
 
   // O cabeçalho diz a JANELA em voz alta. Sem isso o modelo tratava esta seção
   // como "a agenda inteira" e respondia "não tem nada" para o mês — que é o
@@ -484,8 +491,10 @@ async function executeTool(
   args: ToolArgs,
   supabase: SupabaseClient,
   userId: string,
-  tzMin: number
+  tzMin: number,
+  idioma: Idioma = "pt"
 ): Promise<unknown> {
+  const t = dicionario(idioma).ia
   try {
     switch (name) {
       case "create_task": {
@@ -615,13 +624,41 @@ async function executeTool(
         return { ok: true, created: data, warning }
       }
       case "list_time_blocks": {
+        // A janela é do DIA de quem usa, não do relógio do servidor: pedir
+        // "26/09" tem de trazer o 26/09 dele. O relatório registrou um dia com
+        // 8 blocos respondido como "não encontrei nenhum".
+        const deChave = typeof args.from === "string" ? args.from : null
+        const ateChave = typeof args.to === "string" ? args.to : null
+        const hoje0 = inicioDoDia(Date.now(), tzMin)
+        const de = deChave ? Date.parse(`${deChave}T00:00:00${sufixoDeFuso(tzMin)}`) : hoje0
+        const ate = ateChave
+          ? Date.parse(`${ateChave}T00:00:00${sufixoDeFuso(tzMin)}`) + 86_400_000
+          : hoje0 + 8 * 86_400_000
+        if (!Number.isFinite(de) || !Number.isFinite(ate)) {
+          return { ok: false, error: "from/to devem ser AAAA-MM-DD" }
+        }
+
+        // Duas coisas de uma vez: os recorrentes de QUALQUER idade (um que
+        // começou meses atrás continua valendo hoje — foi assim que Jiu Jitsu,
+        // Trabalho e Faculdade sumiram da resposta) e os avulsos que encostam
+        // na janela. Sem o `or`, buscar séries antigas puxaria o histórico
+        // inteiro de quem usa o app há tempo.
         const { data, error } = await supabase
           .from("time_blocks")
-          .select("id, title, start_time, end_time")
-          .gte("start_time", new Date(Date.now() - 86_400_000).toISOString())
+          .select("id, title, start_time, end_time, is_recurring, recurrence_rule")
+          .lt("start_time", new Date(ate).toISOString())
+          .or(`is_recurring.eq.true,start_time.gte.${new Date(de - 86_400_000).toISOString()}`)
           .order("start_time", { ascending: true })
         if (error) return { ok: false, error: error.message }
-        return { ok: true, time_blocks: data }
+
+        const ocorrencias = ocorrenciasNaJanela(data ?? [], de, ate, tzMin)
+        return {
+          ok: true,
+          // Texto, e não linha de banco: o modelo lia ISO em UTC e repetia o
+          // horário errado com toda a confiança do mundo.
+          agenda: linhasDaAgenda(ocorrencias, tzMin, t.recibo.diasDaSemana, t.agenda),
+          quantos: ocorrencias.length,
+        }
       }
       case "delete_time_block": {
         const { error } = await supabase.from("time_blocks").delete().eq("id", args.block_id)
@@ -800,7 +837,8 @@ async function recoverFailedToolCalls(
   detail: string,
   supabase: SupabaseClient,
   userId: string,
-  tzMin: number
+  tzMin: number,
+  idioma: Idioma
 ): Promise<string | null> {
   let failedGen: string
   try {
@@ -823,7 +861,7 @@ async function recoverFailedToolCalls(
     } catch {
       continue
     }
-    const result = await executeTool(name, args, supabase, userId, tzMin)
+    const result = await executeTool(name, args, supabase, userId, tzMin, idioma)
     lines.push(confirm(name, args, result))
   }
 
@@ -917,7 +955,7 @@ async function runOpenAIAgent(
       // Rede de segurança: o Llama às vezes gera o tool call num formato que o
       // parser do Groq rejeita (tool_use_failed). Recuperamos a intenção do
       // failed_generation, executamos de verdade e confirmamos.
-      const recovered = await recoverFailedToolCalls(detail, supabase, userId, tzMin)
+      const recovered = await recoverFailedToolCalls(detail, supabase, userId, tzMin, idioma)
       if (recovered) return recovered
       if (res.status === 429) {
         return "__RATE_LIMIT__"
@@ -937,7 +975,7 @@ async function runOpenAIAgent(
         } catch {
           parsed = {}
         }
-        const result = await executeTool(call.function.name, parsed, supabase, userId, tzMin)
+        const result = await executeTool(call.function.name, parsed, supabase, userId, tzMin, idioma)
         executadas.push({ nome: call.function.name, args: parsed, resultado: result })
         console.log(
           `[neuro-ia] tool=${call.function.name} args=${JSON.stringify(parsed)} result=${JSON.stringify(result)}`

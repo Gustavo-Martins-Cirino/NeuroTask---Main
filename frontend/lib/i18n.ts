@@ -1017,6 +1017,12 @@ export interface Dicionario {
      * embaixo da resposta dela. Existe porque ela já afirmou ter criado seis
      * blocos quando só um existia (relatório de 19/09).
      */
+    /** Os rótulos das linhas de agenda que a Neuro lê (ver lib/ia-agenda.ts). */
+    agenda: {
+      /** Regra de recorrência → como ela se diz na linha. */
+      repeticao: { daily: string; weekly: string; weekdays: string }
+      vazio: string
+    }
     recibo: {
       titulo: string
       naoTerminei: string
@@ -2110,6 +2116,10 @@ export const pt: Dicionario = {
     },
   },
   ia: {
+    agenda: {
+      repeticao: { daily: "todo dia", weekly: "toda semana", weekdays: "dias úteis" },
+      vazio: "nenhum bloco nesse período",
+    },
     recibo: {
       titulo: "No calendário ficou assim:",
       naoTerminei:
@@ -3271,6 +3281,10 @@ export const en: Dicionario = {
     },
   },
   ia: {
+    agenda: {
+      repeticao: { daily: "every day", weekly: "every week", weekdays: "weekdays" },
+      vazio: "no blocks in that range",
+    },
     recibo: {
       titulo: "Here's what's on the calendar now:",
       naoTerminei: "⚠️ I stopped partway through — something may be missing. Tell me what's left and I'll finish.",
