@@ -182,9 +182,17 @@ describe("o bloco de datas do prompt", () => {
     expect(linha.split("·")).toHaveLength(14)
   })
 
-  it("manda escrever a data na confirmação, e diz por quê", () => {
+  it("manda escrever a data, e diz por quê", () => {
     expect(texto).toMatch(/dd\/mm/)
-    expect(texto).toMatch(/esconde o erro/)
+    expect(texto).toMatch(/esconde a data trocada/)
+  })
+
+  // O relatório de 21/09: numa mesma mensagem o modelo escreveu "segunda-feira,
+  // 10/10" e o app escreveu "sábado, 10/10" — 10/10 é sábado. A data gravava
+  // certo; o nome do dia na frase dele é que confundia. Quem tem o dia certo é
+  // o app, então o nome do dia sai da frase do modelo.
+  it("proíbe o modelo de escrever o nome do dia da semana", () => {
+    expect(texto).toMatch(/NÃO escreva o nome do dia da semana/)
   })
 
   it("cobre 14 dias, atravessando a virada do mês", () => {

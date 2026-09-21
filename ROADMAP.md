@@ -435,6 +435,40 @@ repositório:
 > decidido, o reteste puxado vai voltar a cair no reserva** — agora, pelo menos, um reserva que
 > não mente.
 
+> **Reteste 21/09: "ferramentas fora do ar" mentindo — e o defeito era meu.** Datas: **10 de 10**
+> certos somando os retestes. Leitura da agenda: os 8 blocos do 26/09, com o que atravessa a
+> madrugada. Conflito, duplicado, edição e negrito, todos de pé.
+>
+> **O bug novo era o pior de todos**, e é pior que o antigo: ela dizia "não consegui criar" e
+> tinha criado. R10a, R12a, R12b, R13, R15, R16 e R18 estavam no calendário. Quem lê isso pede de
+> novo — e duplica.
+>
+> **A causa estava no meu recibo, no único caminho de saída que eu não cobri.** Quando o laço de
+> ferramentas bate no teto de tokens, ele devolvia o sentinela `__RATE_LIMIT__` e a rota caía no
+> reserva. A lista do que já tinha sido executado ia junto para o lixo, e o reserva — que não
+> enxerga nada disso — respondia "não consigo criar". Agora, se houve escrita, **não cai no
+> reserva**: responde o recibo do que entrou mais o aviso de que parou no meio. Ele passa a dizer
+> "criei R10a" em vez de "não criei nada", que é a diferença entre a pessoa completar o pedido e
+> a pessoa duplicar tudo.
+>
+> **Segundo defeito meu, no mesmo recibo:** o anti-duplicata devolve `{ ok: true, note: "... não
+> criei outro" }` — `ok` verdadeiro, nada criado. Eu lia como sucesso, e saía um "✅ criei"
+> embaixo de uma frase dizendo que não criou (caso R13). Agora `note` vira uma linha `ℹ️`.
+>
+> **Recorrência deixou de sumir em silêncio.** `create_time_block` ganhou `recurrence_rule`
+> (daily/weekly/weekdays — as três que o calendário sabe expandir), grava `is_recurring` junto, e
+> o recibo diz "(toda semana)". Antes "toda terça" virava um bloco avulso sem nenhum aviso — o
+> que é pior que a resposta velha, que ao menos admitia não ter a ferramenta.
+>
+> **O nome do dia saiu da frase do modelo.** Ele escreveu "segunda-feira, 10/10" enquanto o app
+> escrevia "sábado, 10/10" na mesma mensagem — e 10/10 é sábado. A data gravava certo; o nome do
+> dia é que confundia. Agora o prompt proíbe o modelo de escrever o dia da semana: quem tem o dia
+> certo é o app, e ele já escreve embaixo. Foi a sugestão do próprio relatório.
+>
+> **Continua sem resolver, e continua sendo o teto:** o lote parcial (6 pedidos → 1 criado) é o
+> laço batendo no limite de tokens no meio do trabalho. A diferença é que agora ele CONTA o que
+> fez. O conserto de verdade é o plano do provedor — ver a nota do teto, acima.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

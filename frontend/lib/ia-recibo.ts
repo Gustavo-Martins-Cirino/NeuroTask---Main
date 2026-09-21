@@ -49,6 +49,8 @@ export interface TextosDoRecibo {
   excluiu: string
   /** Quando a ferramenta falhou. */
   falhou: string
+  /** Regra de recorrência → como ela se diz. Vem de `ia.agenda.repeticao`. */
+  repeticao: Record<string, string>
 }
 
 const VERBO: Record<string, keyof Pick<TextosDoRecibo, "criou" | "atualizou" | "excluiu">> = {
@@ -103,15 +105,32 @@ export function recibo(
   if (escritas.length === 0) return lacoEstourou ? textos.naoTerminei : null
 
   const linhas = escritas.map((a) => {
-    const r = (a.resultado ?? {}) as { ok?: boolean; error?: string; warning?: string; created?: number }
+    const r = (a.resultado ?? {}) as {
+      ok?: boolean
+      error?: string
+      warning?: string
+      note?: string
+      created?: number
+      recurrence_rule?: string | null
+    }
     if (r.ok === false) {
       return `⚠️ ${textos.falhou} ${titulo(a.args)} ${r.error ?? ""}`.replace(/\s+/g, " ").trim()
+    }
+    // `note` quer dizer "não fiz, e este é o motivo" — é o que o anti-duplicata
+    // devolve, com `ok: true` e nada criado. Lê-lo como sucesso produzia o pior
+    // tipo de linha: um "✅ criei" embaixo de uma frase dizendo que não criou
+    // (relatório de 21/09, caso R13).
+    if (typeof r.note === "string" && r.note.trim()) {
+      return `ℹ️ ${r.note.trim()}`
     }
     const verbo = textos[VERBO[a.nome] ?? "criou"]
     const momento = quando(a.args.start_time ?? a.args.due_date, tzMin, nomesDosDias)
     // `plan_day_backwards` cria vários de uma vez e devolve a contagem.
     const quantos = typeof r.created === "number" ? ` (${r.created})` : ""
-    const partes = [`✅ ${verbo}${quantos}`, titulo(a.args), momento ? `— ${momento}` : ""]
+    // Bloco que repete precisa dizer que repete: senão o comprovante mostra uma
+    // ocorrência e quem lê acha que criou um bloco avulso.
+    const repete = r.recurrence_rule ? ` (${textos.repeticao[r.recurrence_rule] ?? r.recurrence_rule})` : ""
+    const partes = [`✅ ${verbo}${quantos}`, titulo(a.args), momento ? `— ${momento}` : "", repete.trim()]
     const linha = partes.filter(Boolean).join(" ")
     // O aviso já costuma vir com o ⚠️ dele; pôr outro dá "⚠️ ⚠️" na tela.
     if (!r.warning) return linha

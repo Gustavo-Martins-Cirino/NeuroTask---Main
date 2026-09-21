@@ -1,6 +1,6 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
-import { recibo, type AcaoExecutada } from "@/lib/ia-recibo"
+import { recibo, FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada } from "@/lib/ia-recibo"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
 import { createClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -25,7 +25,7 @@ AGENDA: a seção "AGENDA" abaixo traz os dados REAIS do usuário e cobre HOJE E
 AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
 - Proponha e pergunte "Posso confirmar?" ANTES de criar/editar/excluir; só aja após "sim" explícito.
 - EXCEÇÃO: se a pessoa já disse "pode criar direto", "sem confirmar", "não precisa perguntar" ou equivalente, não pergunte — execute de uma vez. O pedido dela vale para a conversa toda, não só para a mensagem em que foi dito.
-- Na pergunta de confirmação, escreva SEMPRE o dia da semana, o dd/mm e o horário. "Posso criar na segunda?" esconde a data; "Posso criar na segunda-feira, 21/09, às 18h?" deixa o erro à vista antes de ele virar bloco. Nunca diga que fez sem chamar a ferramenta; nunca escreva sintaxe de ferramenta no texto.
+- Na pergunta de confirmação, escreva SEMPRE o dd/mm e o horário, sem o nome do dia da semana. "Posso criar na segunda?" esconde a data; "Posso criar dia 21/09 às 18h?" deixa o erro à vista antes de ele virar bloco. Nunca diga que fez sem chamar a ferramenta; nunca escreva sintaxe de ferramenta no texto.
 - Desabafo ("estou cansado") não vira tarefa — apenas converse. Na dúvida (fala solta, transcrição estranha), pergunte.
 - Editar/excluir: liste antes para obter o id.
 - Tarefa com horário: coloque a hora no due_date (ISO 8601) — o app cria o bloco no calendário sozinho; NÃO chame create_time_block para a mesma coisa.
@@ -153,10 +153,16 @@ const TOOLS = [
         type: "object",
         properties: {
           title: { type: "string" },
-          start_time: { type: "string", description: "Início em ISO 8601" },
-          end_time: { type: "string", description: "Fim em ISO 8601" },
+          start_time: { type: "string", description: "Início da PRIMEIRA ocorrência, ISO 8601" },
+          end_time: { type: "string", description: "Fim da primeira ocorrência, ISO 8601" },
           description: { type: ["string", "null"] },
           color: { type: ["string", "null"], description: "Cor hex, ex #6366f1" },
+          recurrence_rule: {
+            type: ["string", "null"],
+            enum: ["daily", "weekly", "weekdays", null],
+            description:
+              "Repetição: daily (todo dia), weekly (toda semana no mesmo dia), weekdays (segunda a sexta). Use quando pedirem 'toda terça', 'todo dia', 'dias úteis'. Sem isto o bloco acontece UMA vez só.",
+          },
         },
         required: ["title", "start_time", "end_time"],
       },
@@ -617,6 +623,12 @@ async function executeTool(
             return { ok: true, created: dup, note: `Já existe um bloco igual/parecido ("${dup.title}") nesse período — não criei outro.` }
           }
         }
+        // Só as três regras que o app sabe expandir. Qualquer outra coisa vira
+        // bloco avulso — e é melhor assim que gravar uma regra que o calendário
+        // não entende e ninguém vê.
+        const regraPedida = typeof args.recurrence_rule === "string" ? args.recurrence_rule : null
+        const regra = ["daily", "weekly", "weekdays"].includes(regraPedida ?? "") ? regraPedida : null
+
         const { data, error } = await supabase
           .from("time_blocks")
           .insert({
@@ -626,12 +638,17 @@ async function executeTool(
             start_time: startT,
             end_time: endT,
             color: args.color ?? "#6366f1",
+            // "toda terça" virava um bloco só, calado (relatório de 21/09).
+            // `is_recurring` anda junto da regra: é o par que o calendário e o
+            // `lib/ia-agenda` leem para expandir as ocorrências.
+            recurrence_rule: regra,
+            is_recurring: regra !== null,
           })
           .select("id, title, start_time")
           .single()
         if (error) return { ok: false, error: error.message }
         const warning = await checkConflicts(supabase, data.id, startT, endT)
-        return { ok: true, created: data, warning }
+        return { ok: true, created: data, warning, recurrence_rule: regra }
       }
       case "list_time_blocks": {
         // A janela é do DIA de quem usa, não do relógio do servidor: pedir
@@ -945,7 +962,10 @@ function comRecibo(
   t: Dicionario["ia"],
   lacoEstourou: boolean
 ): string {
-  const comprovante = recibo(executadas, tzMin, t.recibo, t.recibo.diasDaSemana, lacoEstourou)
+  // Os rótulos de repetição moram em `agenda` (a leitura usa os mesmos) e são
+  // emprestados ao recibo aqui, em vez de duplicados no dicionário.
+  const textos = { ...t.recibo, repeticao: t.agenda.repeticao }
+  const comprovante = recibo(executadas, tzMin, textos, t.recibo.diasDaSemana, lacoEstourou)
   return comprovante ? `${texto}\n\n${comprovante}` : texto
 }
 
@@ -985,6 +1005,16 @@ async function runOpenAIAgent(
       const recovered = await recoverFailedToolCalls(detail, supabase, userId, tzMin, idioma)
       if (recovered) return recovered
       if (res.status === 429) {
+        // Se o laço JÁ escreveu alguma coisa, NÃO pode cair no reserva: o
+        // reserva não enxerga o que foi feito e responde "não consegui criar",
+        // por cima de blocos que estão no calendário. Foi o pior defeito do
+        // relatório de 21/09 — pior que o antigo, porque leva quem usa a pedir
+        // de novo e duplicar.
+        //
+        // Então: quando houve escrita, a resposta é o recibo do que entrou,
+        // mais o aviso de que o pedido ficou pela metade.
+        const jaEscreveu = executadas.some((a) => FERRAMENTAS_QUE_ESCREVEM.has(a.nome))
+        if (jaEscreveu) return comRecibo(t.erros.ocupada, executadas, tzMin, t, true)
         return "__RATE_LIMIT__"
       }
       throw new Error(`Groq ${res.status}: ${detail}`)

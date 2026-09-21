@@ -154,8 +154,11 @@ export function descreveAgora(agoraMs: number, tzMin: number): string {
       }).join(" · "),
     ``,
     `Ao criar ou editar, escreva a data em ISO 8601 com este fuso (${fuso}).`,
-    `Ao CONFIRMAR para o usuário, escreva sempre a data por extenso: o dia da`,
-    `semana E o dd/mm, os dois vindos da lista acima. "na segunda-feira" sozinho`,
-    `esconde o erro — se a data estiver trocada, ninguém percebe.`,
+    `Ao falar com o usuário, escreva a data como dd/mm (ex.: 21/09) — SEMPRE, e`,
+    `nunca "na segunda" sozinho, que esconde a data trocada.`,
+    `NÃO escreva o nome do dia da semana na sua frase. O app acrescenta o dia`,
+    `certo, calculado aqui, embaixo da sua resposta; quando os dois discordam,`,
+    `quem lê não sabe em qual acreditar — e já aconteceu ("segunda-feira, 10/10"`,
+    `na sua frase e "sábado, 10/10" na do app, sendo 10/10 um sábado).`,
   ].join("\n")
 }

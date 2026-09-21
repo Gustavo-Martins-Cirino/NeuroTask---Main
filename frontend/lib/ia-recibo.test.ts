@@ -11,6 +11,7 @@ const TEXTOS = {
   atualizou: "atualizei",
   excluiu: "excluí",
   falhou: "não consegui",
+  repeticao: { daily: "todo dia", weekly: "toda semana", weekdays: "dias úteis" },
 }
 
 const criar = (title: string, start_time: string, resultado: unknown = { ok: true }): AcaoExecutada => ({
@@ -133,14 +134,14 @@ describe("o recibo com os textos de verdade", () => {
   ]
 
   it("em português, sai legível e com o dia da semana", () => {
-    const texto = recibo(umSo, 180, pt.ia.recibo, pt.ia.recibo.diasDaSemana)!
+    const texto = recibo(umSo, 180, { ...pt.ia.recibo, repeticao: pt.ia.agenda.repeticao }, pt.ia.recibo.diasDaSemana)!
     expect(texto).toContain("No calendário ficou assim:")
     expect(texto).toContain("criei")
     expect(texto).toContain("sábado, 03/10, 10:00")
   })
 
   it("em inglês também", () => {
-    const texto = recibo(umSo, 180, en.ia.recibo, en.ia.recibo.diasDaSemana)!
+    const texto = recibo(umSo, 180, { ...en.ia.recibo, repeticao: en.ia.agenda.repeticao }, en.ia.recibo.diasDaSemana)!
     expect(texto).toContain("created")
     expect(texto).toContain("Saturday, 03/10, 10:00")
   })
@@ -156,5 +157,53 @@ describe("o recibo com os textos de verdade", () => {
     }
     expect(pt.ia.recibo.diasDaSemana[0]).toBe("domingo")
     expect(en.ia.recibo.diasDaSemana[0]).toBe("Sunday")
+  })
+})
+
+describe("o que o relatório de 21/09 pegou", () => {
+  // R13: a frase dizia "não criei porque já existe" e logo abaixo aparecia
+  // "✅ criei". `note` quer dizer NÃO FIZ — com `ok: true` e nada criado.
+  it("duplicado recusado não vira ✅ criei", () => {
+    const texto = recibo(
+      [
+        criar("[TESTE] R13 Unico", "2026-10-11T13:00:00Z", {
+          ok: true,
+          created: { id: "x" },
+          note: 'Já existe um bloco igual/parecido ("[TESTE] R13 Unico") nesse período — não criei outro.',
+        }),
+      ],
+      BRASIL,
+      TEXTOS,
+      DIAS
+    )!
+    expect(texto).not.toContain("✅")
+    expect(texto).toContain("ℹ️")
+    expect(texto).toContain("não criei outro")
+  })
+
+  // "toda terça" virava um bloco só, calado. Agora a regra vem no resultado e o
+  // comprovante diz que repete.
+  it("bloco recorrente diz que repete", () => {
+    const texto = recibo(
+      [criar("[TESTE] R18", "2026-09-22T01:00:00Z", { ok: true, recurrence_rule: "weekly" })],
+      BRASIL,
+      TEXTOS,
+      DIAS
+    )!
+    expect(texto).toContain("(toda semana)")
+  })
+
+  it("bloco avulso não ganha rótulo de repetição", () => {
+    const texto = recibo([criar("X", "2026-09-22T01:00:00Z", { ok: true, recurrence_rule: null })], BRASIL, TEXTOS, DIAS)!
+    expect(texto).not.toContain("(")
+  })
+
+  // O pior caso do relatório: o laço criou 1 de 6 e caiu no teto de tokens. A
+  // resposta tem de listar o que entrou E avisar que parou no meio — nunca
+  // "não consegui criar nada".
+  it("pedido interrompido lista o que entrou e avisa que faltou", () => {
+    const texto = recibo([criar("[TESTE] R10a", "2026-10-10T13:00:00Z")], BRASIL, TEXTOS, DIAS, true)!
+    expect(texto).toContain('"[TESTE] R10a"')
+    expect(texto).toContain(TEXTOS.naoTerminei)
   })
 })
