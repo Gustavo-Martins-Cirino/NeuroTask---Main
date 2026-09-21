@@ -8,6 +8,7 @@ import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { logActivity } from "@/lib/activity-log"
 import { toast } from "sonner"
 import { useDicionario } from "@/hooks/use-idioma"
+import { mostrarCheckin } from "@/components/checkin-toast"
 
 function localDateKey() {
   const d = new Date()
@@ -163,11 +164,9 @@ export function ReminderNotifier() {
         const key = `nt-checkin-${b.id}-${b.end_time}`
         if (localStorage.getItem(key)) continue
         localStorage.setItem(key, "1")
-        toast(t.terminou(b.title), {
-          description: t.conseguiu,
-          duration: 60_000,
-          action: { label: t.conclui, onClick: () => completeFromCheckin(b) },
-          cancel: { label: t.reagendar, onClick: () => rescheduleFromCheckin(b) },
+        mostrarCheckin(b, {
+          aoConcluir: () => completeFromCheckin(b),
+          aoReagendar: () => rescheduleFromCheckin(b),
         })
       }
     }, 30_000)

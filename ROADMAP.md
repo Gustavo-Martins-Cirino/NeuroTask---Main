@@ -469,6 +469,33 @@ repositório:
 > laço batendo no limite de tokens no meio do trabalho. A diferença é que agora ele CONTA o que
 > fez. O conserto de verdade é o plano do provedor — ver a nota do teto, acima.
 
+> **O aviso de check-in virou cartão (21/09).** "Conseguiu fazer tal atividade?" era um
+> `toast()` padrão do sonner: título, descrição e dois links de texto, sem nada do resto do app.
+> Ele aparece POR CIMA de qualquer tela, e é justamente aí que destoar salta aos olhos.
+>
+> Agora é `components/checkin-toast.tsx`, com o mesmo vocabulário dos cartões do dashboard —
+> `rounded-2xl`, borda em `border/40`, `bg-card`, `backdrop-blur`, ícone num quadrado
+> `bg-primary/10`. Vai por `toast.custom` e não por `toast({ action, cancel })` de propósito: os
+> botões do sonner são links de texto, e esta pergunta aparece no celular, no meio de outra
+> coisa, e some em 60s — ela precisa de dois alvos de dedo, não de dois links. Medidos em 36px.
+>
+> Ganhou o que faltava para a pergunta fazer sentido sozinha: o **horário do bloco**
+> (`16:59 – 17:59`, no formato de 12h/24h de quem usa) e um **X para dispensar** sem responder.
+> E os dois botões fecham o aviso ao serem clicados — continuar olhando para a pergunta depois de
+> respondê-la era metade do incômodo.
+>
+> Duas coisas saíram: a frase `"X terminou"` do dicionário, que virou rótulo morto quando o
+> título do bloco ganhou linha própria; e o `✅` do botão "Concluí", que agora tem ícone de check
+> — emoji verde em cima de botão azul é briga de cor, e ele só apareceu como briga na captura.
+>
+> Conferido em build de produção a 390px e 1280px, nos dois temas: cabe na tela, sem erro de JS,
+> e o `prefers-reduced-motion` troca a entrada por um aparecer simples.
+>
+> **Uma armadilha nova da bancada, para a próxima:** disparar um toast no `useEffect` de montagem
+> não mostra nada. O `<Toaster/>` vem DEPOIS de `{children}` no layout raiz, e um toast emitido
+> antes de ele se inscrever se perde. Não afeta o app (o check-in vem de um intervalo de 30s),
+> mas custou uma rodada de medição achando que o cartão estava quebrado.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

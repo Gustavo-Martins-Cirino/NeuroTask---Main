@@ -858,7 +858,6 @@ describe("o que fala fora de uma tela", () => {
   // só a moldura da frase muda.
   it("o título do bloco entra inteiro na frase, nos dois idiomas", () => {
     for (const [nome, d] of IDIOMAS) {
-      expect(d.moldura.checkin.terminou("Ler o artigo"), nome).toContain("Ler o artigo")
       expect(d.moldura.checkin.registrado("Ler o artigo"), nome).toContain("Ler o artigo")
     }
   })

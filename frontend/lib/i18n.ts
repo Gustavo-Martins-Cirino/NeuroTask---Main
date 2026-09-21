@@ -126,8 +126,9 @@ export interface Dicionario {
       registrado: (titulo: string) => string
       registradoDetalhe: string
       reagendado: (titulo: string) => string
-      terminou: (titulo: string) => string
       conseguiu: string
+      /** O X do canto — o cartão pode ser dispensado sem responder. */
+      dispensar: string
       conclui: string
       reagendar: string
     }
@@ -1291,9 +1292,9 @@ export const pt: Dicionario = {
       registrado: (titulo) => `"${titulo}" registrado! 🎯`,
       registradoDetalhe: "Isso alimenta seu autoconhecimento.",
       reagendado: (titulo) => `"${titulo}" reagendado para agora.`,
-      terminou: (titulo) => `⏱️ "${titulo}" terminou`,
       conseguiu: "Conseguiu fazer?",
-      conclui: "Concluí ✅",
+      dispensar: "Dispensar",
+      conclui: "Concluí",
       reagendar: "Reagendar",
     },
     cabecalho: {
@@ -2466,9 +2467,9 @@ export const en: Dicionario = {
       registrado: (titulo) => `"${titulo}" logged! 🎯`,
       registradoDetalhe: "This feeds your self-knowledge.",
       reagendado: (titulo) => `"${titulo}" moved to now.`,
-      terminou: (titulo) => `⏱️ "${titulo}" is over`,
       conseguiu: "Did you get it done?",
-      conclui: "Did it ✅",
+      dispensar: "Dismiss",
+      conclui: "Did it",
       reagendar: "Reschedule",
     },
     cabecalho: {
