@@ -27,7 +27,7 @@ AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
 - EXCEÇÃO: se a pessoa já disse "pode criar direto", "sem confirmar", "não precisa perguntar" ou equivalente, não pergunte — execute de uma vez. O pedido dela vale para a conversa toda, não só para a mensagem em que foi dito.
 - Na pergunta de confirmação, escreva SEMPRE o dd/mm e o horário, sem o nome do dia da semana. "Posso criar na segunda?" esconde a data; "Posso criar dia 21/09 às 18h?" deixa o erro à vista antes de ele virar bloco. Nunca diga que fez sem chamar a ferramenta; nunca escreva sintaxe de ferramenta no texto.
 - Desabafo ("estou cansado") não vira tarefa — apenas converse. Na dúvida (fala solta, transcrição estranha), pergunte.
-- Editar/excluir: liste antes para obter o id.
+- Editar/excluir: chame list_time_blocks antes para obter o id — ele vem entre colchetes em cada linha. NUNCA peça o id ao usuário: ele não aparece em lugar nenhum da tela, e pedi-lo trava a conversa. Para mudar horário de um bloco use update_time_block, nunca apagar e recriar.
 - Tarefa com horário: coloque a hora no due_date (ISO 8601) — o app cria o bloco no calendário sozinho; NÃO chame create_time_block para a mesma coisa.
 - Datas: respeite o dia dito ("hoje" é hoje, mesmo que a hora já tenha passado). Hora ambígua (manhã ou noite)? Pergunte antes. end_time no MESMO dia do start_time, salvo cruzar a meia-noite. Ao falar, use datas naturais ("amanhã das 8h às 9h"), nunca ISO.
 - Planejar a partir de um compromisso: plan_day_backwards (confirm=false propõe; após o sim, repita com os MESMOS argumentos e confirm=true). Nunca calcule a cadeia você mesmo nem crie os blocos um a um.
@@ -161,7 +161,7 @@ const TOOLS = [
             type: ["string", "null"],
             enum: ["daily", "weekly", "weekdays", null],
             description:
-              "Repetição: daily (todo dia), weekly (toda semana no mesmo dia), weekdays (segunda a sexta). Use quando pedirem 'toda terça', 'todo dia', 'dias úteis'. Sem isto o bloco acontece UMA vez só.",
+              "Repetição. 'de segunda a sexta'/'dias úteis' → weekdays. 'todo dia' → daily. 'toda terça'/'semanalmente' (um dia só) → weekly. Sem isto, acontece uma vez só. weekly cai só no dia da primeira ocorrência: pedido com VÁRIOS dias nunca é weekly.",
           },
         },
         required: ["title", "start_time", "end_time"],
@@ -186,8 +186,33 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "update_time_block",
+      description:
+        "Altera um bloco que já existe (horário, título, cor, repetição). Para mudar, use esta — nunca apagar e recriar. O id vem entre colchetes na listagem; sem ele, chame list_time_blocks. NUNCA peça o id ao usuário: não aparece na tela.",
+      parameters: {
+        type: "object",
+        properties: {
+          block_id: { type: "string" },
+          title: { type: ["string", "null"] },
+          start_time: { type: ["string", "null"], description: "Novo início, ISO 8601" },
+          end_time: { type: ["string", "null"], description: "Novo fim, ISO 8601" },
+          description: { type: ["string", "null"] },
+          color: { type: ["string", "null"] },
+          recurrence_rule: {
+            type: ["string", "null"],
+            enum: ["daily", "weekly", "weekdays", null],
+            description: "Mesmas regras do create_time_block. `null` vira avulso.",
+          },
+        },
+        required: ["block_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "delete_time_block",
-      description: "Exclui um bloco de tempo pelo id.",
+      description: "Exclui um bloco pelo id (o que vem entre colchetes na listagem).",
       parameters: {
         type: "object",
         properties: { block_id: { type: "string" } },
@@ -686,6 +711,44 @@ async function executeTool(
           agenda: linhasDaAgenda(ocorrencias, tzMin, t.recibo.diasDaSemana, t.agenda),
           quantos: ocorrencias.length,
         }
+      }
+      case "update_time_block": {
+        if (typeof args.block_id !== "string" || !args.block_id) {
+          return { ok: false, error: "block_id é obrigatório — chame list_time_blocks para obtê-lo" }
+        }
+        // Só o que veio muda. Campo ausente fica como está, e é isso que separa
+        // "adiar para as 15h" de "recriar o bloco do zero perdendo o resto".
+        const mudanca: Record<string, unknown> = {}
+        if (typeof args.title === "string") mudanca.title = args.title
+        if (typeof args.description === "string") mudanca.description = args.description
+        if (typeof args.color === "string") mudanca.color = args.color
+        const novoInicio = args.start_time ? normalizeDT(args.start_time, tzMin) : null
+        const novoFim = args.end_time ? normalizeDT(args.end_time, tzMin) : null
+        if (typeof novoInicio === "string") mudanca.start_time = novoInicio
+        if (typeof novoFim === "string") mudanca.end_time = novoFim
+        if ("recurrence_rule" in args) {
+          const r = typeof args.recurrence_rule === "string" ? args.recurrence_rule : null
+          const valida = ["daily", "weekly", "weekdays"].includes(r ?? "") ? r : null
+          mudanca.recurrence_rule = valida
+          mudanca.is_recurring = valida !== null
+        }
+        if (Object.keys(mudanca).length === 0) {
+          return { ok: false, error: "nada para mudar — diga o que muda (horário, título, cor ou repetição)" }
+        }
+
+        const { data, error } = await supabase
+          .from("time_blocks")
+          .update(mudanca)
+          .eq("id", args.block_id)
+          .select("id, title, start_time, end_time, recurrence_rule")
+          .maybeSingle()
+        if (error) return { ok: false, error: error.message }
+        // `maybeSingle` sem linha quer dizer id que não é dele (ou não existe):
+        // a RLS filtra por dono, então "não achei" é a resposta honesta.
+        if (!data) return { ok: false, error: "não achei esse bloco" }
+
+        const warning = await checkConflicts(supabase, data.id, data.start_time, data.end_time)
+        return { ok: true, created: data, warning, recurrence_rule: data.recurrence_rule ?? null }
       }
       case "delete_time_block": {
         const { error } = await supabase.from("time_blocks").delete().eq("id", args.block_id)

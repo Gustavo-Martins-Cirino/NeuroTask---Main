@@ -17,6 +17,7 @@
 const DIA_MS = 24 * 3_600_000
 
 export interface BlocoDaAgenda {
+  id?: string
   title: string
   start_time: string
   end_time: string
@@ -25,6 +26,9 @@ export interface BlocoDaAgenda {
 }
 
 export interface Ocorrencia {
+  /** O id da SÉRIE. Ocorrências de um recorrente compartilham o mesmo — editar
+   *  ou excluir mexe na série inteira, que é o que o calendário faz também. */
+  id: string | null
   titulo: string
   /** Epoch em ms — o instante, sem fuso embutido. */
   inicio: number
@@ -95,7 +99,7 @@ export function ocorrenciasNaJanela(
     if (!b.is_recurring || !b.recurrence_rule) {
       // Avulso: entra se ENCOSTA na janela, e não só se começa dentro dela —
       // um bloco que atravessa a meia-noite pertence aos dois dias.
-      if (e > deMs && s < ateMs) saida.push({ titulo: b.title, inicio: s, fim: e, regra: null })
+      if (e > deMs && s < ateMs) saida.push({ id: b.id ?? null, titulo: b.title, inicio: s, fim: e, regra: null })
       continue
     }
     if (duracao <= 0 || duracao > DIA_MS) continue
@@ -110,7 +114,7 @@ export function ocorrenciasNaJanela(
       if (comeco < inicioDoDia(s, tzMin)) continue
       const fim = comeco + duracao
       if (fim > deMs && comeco < ateMs) {
-        saida.push({ titulo: b.title, inicio: comeco, fim, regra: b.recurrence_rule })
+        saida.push({ id: b.id ?? null, titulo: b.title, inicio: comeco, fim, regra: b.recurrence_rule })
       }
     }
   }
@@ -143,7 +147,12 @@ export function linhasDaAgenda(
       const f = parede(o.fim, tzMin)
       const dia = nomesDosDias[i.diaDaSemana] ?? ""
       const repete = o.regra ? ` (${textos.repeticao[o.regra] ?? o.regra})` : ""
-      return `${dia} ${dois(i.dia)}/${dois(i.mes)} ${dois(i.hora)}:${dois(i.minuto)}–${dois(f.hora)}:${dois(f.minuto)} ${o.titulo}${repete}`
+      // O id vai junto porque é a única forma de EDITAR ou EXCLUIR depois: ele
+      // não aparece em lugar nenhum da tela, então se não vier aqui o modelo
+      // passa a pedi-lo a quem não tem como saber. Foi o que travou a edição
+      // no reteste de 21/09 — e o mesmo buraco quebrava o excluir, calado.
+      const id = o.id ? ` [id: ${o.id}]` : ""
+      return `${dia} ${dois(i.dia)}/${dois(i.mes)} ${dois(i.hora)}:${dois(i.minuto)}–${dois(f.hora)}:${dois(f.minuto)} ${o.titulo}${repete}${id}`
     })
     .join("\n")
 }

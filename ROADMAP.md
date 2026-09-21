@@ -496,6 +496,37 @@ repositório:
 > antes de ele se inscrever se perde. Não afeta o app (o check-in vem de um intervalo de 30s),
 > mas custou uma rodada de medição achando que o cartão estava quebrado.
 
+> **Reteste 21/09 (noite): o recibo passou.** Em ~12 operações o "não consigo criar" mentiroso
+> não apareceu nenhuma vez. Lote interrompido: "criei S1a, S1b" + o aviso, e no calendário
+> exatamente esses dois; pedidos os 4 que faltavam, criou S1c e S1d e avisou de novo. Duplicata
+> com a linha `ℹ️`. Recorrência semanal caindo em 23/09, 30/09, 07/10 e 14/10; diária todo dia.
+> O nome do dia saiu da frase do modelo e a linha do app confere.
+>
+> **Editar bloco estava travado — e a culpa era minha, em dobro.** Ela pedia o id, e o id não
+> aparece em lugar nenhum da tela. Dois buracos somados:
+>
+> 1. **`update_time_block` nunca existiu.** Havia update para tarefa e para nota; para bloco, só
+>    criar e excluir. Ela falava em "atualizar" sem ter como.
+> 2. **Eu tinha tirado os ids da listagem** no conserto do bug 4: troquei linha de banco por texto
+>    formatado e o `id` foi junto. Isso não travava só a edição — **quebrava o excluir também**,
+>    calado, porque `delete_time_block` pede `block_id`. Ninguém testou excluir nesse intervalo, e
+>    eu não teria descoberto sem o relatório.
+>
+> Agora cada linha da agenda termina em `[id: …]` e existe `update_time_block`, que muda só o que
+> foi pedido (campo ausente fica como está — é a diferença entre "adiar para as 15h" e "recriar o
+> bloco perdendo o resto"). O prompt passou a proibir explicitamente pedir o id a quem usa.
+>
+> **"De segunda a sexta" virava `weekly` e caía só nas terças.** O `weekdays` existia; o modelo é
+> que escolhia errado, e a frase dele dizia "de segunda a sexta" — só o calendário denunciava. A
+> descrição da ferramenta agora mapeia as expressões ("dias úteis" → weekdays, "toda terça" →
+> weekly) e diz a regra que pega o caso: **pedido com vários dias nunca é weekly.**
+>
+> **O preço, medido e dito:** o bloco de ferramentas foi de ~1.556 para **~1.993 tokens** com a
+> 13ª ferramenta (enxuguei as descrições, de 2.094 para 1.993; o resto é estrutura do schema, que
+> não encolhe). Por chamada, de ~2.457 para ~2.894 — contra o teto de 8.000/minuto, isso são ~1,7
+> chamadas por minuto em vez de ~2,2. **Editar estava impossível e excluir estava quebrado, então
+> vale; mas é mais um empurrão na direção do plano pago.**
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

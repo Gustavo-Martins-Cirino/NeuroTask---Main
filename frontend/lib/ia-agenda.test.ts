@@ -16,6 +16,7 @@ const TEXTOS = {
 
 /** Um bloco às `h` horas da parede brasileira, no dia informado. */
 const bloco = (dia: number, h: number, dur = 1, extra: Partial<BlocoDaAgenda> = {}): BlocoDaAgenda => ({
+  id: `id-${dia}-${h}`,
   title: `[TESTE] ${h}h`,
   start_time: new Date(Date.UTC(2026, 8, dia, h + 3, 0)).toISOString(),
   end_time: new Date(Date.UTC(2026, 8, dia, h + 3 + dur, 0)).toISOString(),
@@ -142,5 +143,30 @@ describe("linhasDaAgenda", () => {
     const oito = Array.from({ length: 8 }, (_, i) => bloco(23, 8 + i))
     const linhas = linhasDaAgenda(ocorrenciasNaJanela(oito, DIA_23, DIA_24, BRASIL), BRASIL, DIAS, TEXTOS)
     expect(linhas.split("\n")).toHaveLength(8)
+  })
+})
+
+describe("o id na linha", () => {
+  // Sem o id na linha, o modelo passa a PEDIR o id a quem não tem como saber —
+  // ele não aparece em lugar nenhum da tela. Foi o que travou a edição no
+  // reteste de 21/09, e quebrava o excluir junto, calado.
+  it("cada linha carrega o id do bloco", () => {
+    const linhas = linhasDaAgenda(ocorrenciasNaJanela([bloco(23, 7)], DIA_23, DIA_24, BRASIL), BRASIL, DIAS, TEXTOS)
+    expect(linhas).toContain("[id: id-23-7]")
+  })
+
+  // Todas as ocorrências de um recorrente são a MESMA série: editar ou excluir
+  // mexe nela inteira, então o id é o mesmo em todas.
+  it("as ocorrências de um recorrente compartilham o id da série", () => {
+    const d = bloco(1, 8, 1, { is_recurring: true, recurrence_rule: "daily" })
+    const semana = ocorrenciasNaJanela([d], DIA_23, DIA_23 + 3 * 24 * 3_600_000, BRASIL)
+    expect(semana).toHaveLength(3)
+    expect(new Set(semana.map((o) => o.id)).size).toBe(1)
+  })
+
+  it("bloco sem id não escreve colchete vazio", () => {
+    const semId = { title: "X", start_time: "2026-09-23T10:00:00Z", end_time: "2026-09-23T11:00:00Z" } as BlocoDaAgenda
+    const linhas = linhasDaAgenda(ocorrenciasNaJanela([semId], DIA_23, DIA_24, BRASIL), BRASIL, DIAS, TEXTOS)
+    expect(linhas).not.toContain("[id:")
   })
 })
