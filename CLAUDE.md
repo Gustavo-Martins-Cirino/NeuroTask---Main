@@ -117,7 +117,6 @@ frontend/
 │   ├── nota-cor.ts           # Paleta das notas: guarda a chave, não o hex nem o nome (puro)
 │   ├── ia-agora.ts           # A data/hora que a Neuro recebe: por extenso, ISO e mês delimitado (puro)
 │   ├── ia-duplicata.ts       # Quando a Neuro recusa criar tarefa: mesmo título E mesmo dia (puro)
-│   ├── telegram-fuso.ts      # De que parede o /hoje do bot fala: vínculo → push → padrão (puro)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
@@ -141,23 +140,9 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 | `/app/ai` | Chat de IA (Vercel AI SDK, rota `app/api/ai`) |
 | `/app/office` | Escritório — cena 3D (R3F) viva + loja cosmética (moedas via XP) |
 | `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório (em 3D) |
-| `/app/settings` | Configurações (rotina, push, tema, Telegram) |
+| `/app/settings` | Configurações (rotina, push, tema) |
 | `/agenda/[token]` | **Pública, sem login** — agenda compartilhada com quem não usa o app. Mostra SÓ faixas ocupadas (a consulta nem pede título). O token é a credencial; o proxy libera `/agenda/` de propósito (`lib/supabase/middleware.ts`) |
 | `/admin` | Painel do dono — feedbacks, usuários, erros e uso. Server component: quem não é `OWNER_EMAIL` recebe `notFound()`. Fora de `/app` (sem dock) e sem link na navegação |
-
-## Integrações externas (Fase 4)
-
-- **Bot do Telegram**: mensagem → tarefa. Pareamento por código
-  (`/start CODIGO`, gerado em Configurações). Webhook em `app/api/telegram/webhook`
-  protegido pelo header `x-telegram-bot-api-secret-token`; `app/api/telegram/setup`
-  registra o webhook. Parser puro e determinístico em `lib/telegram-commands.ts` (sem LLM).
-
-  O fuso de quem usa pega carona no código de pareamento e fica no vínculo
-  (`lib/telegram-fuso.ts`, `supabase/telegram_tz.sql`) — o Telegram não conta de onde a
-  mensagem vem, e sem isso o `/hoje` responde pela parede do Brasil para todo mundo.
-
-**Variáveis de ambiente novas**: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`.
-Reaproveita `SUPABASE_SERVICE_ROLE_KEY` (RLS bypass no servidor).
 
 ## Decisões de design ativas
 
@@ -248,7 +233,7 @@ calendário com drag/recorrência/painel, mixer, lembretes, conversa por voz). E
 
 ## Como rodar
 
-Setup completo (env vars, ordem dos SQLs, pareamento do Telegram, deploy): **README.md**.
+Setup completo (env vars, ordem dos SQLs, deploy): **README.md**.
 
 ```bash
 cd frontend

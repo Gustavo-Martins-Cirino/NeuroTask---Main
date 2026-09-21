@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useDicionario, useLocale } from "@/hooks/use-idioma"
+import { useDicionario } from "@/hooks/use-idioma"
 import { enfatizar } from "@/lib/enfase"
 import { Header } from "@/components/header"
 import { ErrorsPanel } from "@/components/errors-panel"
@@ -14,10 +14,9 @@ import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { nomeDeExibicao } from "@/lib/nome-usuario"
 import { motion } from "framer-motion"
-import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, Send, CalendarSync, CalendarClock, Share2 } from "lucide-react"
+import { Settings, User, Palette, LogOut, Check, Loader2, Sun, Moon, Monitor, Clock, Minus, Plus, Trash2, Bell, Sparkles, X, CalendarSync, CalendarClock, Share2 } from "lucide-react"
 import { enablePush, disablePush, getPushStatus, pushSupported } from "@/lib/push"
 import { explicaFalha } from "@/lib/falha"
-import { generateTelegramCode, fetchTelegramLinks, unlinkTelegram, type TelegramLink } from "@/lib/telegram"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
 import { SeletorRegiao } from "@/components/seletor-regiao"
 import { FotoPerfilCampo } from "@/components/foto-perfil-campo"
@@ -104,7 +103,6 @@ function Section({ icon, title, description, children }: {
 
 export default function SettingsPage() {
   const traducao = useDicionario()
-  const locale = useLocale()
   const supabase = createClient()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
@@ -164,45 +162,6 @@ export default function SettingsPage() {
       }
     }
     setPushBusy(false)
-  }
-
-  const [tgLinks, setTgLinks] = useState<TelegramLink[]>([])
-  const [tgPairing, setTgPairing] = useState<{ code: string; expiresAt: string } | null>(null)
-  const [tgBusy, setTgBusy] = useState(false)
-  const [tgLeft, setTgLeft] = useState(0)
-
-  useEffect(() => {
-    fetchTelegramLinks().then(setTgLinks)
-  }, [])
-
-  useEffect(() => {
-    if (!tgPairing) return
-    const tick = () => {
-      const left = Math.max(0, Math.round((new Date(tgPairing.expiresAt).getTime() - Date.now()) / 1000))
-      setTgLeft(left)
-      if (left === 0) setTgPairing(null)
-    }
-    tick()
-    const id = setInterval(tick, 1000)
-    return () => clearInterval(id)
-  }, [tgPairing])
-
-  const handleGenerateTelegramCode = async () => {
-    setTgBusy(true)
-    const result = await generateTelegramCode()
-    setTgBusy(false)
-    if (!result) {
-      toast.error(traducao.configuracoes.telegram.erroGerar, { description: traducao.configuracoes.telegram.tenteNovamente })
-      return
-    }
-    setTgPairing(result)
-    // O vínculo nasce do lado do bot: recarrega para ele aparecer aqui.
-    setTimeout(() => fetchTelegramLinks().then(setTgLinks), 15_000)
-  }
-
-  const handleUnlinkTelegram = async (id: string) => {
-    setTgLinks((prev) => prev.filter((l) => l.id !== id))
-    await unlinkTelegram(id)
   }
 
   const handleAddActivity = async () => {
@@ -619,71 +578,6 @@ export default function SettingsPage() {
                 />
               </span>
             </button>
-          </Section>
-
-          <Section
-            icon={<Send className="h-5 w-5" />}
-            title={traducao.configuracoes.telegram.titulo}
-            description={traducao.configuracoes.telegram.descricao}
-          >
-            <div className="space-y-3">
-              {tgPairing ? (
-                <div className="rounded-xl border border-border/50 p-4 text-center">
-                  <p className="text-2xl font-bold tracking-[0.3em] tabular-nums">{tgPairing.code}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {traducao.configuracoes.telegram.mandeParaOBot}{" "}
-                    <code className="rounded bg-muted px-1 py-0.5">/start {tgPairing.code}</code>
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {traducao.configuracoes.telegram.expiraEm(`${Math.floor(tgLeft / 60)}:${String(tgLeft % 60).padStart(2, "0")}`)}
-                  </p>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleGenerateTelegramCode}
-                  disabled={tgBusy}
-                  className="flex h-9 items-center gap-2 rounded-lg border border-border/50 px-4 text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
-                >
-                  {tgBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {traducao.configuracoes.telegram.gerarCodigo}
-                </button>
-              )}
-
-              {tgLinks.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">{traducao.configuracoes.telegram.conversasConectadas}</p>
-                  {tgLinks.map((l) => (
-                    <div
-                      key={l.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-border/50 p-3"
-                    >
-                      <span>
-                        <span className="block text-sm font-medium">
-                          {l.username ? `@${l.username}` : traducao.configuracoes.telegram.conversaSemNome}
-                        </span>
-                        <span className="block text-xs text-muted-foreground">
-                          {l.last_seen_at
-                            ? traducao.configuracoes.telegram.ultimaMensagem(new Date(l.last_seen_at).toLocaleDateString(locale))
-                            : traducao.configuracoes.telegram.semMensagens}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleUnlinkTelegram(l.id)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <p className="text-[11px] leading-relaxed text-muted-foreground/70">
-                {traducao.configuracoes.telegram.ajudaComandos}
-              </p>
-            </div>
           </Section>
 
           <ErrorsPanel />

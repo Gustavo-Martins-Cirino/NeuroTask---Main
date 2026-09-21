@@ -590,20 +590,6 @@ export interface Dicionario {
       toastAtivadasDetalhe: string
       erroAtivar: string
     }
-    telegram: {
-      titulo: string
-      descricao: string
-      mandeParaOBot: string
-      expiraEm: (mm: string) => string
-      gerarCodigo: string
-      conversasConectadas: string
-      conversaSemNome: string
-      ultimaMensagem: (data: string) => string
-      semMensagens: string
-      ajudaComandos: string
-      erroGerar: string
-      tenteNovamente: string
-    }
     conta: { titulo: string; sair: string }
   }
   compartilhar: {
@@ -1477,7 +1463,7 @@ export const pt: Dicionario = {
       },
       lembretes: {
         titulo: "Lembretes onde você estiver",
-        texto: "No navegador, no celular com o app fechado, e no Telegram — onde uma mensagem qualquer já vira tarefa.",
+        texto: "No navegador e no celular com o app fechado — e você captura qualquer coisa por voz, falando com a Neuro IA.",
       },
     },
     privacidadeTitulo: "A sua agenda continua sua",
@@ -1835,21 +1821,6 @@ export const pt: Dicionario = {
       toastAtivadas: "Notificações ativadas! 🔔",
       toastAtivadasDetalhe: "Lembretes e check-ins chegam mesmo com o app fechado.",
       erroAtivar: "Não deu para ativar",
-    },
-    telegram: {
-      titulo: "Telegram",
-      descricao: "Mande uma mensagem para o bot e ela vira tarefa",
-      mandeParaOBot: "No Telegram, mande para o bot:",
-      expiraEm: (mm) => `Expira em ${mm}.`,
-      gerarCodigo: "Gerar código de pareamento",
-      conversasConectadas: "Conversas conectadas",
-      conversaSemNome: "Conversa do Telegram",
-      ultimaMensagem: (data) => `Última mensagem em ${data}`,
-      semMensagens: "Ainda sem mensagens",
-      ajudaComandos:
-        "Qualquer mensagem vira tarefa (1ª linha = título). Também entende /hoje e /ajuda.",
-      erroGerar: "Não deu para gerar o código",
-      tenteNovamente: "Tente novamente.",
     },
     conta: { titulo: "Conta", sair: "Sair da conta" },
   },
@@ -2652,7 +2623,7 @@ export const en: Dicionario = {
       },
       lembretes: {
         titulo: "Reminders wherever you are",
-        texto: "In the browser, on your phone with the app closed, and on Telegram — where any message already becomes a task.",
+        texto: "In the browser and on your phone with the app closed — and you can capture anything by voice, talking to Neuro AI.",
       },
     },
     privacidadeTitulo: "Your schedule stays yours",
@@ -3004,21 +2975,6 @@ export const en: Dicionario = {
       toastAtivadas: "Notifications on! 🔔",
       toastAtivadasDetalhe: "Reminders and check-ins arrive even with the app closed.",
       erroAtivar: "Could not turn it on",
-    },
-    telegram: {
-      titulo: "Telegram",
-      descricao: "Send the bot a message and it becomes a task",
-      mandeParaOBot: "On Telegram, send the bot:",
-      expiraEm: (mm) => `Expires in ${mm}.`,
-      gerarCodigo: "Generate pairing code",
-      conversasConectadas: "Connected chats",
-      conversaSemNome: "Telegram chat",
-      ultimaMensagem: (data) => `Last message on ${data}`,
-      semMensagens: "No messages yet",
-      ajudaComandos:
-        "Any message becomes a task (first line = title). It also understands /hoje and /ajuda.",
-      erroGerar: "Could not generate the code",
-      tenteNovamente: "Try again.",
     },
     conta: { titulo: "Account", sair: "Sign out" },
   },

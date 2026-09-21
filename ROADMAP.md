@@ -587,30 +587,14 @@ Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
 > da data de hoje. Todo lembrete marcado nos dez primeiros minutos do dia nunca chegava, em
 > qualquer fuso. Agora a janela para em 00:00.
 
-> **Fuso no bot do Telegram: resolvido (27/08).** O que de fato usava o
-> `DEFAULT_TZ_OFFSET_MIN` era o `/hoje` — a virada do dia e o "HH:mm" da agenda (o parser do
-> bot nunca leu data; o item dizia "amanhã 9h" por engano). Quem estivesse em Lisboa às 23h
-> já via a agenda de amanhã, e às 00:30 ainda via a de ontem.
+> **O bot do Telegram foi removido (21/09).** A integração inteira saiu — rotas
+> (`api/telegram/webhook` e `/setup`), os módulos puros (`telegram-commands`, `telegram-fuso`),
+> a seção em Configurações, as chaves de i18n, os SQLs (`telegram.sql`, `telegram_tz.sql`) e as
+> envs `TELEGRAM_*`. Motivo: quase ninguém usava, e manter um webhook público mais um parser
+> determinístico é superfície de manutenção sem retorno. As tabelas `telegram_links` no banco
+> ficam órfãs e inofensivas; quem quiser pode dropá-las à mão. A captura sem fricção continua
+> viva pela **voz** (a conversa ao vivo com a Neuro IA), que era o mesmo objetivo do bot.
 >
-> **A saída foi a que o item previa, e as duas ao mesmo tempo.** O fuso do navegador pega
-> carona no CÓDIGO DE PAREAMENTO — é o único momento em que o app fala com o Telegram — e
-> fica gravado no vínculo (`supabase/telegram_tz.sql`). Quem parear pelo aparelho errado, ou
-> viajar depois, cai no segundo palpite: a inscrição de push mais recente, que é reescrita
-> toda vez que alguém liga o push num aparelho. O padrão do servidor é o último recurso.
->
-> **`fusoDoUsuario` não usa `??`, e isso é o teste que mais importa**: zero é fuso legítimo
-> (Londres no inverno), e um `??` distraído mandaria quem está em UTC para o horário do
-> Brasil.
->
-> **Banco sem o SQL rodado não pode quebrar nada**, e foi o cuidado que mais mexeu no código:
-> o webhook lê os vínculos com `select("*")` — pedir a coluna nova devolveria erro, o vínculo
-> viria nulo e o bot responderia "esta conversa não está ligada" a quem já está pareado. Na
-> mesma linha, gerar o código tenta com o fuso e repete sem ele se a coluna não existir.
->
-> **Pede um passo do Gustavo**: rodar `supabase/telegram_tz.sql` e parear de novo (o vínculo
-> antigo fica sem fuso e cai no palpite seguinte).
->
-> Não confundir com o formato 12h/24h, que é outra coisa e já estava resolvido.
 > **Seletores de hora**: resolvido. O wheel virou `components/time-select.tsx` e os três
 > diálogos (bloco de tempo, tarefa, convite) usam o mesmo — a preferência 12h/24h vale para
 > LER e para DIGITAR. O risco que segurava este item (mexer no que vai pro banco) não se
@@ -2318,8 +2302,7 @@ vira ruído.
 > **Ainda falta nesta fatia:** `push`, `avatar`, `foto-perfil`, `routine`, `ics` e
 > `office-snapshot` (mesma natureza: I/O que fala). E há um grupo que **não** é interface e
 > precisa de decisão à parte, não de tradução: `ia-agora` e `backward-plan` (o que a Neuro IA
-> recebe escrito), `telegram-commands` (a ajuda do bot, que não sabe de região) e as duas strings
-> internas de `voice-conversation`.
+> recebe escrito) e as duas strings internas de `voice-conversation`.
 
 > **Fatia 6b — notificações push e rotina: feita (17/09).** Saiu daqui a forma genérica de "deu
 > errado" (`lib/falha.ts`): a 6a tinha escrito essa lógica dentro de `friends.ts`, e três módulos
@@ -2423,9 +2406,6 @@ vira ruído.
 >   exceção interna, capturadas, que ninguém lê. E o botão "No" envia a palavra `"não"` para a IA:
 >   está certo hoje (ela fala português), e vira defeito no dia em que ela falar os dois — mais um
 >   fio do mesmo item.
-> - `lib/telegram-commands.ts` — a ajuda do bot. O Telegram não conta de onde a mensagem vem, e o
->   vínculo guarda o fuso, não o idioma. Dar idioma ao bot é decidir onde essa preferência mora,
->   o que é assunto próprio.
 >
 > **E a lição do inventário, para não se perder:** a varredura casa por ACENTO. Ela não achou
 > "Escolha um arquivo de imagem.", "Conseguiu fazer?", "Reagendar" nem "Lembrete · NeuroTask" —

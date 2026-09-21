@@ -74,10 +74,7 @@ nome mora no dicionário —, e cor órfã vira "sem cor" em vez de erro), `regi
 saindo do tamanho — é o que impede uma resposta longa de levar meio minuto para aparecer),
 `routine-insights`, `saudacao`, `task-recurrence` (inclusive que "não repete" vira NULO e
 não a string "none", que o que sai de `regraParaBanco` é lido por `nextOccurrence`, e que
-nenhuma opção carrega texto de interface — o nome de cada repetição mora no dicionário),
-`telegram-commands`,
-`telegram-fuso` (de que parede o `/hoje` do bot está falando — e que zero é fuso de
-verdade, não "ausente") e
+nenhuma opção carrega texto de interface — o nome de cada repetição mora no dicionário) e
 `time-format`. É onde a lógica sutil regride sem
 ninguém ver. Componente e rota ficam de fora de propósito: exigiriam DOM e mock de
 Supabase, e não é ali que mora o risco.
@@ -125,7 +122,7 @@ Todas em `frontend/.env.local` (e nas envs do projeto na Vercel). O arquivo
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chave pública (aceita `NEXT_PUBLIC_SUPABASE_ANON_KEY` como fallback) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Só no servidor.** Bypass de RLS no dispatcher de push e no webhook do Telegram |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Só no servidor.** Bypass de RLS no dispatcher de push |
 
 ### IA — pelo menos uma
 
@@ -142,7 +139,7 @@ O `GROQ_API_KEY` também serve à transcrição de áudio (Whisper) do botão de
 | Variável | Para quê |
 |---|---|
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Par VAPID do Web Push (`npx web-push generate-vapid-keys`) |
-| `CRON_SECRET` | Protege `/api/push/dispatch` e `/api/telegram/setup`. O **mesmo** valor vai dentro de `push_cron.sql` |
+| `CRON_SECRET` | Protege `/api/push/dispatch`. O **mesmo** valor vai dentro de `push_cron.sql` |
 
 ### Painel do dono
 
@@ -173,9 +170,7 @@ O Apple exige conta paga de Apple Developer (99 USD/ano); Google e GitHub são d
 
 | Variável | Para quê |
 |---|---|
-| `TELEGRAM_BOT_TOKEN` | Token do bot (@BotFather) |
-| `TELEGRAM_WEBHOOK_SECRET` | Valida o header `x-telegram-bot-api-secret-token`. **Sem ele qualquer um forja um update e escreve na conta de outra pessoa** |
-| `DEFAULT_TZ_OFFSET_MIN` | Fuso de reserva: vale para o bot do Telegram e para inscrição de push sem fuso próprio. Padrão `180` (Brasil, UTC−3) |
+| `DEFAULT_TZ_OFFSET_MIN` | Fuso de reserva para inscrição de push sem fuso próprio. Padrão `180` (Brasil, UTC−3) |
 | `NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL` | Redirect de cadastro em desenvolvimento |
 
 ## Banco de dados
@@ -259,13 +254,8 @@ feita à mão pode ter batizado o constraint de outro jeito.
 
 **8. Integrações externas** (só se for usá-las)
 ```
-telegram.sql → telegram_tz.sql · calendar_feed.sql
+calendar_feed.sql
 ```
-`telegram_tz.sql` guarda o fuso de quem parear. Sem ele o `/hoje` responde pela parede do
-Brasil para todo mundo — quem estiver em Lisboa às 23h já vê a agenda de amanhã. O fuso
-pega carona no código de pareamento (é o único momento em que o app fala com o Telegram),
-então quem já estava pareado precisa **parear de novo**; até lá o bot tenta o fuso da
-inscrição de push mais recente e, se não houver, o padrão do servidor.
 `calendar_feed.sql` liga o feed assinável (Configurações → "Assinar no Google/Outlook"). Sem dependências.
 
 **Faxina (opcional, e só se você quiser)**
@@ -305,22 +295,6 @@ existência do painel a quem usa o app.
 - Templates de e-mail com a marca em [supabase/email-templates/](supabase/email-templates/)
   (colar em Authentication → Email Templates). O callback usa `token_hash` para funcionar
   cross-device — confirmar o e-mail no celular e voltar no desktop.
-
-## Integrações externas
-
-### Bot do Telegram
-
-Mesmo pareamento por código: Configurações gera os 6 dígitos, você manda `/start CODIGO`
-no bot. Qualquer mensagem vira tarefa (1ª linha = título, resto = descrição); entende
-`/hoje`, `/ajuda` e `/sair`. A interpretação é **100% determinística**
-([lib/telegram-commands.ts](frontend/lib/telegram-commands.ts), módulo puro, sem LLM).
-
-Para registrar o webhook depois do deploy:
-
-```bash
-curl -X POST https://SEU-DOMINIO/api/telegram/setup -H "x-cron-secret: $CRON_SECRET"
-# ...&info=1 consulta o estado · ...&remover=1 remove o webhook
-```
 
 ## Deploy
 

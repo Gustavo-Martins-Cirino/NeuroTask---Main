@@ -40,7 +40,6 @@ const TEXTOS_LIVRES: Record<string, string> = {
   XP: "unidade do jogo",
   min: "abreviação de minutos, igual em português e inglês",
   A: "a amostra de tamanho de fonte na barra do editor de notas",
-  "/start": "o comando do bot do Telegram",
   z: "o 'z' de sono do robozinho desmontado",
 }
 
