@@ -527,6 +527,42 @@ repositório:
 > chamadas por minuto em vez de ~2,2. **Editar estava impossível e excluir estava quebrado, então
 > vale; mas é mais um empurrão na direção do plano pago.**
 
+> **Reteste 21/09 (novo relatório): a recorrência não reproduziu, mas caíram três bugs novos —
+> dois de comunicação e um de data.** Corrigidos, cada um com commit próprio:
+>
+> - **"próxima segunda" caía em domingo.** Hoje era segunda (21/09); o pedido "a partir da
+>   próxima segunda" gerou bloco em 27/09 (domingo) em vez de 28/09, e ainda uma instância de
+>   fim de semana apesar da regra ser "dias úteis". A tabela DIA→DATA do prompt dava
+>   "segunda-feira = hoje" e, para "próxima", o modelo tinha de somar 7 sozinho — e errou, que é
+>   o que o `descreveAgora` existe para impedir. Agora, **só na linha do dia que É hoje**, o
+>   prompt entrega as duas leituras prontas ("na segunda" = hoje; "próxima segunda"/"que vem" =
+>   a data da semana seguinte, calculada). Custo de token desprezível. Corrigir a data também
+>   apagou a instância indevida de domingo (a âncora voltou a cair num dia útil).
+>
+> - **No rate limit APÓS gravar, a prosa mandava "tente de novo" e duplicava.** Mover um bloco
+>   gravou 100%, mas a mensagem dizia "recebeu pedidos demais, tente de novo" + "parei no meio" —
+>   e nada tinha ficado pela metade. Quem lê a primeira linha reenvia e duplica. O 429 pós-escrita
+>   usava `erros.ocupada` (que pede para tentar de novo) e `lacoEstourou=true` (que acrescenta
+>   "parei no meio"); os dois errados nesse ponto, porque a ação pedida foi executada — o que
+>   faltou foi só narrar. Entrou `erros.salvouAntesDoLimite`: lidera com "já salvei, não reenvie"
+>   (o recibo prova) e, para lote grande cortado, pede "me diga só o que faltou", que não duplica.
+>
+> - **"✅ bloco criado" antes de criar — o pior dos três.** A Neuro juntou "Posso criar…?" e "✅
+>   bloco criado" na mesma bolha, sem chamar a ferramenta; o calendário ficava vazio e quem lia
+>   achava que estava feito. O recibo não pega: sem escrita, não há linha para contradizer. Duas
+>   camadas: a regra "enquanto você pergunta, nada foi feito" saiu do fim de uma linha do prompt e
+>   virou regra própria e enfática; e um **backstop determinístico** (`lib/ia-alegacao-vazia.ts`,
+>   7 testes) que corta o "✅ …" da fala do modelo quando NENHUMA ferramenta mudou algo no turno.
+>   Gatilho estreito de propósito — só o marcador ✅, que neste app é convenção do servidor;
+>   palavra solta ("criei" vs "posso criar") fica com o prompt, porque regex ali enche de falso
+>   positivo.
+>
+> **Continua pendente, e é o de sempre:** o teto de tokens (lote de vários blocos ainda corta no
+> meio — é o plano do provedor, não o código) e "me lembre de X" virar lembrete de verdade em vez
+> de tarefa (exigiria uma 14ª ferramenta, que piora o teto — decisão em aberto). Detalhe menor sem
+> ação boa: recusa de duplicado e listagem não mostram a linha "No calendário ficou assim" — mas
+> nesses casos nada mudou, então não há o que comprovar.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

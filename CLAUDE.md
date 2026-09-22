@@ -117,6 +117,7 @@ frontend/
 │   ├── nota-cor.ts           # Paleta das notas: guarda a chave, não o hex nem o nome (puro)
 │   ├── ia-agora.ts           # A data/hora que a Neuro recebe: por extenso, ISO e mês delimitado (puro)
 │   ├── ia-duplicata.ts       # Quando a Neuro recusa criar tarefa: mesmo título E mesmo dia (puro)
+│   ├── ia-alegacao-vazia.ts  # Corta o "✅ criado" da fala do modelo quando nada foi escrito (puro; par do recibo)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
