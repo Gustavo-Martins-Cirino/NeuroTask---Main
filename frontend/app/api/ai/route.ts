@@ -1074,10 +1074,19 @@ async function runOpenAIAgent(
         // relatório de 21/09 — pior que o antigo, porque leva quem usa a pedir
         // de novo e duplicar.
         //
-        // Então: quando houve escrita, a resposta é o recibo do que entrou,
-        // mais o aviso de que o pedido ficou pela metade.
+        // Então: quando houve escrita, a resposta é o recibo do que entrou.
+        //
+        // Duas coisas mudaram aqui depois do relatório de teste que apontou o
+        // caso 1b: a prosa dizia "recebeu pedidos demais, tente de novo" (que
+        // faz quem lê reenviar e DUPLICAR) e o recibo dizia "⚠️ parei no meio"
+        // — mesmo quando a única escrita pedida entrou 100%. A mensagem agora
+        // lidera com "já salvei, não reenvie" (o recibo mostra o quê), e não
+        // afirma que parou no meio: o que foi pedido nas voltas anteriores foi
+        // executado; o que não deu foi só narrar. Se de fato faltou (lote
+        // grande cortado), a própria frase pede "me diga só o que faltou", que
+        // não duplica.
         const jaEscreveu = executadas.some((a) => FERRAMENTAS_QUE_ESCREVEM.has(a.nome))
-        if (jaEscreveu) return comRecibo(t.erros.ocupada, executadas, tzMin, t, true)
+        if (jaEscreveu) return comRecibo(t.erros.salvouAntesDoLimite, executadas, tzMin, t, false)
         return "__RATE_LIMIT__"
       }
       throw new Error(`Groq ${res.status}: ${detail}`)

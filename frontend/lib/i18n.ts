@@ -1034,6 +1034,8 @@ export interface Dicionario {
       /** O modelo respondeu sem texto nenhum — e a tela não pode ficar vazia. */
       /** O provedor recusou por excesso de uso. Não é defeito, é espera. */
       ocupada: string
+      /** Bateu no limite DEPOIS de já ter gravado: o que fez está salvo (o recibo mostra). Não pode dizer "tente de novo", que faz reenviar e duplicar. */
+      salvouAntesDoLimite: string
       semTexto: string
     }
     /** Sinal de limite gratuito da IA, sem jargão técnico. */
@@ -2122,6 +2124,8 @@ export const pt: Dicionario = {
       acaoFalhou: "Tentei executar as ações, mas algo deu errado. Confira o resultado e tente novamente.",
       ocupada:
         "A Neuro recebeu pedidos demais nos últimos instantes e precisa de um minuto para respirar. Tente de novo já já.",
+      salvouAntesDoLimite:
+        "Já salvei o que você pediu — está tudo aqui embaixo. Só não consegui escrever a resposta agora porque bati no limite de uso; não precisa reenviar. Se faltou alguma coisa, me diga só o que faltou.",
       semTexto: "Pronto.",
     },
     limiteAtingido:
@@ -3264,6 +3268,8 @@ export const en: Dicionario = {
       falhaAoFalar: (provedor) => `Error talking to the AI (${provedor}).`,
       acaoFalhou: "I tried to carry out the actions, but something went wrong. Check the result and try again.",
       ocupada: "Neuro got too many requests in the last moments and needs a minute to breathe. Try again shortly.",
+      salvouAntesDoLimite:
+        "I already saved what you asked for — it's all right below. I just couldn't write the reply now because I hit the usage limit; no need to resend. If anything is missing, tell me just what's left.",
       semTexto: "Done.",
     },
     limiteAtingido:
