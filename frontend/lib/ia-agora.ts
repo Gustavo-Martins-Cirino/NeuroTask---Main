@@ -99,6 +99,21 @@ export function proximaOcorrencia(p: ParedeDoUsuario, diaDaSemana: number): stri
   return diaSomado(p, delta)
 }
 
+/**
+ * O mesmo dia da semana, na PRÓXIMA semana do calendário — a que abre no
+ * domingo seguinte.
+ *
+ * É isto que "sexta que vem" e "próxima sexta" querem dizer, e não é o mesmo
+ * que `proximaOcorrencia`: numa terça, a próxima sexta é a desta semana, e a
+ * "sexta que vem" é a de depois. As duas só coincidem quando o dia pedido já
+ * cai na semana seguinte de qualquer jeito.
+ */
+export function naSemanaQueVem(p: ParedeDoUsuario, diaDaSemana: number): string {
+  const alvo = ((Math.trunc(diaDaSemana) % 7) + 7) % 7
+  // Daqui até o domingo que abre a próxima semana, e dali até o dia pedido.
+  return diaSomado(p, 7 - p.diaDaSemana + alvo)
+}
+
 /** "19/09" a partir de "2026-09-19" — como a resposta deve escrever a data. */
 export function diaMesDaChave(chave: string): string {
   const [, m, d] = chave.split("-")
@@ -135,21 +150,25 @@ export function descreveAgora(agoraMs: number, tzMin: number): string {
     `- daqui a 7 dias = ${diaSomado(p, 7)}`,
     `- o mês atual (${MESES[p.mes - 1]}) vai de ${p.ano}-${dois(p.mes)}-01 a ${fimDoMes}`,
     ``,
-    `DIA DA SEMANA → DATA. É isto que "na segunda", "terça que vem" e "no domingo"`,
-    `significam. NUNCA calcule dia da semana: a lista abaixo já está pronta, e`,
-    `quando você calcula, erra sem perceber.`,
+    `DIA DA SEMANA → DATA. NUNCA calcule dia da semana: a lista abaixo já está`,
+    `pronta, e quando você calcula, erra sem perceber. Cada linha traz DUAS`,
+    `datas, e elas quase nunca são a mesma:`,
+    `- o nome sozinho ("na sexta", "no domingo") = a primeira, a próxima que chegar;`,
+    `- "que vem" ou "próxima" ("sexta que vem", "próxima sexta") = a segunda, que`,
+    `  é a dessa semana + 1. Numa terça, "sexta que vem" NÃO é a sexta desta`,
+    `  semana — é a da seguinte.`,
     ...DIAS.map((nome, i) => {
       const chave = proximaOcorrencia(p, i)
-      // Quando o dia pedido é HOJE, "na segunda" quer dizer hoje, mas "próxima
-      // segunda"/"segunda que vem" quer dizer a semana seguinte — e é aí que o
-      // modelo tropeça: sem a data pronta ele soma 7 e erra (o relatório de
-      // 21/09 registrou "próxima segunda", num sábado... digo, numa segunda,
-      // virando domingo 27/09 em vez de 28/09). Entrego as duas leituras.
-      if (chave === hoje) {
-        const semana = diaSomado(p, 7)
-        return `- ${nome} = ${chave} (${diaMesDaChave(chave)}) (é HOJE; "próxima ${nome}"/"${nome} que vem" = ${semana}, ${diaMesDaChave(semana)})`
-      }
-      return `- ${nome} = ${chave} (${diaMesDaChave(chave)})`
+      const semana = naSemanaQueVem(p, i)
+      // "na sexta" e "sexta que vem" são datas diferentes em quase todo dia da
+      // semana, e o modelo não acerta a segunda somando 7 de cabeça: o
+      // relatório de 22/09 registrou "sexta que vem", numa terça, caindo em
+      // 25/09 (a sexta desta semana) em vez de 02/10. Entrego as duas prontas,
+      // para todo dia — antes só o dia que era HOJE recebia o par, e era
+      // justamente nos outros que o erro sobrava.
+      const hojeMarca = chave === hoje ? ` (é HOJE)` : ``
+      const queVem = semana === chave ? `a mesma data` : `${semana} (${diaMesDaChave(semana)})`
+      return `- ${nome} = ${chave} (${diaMesDaChave(chave)})${hojeMarca} · que vem = ${queVem}`
     }),
     ``,
     // Os 14 dias cabem numa linha só, e precisam caber: cada chamada à Neuro

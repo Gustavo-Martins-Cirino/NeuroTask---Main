@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import {
   chaveDoDia, descreveAgora, diaSomado, paredeDoUsuario, sufixoDeFuso, ultimoDiaDoMes,
-  proximaOcorrencia, diaDaSemanaDaChave, diaMesDaChave,
+  proximaOcorrencia, naSemanaQueVem, diaDaSemanaDaChave, diaMesDaChave,
 } from "./ia-agora"
 
 const BRASIL = 180   // UTC−3
@@ -216,10 +216,83 @@ describe("o bloco de datas do prompt", () => {
       expect(linha).not.toContain("27/09")
     })
 
-    it("os outros dias seguem com uma data só", () => {
+    it("o dia que não é hoje também traz o par, e não é marcado como HOJE", () => {
       const terca = segunda.split(/\r?\n/).find((l) => l.startsWith("- terça-feira ="))!
       expect(terca).toContain("2026-09-22")
       expect(terca).not.toContain("é HOJE")
+      // Numa segunda, "terça que vem" é a da semana seguinte.
+      expect(terca).toContain("2026-09-29")
     })
+  })
+
+  // O relatório de 22/09 (terça): "sexta que vem" virou 25/09 — a sexta DESTA
+  // semana — em vez de 02/10. Não é o off-by-one de antes: é uma semana
+  // inteira. A tabela dava uma data só por dia, e o modelo tinha de decidir
+  // sozinho se "que vem" somava 7; decidiu que não.
+  describe('"que vem" é a semana seguinte, não a próxima ocorrência', () => {
+    // Terça, 22/09/2026, no Brasil — o dia do relatório.
+    const terca = descreveAgora(Date.UTC(2026, 8, 22, 12, 0), BRASIL)
+    const linha = (nome: string) => terca.split(/\r?\n/).find((l) => l.startsWith(`- ${nome} =`))!
+
+    it("sexta = 25/09, mas sexta que vem = 02/10", () => {
+      const sexta = linha("sexta-feira")
+      expect(sexta).toContain("2026-09-25")
+      expect(sexta).toContain("que vem = 2026-10-02")
+      expect(sexta).toContain("02/10")
+    })
+
+    it("segunda já cai na semana que vem, então as duas leituras batem", () => {
+      // Numa terça, a próxima segunda (28/09) JÁ é a da semana seguinte —
+      // dizer outra data ali seria inventar um erro no sentido oposto.
+      const seg = linha("segunda-feira")
+      expect(seg).toContain("2026-09-28")
+      expect(seg).toContain("que vem = a mesma data")
+    })
+
+    it("o dia de hoje continua com hoje e com a semana seguinte", () => {
+      const ter = linha("terça-feira")
+      expect(ter).toContain("2026-09-22")
+      expect(ter).toContain("é HOJE")
+      expect(ter).toContain("que vem = 2026-09-29")
+    })
+
+    it("o prompt explica a diferença entre as duas colunas", () => {
+      expect(terca).toMatch(/que vem/)
+      expect(terca).toMatch(/NÃO é a sexta desta/)
+    })
+  })
+})
+
+describe("naSemanaQueVem", () => {
+  // Terça, 22/09/2026, no Brasil.
+  const TERCA = paredeDoUsuario(Date.UTC(2026, 8, 22, 12, 0), BRASIL)
+
+  it("pula para a semana do calendário seguinte, não soma 7 do dia pedido", () => {
+    expect(naSemanaQueVem(TERCA, 5)).toBe("2026-10-02") // sexta que vem
+    expect(naSemanaQueVem(TERCA, 1)).toBe("2026-09-28") // segunda que vem
+    expect(naSemanaQueVem(TERCA, 2)).toBe("2026-09-29") // terça que vem
+    expect(naSemanaQueVem(TERCA, 0)).toBe("2026-09-27") // domingo que vem
+  })
+
+  it("nunca devolve data no passado nem antes da próxima ocorrência", () => {
+    for (let dia = 0; dia < 7; dia++) {
+      expect(naSemanaQueVem(TERCA, dia) >= proximaOcorrencia(TERCA, dia)).toBe(true)
+    }
+  })
+
+  // Num sábado a semana está acabando: quase todo dia pedido já cai na seguinte.
+  it("num sábado, as duas leituras coincidem para quase todo dia", () => {
+    const SABADO = paredeDoUsuario(Date.UTC(2026, 8, 26, 12, 0), BRASIL)
+    for (const dia of [0, 1, 2, 3, 4, 5]) {
+      expect(naSemanaQueVem(SABADO, dia)).toBe(proximaOcorrencia(SABADO, dia))
+    }
+    // Menos o próprio sábado, que é hoje: "sábado que vem" é daqui a 7.
+    expect(naSemanaQueVem(SABADO, 6)).toBe("2026-10-03")
+    expect(proximaOcorrencia(SABADO, 6)).toBe("2026-09-26")
+  })
+
+  it("dia da semana fora da faixa não quebra", () => {
+    expect(naSemanaQueVem(TERCA, 7)).toBe(naSemanaQueVem(TERCA, 0))
+    expect(naSemanaQueVem(TERCA, -1)).toBe(naSemanaQueVem(TERCA, 6))
   })
 })
