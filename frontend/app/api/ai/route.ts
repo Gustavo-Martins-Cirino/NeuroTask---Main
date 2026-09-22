@@ -1,6 +1,7 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
 import { recibo, FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada } from "@/lib/ia-recibo"
+import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
 import { createClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -24,8 +25,9 @@ AGENDA: a seção "AGENDA" abaixo traz os dados REAIS do usuário e cobre HOJE E
 
 AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
 - Proponha e pergunte "Posso confirmar?" ANTES de criar/editar/excluir; só aja após "sim" explícito.
+- ENQUANTO VOCÊ PERGUNTA, NADA FOI FEITO. Jamais escreva "✅", "criei", "agendei", "pronto", "bloco criado" ou qualquer afirmação de que executou na MESMA mensagem em que pede confirmação: o calendário estará vazio e quem lê vai achar que está feito. Só afirme que fez DEPOIS de chamar a ferramenta e receber o resultado.
 - EXCEÇÃO: se a pessoa já disse "pode criar direto", "sem confirmar", "não precisa perguntar" ou equivalente, não pergunte — execute de uma vez. O pedido dela vale para a conversa toda, não só para a mensagem em que foi dito.
-- Na pergunta de confirmação, escreva SEMPRE o dd/mm e o horário, sem o nome do dia da semana. "Posso criar na segunda?" esconde a data; "Posso criar dia 21/09 às 18h?" deixa o erro à vista antes de ele virar bloco. Nunca diga que fez sem chamar a ferramenta; nunca escreva sintaxe de ferramenta no texto.
+- Na pergunta de confirmação, escreva SEMPRE o dd/mm e o horário, sem o nome do dia da semana. "Posso criar na segunda?" esconde a data; "Posso criar dia 21/09 às 18h?" deixa o erro à vista antes de ele virar bloco. Nunca escreva sintaxe de ferramenta no texto.
 - Desabafo ("estou cansado") não vira tarefa — apenas converse. Na dúvida (fala solta, transcrição estranha), pergunte.
 - Editar/excluir: chame list_time_blocks antes para obter o id — ele vem entre colchetes em cada linha. NUNCA peça o id ao usuário: ele não aparece em lugar nenhum da tela, e pedi-lo trava a conversa. Para mudar horário de um bloco use update_time_block, nunca apagar e recriar.
 - Tarefa com horário: coloque a hora no due_date (ISO 8601) — o app cria o bloco no calendário sozinho; NÃO chame create_time_block para a mesma coisa.
@@ -1025,11 +1027,22 @@ function comRecibo(
   t: Dicionario["ia"],
   lacoEstourou: boolean
 ): string {
+  // Backstop determinístico do "✅ bloco criado" sem escrita: se nenhuma
+  // ferramenta MUDOU algo neste turno, um ✅ na fala do modelo é alegação vazia
+  // — o prompt proíbe, mas contrato de prosa escorrega, e o recibo não pega o
+  // que não deixou linha. `note` (duplicata) não conta como escrita: nada foi
+  // criado, então o "✅ criei" continua sendo mentira.
+  const mudouAlgo = executadas.some((a) => {
+    const r = (a.resultado ?? {}) as { ok?: boolean; note?: string }
+    return FERRAMENTAS_QUE_ESCREVEM.has(a.nome) && r.ok !== false && !r.note
+  })
+  const limpo = semAlegacaoVazia(texto, mudouAlgo)
+
   // Os rótulos de repetição moram em `agenda` (a leitura usa os mesmos) e são
   // emprestados ao recibo aqui, em vez de duplicados no dicionário.
   const textos = { ...t.recibo, repeticao: t.agenda.repeticao }
   const comprovante = recibo(executadas, tzMin, textos, t.recibo.diasDaSemana, lacoEstourou)
-  return comprovante ? `${texto}\n\n${comprovante}` : texto
+  return comprovante ? `${limpo}\n\n${comprovante}` : limpo
 }
 
 async function runOpenAIAgent(
