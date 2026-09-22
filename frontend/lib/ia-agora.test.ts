@@ -198,4 +198,28 @@ describe("o bloco de datas do prompt", () => {
   it("cobre 14 dias, atravessando a virada do mês", () => {
     expect(texto).toContain("02/10")
   })
+
+  // O relatório de 21/09 (segunda): "a partir da próxima segunda" virou domingo
+  // 27/09 em vez de 28/09. A tabela dava "segunda = hoje" e o modelo tinha de
+  // somar 7 sozinho — e errou. Agora a data da semana que vem vem pronta.
+  describe("quando o dia pedido é hoje", () => {
+    // Segunda, 21/09/2026, no Brasil.
+    const segunda = descreveAgora(Date.UTC(2026, 8, 21, 12, 0), BRASIL)
+
+    it("dá a data de hoje E a da próxima semana para o dia que é hoje", () => {
+      const linha = segunda.split(/\r?\n/).find((l) => l.startsWith("- segunda-feira ="))!
+      expect(linha).toContain("2026-09-21")
+      expect(linha).toContain("é HOJE")
+      // "próxima segunda"/"segunda que vem" = 28/09, nunca o domingo 27/09.
+      expect(linha).toContain("2026-09-28")
+      expect(linha).toContain("28/09")
+      expect(linha).not.toContain("27/09")
+    })
+
+    it("os outros dias seguem com uma data só", () => {
+      const terca = segunda.split(/\r?\n/).find((l) => l.startsWith("- terça-feira ="))!
+      expect(terca).toContain("2026-09-22")
+      expect(terca).not.toContain("é HOJE")
+    })
+  })
 })

@@ -140,8 +140,16 @@ export function descreveAgora(agoraMs: number, tzMin: number): string {
     `quando você calcula, erra sem perceber.`,
     ...DIAS.map((nome, i) => {
       const chave = proximaOcorrencia(p, i)
-      const hoje_ = chave === hoje ? " (é HOJE)" : ""
-      return `- ${nome} = ${chave} (${diaMesDaChave(chave)})${hoje_}`
+      // Quando o dia pedido é HOJE, "na segunda" quer dizer hoje, mas "próxima
+      // segunda"/"segunda que vem" quer dizer a semana seguinte — e é aí que o
+      // modelo tropeça: sem a data pronta ele soma 7 e erra (o relatório de
+      // 21/09 registrou "próxima segunda", num sábado... digo, numa segunda,
+      // virando domingo 27/09 em vez de 28/09). Entrego as duas leituras.
+      if (chave === hoje) {
+        const semana = diaSomado(p, 7)
+        return `- ${nome} = ${chave} (${diaMesDaChave(chave)}) (é HOJE; "próxima ${nome}"/"${nome} que vem" = ${semana}, ${diaMesDaChave(semana)})`
+      }
+      return `- ${nome} = ${chave} (${diaMesDaChave(chave)})`
     }),
     ``,
     // Os 14 dias cabem numa linha só, e precisam caber: cada chamada à Neuro
