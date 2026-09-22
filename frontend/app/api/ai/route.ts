@@ -1,6 +1,6 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
-import { recibo, FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada } from "@/lib/ia-recibo"
+import { recibo, quantasGravou, type AcaoExecutada } from "@/lib/ia-recibo"
 import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
 import { createClient } from "@/lib/supabase/server"
@@ -1032,10 +1032,7 @@ function comRecibo(
   // — o prompt proíbe, mas contrato de prosa escorrega, e o recibo não pega o
   // que não deixou linha. `note` (duplicata) não conta como escrita: nada foi
   // criado, então o "✅ criei" continua sendo mentira.
-  const mudouAlgo = executadas.some((a) => {
-    const r = (a.resultado ?? {}) as { ok?: boolean; note?: string }
-    return FERRAMENTAS_QUE_ESCREVEM.has(a.nome) && r.ok !== false && !r.note
-  })
+  const mudouAlgo = quantasGravou(executadas) > 0
   const limpo = semAlegacaoVazia(texto, mudouAlgo)
 
   // Os rótulos de repetição moram em `agenda` (a leitura usa os mesmos) e são
@@ -1098,8 +1095,18 @@ async function runOpenAIAgent(
         // executado; o que não deu foi só narrar. Se de fato faltou (lote
         // grande cortado), a própria frase pede "me diga só o que faltou", que
         // não duplica.
-        const jaEscreveu = executadas.some((a) => FERRAMENTAS_QUE_ESCREVEM.has(a.nome))
-        if (jaEscreveu) return comRecibo(t.erros.salvouAntesDoLimite, executadas, tzMin, t, false)
+        // A contagem é a mesma do recibo (`quantasGravou`), e ela entra na
+        // frase: o relatório de 22/09 registrou o caso perigoso — um lote de
+        // 10 em que só 2 entraram, e a prosa dizia "já salvei o que você
+        // pediu… não precisa reenviar", desencorajando o reenvio justamente
+        // quando faltavam 8. O servidor sabe QUANTOS itens gravou; não sabe
+        // quantos foram pedidos. Então diz o número e manda conferir.
+        //
+        // Gate pela contagem, e não por "alguma ferramenta de escrita rodou":
+        // se todas falharam, nada entrou no calendário e não há o que o reserva
+        // possa contradizer.
+        const gravou = quantasGravou(executadas)
+        if (gravou > 0) return comRecibo(t.erros.salvouAntesDoLimite(gravou), executadas, tzMin, t, false)
         return "__RATE_LIMIT__"
       }
       throw new Error(`Groq ${res.status}: ${detail}`)

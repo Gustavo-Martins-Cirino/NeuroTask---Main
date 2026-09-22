@@ -903,3 +903,50 @@ describe("a landing", () => {
     }
   })
 })
+
+// O caso perigoso do relatório de 22/09: um lote de 10 em que só 2 entraram, e
+// a prosa dizia "Já salvei o que você pediu — está tudo aqui embaixo… não
+// precisa reenviar". O texto desencorajava o reenvio justamente quando faltavam
+// 8. O servidor sabe QUANTOS itens gravou; não sabe quantos foram pedidos —
+// então a frase não pode prometer inteireza.
+describe("o aviso de limite depois de já ter gravado", () => {
+  const frase = (d: Dicionario, n: number) => d.ia.erros.salvouAntesDoLimite(n)
+
+  it("diz o número do que entrou, e ele muda", () => {
+    for (const [nome, d] of IDIOMAS) {
+      expect(frase(d, 2), nome).toContain("2")
+      expect(frase(d, 10), nome).toContain("10")
+      expect(frase(d, 1), nome).not.toBe(frase(d, 2))
+    }
+  })
+
+  it("singular e plural do item", () => {
+    expect(frase(pt, 1)).toContain("1 item")
+    expect(frase(pt, 3)).toContain("3 itens")
+    expect(frase(en, 1)).toContain("1 item")
+    expect(frase(en, 3)).toContain("3 items")
+  })
+
+  // As duas frases que o relatório provou serem perigosas.
+  it("NÃO promete que salvou tudo, nem manda não reenviar", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const t = frase(d, 2).toLowerCase()
+      expect(t, `${nome}: não pode prometer inteireza`).not.toMatch(/está tudo|it's all|it is all/)
+      expect(t, `${nome}: não pode desencorajar o reenvio`).not.toMatch(/não precisa reenviar|no need to resend/)
+    }
+  })
+
+  // O que ela PRECISA dizer: parou no meio, e o reenvio é parcial — pedir tudo
+  // de novo duplicaria o que já entrou.
+  it("avisa que parou no meio e pede só o que faltou", () => {
+    expect(frase(pt, 2).toLowerCase()).toContain("parei no meio")
+    expect(frase(pt, 2).toLowerCase()).toContain("só o que faltou")
+    expect(frase(pt, 2).toLowerCase()).toContain("duplicaria")
+    expect(frase(en, 2).toLowerCase()).toContain("stopped partway")
+    expect(frase(en, 2).toLowerCase()).toContain("duplicate")
+  })
+
+  it("os dois idiomas não devolvem o mesmo texto", () => {
+    expect(frase(en, 2)).not.toBe(frase(pt, 2))
+  })
+})

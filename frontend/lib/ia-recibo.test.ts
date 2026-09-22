@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { recibo, quando, FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada } from "./ia-recibo"
+import { recibo, quando, quantasGravou, FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada } from "./ia-recibo"
 import { pt, en } from "./i18n"
 
 const BRASIL = 180
@@ -205,5 +205,49 @@ describe("o que o relatório de 21/09 pegou", () => {
     const texto = recibo([criar("[TESTE] R10a", "2026-10-10T13:00:00Z")], BRASIL, TEXTOS, DIAS, true)!
     expect(texto).toContain('"[TESTE] R10a"')
     expect(texto).toContain(TEXTOS.naoTerminei)
+  })
+})
+
+describe("quantasGravou", () => {
+  const acao = (nome: string, resultado: unknown): AcaoExecutada => ({ nome, args: { title: "X" }, resultado })
+
+  it("conta só as ferramentas que escrevem", () => {
+    expect(quantasGravou([
+      acao("list_tasks", { ok: true }),
+      acao("create_time_block", { ok: true }),
+      acao("get_agenda", { ok: true }),
+    ])).toBe(1)
+  })
+
+  // A prosa do rate limit diz o número ("salvei 2 itens") e a lista logo
+  // abaixo é contada pelos olhos de quem lê. Falha e recusa deixam linha no
+  // recibo, mas com outro símbolo — contá-las inflaria a promessa.
+  it("falha e recusa de duplicata não contam como gravadas", () => {
+    expect(quantasGravou([
+      acao("create_time_block", { ok: true }),
+      acao("create_time_block", { ok: false, error: "boom" }),
+      acao("create_task", { ok: true, note: "já existe uma tarefa assim hoje" }),
+    ])).toBe(1)
+  })
+
+  it("nenhuma escrita devolve zero, e não lança", () => {
+    expect(quantasGravou([])).toBe(0)
+    expect(quantasGravou([acao("create_task", null)])).toBe(1)
+    expect(quantasGravou([acao("list_tasks", { ok: true })])).toBe(0)
+  })
+
+  // O número dito na prosa tem de bater com os ✅ da lista. Se as duas contas
+  // saírem de regras diferentes, um dia discordam — e discordar é o defeito que
+  // este módulo existe para evitar.
+  it("o número bate com a quantidade de ✅ do recibo", () => {
+    const acoes = [
+      acao("create_time_block", { ok: true }),
+      acao("create_time_block", { ok: false, error: "boom" }),
+      acao("create_task", { ok: true, note: "já existe" }),
+      acao("update_note", { ok: true }),
+    ]
+    const texto = recibo(acoes, 180, TEXTOS, DIAS)!
+    const vistos = texto.split("\n").filter((l) => l.trimStart().startsWith("✅")).length
+    expect(quantasGravou(acoes)).toBe(vistos)
   })
 })

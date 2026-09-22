@@ -39,6 +39,30 @@ export const FERRAMENTAS_QUE_ESCREVEM = new Set([
   "plan_day_backwards",
 ])
 
+/**
+ * As ações que REALMENTE gravaram — as que viram linha "✅" no recibo.
+ *
+ * Falha (`ok: false`) e recusa do anti-duplicata (`note`) não contam: as duas
+ * deixam linha no recibo, mas com outro símbolo, e nada entrou no banco.
+ *
+ * Existe como função porque o número agora é DITO na prosa ("salvei 2 itens") e
+ * a lista logo abaixo é contada pelos olhos de quem lê. Se os dois saírem de
+ * regras diferentes, um dia discordam — e discordar é o defeito que este
+ * módulo inteiro existe para evitar.
+ */
+export function gravadas(acoes: AcaoExecutada[]): AcaoExecutada[] {
+  return acoes.filter((a) => {
+    if (!FERRAMENTAS_QUE_ESCREVEM.has(a.nome)) return false
+    const r = (a.resultado ?? {}) as { ok?: boolean; note?: string }
+    return r.ok !== false && !(typeof r.note === "string" && r.note.trim())
+  })
+}
+
+/** Quantas linhas "✅" o recibo vai mostrar. */
+export function quantasGravou(acoes: AcaoExecutada[]): number {
+  return gravadas(acoes).length
+}
+
 export interface TextosDoRecibo {
   /** Cabeçalho da lista. */
   titulo: string
