@@ -530,7 +530,7 @@ repositório:
 > **Reteste 21/09 (novo relatório): a recorrência não reproduziu, mas caíram três bugs novos —
 > dois de comunicação e um de data.** Corrigidos, cada um com commit próprio:
 >
-> - **"próxima segunda" caía em domingo.** Hoje era segunda (21/09); o pedido "a partir da
+> - ✅ **Confirmado no reteste de 22/09.** **"próxima segunda" caía em domingo.** Hoje era segunda (21/09); o pedido "a partir da
 >   próxima segunda" gerou bloco em 27/09 (domingo) em vez de 28/09, e ainda uma instância de
 >   fim de semana apesar da regra ser "dias úteis". A tabela DIA→DATA do prompt dava
 >   "segunda-feira = hoje" e, para "próxima", o modelo tinha de somar 7 sozinho — e errou, que é
@@ -547,7 +547,7 @@ repositório:
 >   faltou foi só narrar. Entrou `erros.salvouAntesDoLimite`: lidera com "já salvei, não reenvie"
 >   (o recibo prova) e, para lote grande cortado, pede "me diga só o que faltou", que não duplica.
 >
-> - **"✅ bloco criado" antes de criar — o pior dos três.** A Neuro juntou "Posso criar…?" e "✅
+> - ✅ **Confirmado no reteste de 22/09: não reproduziu em nenhum caso.** **"✅ bloco criado" antes de criar — o pior dos três.** A Neuro juntou "Posso criar…?" e "✅
 >   bloco criado" na mesma bolha, sem chamar a ferramenta; o calendário ficava vazio e quem lia
 >   achava que estava feito. O recibo não pega: sem escrita, não há linha para contradizer. Duas
 >   camadas: a regra "enquanto você pergunta, nada foi feito" saiu do fim de uma linha do prompt e
@@ -562,6 +562,42 @@ repositório:
 > de tarefa (exigiria uma 14ª ferramenta, que piora o teto — decisão em aberto). Detalhe menor sem
 > ação boa: recusa de duplicado e listagem não mostram a linha "No calendário ficou assim" — mas
 > nesses casos nada mudou, então não há o que comprovar.
+
+> **Reteste 22/09: a ESCRITA está confiável; quem mente é a prosa.** O recibo bateu com o
+> calendário em **100%** dos casos, o lote de 10 fechou 10/10 no calendário, e a afirmação de
+> escrita antes de escrever **não reproduziu** — num caso (V4) ela nem pediu confirmação e
+> gravou de verdade, que é o oposto do bug. Duas coisas caíram, e as duas já estão consertadas:
+>
+> - **"sexta que vem" errava uma SEMANA.** Numa terça (22/09), virou 25/09 — a sexta desta
+>   semana — em vez de 02/10. Não é o off-by-one de antes, que está confirmado morto. A tabela
+>   do prompt dava uma data por dia da semana e só o dia que fosse HOJE recebia também a da
+>   semana seguinte; nos outros seis, o modelo tinha de decidir sozinho se "que vem" soma 7.
+>   Agora toda linha traz o par, e `naSemanaQueVem` (puro, testado) calcula a segunda coluna:
+>   o mesmo dia na semana de calendário seguinte. Quando as duas leituras coincidem — numa
+>   terça, "próxima segunda" já É a da semana seguinte — a linha diz "a mesma data", em vez de
+>   inventar um erro no sentido oposto.
+>
+> - **A prosa do rate limit afirmava ter salvo tudo, tendo salvo 2 de 10.** Era o caso
+>   perigoso: "Já salvei o que você pediu — está tudo aqui embaixo… não precisa reenviar"
+>   desencoraja o reenvio justamente quando faltam 8. O servidor sabe QUANTOS itens gravou;
+>   não sabe quantos foram pedidos. A frase passou a dizer o número e a mandar conferir contra
+>   o recibo, pedindo só o que faltou (repetir tudo duplicaria). A contagem sai de
+>   `quantasGravou`, a mesma regra que decide os ✅ da lista — há teste cobrando que os dois
+>   números batam.
+>
+> **O que ficou aberto, e nenhum é de código novo:**
+>
+> - **O teto de tokens continua sendo a causa raiz** do lote cortado no meio (2 de 10). A
+>   prosa agora conta a verdade, mas quem corta é o plano do provedor.
+> - **A prosa ainda é a parte não confiável da resposta.** No caso V2 ela só perguntou "quer
+>   ajustar?" sem dizer que tinha criado — e tinha. O recibo mostrou. Não é perigoso como o
+>   anterior (nada se perde, nada duplica), mas confirma a leitura do relatório: **o recibo é
+>   o que vale**. Vale considerar dar mais peso visual a ele na tela do chat.
+> - **Pedir confirmação é inconsistente** (V1, V2, V3 e três rodadas do V5 pediram; V4 e
+>   V5c/d não). Nunca no sentido perigoso — quando não pediu, executou de verdade. Fica
+>   anotado como comportamento a uniformizar, não como bug.
+> - **Faltam os testes 4 (ocorrência × série) e 5 (duplicata e listagem)**, que não rodaram
+>   por falta de tokens do provedor. São os dois únicos cenários do plano ainda sem resposta.
 
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
