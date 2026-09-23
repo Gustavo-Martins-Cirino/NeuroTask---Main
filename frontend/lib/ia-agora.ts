@@ -23,6 +23,17 @@ const DIAS = [
   "quinta-feira", "sexta-feira", "sábado",
 ] as const
 
+/** O nome curto, como se fala: "na sexta", e não "na sexta-feira". */
+const CURTOS = [
+  "domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado",
+] as const
+
+/** Domingo e sábado são masculinos: "no domingo"/"próximo domingo", contra
+ *  "na segunda"/"próxima segunda". A tabela CITA a expressão para o modelo
+ *  procurar, então concordância errada ali é frase que ele não encontra. */
+const ARTIGO = ["no", "na", "na", "na", "na", "na", "no"] as const
+const PROXIMO = ["próximo", "próxima", "próxima", "próxima", "próxima", "próxima", "próximo"] as const
+
 const MESES = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
@@ -114,6 +125,28 @@ export function naSemanaQueVem(p: ParedeDoUsuario, diaDaSemana: number): string 
   return diaSomado(p, 7 - p.diaDaSemana + alvo)
 }
 
+/**
+ * A próxima ocorrência SEM contar hoje — o que "próxima sexta" quer dizer.
+ *
+ * São três expressões e três leituras, e confundi-las já custou dois bugs:
+ *
+ * · "na sexta" → `proximaOcorrencia`, que conta hoje (num sábado, "no sábado"
+ *   é hoje);
+ * · "próxima sexta" → esta, que pula hoje mas fica na primeira sexta que vier
+ *   (numa terça, é a desta semana);
+ * · "sexta que vem" → `naSemanaQueVem`, que pula para a semana seguinte.
+ *
+ * A diferença entre esta e `naSemanaQueVem` só aparece quando o dia pedido NÃO
+ * é hoje — e é justamente aí que ela importa: numa terça, "próxima sexta" é
+ * 25/09 e "sexta que vem" é 02/10. Quando o dia pedido É hoje, as duas somam 7
+ * e dão a mesma data.
+ */
+export function proximaSemContarHoje(p: ParedeDoUsuario, diaDaSemana: number): string {
+  const alvo = ((Math.trunc(diaDaSemana) % 7) + 7) % 7
+  const delta = (alvo - p.diaDaSemana + 7) % 7
+  return diaSomado(p, delta === 0 ? 7 : delta)
+}
+
 /** "19/09" a partir de "2026-09-19" — como a resposta deve escrever a data. */
 export function diaMesDaChave(chave: string): string {
   const [, m, d] = chave.split("-")
@@ -150,25 +183,36 @@ export function descreveAgora(agoraMs: number, tzMin: number): string {
     `- daqui a 7 dias = ${diaSomado(p, 7)}`,
     `- o mês atual (${MESES[p.mes - 1]}) vai de ${p.ano}-${dois(p.mes)}-01 a ${fimDoMes}`,
     ``,
-    `DIA DA SEMANA → DATA. NUNCA calcule dia da semana: a lista abaixo já está`,
-    `pronta, e quando você calcula, erra sem perceber. Cada linha traz DUAS`,
-    `datas, e elas quase nunca são a mesma:`,
-    `- o nome sozinho ("na sexta", "no domingo") = a primeira, a próxima que chegar;`,
-    `- "que vem" ou "próxima" ("sexta que vem", "próxima sexta") = a segunda, que`,
-    `  é a dessa semana + 1. Numa terça, "sexta que vem" NÃO é a sexta desta`,
-    `  semana — é a da seguinte.`,
+    `DIA DA SEMANA → DATA. NUNCA calcule dia da semana nem some 7 de cabeça: a`,
+    `lista abaixo já traz a EXPRESSÃO ao lado da data. Procure a frase que o`,
+    `usuário escreveu e use a data que está com ela — as três expressões de um`,
+    `mesmo dia não significam a mesma coisa.`,
     ...DIAS.map((nome, i) => {
-      const chave = proximaOcorrencia(p, i)
-      const semana = naSemanaQueVem(p, i)
-      // "na sexta" e "sexta que vem" são datas diferentes em quase todo dia da
-      // semana, e o modelo não acerta a segunda somando 7 de cabeça: o
-      // relatório de 22/09 registrou "sexta que vem", numa terça, caindo em
-      // 25/09 (a sexta desta semana) em vez de 02/10. Entrego as duas prontas,
-      // para todo dia — antes só o dia que era HOJE recebia o par, e era
-      // justamente nos outros que o erro sobrava.
-      const hojeMarca = chave === hoje ? ` (é HOJE)` : ``
-      const queVem = semana === chave ? `a mesma data` : `${semana} (${diaMesDaChave(semana)})`
-      return `- ${nome} = ${chave} (${diaMesDaChave(chave)})${hojeMarca} · que vem = ${queVem}`
+      // Três expressões, três leituras. Dar a data "certa" sem dizer a QUAL
+      // frase ela responde só move a decisão para o modelo, que é onde o erro
+      // nasce: o relatório de 22/09 pegou "sexta que vem", numa terça, caindo
+      // na sexta desta semana. E a versão seguinte quase criou o ponto cego
+      // oposto, mandando "próxima sexta" para a semana seguinte — o "próxima
+      // segunda" que passava no teste passava por coincidência, porque para
+      // segunda, numa terça, as três leituras dão a mesma data.
+      const curto = `${ARTIGO[i]} ${CURTOS[i]}`
+      const proxima = `"${PROXIMO[i]} ${CURTOS[i]}"`
+      const queVem = `"${CURTOS[i]} que vem"`
+      const data = (chave: string) => `${chave} (${diaMesDaChave(chave)})`
+
+      const aChegar = proximaOcorrencia(p, i)
+      const semContarHoje = proximaSemContarHoje(p, i)
+      const semanaSeguinte = naSemanaQueVem(p, i)
+
+      if (aChegar === hoje) {
+        // Hoje: "na terça" é hoje, e as outras duas vão para daqui a 7.
+        return `- ${nome} = ${data(aChegar)} é HOJE ← "${curto}" · ${data(semanaSeguinte)} ← ${proxima}, ${queVem}`
+      }
+      if (semanaSeguinte === semContarHoje) {
+        // O dia já cai na semana seguinte: as três dizem a mesma data.
+        return `- ${nome} = ${data(aChegar)} ← "${curto}", ${proxima}, ${queVem} (as três)`
+      }
+      return `- ${nome} = ${data(semContarHoje)} ← "${curto}", ${proxima} · ${data(semanaSeguinte)} ← ${queVem}`
     }),
     ``,
     // Os 14 dias cabem numa linha só, e precisam caber: cada chamada à Neuro
