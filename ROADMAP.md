@@ -599,6 +599,47 @@ repositório:
 > - **Faltam os testes 4 (ocorrência × série) e 5 (duplicata e listagem)**, que não rodaram
 >   por falta de tokens do provedor. São os dois únicos cenários do plano ainda sem resposta.
 
+> **Revisão do Gustavo sobre os dois consertos acima — e os dois estavam pela metade.** Ele
+> leu o diff antes do reteste e achou o que os testes não achariam.
+>
+> - **A tabela de datas tinha só movido a decisão de lugar.** Duas colunas por linha, e quem
+>   escolhia a coluna continuava sendo o modelo, a partir da frase. Pior: pelo texto que eu
+>   tinha escrito, "próxima sexta" numa terça iria para 02/10 — e quem fala isso quer 25/09.
+>   Eu tinha criado o ponto cego oposto. **O "próxima segunda" que passava nos testes passava
+>   por coincidência**: para segunda, numa terça, as três leituras dão a mesma data, então o
+>   teste não distinguia coluna nenhuma. Agora são três funções puras — `proximaOcorrencia`
+>   ("na sexta", conta hoje), `proximaSemContarHoje` ("próxima sexta", pula hoje e fica nesta
+>   semana) e `naSemanaQueVem` ("sexta que vem") — e a tabela **cita a frase ao lado da data**,
+>   com concordância ("próximo domingo", "no sábado"), para não sobrar decisão. O par
+>   "próxima X" × "X que vem" está amarrado no mesmo arquivo de teste.
+>
+> - **O aviso de limite disparava em pedido que tinha terminado.** A frase apareceu 4 vezes e
+>   em 3 estava tudo gravado; avisar nas quatro ensina a ignorar o aviso na que importa. Lendo
+>   o laço: **o 429 cai no início da volta seguinte, e a volta seguinte existe só para o modelo
+>   NARRAR o que as ferramentas devolveram** — então na maioria das vezes o pedido terminou e
+>   faltou contar. O servidor não tem como saber se o modelo ia pedir mais: essa intenção morre
+>   com a chamada recusada. Duas consequências: o "parei no meio" que eu tinha escrito era tão
+>   inverificável quanto o "salvei tudo" que ele substituiu, e saiu; e antes de avisar a rota
+>   tenta **narrar barato** (sem o schema das ferramentas, ~900 tokens em vez de ~2.457 — é a
+>   mesma chamada que o laço já fazia ao esgotar as voltas, agora em `narraSemFerramentas`).
+>   Quando ela passa, não há aviso nenhum a dar.
+>
+> **A ideia dele que NÃO deu para fazer, e por quê:** comparar `quantasGravou` com o N que a
+> própria mensagem de confirmação enumerou ("2 de 10" em vez de "2 itens"). O N só existe na
+> PROSA do modelo, e extraí-lo é regex em texto dele — exatamente o que o
+> `ia-alegacao-vazia` evita, e pelo mesmo motivo (falso positivo apagando resposta certa). Se
+> o lote parcial voltar a aparecer depois destes consertos, o caminho honesto é a ferramenta
+> declarar o tamanho do lote, não o servidor adivinhá-lo lendo a frase.
+
+- [ ] **Inverter o peso visual: recibo no topo, prosa embaixo.** Três relatórios seguidos
+      chegaram à mesma conclusão — *"a prosa de cima é a parte não confiável da resposta; o
+      recibo acertou 100% das vezes"*. O recibo vem de tool result e é montado pelo servidor;
+      a prosa vem do modelo. Enquanto a prosa for o corpo da mensagem e o recibo um apêndice,
+      **a parte não verificável é a que o olho lê primeiro**. O conserto não depende de prompt:
+      é trocar a ordem e o destaque na bolha do chat (`app/app/ai/page.tsx` e a tela de voz),
+      deixando a prosa para o que ela faz bem — conflito, sugestão, pergunta de confirmação.
+      Aprovado pelo Gustavo em 22/09; ele retesta depois.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura
