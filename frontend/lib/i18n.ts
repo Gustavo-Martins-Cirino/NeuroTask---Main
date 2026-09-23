@@ -1012,6 +1012,12 @@ export interface Dicionario {
     }
     recibo: {
       titulo: string
+      /**
+       * O rótulo do BLOCO na tela — o que diz que aquilo é comprovante do
+       * servidor, e não frase do modelo. A diferença de forma é o que ensina em
+       * qual parte confiar, sem precisar explicar.
+       */
+      selo: string
       naoTerminei: string
       criou: string
       atualizou: string
@@ -2106,6 +2112,7 @@ export const pt: Dicionario = {
     },
     recibo: {
       titulo: "No calendário ficou assim:",
+      selo: "Feito no app",
       naoTerminei:
         "⚠️ Parei no meio do seu pedido — pode ter sobrado coisa. Me diga o que faltou que eu termino.",
       criou: "criei",
@@ -3260,6 +3267,7 @@ export const en: Dicionario = {
     },
     recibo: {
       titulo: "Here's what's on the calendar now:",
+      selo: "Done in the app",
       naoTerminei: "⚠️ I stopped partway through — something may be missing. Tell me what's left and I'll finish.",
       criou: "created",
       atualizou: "updated",

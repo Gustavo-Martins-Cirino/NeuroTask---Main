@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useDicionario, useIdioma } from "@/hooks/use-idioma"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
-import { Bot, ArrowUp, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare } from "lucide-react"
+import { Bot, ArrowUp, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare, ClipboardCheck } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -14,6 +14,7 @@ import { useMascaraRolagem } from "@/hooks/use-mascara-rolagem"
 import { avancarRevelacao, revelacaoTerminou, PASSO_MS } from "@/lib/revelacao-resposta"
 import { fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { comNegrito } from "@/lib/negrito"
+import { separaRecibo } from "@/lib/ia-recibo"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -550,9 +551,20 @@ export default function AiPage() {
                   // A última resposta é a que está sendo escrita; as outras já
                   // foram lidas e aparecem inteiras.
                   const escrevendo = i === messages.length - 1 && m.role === "assistant"
+                  // O comprovante do servidor e o que o modelo achou de dizer
+                  // não podem ter a mesma cara: três relatórios seguidos
+                  // concluíram que a prosa é a parte não confiável da resposta
+                  // e o recibo acertou 100% das vezes. Enquanto a prosa fosse o
+                  // corpo da bolha e o recibo um rodapé, a parte não
+                  // verificável era a que o olho lia primeiro.
+                  const { prosa, recibo: comprovante } = m.role === "assistant"
+                    ? separaRecibo(m.content)
+                    : { prosa: m.content, recibo: null }
+                  // O recibo é FATO: aparece inteiro, de uma vez. Só a prosa é
+                  // revelada no ritmo da leitura, porque só ela é narração.
                   const texto = escrevendo
-                    ? fecharMarcacao(fatiar(m.content, Math.floor(revelado)))
-                    : m.content
+                    ? fecharMarcacao(fatiar(prosa, Math.floor(revelado)))
+                    : prosa
                   return (
                     <motion.div
                       key={i}
@@ -568,9 +580,20 @@ export default function AiPage() {
                             : "bg-card border border-border/50"
                         )}
                       >
+                        {comprovante && (
+                          <div className="mb-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+                            <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                              <ClipboardCheck className="h-3.5 w-3.5 shrink-0" />
+                              {traducao.ia.recibo.selo}
+                            </p>
+                            <div className="text-[13px] leading-relaxed text-foreground/90">
+                              {comNegrito(comprovante)}
+                            </div>
+                          </div>
+                        )}
                         {texto ? (
                           comNegrito(texto)
-                        ) : (
+                        ) : comprovante ? null : (
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         )}
                       </div>

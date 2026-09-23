@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest"
-import { recibo, quando, quantasGravou, FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada } from "./ia-recibo"
+import {
+  recibo, quando, quantasGravou, separaRecibo, reciboParaFala, MARCA_RECIBO,
+  FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada,
+} from "./ia-recibo"
 import { pt, en } from "./i18n"
 
 const BRASIL = 180
@@ -249,5 +252,77 @@ describe("quantasGravou", () => {
     const texto = recibo(acoes, 180, TEXTOS, DIAS)!
     const vistos = texto.split("\n").filter((l) => l.trimStart().startsWith("✅")).length
     expect(quantasGravou(acoes)).toBe(vistos)
+  })
+})
+
+// O comprovante do servidor e o que o modelo achou de dizer não podem ter a
+// mesma cara na tela — três relatórios seguidos concluíram que a prosa é a
+// parte não confiável e o recibo acertou 100% das vezes. Para a tela dar peso
+// diferente aos dois, eles precisam chegar separados.
+describe("separaRecibo", () => {
+  it("parte a resposta na marca, e tira o espaço das bordas", () => {
+    const r = separaRecibo(`Criei aquele bloco.\n\n${MARCA_RECIBO}No calendário:\n✅ criei "V1"`)
+    expect(r.prosa).toBe("Criei aquele bloco.")
+    expect(r.recibo).toContain("No calendário:")
+    expect(r.recibo).toContain("V1")
+  })
+
+  it("resposta sem recibo devolve a prosa inteira e recibo nulo", () => {
+    const r = separaRecibo("Posso criar dia 28/09 das 08:00 às 08:30?")
+    expect(r.prosa).toBe("Posso criar dia 28/09 das 08:00 às 08:30?")
+    expect(r.recibo).toBeNull()
+  })
+
+  // O caso V2 do relatório: a prosa só perguntou "quer ajustar?" e o bloco
+  // estava criado. Com os dois separados, a tela mostra o comprovante mesmo
+  // quando a frase não o menciona.
+  it("prosa que não fala da escrita não apaga o recibo", () => {
+    const r = separaRecibo(`Choca com T06. Quer ajustar?${MARCA_RECIBO}✅ criei "V2"`)
+    expect(r.prosa).toBe("Choca com T06. Quer ajustar?")
+    expect(r.recibo).toContain("V2")
+  })
+
+  it("prosa vazia não vira recibo vazio nem quebra", () => {
+    expect(separaRecibo(`${MARCA_RECIBO}✅ criei "X"`).prosa).toBe("")
+    expect(separaRecibo(`texto${MARCA_RECIBO}   `).recibo).toBeNull()
+    expect(separaRecibo("").recibo).toBeNull()
+  })
+
+  // A marca é byte de controle justamente para isto: não existe em texto que o
+  // modelo escreva, então não há o que escapar nem falso positivo a temer.
+  it("a marca não é caractere que alguém digite", () => {
+    expect(MARCA_RECIBO).toHaveLength(1)
+    expect(MARCA_RECIBO.charCodeAt(0)).toBeLessThan(32)
+  })
+})
+
+// Na voz não há calendário para recarregar e conferir, e a fala é a resposta
+// inteira: é o recibo que precisa ser dito, não o parágrafo do modelo.
+describe("reciboParaFala", () => {
+  const TITULO = "No calendário ficou assim:"
+
+  it("tira marcadores, aspas e o cabeçalho — o que sobra é o que se fala", () => {
+    const falado = reciboParaFala(`${TITULO}\n✅ criei "V1" — segunda-feira, 28/09, 08:00`, TITULO)
+    expect(falado).toBe("criei V1 — segunda-feira, 28/09, 08:00")
+    expect(falado).not.toContain("✅")
+    expect(falado).not.toContain(TITULO)
+  })
+
+  it("junta várias linhas em frases, para o TTS respirar entre elas", () => {
+    const falado = reciboParaFala(`${TITULO}\n✅ criei "A"\n✅ criei "B"`, TITULO)
+    expect(falado).toBe("criei A. criei B")
+  })
+
+  // O aviso de conflito vem do tool result e mora no recibo: ele tem de ser
+  // FALADO, porque na voz não há como conferir depois.
+  it("o aviso de conflito sobrevive à fala", () => {
+    const falado = reciboParaFala(`${TITULO}\n✅ criei "V2" — quarta, 23/09\n   ⚠️ choca com Estudo Java`, TITULO)
+    expect(falado).toContain("choca com Estudo Java")
+    expect(falado).not.toContain("⚠️")
+  })
+
+  it("sem recibo, não há nada a falar", () => {
+    expect(reciboParaFala(null, TITULO)).toBe("")
+    expect(reciboParaFala("", TITULO)).toBe("")
   })
 })

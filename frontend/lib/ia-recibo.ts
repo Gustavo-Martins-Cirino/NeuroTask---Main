@@ -63,6 +63,56 @@ export function quantasGravou(acoes: AcaoExecutada[]): number {
   return gravadas(acoes).length
 }
 
+/**
+ * A marca que separa a prosa do recibo numa resposta só.
+ *
+ * GS (Group Separator, U+001D): não existe em texto que um modelo escreva nem
+ * em nada que alguém digite, então não há o que escapar. A alternativa era o
+ * cliente procurar o TÍTULO do recibo — que é texto de dicionário e muda de
+ * idioma —, e isso teria transformado a separação em parsing de prosa, que é
+ * justamente o que este módulo existe para evitar.
+ *
+ * Existe porque o recibo e a prosa não são a mesma coisa e não podem ter a
+ * mesma cara: um é comprovante gerado pelo servidor, o outro é o que o modelo
+ * achou de dizer. Enquanto viajavam grudados numa string só, a tela não tinha
+ * como dar peso diferente a eles.
+ */
+export const MARCA_RECIBO = "\u001D"
+
+export interface RespostaPartida {
+  /** O que o modelo escreveu. Pode ser vazio. */
+  prosa: string
+  /** O comprovante do servidor, ou `null` quando nada foi mudado. */
+  recibo: string | null
+}
+
+export function separaRecibo(texto: string): RespostaPartida {
+  const i = typeof texto === "string" ? texto.indexOf(MARCA_RECIBO) : -1
+  if (i < 0) return { prosa: typeof texto === "string" ? texto : "", recibo: null }
+  return {
+    prosa: texto.slice(0, i).trim(),
+    recibo: texto.slice(i + MARCA_RECIBO.length).trim() || null,
+  }
+}
+
+/**
+ * O recibo em forma de fala: sem os marcadores, sem aspas e sem o cabeçalho.
+ *
+ * "✅ criei "V1" — segunda-feira, 28/09, 08:00" vira
+ * "criei V1 — segunda-feira, 28/09, 08:00". Os símbolos são para o olho; lidos
+ * em voz alta viram ruído ou silêncio, dependendo do motor de TTS.
+ */
+export function reciboParaFala(recibo: string | null, titulo: string): string {
+  if (!recibo) return ""
+  return recibo
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && l !== titulo.trim())
+    .map((l) => l.replace(/^[✅⚠️ℹ️]+\s*/u, "").replace(/"/g, "").trim())
+    .filter(Boolean)
+    .join(". ")
+}
+
 export interface TextosDoRecibo {
   /** Cabeçalho da lista. */
   titulo: string

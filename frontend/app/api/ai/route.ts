@@ -1,6 +1,6 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
-import { recibo, quantasGravou, type AcaoExecutada } from "@/lib/ia-recibo"
+import { recibo, quantasGravou, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
 import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
 import { createClient } from "@/lib/supabase/server"
@@ -1039,7 +1039,9 @@ function comRecibo(
   // emprestados ao recibo aqui, em vez de duplicados no dicionário.
   const textos = { ...t.recibo, repeticao: t.agenda.repeticao }
   const comprovante = recibo(executadas, tzMin, textos, t.recibo.diasDaSemana, lacoEstourou)
-  return comprovante ? `${limpo}\n\n${comprovante}` : limpo
+  // A marca deixa o cliente separar os dois sem procurar texto: o recibo vira
+  // bloco próprio na tela, e a prosa fica sendo o que ela é — comentário.
+  return comprovante ? `${limpo}\n\n${MARCA_RECIBO}${comprovante}` : limpo
 }
 
 async function runOpenAIAgent(

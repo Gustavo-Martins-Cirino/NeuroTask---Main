@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
+import { separaRecibo, reciboParaFala } from "@/lib/ia-recibo"
 import { comNegrito } from "@/lib/negrito"
 import { OndaSonora } from "@/components/onda-sonora"
 import { estadoDaOnda } from "@/lib/onda-sonora"
@@ -351,11 +352,25 @@ export function VoiceConversation({
             idioma: idiomaRef.current,
           }),
         })
-        const reply = (await res.text()).trim() || traducaoRef.current.ia.respostaFallback
+        const bruto = (await res.text()).trim()
+        // Na voz o problema do V2 é MAIOR: não há calendário para recarregar e
+        // conferir, e a fala é a resposta inteira. Se o TTS lesse só o
+        // parágrafo do modelo, a tela de voz seria o único lugar do app onde
+        // "quer ajustar?" (tendo criado) continuaria passando batido.
+        //
+        // Então quem lidera a fala é o RECIBO, que vem de tool result. A prosa
+        // vai depois, e não em vez: quando o modelo faz uma PERGUNTA de
+        // confirmação não existe recibo nenhum, e é a prosa que mantém a
+        // conversa de pé. Cortá-la deixaria quem está falando sem resposta.
+        const { prosa, recibo } = separaRecibo(bruto)
+        const falado = reciboParaFala(recibo, traducaoRef.current.ia.recibo.titulo)
+        // O transcrito segue a MESMA ordem da fala — recibo primeiro, prosa
+        // depois —, e sem a marca de separação, que é byte de controle.
+        const reply = [recibo, prosa].filter(Boolean).join("\n\n") || traducaoRef.current.ia.respostaFallback
         if (disposed) return
         if (handleRateLimit(reply)) return
         setMessages((m) => [...m, { role: "assistant", content: reply }])
-        speak(reply)
+        speak([falado, prosa].filter(Boolean).join(". ") || reply)
       } catch {
         if (disposed) return
         setMessages((m) => [...m, { role: "assistant", content: traducaoRef.current.ia.erroConexaoVoz }])
