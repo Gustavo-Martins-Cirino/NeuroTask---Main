@@ -631,14 +631,46 @@ repositório:
 > o lote parcial voltar a aparecer depois destes consertos, o caminho honesto é a ferramenta
 > declarar o tamanho do lote, não o servidor adivinhá-lo lendo a frase.
 
-- [ ] **Inverter o peso visual: recibo no topo, prosa embaixo.** Três relatórios seguidos
-      chegaram à mesma conclusão — *"a prosa de cima é a parte não confiável da resposta; o
-      recibo acertou 100% das vezes"*. O recibo vem de tool result e é montado pelo servidor;
-      a prosa vem do modelo. Enquanto a prosa for o corpo da mensagem e o recibo um apêndice,
-      **a parte não verificável é a que o olho lê primeiro**. O conserto não depende de prompt:
-      é trocar a ordem e o destaque na bolha do chat (`app/app/ai/page.tsx` e a tela de voz),
-      deixando a prosa para o que ela faz bem — conflito, sugestão, pergunta de confirmação.
-      Aprovado pelo Gustavo em 22/09; ele retesta depois.
+> **O peso visual foi invertido (22/09): o recibo é bloco, a prosa é texto solto.** Três
+> relatórios seguidos chegaram à mesma conclusão — *"a prosa de cima é a parte não confiável;
+> o recibo acertou 100% das vezes"*. Reordenar não bastaria: com a mesma cara, seria só outra
+> ordem. O recibo ganhou moldura, ícone e selo ("Feito no app"); a prosa ficou embaixo, solta.
+> **A diferença de FORMA é o que ensina em qual parte confiar, sem precisar explicar.**
+>
+> Os dois viajavam grudados numa string. Agora vão separados por GS (U+001D) — byte de
+> controle que não existe em texto de modelo. A alternativa, procurar o TÍTULO do recibo, era
+> texto de dicionário que muda de idioma, e teria virado parsing de prosa.
+>
+> O recibo também aparece INTEIRO, de uma vez; só a prosa segue revelada no ritmo da leitura.
+> Revelar o comprovante letra a letra o tratava como narração.
+>
+> **Na voz o problema era maior, não menor**, e é o achado do Gustavo: lá não há calendário
+> para recarregar e conferir, e a fala é a resposta inteira — com o TTS lendo só o parágrafo,
+> a tela de voz seria o único lugar onde o caso V2 continuaria 100% vivo. Agora quem lidera a
+> fala é o recibo, em forma falável (`reciboParaFala`), com o aviso de conflito junto (ele
+> nasce do tool result).
+>
+> **Onde eu não segui o combinado, e fica para o reteste derrubar:** a prosa é falada DEPOIS,
+> e não suprimida. Quando o modelo faz uma pergunta de confirmação não existe recibo nenhum, e
+> é a prosa que mantém a conversa de pé. O risco é redundância, não perda.
+
+- [ ] **A ferramenta de criar bloco é singular, e é por isso que não existe "2 de 10".**
+      Confirmado lendo o schema: `create_time_block` cria UM bloco por chamada — dez blocos são
+      dez chamadas, e quando o laço corta no meio o décimo pedido nunca chegou a existir como
+      dado (`ia-agenda` é só leitura; não há variante plural em lugar nenhum). A ideia do
+      Gustavo resolve sem campo novo: **se a ferramenta aceitar uma LISTA**, o tamanho do lote
+      vira `args.blocos.length` — argumento estruturado, não frase —, e "2 de 10" sai de
+      comparar com `quantasGravou`, sem regex e sem confiar na prosa. De quebra, um lote de dez
+      passa a custar uma chamada em vez de dez, que ataca o teto de tokens pelo lado certo.
+      **Mexe no schema e no prompt, então muda comportamento** — vale medir contra o modelo
+      antes de fechar.
+
+- [ ] **"Na terça" resolve para hoje, e o horário pode já ter passado.** Achado do Gustavo:
+      pedir "na terça às 08:00" às 15h de uma terça cria um bloco no passado. Não é bug de data
+      relativa — a data está certa —, e por isso nenhum dos consertos acima o alcança. O app
+      tem o horário de quem usa (`paredeDoUsuario`), então dá para tratar: avisar, empurrar
+      para a próxima ocorrência ou perguntar. **Qual das três é decisão de produto**, e o
+      reteste de 22/09 vai medir com que frequência acontece antes de escolher.
 
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
