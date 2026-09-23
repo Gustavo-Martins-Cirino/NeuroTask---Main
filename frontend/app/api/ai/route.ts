@@ -1106,7 +1106,23 @@ async function runOpenAIAgent(
         // se todas falharam, nada entrou no calendário e não há o que o reserva
         // possa contradizer.
         const gravou = quantasGravou(executadas)
-        if (gravou > 0) return comRecibo(t.erros.salvouAntesDoLimite(gravou), executadas, tzMin, t, false)
+        if (gravou > 0) {
+          // O 429 cai no INÍCIO da volta seguinte — e a volta seguinte existe
+          // só para o modelo narrar o que as ferramentas devolveram. Ou seja:
+          // na maioria das vezes o pedido TERMINOU e o que faltou foi contar.
+          // Foi o que o relatório de 22/09 mediu: a frase apareceu 4 vezes e em
+          // 3 estava tudo gravado. Avisar nas quatro ensina a ignorar o aviso
+          // justamente na que importa.
+          //
+          // O servidor não tem como saber se o modelo ia pedir mais: essa
+          // intenção morre com a chamada recusada. O que dá para fazer é tentar
+          // narrar BARATO (sem o schema das ferramentas, ~900 tokens em vez de
+          // ~2.457) — quando passa, não há aviso nenhum a dar, porque a
+          // narração sai com os resultados à vista e o recibo embaixo.
+          const resumo = await narraSemFerramentas(cfg, convo, idioma)
+          if (resumo) return comRecibo(resumo, executadas, tzMin, t, false)
+          return comRecibo(t.erros.salvouAntesDoLimite(gravou), executadas, tzMin, t, false)
+        }
         return "__RATE_LIMIT__"
       }
       throw new Error(`Groq ${res.status}: ${detail}`)
@@ -1143,28 +1159,39 @@ async function runOpenAIAgent(
 
   // Esgotou as iterações: força uma resposta de texto (sem mais ferramentas)
   // resumindo o que foi feito com base nos resultados já no histórico.
+  const resumo = await narraSemFerramentas(cfg, convo, idioma)
+  if (resumo) return comRecibo(resumo, executadas, tzMin, t, true)
+
+  return comRecibo(t.erros.acaoFalhou, executadas, tzMin, t, true)
+}
+
+/**
+ * Pede só a NARRAÇÃO do que já está no histórico, sem mandar as ferramentas.
+ *
+ * É a chamada barata do arquivo: o schema das ferramentas custa ~1.556 dos
+ * ~2.457 tokens de uma chamada normal, e aqui ele não vai. Sobra ~900 — o que
+ * muitas vezes ainda cabe no que restou do minuto depois de um 429.
+ *
+ * Devolve `null` quando também não deu; quem chamou decide o que dizer.
+ */
+async function narraSemFerramentas(
+  cfg: ProviderConfig,
+  convo: OpenAIMessage[],
+  idioma: Idioma
+): Promise<string | null> {
   try {
     const res = await groqChat(cfg, {
-      messages: [
-        ...convo,
-        {
-          role: "user",
-          content: pedidoDeResumo(idioma),
-        },
-      ],
+      messages: [...convo, { role: "user", content: pedidoDeResumo(idioma) }],
       tool_choice: "none",
       max_tokens: 220,
     })
-    if (res.ok) {
-      const data = await res.json()
-      const text = data.choices?.[0]?.message?.content
-      if (text) return comRecibo(text, executadas, tzMin, t, true)
-    }
+    if (!res.ok) return null
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content
+    return typeof text === "string" && text.trim() ? text : null
   } catch {
-    /* cai no fallback abaixo */
+    return null
   }
-
-  return comRecibo(t.erros.acaoFalhou, executadas, tzMin, t, true)
 }
 
 // Streaming simples de texto (Gemini / Anthropic — sem ferramentas por enquanto)

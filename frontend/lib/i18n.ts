@@ -1036,10 +1036,12 @@ export interface Dicionario {
       ocupada: string
       /**
        * Bateu no limite DEPOIS de já ter gravado. Duas coisas não pode dizer:
-       * "tente de novo" (faz reenviar e DUPLICAR o que já entrou) nem "salvei
-       * tudo" — o laço parou no meio, e o servidor sabe quantos itens entraram,
-       * não quantos foram pedidos. Recebe a contagem justamente para não
-       * prometer inteireza que não tem como verificar.
+       * "tente de novo" (faz reenviar e DUPLICAR o que já entrou), "salvei
+       * tudo" nem "parei no meio" — as três são afirmações que o servidor não
+       * tem como verificar. Ele sabe quantos itens ENTRARAM; não sabe quantos
+       * foram pedidos, porque o 429 mata a chamada em que o modelo diria se
+       * ainda queria mais. Recebe a contagem para dizer só o que é fato e
+       * mandar conferir.
        */
       salvouAntesDoLimite: (quantos: number) => string
       semTexto: string
@@ -2131,7 +2133,7 @@ export const pt: Dicionario = {
       ocupada:
         "A Neuro recebeu pedidos demais nos últimos instantes e precisa de um minuto para respirar. Tente de novo já já.",
       salvouAntesDoLimite: (quantos) =>
-        `Bati no limite de uso e parei no meio. O que entrou está na lista abaixo — ${quantos} ${quantos === 1 ? "item" : "itens"}. Confira se é tudo que você pediu: se faltou alguma coisa, me diga só o que faltou (repetir o pedido inteiro duplicaria o que já está salvo).`,
+        `Gravei ${quantos} ${quantos === 1 ? "item" : "itens"} — a lista está aqui embaixo. Bati no limite de uso antes de conseguir escrever a resposta, então confira se é tudo que você pediu: se faltou alguma coisa, me diga só o que faltou (repetir o pedido inteiro duplicaria o que já está salvo).`,
       semTexto: "Pronto.",
     },
     limiteAtingido:
@@ -3275,7 +3277,7 @@ export const en: Dicionario = {
       acaoFalhou: "I tried to carry out the actions, but something went wrong. Check the result and try again.",
       ocupada: "Neuro got too many requests in the last moments and needs a minute to breathe. Try again shortly.",
       salvouAntesDoLimite: (quantos) =>
-        `I hit the usage limit and stopped partway. What went in is in the list below — ${quantos} ${quantos === 1 ? "item" : "items"}. Check whether that is everything you asked for: if something is missing, tell me just what is missing (repeating the whole request would duplicate what is already saved).`,
+        `I saved ${quantos} ${quantos === 1 ? "item" : "items"} — the list is right below. I hit the usage limit before I could write the reply, so check whether that is everything you asked for: if something is missing, tell me just what is missing (repeating the whole request would duplicate what is already saved).`,
       semTexto: "Done.",
     },
     limiteAtingido:

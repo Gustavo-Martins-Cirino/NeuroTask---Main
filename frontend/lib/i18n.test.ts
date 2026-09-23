@@ -936,14 +936,23 @@ describe("o aviso de limite depois de já ter gravado", () => {
     }
   })
 
-  // O que ela PRECISA dizer: parou no meio, e o reenvio é parcial — pedir tudo
-  // de novo duplicaria o que já entrou.
-  it("avisa que parou no meio e pede só o que faltou", () => {
-    expect(frase(pt, 2).toLowerCase()).toContain("parei no meio")
+  // Nem o contrário: "parei no meio" também é afirmação que o servidor não tem
+  // como verificar — o 429 mata a chamada em que o modelo diria se queria mais.
+  // A frase diz só o que é FATO (o número) e manda conferir.
+  it("NÃO afirma ter parado no meio — é o mesmo erro, no sentido oposto", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const t = frase(d, 2).toLowerCase()
+      expect(t, nome).not.toMatch(/parei no meio|stopped partway|pela metade/)
+    }
+  })
+
+  it("pede só o que faltou, e diz por quê", () => {
     expect(frase(pt, 2).toLowerCase()).toContain("só o que faltou")
     expect(frase(pt, 2).toLowerCase()).toContain("duplicaria")
-    expect(frase(en, 2).toLowerCase()).toContain("stopped partway")
+    expect(frase(pt, 2).toLowerCase()).toContain("confira")
+    expect(frase(en, 2).toLowerCase()).toContain("just what is missing")
     expect(frase(en, 2).toLowerCase()).toContain("duplicate")
+    expect(frase(en, 2).toLowerCase()).toContain("check")
   })
 
   it("os dois idiomas não devolvem o mesmo texto", () => {
