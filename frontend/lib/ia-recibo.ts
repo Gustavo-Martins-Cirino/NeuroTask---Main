@@ -64,6 +64,18 @@ export function quantasGravou(acoes: AcaoExecutada[]): number {
 }
 
 /**
+ * Quantas escritas o turno PEDIU — as que entraram e as que não.
+ *
+ * Existe para a frase do limite poder dizer "2 de 10" em vez de "2". Sai da
+ * lista do que foi executado, nunca de contar itens na frase do modelo: um
+ * pedido de dez blocos chega numa chamada só (ver lib/ia-lote) e vira dez
+ * entradas aqui, gravadas ou não.
+ */
+export function quantasPediu(acoes: AcaoExecutada[]): number {
+  return acoes.filter((a) => FERRAMENTAS_QUE_ESCREVEM.has(a.nome)).length
+}
+
+/**
  * A marca que separa a prosa do recibo numa resposta só.
  *
  * GS (Group Separator, U+001D): não existe em texto que um modelo escreva nem

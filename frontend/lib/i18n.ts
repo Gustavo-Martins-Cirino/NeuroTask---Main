@@ -1049,7 +1049,8 @@ export interface Dicionario {
        * ainda queria mais. Recebe a contagem para dizer só o que é fato e
        * mandar conferir.
        */
-      salvouAntesDoLimite: (quantos: number) => string
+      /** Quantos itens entraram, e quantos o turno tentou gravar. */
+      salvouAntesDoLimite: (gravou: number, pedidos: number) => string
       semTexto: string
     }
     /** Sinal de limite gratuito da IA, sem jargão técnico. */
@@ -2139,8 +2140,11 @@ export const pt: Dicionario = {
       acaoFalhou: "Tentei executar as ações, mas algo deu errado. Confira o resultado e tente novamente.",
       ocupada:
         "A Neuro recebeu pedidos demais nos últimos instantes e precisa de um minuto para respirar. Tente de novo já já.",
-      salvouAntesDoLimite: (quantos) =>
-        `Gravei ${quantos} ${quantos === 1 ? "item" : "itens"} — a lista está aqui embaixo. Bati no limite de uso antes de conseguir escrever a resposta, então confira se é tudo que você pediu: se faltou alguma coisa, me diga só o que faltou (repetir o pedido inteiro duplicaria o que já está salvo).`,
+      salvouAntesDoLimite: (gravou, pedidos) => {
+        const conta = pedidos > gravou ? `${gravou} de ${pedidos}` : `${gravou}`
+        const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "itens"
+        return `Gravei ${conta} ${palavra} — a lista está aqui embaixo. Bati no limite de uso antes de conseguir escrever a resposta, então confira se é tudo que você pediu: se faltou alguma coisa, me diga só o que faltou (repetir o pedido inteiro duplicaria o que já está salvo).`
+      },
       semTexto: "Pronto.",
     },
     limiteAtingido:
@@ -3284,8 +3288,11 @@ export const en: Dicionario = {
       falhaAoFalar: (provedor) => `Error talking to the AI (${provedor}).`,
       acaoFalhou: "I tried to carry out the actions, but something went wrong. Check the result and try again.",
       ocupada: "Neuro got too many requests in the last moments and needs a minute to breathe. Try again shortly.",
-      salvouAntesDoLimite: (quantos) =>
-        `I saved ${quantos} ${quantos === 1 ? "item" : "items"} — the list is right below. I hit the usage limit before I could write the reply, so check whether that is everything you asked for: if something is missing, tell me just what is missing (repeating the whole request would duplicate what is already saved).`,
+      salvouAntesDoLimite: (gravou, pedidos) => {
+        const conta = pedidos > gravou ? `${gravou} of ${pedidos}` : `${gravou}`
+        const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "items"
+        return `I saved ${conta} ${palavra} — the list is right below. I hit the usage limit before I could write the reply, so check whether that is everything you asked for: if something is missing, tell me just what is missing (repeating the whole request would duplicate what is already saved).`
+      },
       semTexto: "Done.",
     },
     limiteAtingido:

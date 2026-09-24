@@ -358,10 +358,15 @@ export function VoiceConversation({
         // parágrafo do modelo, a tela de voz seria o único lugar do app onde
         // "quer ajustar?" (tendo criado) continuaria passando batido.
         //
-        // Então quem lidera a fala é o RECIBO, que vem de tool result. A prosa
-        // vai depois, e não em vez: quando o modelo faz uma PERGUNTA de
-        // confirmação não existe recibo nenhum, e é a prosa que mantém a
-        // conversa de pé. Cortá-la deixaria quem está falando sem resposta.
+        // Então, quando houve escrita, quem fala é SÓ o recibo. Ele já traz o
+        // que importa ouvir, inclusive o aviso de conflito — o `warning` vem do
+        // tool result e vira linha do comprovante. Repetir a prosa em seguida
+        // dava a mesma informação duas vezes, uma delas escrita de cabeça, e
+        // ainda deixava a última palavra com a versão menos confiável.
+        //
+        // Sem recibo é a prosa que fala: pergunta de confirmação não gera
+        // comprovante nenhum, e cortá-la deixaria quem está falando sem
+        // resposta. O transcrito, esse, continua mostrando os dois.
         const { prosa, recibo } = separaRecibo(bruto)
         const falado = reciboParaFala(recibo, traducaoRef.current.ia.recibo.titulo)
         // O transcrito segue a MESMA ordem da fala — recibo primeiro, prosa
@@ -370,7 +375,7 @@ export function VoiceConversation({
         if (disposed) return
         if (handleRateLimit(reply)) return
         setMessages((m) => [...m, { role: "assistant", content: reply }])
-        speak([falado, prosa].filter(Boolean).join(". ") || reply)
+        speak(falado || prosa || reply)
       } catch {
         if (disposed) return
         setMessages((m) => [...m, { role: "assistant", content: traducaoRef.current.ia.erroConexaoVoz }])

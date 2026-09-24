@@ -909,8 +909,12 @@ describe("a landing", () => {
 // precisa reenviar". O texto desencorajava o reenvio justamente quando faltavam
 // 8. O servidor sabe QUANTOS itens gravou; não sabe quantos foram pedidos —
 // então a frase não pode prometer inteireza.
+//
+// Com o lote (lib/ia-lote) ele passou a saber: dez blocos chegam num array só,
+// e viram dez entradas no executadas. Daí a frase dizer "2 de 10".
 describe("o aviso de limite depois de já ter gravado", () => {
-  const frase = (d: Dicionario, n: number) => d.ia.erros.salvouAntesDoLimite(n)
+  const frase = (d: Dicionario, gravou: number, pedidos = gravou) =>
+    d.ia.erros.salvouAntesDoLimite(gravou, pedidos)
 
   it("diz o número do que entrou, e ele muda", () => {
     for (const [nome, d] of IDIOMAS) {
@@ -920,11 +924,27 @@ describe("o aviso de limite depois de já ter gravado", () => {
     }
   })
 
+  it("quando o pedido era maior, diz os DOIS números", () => {
+    for (const [nome, d] of IDIOMAS) {
+      const t = frase(d, 2, 10)
+      expect(t, nome).toContain("2")
+      expect(t, nome).toContain("10")
+      expect(t, `${nome}: 2 de 10 não pode sair igual a 2 de 2`).not.toBe(frase(d, 2, 2))
+    }
+  })
+
+  it("pedido igual ao gravado não vira '2 de 2'", () => {
+    expect(frase(pt, 2, 2)).toContain("Gravei 2 itens")
+    expect(frase(en, 2, 2)).toContain("I saved 2 items")
+  })
+
   it("singular e plural do item", () => {
     expect(frase(pt, 1)).toContain("1 item")
     expect(frase(pt, 3)).toContain("3 itens")
     expect(frase(en, 1)).toContain("1 item")
     expect(frase(en, 3)).toContain("3 items")
+    expect(frase(pt, 1, 10)).toContain("1 de 10 itens")
+    expect(frase(en, 1, 10)).toContain("1 of 10 items")
   })
 
   // As duas frases que o relatório provou serem perigosas.

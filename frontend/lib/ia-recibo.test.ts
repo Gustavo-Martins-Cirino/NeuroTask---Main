@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import {
-  recibo, quando, quantasGravou, separaRecibo, reciboParaFala, MARCA_RECIBO,
+  recibo, quando, quantasGravou, quantasPediu, separaRecibo, reciboParaFala, MARCA_RECIBO,
   FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada,
 } from "./ia-recibo"
 import { pt, en } from "./i18n"
@@ -252,6 +252,33 @@ describe("quantasGravou", () => {
     const texto = recibo(acoes, 180, TEXTOS, DIAS)!
     const vistos = texto.split("\n").filter((l) => l.trimStart().startsWith("✅")).length
     expect(quantasGravou(acoes)).toBe(vistos)
+  })
+})
+
+// O outro número da frase do limite: "2 DE 10". Um pedido de dez blocos chega
+// numa chamada só (lib/ia-lote) e o servidor a abre em dez execuções — então o
+// total pedido está aqui, e não na frase que o modelo escreveu.
+describe("quantasPediu", () => {
+  const acao = (nome: string, resultado: unknown): AcaoExecutada => ({ nome, args: { title: "X" }, resultado })
+
+  it("conta a tentativa, tenha ela gravado ou não", () => {
+    const acoes = [
+      acao("create_time_block", { ok: true }),
+      acao("create_time_block", { ok: true }),
+      acao("create_time_block", { ok: false, error: "boom" }),
+      acao("create_time_block", { ok: true, note: "já existe" }),
+    ]
+    expect(quantasPediu(acoes)).toBe(4)
+    expect(quantasGravou(acoes)).toBe(2)
+  })
+
+  it("leitura não é pedido de escrita", () => {
+    expect(quantasPediu([acao("list_tasks", { ok: true }), acao("list_time_blocks", { ok: true })])).toBe(0)
+  })
+
+  it("nunca é menor que o gravado", () => {
+    const acoes = [acao("create_task", { ok: true }), acao("update_note", { ok: true })]
+    expect(quantasPediu(acoes)).toBeGreaterThanOrEqual(quantasGravou(acoes))
   })
 })
 

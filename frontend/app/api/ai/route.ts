@@ -1,6 +1,7 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
-import { recibo, quantasGravou, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
+import { recibo, quantasGravou, quantasPediu, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
+import { blocosDoLote, CRIAR_BLOCOS_EM_LOTE } from "@/lib/ia-lote"
 import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
 import { createClient } from "@/lib/supabase/server"
@@ -32,6 +33,7 @@ AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
 - Editar/excluir: chame list_time_blocks antes para obter o id — ele vem entre colchetes em cada linha. NUNCA peça o id ao usuário: ele não aparece em lugar nenhum da tela, e pedi-lo trava a conversa. Para mudar horário de um bloco use update_time_block, nunca apagar e recriar.
 - Tarefa com horário: coloque a hora no due_date (ISO 8601) — o app cria o bloco no calendário sozinho; NÃO chame create_time_block para a mesma coisa.
 - Datas: respeite o dia dito ("hoje" é hoje, mesmo que a hora já tenha passado). Hora ambígua (manhã ou noite)? Pergunte antes. end_time no MESMO dia do start_time, salvo cruzar a meia-noite. Ao falar, use datas naturais ("amanhã das 8h às 9h"), nunca ISO.
+- VÁRIOS blocos no mesmo pedido: UMA chamada de create_time_blocks com todos eles no array "blocos". Nunca create_time_block repetido — o laço tem poucas voltas, e um bloco por chamada faz o pedido de 10 acabar em 2.
 - Planejar a partir de um compromisso: plan_day_backwards (confirm=false propõe; após o sim, repita com os MESMOS argumentos e confirm=true). Nunca calcule a cadeia você mesmo nem crie os blocos um a um.
 - Repasse ao usuário qualquer warning/note retornado (conflito, duplicata, proximidade).
 
@@ -167,6 +169,40 @@ const TOOLS = [
           },
         },
         required: ["title", "start_time", "end_time"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_time_blocks",
+      description:
+        "Cria VÁRIOS blocos de tempo de uma vez. Use sempre que o pedido tiver mais de um bloco — é uma chamada só, com todos no array.",
+      parameters: {
+        type: "object",
+        properties: {
+          blocos: {
+            type: "array",
+            description: "Um item por bloco, com os mesmos campos de create_time_block.",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                start_time: { type: "string", description: "Início da PRIMEIRA ocorrência, ISO 8601" },
+                end_time: { type: "string", description: "Fim da primeira ocorrência, ISO 8601" },
+                description: { type: ["string", "null"] },
+                color: { type: ["string", "null"], description: "Cor hex, ex #6366f1" },
+                recurrence_rule: {
+                  type: ["string", "null"],
+                  enum: ["daily", "weekly", "weekdays", null],
+                  description: "Mesmas regras do create_time_block.",
+                },
+              },
+              required: ["title", "start_time", "end_time"],
+            },
+          },
+        },
+        required: ["blocos"],
       },
     },
   },
@@ -953,6 +989,17 @@ async function recoverFailedToolCalls(
     } catch {
       continue
     }
+    // O lote se abre aqui também: esta é a rede de segurança do tool call que
+    // o parser do Groq recusou, e é justamente a ferramenta que o prompt manda
+    // usar para pedido grande. Sem isto, o resgate devolveria "ferramenta
+    // desconhecida" no caso mais caro de perder.
+    if (name === CRIAR_BLOCOS_EM_LOTE) {
+      for (const bloco of blocosDoLote(args)) {
+        const r = await executeTool("create_time_block", bloco, supabase, userId, tzMin, idioma)
+        lines.push(confirm("create_time_block", bloco, r))
+      }
+      continue
+    }
     const result = await executeTool(name, args, supabase, userId, tzMin, idioma)
     lines.push(confirm(name, args, result))
   }
@@ -1101,8 +1148,9 @@ async function runOpenAIAgent(
         // frase: o relatório de 22/09 registrou o caso perigoso — um lote de
         // 10 em que só 2 entraram, e a prosa dizia "já salvei o que você
         // pediu… não precisa reenviar", desencorajando o reenvio justamente
-        // quando faltavam 8. O servidor sabe QUANTOS itens gravou; não sabe
-        // quantos foram pedidos. Então diz o número e manda conferir.
+        // quando faltavam 8. Hoje o servidor sabe os DOIS números — o pedido de
+        // dez chega num array só (lib/ia-lote) e vira dez entradas em
+        // `executadas` —, então a frase diz "2 de 10" e manda conferir.
         //
         // Gate pela contagem, e não por "alguma ferramenta de escrita rodou":
         // se todas falharam, nada entrou no calendário e não há o que o reserva
@@ -1123,7 +1171,7 @@ async function runOpenAIAgent(
           // narração sai com os resultados à vista e o recibo embaixo.
           const resumo = await narraSemFerramentas(cfg, convo, idioma)
           if (resumo) return comRecibo(resumo, executadas, tzMin, t, false)
-          return comRecibo(t.erros.salvouAntesDoLimite(gravou), executadas, tzMin, t, false)
+          return comRecibo(t.erros.salvouAntesDoLimite(gravou, quantasPediu(executadas)), executadas, tzMin, t, false)
         }
         return "__RATE_LIMIT__"
       }
@@ -1141,6 +1189,30 @@ async function runOpenAIAgent(
           parsed = JSON.parse(call.function.arguments || "{}")
         } catch {
           parsed = {}
+        }
+        // O lote não tem execução própria: ele se abre em uma chamada de
+        // create_time_block por item. É o que dá UMA LINHA POR BLOCO no recibo
+        // — um "✅ criou (10)" não deixa ninguém conferir o que entrou — e o
+        // que faz `quantasPediu` contar dez quando dez foram pedidos.
+        if (call.function.name === CRIAR_BLOCOS_EM_LOTE) {
+          const lote = blocosDoLote(parsed)
+          const resultados: unknown[] = []
+          for (const bloco of lote) {
+            const r = await executeTool("create_time_block", bloco, supabase, userId, tzMin, idioma)
+            executadas.push({ nome: "create_time_block", args: bloco, resultado: r })
+            resultados.push(r)
+            console.log(`[neuro-ia] tool=create_time_block (lote) args=${JSON.stringify(bloco)} result=${JSON.stringify(r)}`)
+          }
+          convo.push({
+            role: "tool",
+            tool_call_id: call.id,
+            content: JSON.stringify(
+              lote.length > 0
+                ? { ok: true, resultados }
+                : { ok: false, error: "blocos deve ser um array com title, start_time e end_time em cada item" }
+            ),
+          })
+          continue
         }
         const result = await executeTool(call.function.name, parsed, supabase, userId, tzMin, idioma)
         executadas.push({ nome: call.function.name, args: parsed, resultado: result })
