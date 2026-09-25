@@ -32,6 +32,7 @@ AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
 - Desabafo ("estou cansado") não vira tarefa — apenas converse. Na dúvida (fala solta, transcrição estranha), pergunte.
 - Editar/excluir: chame list_time_blocks antes para obter o id — ele vem entre colchetes em cada linha. NUNCA peça o id ao usuário: ele não aparece em lugar nenhum da tela, e pedi-lo trava a conversa. Para mudar horário de um bloco use update_time_block, nunca apagar e recriar.
 - Tarefa com horário: coloque a hora no due_date (ISO 8601) — o app cria o bloco no calendário sozinho; NÃO chame create_time_block para a mesma coisa.
+- "que vem"/"da semana que vem" + dia da semana é a ocorrência da SEMANA SEGUINTE; "próxima terça" é a mais próxima que ainda vem. Em qualquer dos dois, o dia da semana da data que você escolher tem de ser o dia que a pessoa DISSE — "sexta que vem" nunca pode virar uma quinta.
 - Datas: respeite o dia dito ("hoje" é hoje, mesmo que a hora já tenha passado). Hora ambígua (manhã ou noite)? Pergunte antes. end_time no MESMO dia do start_time, salvo cruzar a meia-noite. Ao falar, use datas naturais ("amanhã das 8h às 9h"), nunca ISO.
 - VÁRIOS blocos no mesmo pedido: UMA chamada de create_time_blocks com todos eles no array "blocos". Nunca create_time_block repetido — o laço tem poucas voltas, e um bloco por chamada faz o pedido de 10 acabar em 2.
 - Planejar a partir de um compromisso: plan_day_backwards (confirm=false propõe; após o sim, repita com os MESMOS argumentos e confirm=true). Nunca calcule a cadeia você mesmo nem crie os blocos um a um.
@@ -395,6 +396,29 @@ async function findSimilarSameDay(
   )
 }
 
+/**
+ * O bloco cai antes de agora?
+ *
+ * Criar no passado é legítimo — registrar o que já aconteceu —, mas tem de DIZER
+ * que é passado. Na rodada W a pessoa pediu "hoje às 07:00" às 20:51 e o bloco
+ * entrou às 07:00 da manhã sem uma palavra; ela queria o dia seguinte. O aviso
+ * vai pelo `warning`, que é o caminho estruturado: aparece no recibo e, na voz,
+ * é falado.
+ */
+function avisoDePassado(startISO: string): string | null {
+  const t = Date.parse(startISO)
+  if (!Number.isFinite(t) || t >= Date.now()) return null
+  return "Esse horário já passou — criei no dia que você pediu mesmo assim. Se era para outro dia, me diga."
+}
+
+/** Um `warning` só, sem ⚠️ repetido no meio (o recibo põe o dele na frente). */
+function juntaAvisos(...avisos: (string | null)[]): string | null {
+  const limpos = avisos
+    .filter((a): a is string => typeof a === "string" && a.trim().length > 0)
+    .map((a) => a.replace(/^\s*⚠️\s*/, "").trim())
+  return limpos.length > 0 ? limpos.join(" ") : null
+}
+
 // Verifica choque de horário e proximidade (< 15 min) com outros blocos do mesmo dia
 async function checkConflicts(
   supabase: SupabaseClient,
@@ -710,7 +734,7 @@ async function executeTool(
           .select("id, title, start_time")
           .single()
         if (error) return { ok: false, error: error.message }
-        const warning = await checkConflicts(supabase, data.id, startT, endT)
+        const warning = juntaAvisos(avisoDePassado(startT), await checkConflicts(supabase, data.id, startT, endT))
         return { ok: true, created: data, warning, recurrence_rule: regra }
       }
       case "list_time_blocks": {
@@ -1115,8 +1139,15 @@ async function runOpenAIAgent(
       tools: TOOLS,
       tool_choice: "auto",
       // Folga para modelos de raciocínio (o "pensar" consome deste teto);
-      // sem isso o tool call era truncado e a ação nunca acontecia
-      max_tokens: 1024,
+      // sem isso o tool call era truncado e a ação nunca acontecia.
+      //
+      // Subiu de 1024 depois da rodada W: o lote de 20 blocos falhava quatro
+      // vezes seguidas com erro do provedor, enquanto uma mensagem curta no
+      // meio delas passava de primeira. Vinte blocos de argumentos passam de
+      // mil tokens SÓ de JSON — o que estourava não era o limite de uso, era
+      // este teto, e o tool call truncado nem chega a virar JSON válido para o
+      // resgate do `recoverFailedToolCalls` recuperar.
+      max_tokens: 4096,
     })
 
     if (!res.ok) {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import {
-  recibo, quando, quantasGravou, quantasPediu, separaRecibo, reciboParaFala, MARCA_RECIBO,
+  recibo, quando, quantasGravou, quantasPediu, separaRecibo, reciboParaFala, falaDaResposta, MARCA_RECIBO,
   FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada,
 } from "./ia-recibo"
 import { pt, en } from "./i18n"
@@ -351,5 +351,58 @@ describe("reciboParaFala", () => {
   it("sem recibo, não há nada a falar", () => {
     expect(reciboParaFala(null, TITULO)).toBe("")
     expect(reciboParaFala("", TITULO)).toBe("")
+  })
+})
+
+// O relatório da rodada W leu o bundle e achou o buraco de falar SÓ o recibo:
+// "criei o W1. Quer ajustar o horário?" ia para o áudio como "criei o W1" e
+// silêncio. Na voz não há tela onde reler a pergunta — quem está falando fica
+// esperando sem saber que é a vez dele.
+describe("falaDaResposta", () => {
+  const TITULO = TEXTOS.titulo
+  const RECIBO = `${TITULO}\n✅ criou "W1" — segunda-feira, 28/09, 08:00`
+
+  it("sem recibo, fala a prosa inteira — é a pergunta de confirmação", () => {
+    expect(falaDaResposta(null, "Posso criar o bloco às 8h?", TITULO)).toBe("Posso criar o bloco às 8h?")
+  })
+
+  it("com recibo e prosa sem pergunta, fala só o recibo", () => {
+    const fala = falaDaResposta(RECIBO, "Pronto, já deixei tudo organizado para você.", TITULO)
+    expect(fala).toBe("criou W1 — segunda-feira, 28/09, 08:00")
+    expect(fala).not.toContain("organizado")
+  })
+
+  it("a pergunta da prosa é falada; o resto dela não", () => {
+    const fala = falaDaResposta(RECIBO, "Criei o bloco das 8h. Quer ajustar o horário?", TITULO)
+    expect(fala).toContain("Quer ajustar o horário?")
+    expect(fala).not.toContain("Criei o bloco das 8h.")
+  })
+
+  it("o recibo vem primeiro, e a pergunta depois", () => {
+    const fala = falaDaResposta(RECIBO, "Quer ajustar?", TITULO)
+    expect(fala.indexOf("criou W1")).toBeLessThan(fala.indexOf("Quer ajustar?"))
+  })
+
+  it("mais de uma pergunta, todas faladas", () => {
+    const fala = falaDaResposta(RECIBO, "Criei. Quer ajustar? Ou prefiro deixar assim?", TITULO)
+    expect(fala).toContain("Quer ajustar?")
+    expect(fala).toContain("Ou prefiro deixar assim?")
+  })
+
+  // O aviso de conflito e o de horário no passado vêm do `warning` do tool
+  // result — já estão no recibo, então já eram falados. Este teste existe para
+  // não se perderem se alguém simplificar a função.
+  it("o aviso do recibo continua sendo falado", () => {
+    const comAviso = `${RECIBO}\n   ⚠️ Esse horário já passou — criei no dia que você pediu mesmo assim.`
+    expect(falaDaResposta(comAviso, "", TITULO)).toContain("Esse horário já passou")
+  })
+
+  it("prosa com ? mas sem frase que se isole cai na prosa inteira", () => {
+    const fala = falaDaResposta(RECIBO, "e agora?", TITULO)
+    expect(fala).toContain("e agora?")
+  })
+
+  it("prosa vazia não vira ponto solto no fim da fala", () => {
+    expect(falaDaResposta(RECIBO, "", TITULO)).toBe("criou W1 — segunda-feira, 28/09, 08:00")
   })
 })

@@ -125,6 +125,46 @@ export function reciboParaFala(recibo: string | null, titulo: string): string {
     .join(". ")
 }
 
+/**
+ * O que o TTS fala: o recibo, mais a PERGUNTA da prosa quando existe uma.
+ *
+ * A regra base é que, havendo escrita, fala-se só o recibo — a prosa diria a
+ * mesma coisa de cabeça e ficaria com a última palavra. O relatório da rodada W
+ * achou o buraco disso: numa resposta que cria um bloco E pergunta ("criei o
+ * W1. Quer ajustar o horário?"), a pergunta sumia do áudio e quem estava
+ * falando ficava esperando um silêncio. Na voz não há tela para ler a pergunta
+ * de volta.
+ *
+ * Então a prosa entra pela PONTA que precisa de resposta, e só por ela: as
+ * frases que terminam em "?". Isso não é ler informação na prosa — nada do que
+ * se fala aqui vira dado, a frase vai inteira e como foi escrita, e todo fato
+ * continua saindo do recibo. É o mesmo tipo de leitura que `pedeConfirmacao`
+ * já faz para decidir se o microfone reabre.
+ */
+export function falaDaResposta(recibo: string | null, prosa: string, titulo: string): string {
+  const doRecibo = reciboParaFala(recibo, titulo)
+  if (!doRecibo) return prosa.trim()
+  const perguntas = perguntasDa(prosa)
+  return [doRecibo, ...perguntas].join(". ")
+}
+
+/**
+ * As frases da prosa que pedem resposta.
+ *
+ * Sem pergunta nenhuma devolve lista vazia — o caso comum, em que o recibo já
+ * disse tudo. Com "?" mas sem frase que se isole, devolve a prosa inteira: é
+ * melhor repetir do que deixar quem está falando no escuro.
+ */
+function perguntasDa(prosa: string): string[] {
+  const texto = prosa.trim()
+  if (!texto.includes("?")) return []
+  const frases = texto
+    .split(/(?<=[.!?…])\s+/)
+    .map((f) => f.trim())
+    .filter((f) => f.endsWith("?"))
+  return frases.length > 0 ? frases : [texto]
+}
+
 export interface TextosDoRecibo {
   /** Cabeçalho da lista. */
   titulo: string

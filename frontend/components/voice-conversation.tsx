@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
-import { separaRecibo, reciboParaFala } from "@/lib/ia-recibo"
+import { separaRecibo, falaDaResposta } from "@/lib/ia-recibo"
 import { comNegrito } from "@/lib/negrito"
 import { OndaSonora } from "@/components/onda-sonora"
 import { estadoDaOnda } from "@/lib/onda-sonora"
@@ -358,24 +358,23 @@ export function VoiceConversation({
         // parágrafo do modelo, a tela de voz seria o único lugar do app onde
         // "quer ajustar?" (tendo criado) continuaria passando batido.
         //
-        // Então, quando houve escrita, quem fala é SÓ o recibo. Ele já traz o
-        // que importa ouvir, inclusive o aviso de conflito — o `warning` vem do
-        // tool result e vira linha do comprovante. Repetir a prosa em seguida
-        // dava a mesma informação duas vezes, uma delas escrita de cabeça, e
-        // ainda deixava a última palavra com a versão menos confiável.
-        //
-        // Sem recibo é a prosa que fala: pergunta de confirmação não gera
-        // comprovante nenhum, e cortá-la deixaria quem está falando sem
-        // resposta. O transcrito, esse, continua mostrando os dois.
+        // Então, quando houve escrita, quem fala é o recibo — ele já traz o que
+        // importa ouvir, inclusive o aviso de conflito, que vem do `warning` do
+        // tool result. Da prosa entra só o que PEDE RESPOSTA (ver
+        // `falaDaResposta`): sem isso, "criei o W1. Quer ajustar?" virava
+        // "criei o W1" e silêncio, e a pessoa ficava esperando uma tela que na
+        // voz não existe. Sem recibo, fala-se a prosa inteira — pergunta de
+        // confirmação não gera comprovante nenhum. O transcrito, esse, continua
+        // mostrando os dois.
         const { prosa, recibo } = separaRecibo(bruto)
-        const falado = reciboParaFala(recibo, traducaoRef.current.ia.recibo.titulo)
+        const falado = falaDaResposta(recibo, prosa, traducaoRef.current.ia.recibo.titulo)
         // O transcrito segue a MESMA ordem da fala — recibo primeiro, prosa
         // depois —, e sem a marca de separação, que é byte de controle.
         const reply = [recibo, prosa].filter(Boolean).join("\n\n") || traducaoRef.current.ia.respostaFallback
         if (disposed) return
         if (handleRateLimit(reply)) return
         setMessages((m) => [...m, { role: "assistant", content: reply }])
-        speak(falado || prosa || reply)
+        speak(falado || reply)
       } catch {
         if (disposed) return
         setMessages((m) => [...m, { role: "assistant", content: traducaoRef.current.ia.erroConexaoVoz }])
