@@ -179,7 +179,7 @@ const TOOLS = [
     function: {
       name: "create_time_blocks",
       description:
-        "Cria VÁRIOS blocos de tempo de uma vez. Use sempre que o pedido tiver mais de um bloco — é uma chamada só, com todos no array.",
+        "Cria VÁRIOS blocos de tempo de uma vez. Use sempre que o pedido tiver mais de um bloco — é uma chamada só, com todos no array. No MÁXIMO 10 por chamada: acima disso o argumento fica grande demais e a chamada falha inteira. Se pedirem mais que 10, faça várias chamadas de 10 ou menos — nunca uma só gigante, e nunca deixe de criar o resto.",
       parameters: {
         type: "object",
         properties: {
@@ -1158,6 +1158,17 @@ async function runOpenAIAgent(
       // failed_generation, executamos de verdade e confirmamos.
       const recovered = await recoverFailedToolCalls(detail, supabase, userId, tzMin, idioma)
       if (recovered) return recovered
+      // Sem isto a rodada X terminou em "ainda falha" sem saber por quê: o
+      // erro do provedor ia para o log, mas não o TAMANHO da geração que ele
+      // recusou — e é esse número que separa "veio truncado" de "veio
+      // malformado". As duas hipóteses pedem consertos opostos.
+      if (!res.ok && res.status !== 429) {
+        const falha = /"failed_generation"\s*:\s*"/.test(detail)
+        console.error(
+          `[neuro-ia] groq recusou: status=${res.status} detalhe=${detail.length}b ` +
+            `failed_generation=${falha ? "sim" : "não"} voltas=${i} executadas=${executadas.length}`
+        )
+      }
       if (res.status === 429) {
         // Se o laço JÁ escreveu alguma coisa, NÃO pode cair no reserva: o
         // reserva não enxerga o que foi feito e responde "não consegui criar",
