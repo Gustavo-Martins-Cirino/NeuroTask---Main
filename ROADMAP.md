@@ -665,6 +665,48 @@ repositório:
       **Mexe no schema e no prompt, então muda comportamento** — vale medir contra o modelo
       antes de fechar.
 
+> **Rodada X (24/09): a escrita segue confiável; caíram quatro coisas, três já consertadas.**
+> Bloco no passado passou inteiro — e por um motivo que vale registrar: o aviso do warning é
+> uma pergunta SEM "?" e mesmo assim vai ao áudio, porque mora no recibo e não na prosa. A
+> arquitetura protege esse caso sozinha.
+>
+> - **A afirmação pegava carona na pergunta, e ia ao áudio.** O filtro da fala era por FRASE, e
+>   "Salvei todos os 10 blocos que você pediu, quer ajustar algum?" é uma frase só: terminava em
+>   "?" e a contagem inventada viajava junto para o TTS — exatamente a regressão que separar
+>   recibo de prosa existe para impedir, e um fraseado comum em português, não caso raro. Agora
+>   o corte é DENTRO da frase, no último separador cujo rabo comece como pergunta. No último
+>   separador qualquer quebraria "Quer que eu crie às 14:00, ou prefere 15:00?", que tem vírgula
+>   dentro da própria pergunta. Junto foi o `"?."` do join.
+>
+> - **"Ferramentas fora do ar" era mentira NOSSA.** Alterar um bloco falhou 4 vezes com essa
+>   frase enquanto criar e listar funcionavam a minutos de distância. Não era nenhuma das duas
+>   hipóteses do relatório: a frase vinha do prompt do MODO RESERVA (o caminho do 429), que
+>   mandava dizê-la ao pé da letra. Não havia queda, havia COTA — e editar é o pedido que mais
+>   encosta no teto, porque custa listar para achar o id e depois atualizar. "Fora do ar" manda
+>   esperar um conserto que não vem; o texto agora diz que foi o limite do minuto, e proíbe as
+>   palavras que sugerem defeito.
+>
+> - **A tela girava para sempre.** Um fetch que nunca responde também nunca rejeita, então o
+>   catch não rodava. Entrou `lib/ia-silencio.ts`: relógio de SILÊNCIO (reinicia a cada pedaço
+>   do stream), não de duração — cortar por tempo total mataria resposta longa legítima. Chat e
+>   voz levaram o mesmo.
+
+- [ ] **Editar ou apagar UMA ocorrência de uma série não existe.** Achado da rodada X, e é
+      limitação real, não bug: bloco que repete é uma linha com uma regra, então
+      `update_time_block` e `delete_time_block` valem para a série inteira. O prompt passou a
+      dizer isso e a oferecer as saídas reais (mudar a série, ou encerrá-la e criar um avulso),
+      o que impede a improvisação pior — alterar tudo achando que ajustou um dia. **Suportar de
+      verdade** pede modelo de dado novo: uma tabela de exceções da série, ou materializar a
+      ocorrência ao editá-la. Decidir isso é o próximo degrau, se o uso pedir.
+
+- [ ] **O lote de 20 derruba a chamada, e a causa ainda não é conhecida.** O `max_tokens: 4096`
+      está no deploy e é a chamada com ferramentas — conferido —, então subir o teto não era o
+      conserto. Duas hipóteses opostas seguem abertas: geração TRUNCADA (pede lote menor) ou
+      MALFORMADA (pede outra coisa). A descrição da ferramenta já pede no máximo 10 por chamada,
+      e o log passou a trazer o que decide entre as duas: status, tamanho do detalhe, presença de
+      `failed_generation`, volta em que parou. **Na próxima falha, é o log do deploy que fecha
+      isso** — `[neuro-ia] groq recusou:`.
+
 - [ ] **"Na terça" resolve para hoje, e o horário pode já ter passado.** Achado do Gustavo:
       pedir "na terça às 08:00" às 15h de uma terça cria um bloco no passado. Não é bug de data
       relativa — a data está certa —, e por isso nenhum dos consertos acima o alcança. O app
