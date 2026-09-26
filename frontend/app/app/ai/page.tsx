@@ -15,6 +15,7 @@ import { avancarRevelacao, revelacaoTerminou, PASSO_MS } from "@/lib/revelacao-r
 import { fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { comNegrito } from "@/lib/negrito"
 import { separaRecibo } from "@/lib/ia-recibo"
+import { relogioDeSilencio } from "@/lib/ia-silencio"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -244,10 +245,19 @@ export default function AiPage() {
     definirRevelado(0)
     setEnvio((n) => n + 1)
 
+    // Sem isto a tela gira para sempre: um fetch que nunca responde também
+    // nunca rejeita, e o catch abaixo jamais roda (rodada X: ~90s girando numa
+    // listagem de dia cheio). O relógio é de SILÊNCIO e se reinicia a cada
+    // pedaço do stream — cortar por duração total mataria resposta longa
+    // legítima. Nasce aqui fora para o `finally` alcançá-lo.
+    const aborto = new AbortController()
+    const relogio = relogioDeSilencio(() => aborto.abort())
+
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: aborto.signal,
         body: JSON.stringify({
           // envia só as últimas mensagens para economizar tokens (limite gratuito do Groq)
           messages: nextMessages.slice(-6),
@@ -258,6 +268,7 @@ export default function AiPage() {
       })
 
       if (!res.ok || !res.body) {
+        relogio.parar()
         const errText = await res.text().catch(() => "")
         setMessages((prev) => {
           const copy = [...prev]
@@ -276,6 +287,7 @@ export default function AiPage() {
       for (;;) {
         const { done, value } = await reader.read()
         if (done) break
+        relogio.vivo()
         acc += decoder.decode(value, { stream: true })
         setMessages((prev) => {
           const copy = [...prev]
@@ -283,16 +295,21 @@ export default function AiPage() {
           return copy
         })
       }
-    } catch {
+    } catch (e) {
+      // Abortado pelo relógio é outra coisa que "caiu a internet": a pessoa
+      // precisa saber que pode tentar de novo, e que o pedido pode ter sido
+      // grande demais.
+      const calou = e instanceof DOMException && e.name === "AbortError"
       setMessages((prev) => {
         const copy = [...prev]
         copy[copy.length - 1] = {
           role: "assistant",
-          content: traducao.ia.erroConexao,
+          content: calou ? traducao.ia.erros.demorouDemais : traducao.ia.erroConexao,
         }
         return copy
       })
     } finally {
+      relogio.parar()
       setLoading(false)
     }
   }

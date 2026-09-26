@@ -1052,6 +1052,13 @@ export interface Dicionario {
       /** Quantos itens entraram, e quantos o turno tentou gravar. */
       salvouAntesDoLimite: (gravou: number, pedidos: number) => string
       semTexto: string
+      /**
+       * O pedido ficou sem resposta tempo demais e foi cortado pelo cliente.
+       * Não é "caiu a internet": o servidor pode estar mastigando um pedido
+       * grande. O texto precisa dizer que dá para tentar de novo, e sugerir o
+       * que costuma resolver — pedir menos de uma vez.
+       */
+      demorouDemais: string
     }
     /** Sinal de limite gratuito da IA, sem jargão técnico. */
     limiteAtingido: string
@@ -2146,6 +2153,8 @@ export const pt: Dicionario = {
         return `Gravei ${conta} ${palavra} — a lista está aqui embaixo. Bati no limite de uso antes de conseguir escrever a resposta, então confira se é tudo que você pediu: se faltou alguma coisa, me diga só o que faltou (repetir o pedido inteiro duplicaria o que já está salvo).`
       },
       semTexto: "Pronto.",
+      demorouDemais:
+        "Esse pedido demorou demais e eu parei de esperar. Nada foi perdido — tente de novo, e se for uma lista grande, peça em pedaços menores.",
     },
     limiteAtingido:
       "A Neuro está descansando 😴 O limite gratuito da IA chegou por agora — tente de novo em instantes.",
@@ -3294,6 +3303,8 @@ export const en: Dicionario = {
         return `I saved ${conta} ${palavra} — the list is right below. I hit the usage limit before I could write the reply, so check whether that is everything you asked for: if something is missing, tell me just what is missing (repeating the whole request would duplicate what is already saved).`
       },
       semTexto: "Done.",
+      demorouDemais:
+        "That request took too long and I stopped waiting. Nothing was lost — try again, and if it is a long list, ask for it in smaller pieces.",
     },
     limiteAtingido:
       "Neuro is taking a nap 😴 The free AI limit was reached for now — try again in a moment.",

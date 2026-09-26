@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { separaRecibo, falaDaResposta } from "@/lib/ia-recibo"
+import { relogioDeSilencio } from "@/lib/ia-silencio"
 import { comNegrito } from "@/lib/negrito"
 import { OndaSonora } from "@/components/onda-sonora"
 import { estadoDaOnda } from "@/lib/onda-sonora"
@@ -341,10 +342,16 @@ export function VoiceConversation({
       const history = [...messagesRef.current, { role: "user" as const, content: text }]
       setMessages(history)
       setPhase("thinking")
+      // Mesmo relógio do chat: fetch que nunca responde nunca rejeita, e aqui
+      // o preço é maior — quem está falando fica olhando para uma tela que não
+      // diz nada, sem nem o "carregando" do chat para explicar.
+      const aborto = new AbortController()
+      const relogio = relogioDeSilencio(() => aborto.abort())
       try {
         const res = await fetch("/api/ai", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: aborto.signal,
           body: JSON.stringify({
             messages: history.slice(-6),
             mode: "voice",
@@ -353,6 +360,7 @@ export function VoiceConversation({
           }),
         })
         const bruto = (await res.text()).trim()
+        relogio.parar()
         // Na voz o problema do V2 é MAIOR: não há calendário para recarregar e
         // conferir, e a fala é a resposta inteira. Se o TTS lesse só o
         // parágrafo do modelo, a tela de voz seria o único lugar do app onde
