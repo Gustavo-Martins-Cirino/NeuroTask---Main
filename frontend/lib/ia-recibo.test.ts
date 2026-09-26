@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import {
-  recibo, quando, quantasGravou, quantasPediu, separaRecibo, reciboParaFala, falaDaResposta, MARCA_RECIBO,
+  recibo, quando, quantasGravou, quantasPediu, separaRecibo, reciboParaFala, falaDaResposta, juntarFala, MARCA_RECIBO,
   FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada,
 } from "./ia-recibo"
 import { pt, en } from "./i18n"
@@ -404,5 +404,84 @@ describe("falaDaResposta", () => {
 
   it("prosa vazia não vira ponto solto no fim da fala", () => {
     expect(falaDaResposta(RECIBO, "", TITULO)).toBe("criou W1 — segunda-feira, 28/09, 08:00")
+  })
+})
+
+// O relatório da rodada X reproduziu a função e achou o buraco: o filtro era
+// por FRASE, e uma frase que afirma E pergunta ia inteira ao áudio. "Salvei
+// tudo, quer ajustar?" é fraseado comum em português — não caso raro —, e era
+// exatamente a regressão que separar recibo de prosa existe para impedir.
+describe("falaDaResposta — a afirmação não pode pegar carona na pergunta", () => {
+  const TITULO = "No calendário ficou assim:"
+  const REC = `${TITULO}\n✅ criei "X1" — 14:00\n✅ criei "X2" — 15:00`
+
+  it("a contagem inventada NÃO vai ao áudio, e a pergunta vai", () => {
+    const falado = falaDaResposta(REC, "Salvei todos os 10 blocos que você pediu, quer ajustar algum?", TITULO)
+    expect(falado).toContain("quer ajustar algum?")
+    expect(falado).not.toContain("10 blocos")
+    expect(falado).not.toContain("Salvei todos")
+    expect(falado).toContain("criei X1")
+    expect(falado).toContain("criei X2")
+  })
+
+  it("a segunda linha do relatório: o horário afirmado sai, a proposta fica", () => {
+    const falado = falaDaResposta(`${TITULO}\n✅ criei "X1" — 14:00`, "Criei o bloco às 14:00, quer que eu mude para 15:00?", TITULO)
+    expect(falado).toContain("quer que eu mude para 15:00?")
+    expect(falado).not.toContain("Criei o bloco às 14:00")
+  })
+
+  // A vírgula pode estar DENTRO da própria pergunta. Cortar no último separador
+  // qualquer deixaria só "ou prefere 15:00?", perdendo metade do que se pergunta.
+  it("pergunta com vírgula no meio dela não é mutilada", () => {
+    const falado = falaDaResposta(REC, "Quer que eu crie às 14:00, ou prefere 15:00?", TITULO)
+    expect(falado).toContain("Quer que eu crie às 14:00, ou prefere 15:00?")
+  })
+
+  it("pergunta em frase própria continua passando inteira", () => {
+    const falado = falaDaResposta(REC, "Pronto. Quer ajustar o horário?", TITULO)
+    expect(falado).toContain("Quer ajustar o horário?")
+    expect(falado).not.toContain("Pronto")
+  })
+
+  // Sem rabo que comece como pergunta, a frase vai inteira: deixar quem está
+  // falando sem pergunta é pior que repetir algo que o recibo já desmente.
+  it("frase interrogativa sem abertura reconhecível vai inteira", () => {
+    const falado = falaDaResposta(REC, "Salvei tudo e agora?", TITULO)
+    expect(falado).toContain("Salvei tudo e agora?")
+  })
+
+  it("sem pergunta nenhuma, fala-se só o recibo", () => {
+    const falado = falaDaResposta(REC, "Salvei todos os 10 blocos que você pediu.", TITULO)
+    expect(falado).toBe("criei X1 — 14:00. criei X2 — 15:00")
+  })
+
+  it("sem recibo, a prosa inteira é falada — é ela que sustenta a conversa", () => {
+    const falado = falaDaResposta(null, "Posso criar dia 28/09 das 08:00 às 08:30?", TITULO)
+    expect(falado).toBe("Posso criar dia 28/09 das 08:00 às 08:30?")
+  })
+})
+
+// "Quer ajustar o primeiro?. Prefere outro dia?" — o "?." vira uma pausa
+// estranha no TTS, e a limpeza posterior não o remove: para ela é pontuação.
+describe("juntarFala", () => {
+  it("não põe ponto depois de quem já termina em pontuação", () => {
+    expect(juntarFala(["Quer ajustar o primeiro?", "Prefere outro dia?"]))
+      .toBe("Quer ajustar o primeiro? Prefere outro dia?")
+    expect(juntarFala(["Pronto!", "Mais alguma coisa?"])).toBe("Pronto! Mais alguma coisa?")
+  })
+
+  it("põe ponto onde falta", () => {
+    expect(juntarFala(["criei X1", "criei X2"])).toBe("criei X1. criei X2")
+  })
+
+  it("ignora pedaço vazio e não sobra pontuação solta", () => {
+    expect(juntarFala(["", "criei X1", "  "])).toBe("criei X1")
+    expect(juntarFala([])).toBe("")
+  })
+
+  it("duas perguntas seguidas não produzem ponto depois da interrogação", () => {
+    const TITULO = "No calendário ficou assim:"
+    const falado = falaDaResposta(`${TITULO}\n✅ criei "X1"`, "Quer ajustar o primeiro? Prefere outro dia?", TITULO)
+    expect(falado).not.toContain("?.")
   })
 })

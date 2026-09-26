@@ -116,13 +116,27 @@ export function separaRecibo(texto: string): RespostaPartida {
  */
 export function reciboParaFala(recibo: string | null, titulo: string): string {
   if (!recibo) return ""
-  return recibo
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l && l !== titulo.trim())
-    .map((l) => l.replace(/^[✅⚠️ℹ️]+\s*/u, "").replace(/"/g, "").trim())
+  return juntarFala(
+    recibo
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l && l !== titulo.trim())
+      .map((l) => l.replace(/^[✅⚠️ℹ️]+\s*/u, "").replace(/"/g, "").trim())
+  )
+}
+
+/**
+ * Cola os pedaços da fala pondo ponto só onde falta.
+ *
+ * Juntar tudo com ". " produzia "Quer ajustar o primeiro?. Prefere outro dia?"
+ * — o "?." sai como uma pausa estranha no TTS, e nenhuma limpeza posterior o
+ * remove, porque para ela é pontuação legítima.
+ */
+export function juntarFala(partes: string[]): string {
+  return partes
+    .map((p) => p.trim())
     .filter(Boolean)
-    .join(". ")
+    .reduce((acc, parte) => (acc ? `${acc}${/[.!?…]$/u.test(acc) ? " " : ". "}${parte}` : parte), "")
 }
 
 /**
@@ -144,9 +158,20 @@ export function reciboParaFala(recibo: string | null, titulo: string): string {
 export function falaDaResposta(recibo: string | null, prosa: string, titulo: string): string {
   const doRecibo = reciboParaFala(recibo, titulo)
   if (!doRecibo) return prosa.trim()
-  const perguntas = perguntasDa(prosa)
-  return [doRecibo, ...perguntas].join(". ")
+  return juntarFala([doRecibo, ...perguntasDa(prosa)])
 }
+
+/**
+ * Como uma pergunta costuma COMEÇAR — e é só por isso que ela é reconhecível
+ * dentro de uma frase que também afirma coisa.
+ *
+ * A lista é de abertura, não de palavra solta: ela só é consultada logo depois
+ * de uma vírgula, ponto e vírgula ou travessão, dentro de uma frase que já
+ * termina em "?". Fora desse ponto exato, "como" e "qual" aparecem no meio de
+ * qualquer texto e virariam corte errado.
+ */
+const ABRE_PERGUNTA =
+  /^(?:quer|queria|gostaria|posso|podemos|devo|prefere|prefiro|confirma|confirmo|algum|alguma|qual|quais|quando|onde|como|o que|tudo bem|certo|ok|seria|te ajudo|ajudo|quer que|do you|would you|should i|shall i|can i|may i|want|which|what|when|where|how|any|is that|does that|ok\b)/i
 
 /**
  * As frases da prosa que pedem resposta.
@@ -162,7 +187,38 @@ function perguntasDa(prosa: string): string[] {
     .split(/(?<=[.!?…])\s+/)
     .map((f) => f.trim())
     .filter((f) => f.endsWith("?"))
-  return frases.length > 0 ? frases : [texto]
+    .map(soAPergunta)
+  return frases.length > 0 ? frases : [soAPergunta(texto)]
+}
+
+/**
+ * Dentro de uma frase interrogativa, devolve só a parte que pergunta.
+ *
+ * **O buraco que isto fecha** (relatório da rodada X): o filtro era por FRASE, e
+ * "Salvei todos os 10 blocos que você pediu, quer ajustar algum?" é uma frase
+ * só. Ela terminava em "?" e ia inteira ao áudio — com a contagem inventada
+ * junto. Era exatamente a regressão que a separação recibo/prosa existe para
+ * impedir, e "salvei tudo, quer ajustar?" é fraseado comum em português, não
+ * caso raro.
+ *
+ * O corte é no ÚLTIMO separador cujo rabo comece como pergunta, e não no último
+ * separador qualquer: "Quer que eu crie às 14:00, ou prefere 15:00?" tem
+ * vírgula no meio da PRÓPRIA pergunta, e cortar ali deixaria só "ou prefere
+ * 15:00?" — perdendo metade do que foi perguntado. Sem rabo que comece como
+ * pergunta, a frase vai inteira: deixar quem está falando sem pergunta é pior
+ * que repetir uma afirmação que o recibo já desmente logo acima.
+ */
+function soAPergunta(frase: string): string {
+  const separadores = /[,;:—–]/gu
+  let corte: string | null = null
+  for (const m of frase.matchAll(separadores)) {
+    const rabo = frase.slice((m.index ?? 0) + 1).trim()
+    if (rabo && ABRE_PERGUNTA.test(rabo)) {
+      corte = rabo
+      break
+    }
+  }
+  return corte ?? frase
 }
 
 export interface TextosDoRecibo {

@@ -1440,7 +1440,7 @@ export async function POST(req: Request) {
     system += `\n\nAnotações do dia do usuário:\n"""\n${body.dayNotes.trim()}\n"""`
   }
   if (body.mode === "voice") {
-    system += `\n\nMODO VOZ (conversa falada em tempo real): responda de forma curta, natural e conversacional, como uma pessoa falando. Em geral 1 a 3 frases. Evite listas longas, markdown, asteriscos, emojis e símbolos — o texto será lido em voz alta. Se precisar destacar um conceito, cite no máximo 3 pontos-chave bem curtos, em frases simples.`
+    system += `\n\nMODO VOZ (conversa falada em tempo real): responda de forma curta, natural e conversacional, como uma pessoa falando. Em geral 1 a 3 frases. Evite listas longas, markdown, asteriscos, emojis e símbolos — o texto será lido em voz alta. Quando você tiver uma PERGUNTA, escreva-a em frase separada, nunca colada numa afirmação pela vírgula ("Pronto. Quer ajustar?" e não "Salvei tudo, quer ajustar?") — só a pergunta é lida junto com o comprovante, e grudada numa afirmação ela arrasta a afirmação para o áudio. Se precisar destacar um conceito, cite no máximo 3 pontos-chave bem curtos, em frases simples.`
   }
   // Briefing: 100% determinístico (algoritmo, não IA) — factual, instantâneo
   // e sem consumir o limite de tokens.
