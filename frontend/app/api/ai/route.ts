@@ -33,6 +33,7 @@ AÇÕES (ferramentas de criar/listar/editar/excluir tarefas, blocos e notas):
 - Editar/excluir: chame list_time_blocks antes para obter o id — ele vem entre colchetes em cada linha. NUNCA peça o id ao usuário: ele não aparece em lugar nenhum da tela, e pedi-lo trava a conversa. Para mudar horário de um bloco use update_time_block, nunca apagar e recriar.
 - Tarefa com horário: coloque a hora no due_date (ISO 8601) — o app cria o bloco no calendário sozinho; NÃO chame create_time_block para a mesma coisa.
 - "que vem"/"da semana que vem" + dia da semana é a ocorrência da SEMANA SEGUINTE; "próxima terça" é a mais próxima que ainda vem. Em qualquer dos dois, o dia da semana da data que você escolher tem de ser o dia que a pessoa DISSE — "sexta que vem" nunca pode virar uma quinta.
+- Bloco que repete é UMA linha com uma regra, não várias cópias. Então não existe editar nem apagar UMA ocorrência: update_time_block e delete_time_block valem para a SÉRIE inteira. Se pedirem para mudar só um dia, diga isso com todas as letras e ofereça as saídas reais — alterar a série toda, ou encerrar a série e criar um bloco avulso naquele dia. Nunca alegue que a ferramenta falhou ou está indisponível: ela existe e funciona, só não faz isso.
 - Datas: respeite o dia dito ("hoje" é hoje, mesmo que a hora já tenha passado). Hora ambígua (manhã ou noite)? Pergunte antes. end_time no MESMO dia do start_time, salvo cruzar a meia-noite. Ao falar, use datas naturais ("amanhã das 8h às 9h"), nunca ISO.
 - VÁRIOS blocos no mesmo pedido: UMA chamada de create_time_blocks com todos eles no array "blocos". Nunca create_time_block repetido — o laço tem poucas voltas, e um bloco por chamada faz o pedido de 10 acabar em 2.
 - Planejar a partir de um compromisso: plan_day_backwards (confirm=false propõe; após o sim, repita com os MESMOS argumentos e confirm=true). Nunca calcule a cadeia você mesmo nem crie os blocos um a um.
@@ -1481,12 +1482,24 @@ export async function POST(req: Request) {
       // levou 23s. O `flash-lite-latest` deu 5/5 entre 450ms e 820ms.
       model: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
         }
+        // "Fora do ar" era MENTIRA nossa, não alucinação do modelo: esta
+        // instrução mandava dizer isso, e o relatório da rodada X registrou o
+        // efeito — alterar um bloco falhou 4 vezes com "minhas ferramentas
+        // estão fora do ar", enquanto criar e listar funcionavam a minutos de
+        // distância. Não havia queda: havia COTA. Editar custa mais chamadas
+        // (listar para achar o id, depois atualizar), então é o pedido que mais
+        // encosta no teto por minuto.
+        //
+        // A diferença importa para quem lê: "fora do ar" manda esperar um
+        // conserto que não vem, e a pessoa volta amanhã com o mesmo resultado.
+        // "Bati no limite deste minuto" diz o que fazer — esperar um minuto.
         const fallbackSystem =
           system +
-          "\n\nMODO RESERVA: as ferramentas estão fora do ar neste momento e você NÃO consegue criar, editar nem excluir nada.\n" +
-          "Você também não tem onde anotar: esta conversa não deixa registro para você, e quando as ferramentas voltarem você não vai lembrar de nada dela.\n" +
+          "\n\nMODO RESERVA: o limite de uso da IA foi atingido NESTE MINUTO, então você não consegue criar, editar nem excluir nada agora. Não há nada quebrado: o limite se renova em cerca de um minuto.\n" +
+          "NUNCA diga que as ferramentas estão 'fora do ar', 'indisponíveis', 'com problema' ou 'em manutenção' — isso faz quem está do outro lado esperar um conserto que não existe. Diga que foi o limite de uso do minuto.\n" +
+          "Você também não tem onde anotar: esta conversa não deixa registro para você, e no minuto seguinte você não vai lembrar de nada dela.\n" +
           "Por isso é PROIBIDO dizer qualquer uma destas coisas: 'anotei', 'deixei salvo', 'guardei aqui', 'farei assim que o sistema voltar', 'já deixo pendente'. Todas são mentira, e quem está do outro lado vai contar com elas.\n" +
-          "Quando pedirem uma ação, diga que não consegue agora e peça para tentar de novo em alguns minutos. Conversar, explicar e responder perguntas sobre o que já existe continua valendo."
+          "Quando pedirem uma ação, diga que o limite do minuto estourou e peça para repetir o pedido em cerca de um minuto. Conversar, explicar e responder perguntas sobre o que já existe continua valendo."
         return streamText(gcfg, fallbackSystem, messages, idioma)
       }
 
