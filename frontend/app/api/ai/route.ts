@@ -1,7 +1,7 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
 import { recibo, quantasGravou, quantasPediu, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
-import { leEsperaDoGroq, comoDizerAEspera, marcaDeLimite, ehLimite, leMarcaDeLimite } from "@/lib/ia-limite"
+import { leEsperaDoGroq, comoDizerAEspera, marcaDeLimite, ehLimite, leMarcaDeLimite, corpoParaLog } from "@/lib/ia-limite"
 import { blocosDoLote, CRIAR_BLOCOS_EM_LOTE } from "@/lib/ia-lote"
 import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
@@ -1222,9 +1222,13 @@ async function runOpenAIAgent(
         // a falta disso que fez o reserva prometer "um minuto" quatro vezes
         // seguidas ao longo de sete minutos (rodada Y).
         const espera = leEsperaDoGroq(detail, res.headers.get("retry-after"))
+        // O corpo CRU junto do que foi lido dele. Sem isso a linha só repetia o
+        // resultado do parse, e um parse errado se confirmaria sozinho — foi
+        // onde a rodada Z travou: o escopo dizia "minuto" e não havia como
+        // saber se o Groq tinha dito "per day".
         console.error(
           `[neuro-ia] limite: escopo=${espera.porDia ? "dia" : "minuto"} segundos=${espera.segundos ?? "?"} ` +
-            `retry-after=${espera.origem ?? "?"}`
+            `retry-after=${espera.origem ?? "?"} corpo=${corpoParaLog(detail)}`
         )
         return marcaDeLimite(espera)
       }

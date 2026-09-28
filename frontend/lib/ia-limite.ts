@@ -89,6 +89,24 @@ export function comoDizerAEspera(e: EsperaDoLimite): string {
   return `o limite de uso foi atingido; ele só se renova daqui a cerca de ${horas} ${horas === 1 ? "hora" : "horas"}`
 }
 
+/**
+ * O corpo cru do 429, do jeito que cabe numa linha de log.
+ *
+ * O log dizia `escopo=minuto segundos=13` — o RESULTADO do parse. Com ele não
+ * se falseia o parse: se `leEsperaDoGroq` classificar errado, a linha repete a
+ * classificação errada com toda a confiança, e foi exatamente esse o impasse
+ * da rodada Z. O que resolve é o texto que o provedor mandou, ao lado do que
+ * nós lemos dele.
+ *
+ * Uma linha só: a Vercel corta por quebra de linha, e um JSON de erro em três
+ * linhas vira três entradas soltas — a que interessa quase nunca é a primeira.
+ */
+export function corpoParaLog(detalhe: string, teto = 500): string {
+  if (typeof detalhe !== "string" || !detalhe.trim()) return "(vazio)"
+  const linha = detalhe.replace(/\s+/g, " ").trim()
+  return linha.length > teto ? `${linha.slice(0, teto)}…(+${linha.length - teto})` : linha
+}
+
 const MARCA = "__RATE_LIMIT__"
 
 /**

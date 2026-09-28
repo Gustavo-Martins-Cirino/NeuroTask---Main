@@ -2,7 +2,14 @@ import { describe, it, expect } from "vitest"
 import { readFileSync, readdirSync } from "node:fs"
 import { join, relative } from "node:path"
 import ts from "typescript"
-import { leEsperaDoGroq, comoDizerAEspera, marcaDeLimite, leMarcaDeLimite, ehLimite } from "./ia-limite"
+import {
+  leEsperaDoGroq,
+  comoDizerAEspera,
+  marcaDeLimite,
+  leMarcaDeLimite,
+  ehLimite,
+  corpoParaLog,
+} from "./ia-limite"
 
 // Corpos como o Groq escreve de verdade.
 const TPM =
@@ -138,6 +145,39 @@ describe("o retry-after do provedor", () => {
 
   it("origem absurdamente longa é cortada", () => {
     expect(leEsperaDoGroq(TPM, "9".repeat(500)).origem).toHaveLength(40)
+  })
+})
+
+describe("corpoParaLog", () => {
+  // O que a rodada Z precisava e não tinha: a prova de qual teto o Groq citou.
+  it("preserva o que decide o escopo", () => {
+    expect(corpoParaLog(TPD)).toContain("per day (TPD)")
+    expect(corpoParaLog(TPM)).toContain("per minute (TPM)")
+    expect(corpoParaLog(TPM)).toContain("try again in 7.66s")
+  })
+
+  // A Vercel corta por quebra de linha: um JSON de erro em três linhas vira
+  // três entradas soltas, e a que interessa quase nunca é a primeira.
+  it("cabe numa linha só", () => {
+    expect(corpoParaLog('{\n  "error": {\n    "message": "Rate limit"\n  }\n}')).toBe(
+      '{ "error": { "message": "Rate limit" } }'
+    )
+  })
+
+  it("corta o que for longo demais e diz quanto ficou de fora", () => {
+    const saida = corpoParaLog("x".repeat(700))
+    expect(saida).toHaveLength(500 + "…(+200)".length)
+    expect(saida.endsWith("…(+200)")).toBe(true)
+  })
+
+  it("corpo curto passa inteiro, sem reticência", () => {
+    expect(corpoParaLog("Rate limit reached.")).toBe("Rate limit reached.")
+  })
+
+  it("corpo vazio se anuncia em vez de sumir na linha", () => {
+    expect(corpoParaLog("")).toBe("(vazio)")
+    expect(corpoParaLog("   \n ")).toBe("(vazio)")
+    expect(corpoParaLog(undefined as unknown as string)).toBe("(vazio)")
   })
 })
 
