@@ -754,6 +754,50 @@ repositório:
 > **Sobre o diagnóstico da rodada X:** ele estava certo e eu não tinha percebido — editar é o
 > pedido que mais encosta no teto justamente porque lista para achar o id e depois atualiza.
 
+> **Rodada Z: a cota matou a rodada na primeira mensagem, e o único teste que rendeu dado
+> derrubou a hipótese de quem o escreveu.** O relatório deu três bugs no tratamento de limite e
+> concluiu que a cota esgotada era a DIÁRIA. Os headers dizem o contrário, e é a leitura deles
+> que fecha o caso.
+>
+> `x-neuro-espera` veio `13`, `14`, `17` — nunca `dia`. Esse header só sai com número quando
+> `porDia` é falso, ou seja: o corpo do 429 não continha `per day`, `TPD` nem `RPD`. E a espera
+> **crescendo junto com o payload** (156→465→774 bytes) é a assinatura de um balde por minuto,
+> não de cota diária: o 429 de TPM do Groq calcula o tempo de recomposição a partir do
+> `Requested`, e reset diário é hora do relógio, que não escala com o tamanho do pedido. O
+> relatório usou isso como prova de bug; é prova de que o escopo estava certo.
+>
+> **Os bugs 1 e 2, portanto, não existiam. O 3 existia** — o `retry-after` do Groq morria no
+> servidor, e sem ele `x-neuro-espera` não é falseável pelo cliente. Agora viaja como
+> `x-neuro-espera-origem`, cru, sem entrar em conta nenhuma.
+>
+> **O que a rodada não viu, e era o pior do quatro:** `marcaDeLimite` passou a devolver
+> `__RATE_LIMIT__|13|minuto` e os dois clientes continuaram perguntando `=== "__RATE_LIMIT__"`.
+> A comparação parou de casar calada — nada quebra, os tipos batem, a tela renderiza. Sem
+> `GEMINI_API_KEY` o sentinela cru ia para a tela, e na voz o TTS **lia** `__RATE_LIMIT__|13|minuto`
+> em voz alta. `ehLimite()` existia para isso e ninguém importava. Virou guarda de AST, como o
+> `locale-fixo`: fora da definição, ninguém escreve a marca à mão.
+>
+> **O log repetia o parse.** `escopo=minuto segundos=13` é o RESULTADO da leitura — se a
+> classificação errar, a linha repete o erro com toda a confiança, e foi esse o impasse da
+> rodada. O corpo cru vai junto agora (`corpoParaLog`), numa linha só, porque a Vercel corta por
+> quebra de linha.
+>
+> **E o caminho Gemini/Anthropic ainda chutava:** dizia "precisa de um minuto para respirar" em
+> toda recusa, sem ler nada — o defeito da rodada Y sobrevivendo onde ninguém tinha olhado. O
+> sinal sempre esteve lá (o `PerDay` colado no quotaId do Gemini, o `retryDelay` do RetryInfo, o
+> `retry-after` da Anthropic). `leEsperaDoGroq` virou `leEsperaDoLimite` e lê os três; a tela
+> ganhou quatro frases no lugar de uma, escolhidas por `escopoNaTela`.
+
+- [ ] **Uma mensagem só pode estourar o teto do minuto sozinha — e nenhuma espera resolve isso.**
+      O relatório da rodada Z mediu espera anunciada de 13s, esperou 60s e 150s, e foi recusado
+      nas duas. Não é contradição com o teto por minuto: cada volta do laço manda o prompt
+      inteiro **mais o schema das ferramentas** (~2.457 tokens) contra 8.000/min, e o laço dá até
+      quatro voltas. O balde enche e esvazia dentro do mesmo pedido, então esperar mais não muda
+      nada — o que muda é o pedido pesar menos. Isso é hipótese, não medida: a linha
+      `[neuro-ia] limite:` agora traz o corpo cru do 429, e o `Used`/`Requested` dele é que
+      confirma ou derruba. **Se confirmar**, o conserto não é na espera, é no tamanho — mandar o
+      schema das ferramentas só na primeira volta, ou encolhê-lo.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura
