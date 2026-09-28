@@ -213,10 +213,14 @@ function soAPergunta(frase: string): string {
   let corte: string | null = null
   for (const m of frase.matchAll(separadores)) {
     const rabo = frase.slice((m.index ?? 0) + 1).trim()
-    if (rabo && ABRE_PERGUNTA.test(rabo)) {
-      corte = rabo
-      break
-    }
+    // Sem `break`: o laço vai até o fim e `corte` fica com o ÚLTIMO rabo que
+    // casa, que é o que a descrição acima sempre disse. Com `break` ele parava
+    // no PRIMEIRO, e "como", "qual", "quando" e "onde" são conectivos comuns no
+    // meio de uma afirmação — então "Salvei 2 de 10, qual era o resto mesmo,
+    // quer que eu complete?" cortava na primeira vírgula e mandava "2 de 10"
+    // para o áudio. A contagem inventada voltando pela porta dos fundos, que é
+    // justamente o que a separação recibo/prosa existe para impedir.
+    if (rabo && ABRE_PERGUNTA.test(rabo)) corte = rabo
   }
   return corte ?? frase
 }

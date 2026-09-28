@@ -485,3 +485,38 @@ describe("juntarFala", () => {
     expect(falado).not.toContain("?.")
   })
 })
+
+describe("o corte é no último separador, não no primeiro", () => {
+  const TITULO = "No calendário ficou assim:"
+  const REC = `${TITULO}
+✅ criei "X1" — 14:00`
+
+  // As duas frases do relatório da rodada Y. O `break` fazia o laço parar no
+  // primeiro rabo que casasse com ABRE_PERGUNTA, e conectivos comuns no meio de
+  // uma AFIRMAÇÃO ("como", "qual", "quando", "onde") disparavam o corte cedo —
+  // deixando a afirmação sobreviver justamente no áudio.
+  it("conectivo no meio da afirmação não antecipa o corte", () => {
+    expect(falaDaResposta(REC, "Criei o bloco, como você pediu às 14:00, quer ajustar?", TITULO)).toContain(
+      "quer ajustar?"
+    )
+    expect(falaDaResposta(REC, "Criei o bloco, como você pediu às 14:00, quer ajustar?", TITULO)).not.toContain(
+      "como você pediu"
+    )
+  })
+
+  // A pior: "2 de 10" é exatamente o tipo de contagem que o recibo existe para
+  // ser a fonte de, e ela estava indo ao áudio.
+  it("a contagem não volta pela porta dos fundos", () => {
+    const fala = falaDaResposta(REC, "Salvei 2 de 10, qual era o resto mesmo, quer que eu complete?", TITULO)
+    expect(fala).toContain("quer que eu complete?")
+    expect(fala).not.toContain("2 de 10")
+  })
+
+  // O caso que o corte no último separador PODERIA quebrar, e não quebra: a
+  // vírgula está dentro da própria pergunta, e "ou prefere" não abre pergunta.
+  it("vírgula dentro da própria pergunta não corta a pergunta ao meio", () => {
+    const fala = falaDaResposta(REC, "Quer que eu crie às 14:00, ou prefere 15:00?", TITULO)
+    expect(fala).toContain("Quer que eu crie às 14:00")
+    expect(fala).toContain("ou prefere 15:00?")
+  })
+})

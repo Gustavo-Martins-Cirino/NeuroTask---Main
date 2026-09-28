@@ -714,6 +714,46 @@ repositório:
       para a próxima ocorrência ou perguntar. **Qual das três é decisão de produto**, e o
       reteste de 22/09 vai medir com que frequência acontece antes de escolher.
 
+> **Rodada Y: o `break` que contradizia o próprio comentário, e a espera que eu prometia sem
+> dado.** A cota bateu na primeira mensagem e não liberou, então a rodada rendeu pouco em
+> runtime — mas rendeu os dois achados abaixo, os dois por leitura de código do bundle.
+>
+> **1. O corte da fala parava no PRIMEIRO separador, não no último.** A docstring que eu mesmo
+> escrevi diz "o corte é no ÚLTIMO separador cujo rabo comece como pergunta"; o código tinha um
+> `break`. Como `ABRE_PERGUNTA` inclui "como", "qual", "quando" e "onde" — conectivos comuns no
+> meio de uma AFIRMAÇÃO —, o corte disparava cedo e a afirmação sobrevivia:
+>
+> - "Criei o bloco, **como** você pediu às 14:00, quer ajustar?" → ia "como você pediu às
+>   14:00, quer ajustar?"
+> - "Salvei 2 de 10, **qual** era o resto mesmo, quer que eu complete?" → ia "2 de 10" ao áudio.
+>
+> A segunda é a regressão original voltando pela porta dos fundos: contagem inventada na fala é
+> exatamente o que separar recibo de prosa existe para impedir. Uma linha, e as três frases do
+> relatório viraram teste — inclusive a que o corte no último separador poderia quebrar ("Quer
+> que eu crie às 14:00, ou prefere 15:00?"), que continua inteira.
+>
+> **2. A espera do limite era promessa minha, não dado.** O reserva dizia "repita em cerca de um
+> minuto" porque o prompt do MODO RESERVA cravava isso. O Gustavo mediu **quatro recusas em sete
+> minutos** (t=0, +70s, +3min, +4min): a janela é comprovadamente maior que a prometida.
+>
+> O 429 do Groq sempre disse a verdade — QUAL teto estourou (por minuto ou **por dia**) e em
+> quanto tempo tentar —, e essa informação morria no sentinela pelado `__RATE_LIMIT__`.
+> `lib/ia-limite.ts` (14 testes) lê as duas coisas e a frase passa a sair daí. Sem número do
+> provedor ela fica **vaga de propósito** ("alguns minutos"): vago é melhor que errado. Com teto
+> diário, ela diz que só renova amanhã — mandar esperar um minuto nesse caso é a pior versão do
+> erro, porque a pessoa fica tentando a tarde inteira.
+>
+> A leitura de duração soma horas, minutos e segundos: `1h23m45.6s` lido só pelos segundos daria
+> 45s para uma espera de hora e meia.
+>
+> **3. A resposta de limite ganhou marcador.** Era 200 com texto puro e nada que a distinguisse
+> programaticamente de uma resposta normal — se a string mudasse, qualquer tratamento no cliente
+> quebrava em silêncio. Agora vai com `x-neuro-estado: limite` e `x-neuro-espera`. O log ganhou
+> `[neuro-ia] limite: escopo=… segundos=…`, que é o que faltava para cruzar com a Vercel.
+>
+> **Sobre o diagnóstico da rodada X:** ele estava certo e eu não tinha percebido — editar é o
+> pedido que mais encosta no teto justamente porque lista para achar o id e depois atualiza.
+
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
       sem nenhum bloco, Escritório sem nada comprado, Amigos sem `@usuário` escolhido. A leitura

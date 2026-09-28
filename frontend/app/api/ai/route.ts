@@ -1,6 +1,7 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
 import { recibo, quantasGravou, quantasPediu, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
+import { leEsperaDoGroq, comoDizerAEspera, marcaDeLimite, ehLimite, leMarcaDeLimite } from "@/lib/ia-limite"
 import { blocosDoLote, CRIAR_BLOCOS_EM_LOTE } from "@/lib/ia-lote"
 import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
@@ -1216,7 +1217,15 @@ async function runOpenAIAgent(
           if (resumo) return comRecibo(resumo, executadas, tzMin, t, false)
           return comRecibo(t.erros.salvouAntesDoLimite(gravou, quantasPediu(executadas)), executadas, tzMin, t, false)
         }
-        return "__RATE_LIMIT__"
+        // O 429 diz QUAL teto estourou e em quanto tempo tentar. Isso viaja
+        // com o sentinela até quem monta a frase, em vez de morrer aqui — foi
+        // a falta disso que fez o reserva prometer "um minuto" quatro vezes
+        // seguidas ao longo de sete minutos (rodada Y).
+        const espera = leEsperaDoGroq(detail)
+        console.error(
+          `[neuro-ia] limite: escopo=${espera.porDia ? "dia" : "minuto"} segundos=${espera.segundos ?? "?"}`
+        )
+        return marcaDeLimite(espera)
       }
       throw new Error(`Groq ${res.status}: ${detail}`)
     }
@@ -1479,7 +1488,7 @@ export async function POST(req: Request) {
       const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0, idioma)
 
       // Limite do Groq atingido → tenta o Gemini como reserva (sem ferramentas)
-      if (finalText === "__RATE_LIMIT__" && process.env.GEMINI_API_KEY) {
+      if (ehLimite(finalText) && process.env.GEMINI_API_KEY) {
         const gcfg: ProviderConfig = {
           provider: "gemini",
           apiKey: process.env.GEMINI_API_KEY,
@@ -1504,14 +1513,26 @@ export async function POST(req: Request) {
         // A diferença importa para quem lê: "fora do ar" manda esperar um
         // conserto que não vem, e a pessoa volta amanhã com o mesmo resultado.
         // "Bati no limite deste minuto" diz o que fazer — esperar um minuto.
+        // A espera sai do que o PROVEDOR informou. Sem número, a frase é vaga
+        // ("alguns minutos") em vez de prometer o minuto que a rodada Y
+        // desmentiu quatro vezes.
+        const espera = leMarcaDeLimite(finalText)
+        const quanto = comoDizerAEspera(espera)
         const fallbackSystem =
           system +
-          "\n\nMODO RESERVA: o limite de uso da IA foi atingido NESTE MINUTO, então você não consegue criar, editar nem excluir nada agora. Não há nada quebrado: o limite se renova em cerca de um minuto.\n" +
-          "NUNCA diga que as ferramentas estão 'fora do ar', 'indisponíveis', 'com problema' ou 'em manutenção' — isso faz quem está do outro lado esperar um conserto que não existe. Diga que foi o limite de uso do minuto.\n" +
-          "Você também não tem onde anotar: esta conversa não deixa registro para você, e no minuto seguinte você não vai lembrar de nada dela.\n" +
+          `\n\nMODO RESERVA: ${quanto}. Você não consegue criar, editar nem excluir nada agora, e não há nada quebrado.\n` +
+          "NUNCA diga que as ferramentas estão 'fora do ar', 'indisponíveis', 'com problema' ou 'em manutenção' — isso faz quem está do outro lado esperar um conserto que não existe. Diga que foi o limite de uso.\n" +
+          "Você também não tem onde anotar: esta conversa não deixa registro para você, e depois você não vai lembrar de nada dela.\n" +
           "Por isso é PROIBIDO dizer qualquer uma destas coisas: 'anotei', 'deixei salvo', 'guardei aqui', 'farei assim que o sistema voltar', 'já deixo pendente'. Todas são mentira, e quem está do outro lado vai contar com elas.\n" +
-          "Quando pedirem uma ação, diga que o limite do minuto estourou e peça para repetir o pedido em cerca de um minuto. Conversar, explicar e responder perguntas sobre o que já existe continua valendo."
-        return streamText(gcfg, fallbackSystem, messages, idioma)
+          "Quando pedirem uma ação, diga o que está escrito acima sobre a espera — sem inventar outro prazo — e peça para repetir o pedido depois dela. Conversar, explicar e responder perguntas sobre o que já existe continua valendo."
+
+        // Um marcador que NÃO é a frase: hoje o cliente só teria a string para
+        // reconhecer um limite, e string muda. O cabeçalho não.
+        const resposta = await streamText(gcfg, fallbackSystem, messages, idioma)
+        const cabecalhos = new Headers(resposta.headers)
+        cabecalhos.set("x-neuro-estado", "limite")
+        cabecalhos.set("x-neuro-espera", espera.porDia ? "dia" : String(espera.segundos ?? ""))
+        return new Response(resposta.body, { status: resposta.status, headers: cabecalhos })
       }
 
       return new Response(sanitizeOut(finalText), {
