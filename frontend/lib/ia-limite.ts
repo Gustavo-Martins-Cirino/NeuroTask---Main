@@ -46,28 +46,84 @@ function origemSegura(bruto: string | null | undefined): string | null {
 }
 
 /**
- * Lê o corpo do 429.
+ * "1h23m45.6s", "2m59.56s", "7.66s" → segundos.
  *
- * O Groq escreve a espera em formatos que crescem com ela — "7.66s",
- * "2m59.56s", "1h23m45.6s" — então a conta soma as três casas em vez de
- * procurar só os segundos. Ler "45.6s" de "1h23m45.6s" daria 45 segundos para
- * uma espera de hora e meia, que é exatamente o tipo de erro que este módulo
- * existe para não cometer.
+ * O Groq escreve a espera em formatos que crescem com ela, então a conta soma
+ * as três casas em vez de procurar só os segundos. Ler "45.6s" de "1h23m45.6s"
+ * daria 45 segundos para uma espera de hora e meia, que é exatamente o tipo de
+ * erro que este módulo existe para não cometer.
  */
-export function leEsperaDoGroq(detalhe: string, retryAfter?: string | null): EsperaDoLimite {
+function somaHMS(h?: string, m?: string, s?: string): number | null {
+  const total = Number(h ?? 0) * 3600 + Number(m ?? 0) * 60 + Number(s ?? 0)
+  return Number.isFinite(total) && total > 0 ? Math.ceil(total) : null
+}
+
+/**
+ * Lê o corpo do 429 — de qualquer um dos três provedores.
+ *
+ * Era `leEsperaDoGroq`, e o nome estava certo enquanto só o caminho do Groq
+ * lia alguma coisa. O caminho Gemini/Anthropic dizia "precisa de um minuto
+ * para respirar" sem ler nada, e o minuto era chute — o mesmo defeito da
+ * rodada Y, sobrevivendo no outro provedor.
+ *
+ * Cada um conta a mesma coisa do seu jeito:
+ *
+ * · Groq    — "on tokens per day (TPD)" / "Please try again in 1h23m45.6s"
+ * · Gemini  — quotaId "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+ *             (junto, sem espaço) e RetryInfo `"retryDelay": "51s"`
+ * · Anthropic — pouco no corpo; o que ele dá é o header `retry-after`
+ *
+ * Por isso o header entra como fonte de segundos quando o corpo cala: é a
+ * única coisa que a Anthropic oferece, e ignorá-la deixaria o caminho dela
+ * permanentemente vago.
+ */
+export function leEsperaDoLimite(detalhe: string, retryAfter?: string | null): EsperaDoLimite {
   const texto = typeof detalhe === "string" ? detalhe : ""
   const origem = origemSegura(retryAfter)
-  // "per day (TPD)", "per day (RPD)", "tokens per day" — qualquer um serve.
-  const porDia = /per\s+day|\bTPD\b|\bRPD\b/i.test(texto)
+  // "per day (TPD)", "per day (RPD)", "tokens per day" — e o `PerDay` colado do
+  // quotaId do Gemini, que `per\s+day` deixava passar.
+  const porDia = /per\s*day|\bTPD\b|\bRPD\b/i.test(texto)
 
-  const m = texto.match(/try again in\s+(?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?/i)
-  if (!m || (!m[1] && !m[2] && !m[3])) return { segundos: null, porDia, origem }
+  const groq = texto.match(/try again in\s+(?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?/i)
+  const doGroq = groq && (groq[1] || groq[2] || groq[3]) ? somaHMS(groq[1], groq[2], groq[3]) : null
+  if (doGroq !== null) return { segundos: doGroq, porDia, origem }
 
-  const horas = Number(m[1] ?? 0)
-  const minutos = Number(m[2] ?? 0)
-  const segundos = Number(m[3] ?? 0)
-  const total = horas * 3600 + minutos * 60 + segundos
-  return { segundos: Number.isFinite(total) && total > 0 ? Math.ceil(total) : null, porDia, origem }
+  // Gemini: `"retryDelay": "51s"` dentro do RetryInfo.
+  const gemini = texto.match(/"retryDelay"\s*:\s*"(?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?"/i)
+  const doGemini = gemini ? somaHMS(gemini[1], gemini[2], gemini[3]) : null
+  if (doGemini !== null) return { segundos: doGemini, porDia, origem }
+
+  // Último recurso, o header. Só a forma em segundos: a forma de data pede o
+  // relógio de agora, e um relógio fora de hora inventaria uma espera —
+  // preferimos não saber a saber errado. Ela continua visível em `origem`.
+  const doHeader = origem && /^\d+$/.test(origem) ? Number(origem) : null
+  return { segundos: doHeader && doHeader > 0 ? doHeader : null, porDia, origem }
+}
+
+/**
+ * O que a TELA precisa saber — chave, não frase.
+ *
+ * Módulo puro não fala idioma: aqui sai a chave e o dicionário devolve o
+ * texto, como em `saudacao` e `nivel-faixa`. É o que separa esta função de
+ * `comoDizerAEspera`, que escreve português porque o destino dela é o prompt
+ * do modelo, não a tela.
+ */
+export type EscopoNaTela = "dia" | "horas" | "minutos" | "vago"
+
+export function escopoNaTela(e: EsperaDoLimite): EscopoNaTela {
+  if (e.porDia) return "dia"
+  if (e.segundos === null) return "vago"
+  if (e.segundos >= 3600) return "horas"
+  return "minutos"
+}
+
+/** Arredonda para cima e nunca devolve zero: "0 minutos" não é espera nenhuma. */
+export function minutosDeEspera(segundos: number): number {
+  return Math.max(1, Math.ceil(segundos / 60))
+}
+
+export function horasDeEspera(segundos: number): number {
+  return Math.max(1, Math.ceil(segundos / 3600))
 }
 
 /**

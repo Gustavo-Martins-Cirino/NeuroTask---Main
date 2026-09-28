@@ -1038,7 +1038,19 @@ export interface Dicionario {
       /** As ferramentas rodaram e o modelo não conseguiu resumir o que fez. */
       acaoFalhou: string
       /** O modelo respondeu sem texto nenhum — e a tela não pode ficar vazia. */
-      /** O provedor recusou por excesso de uso. Não é defeito, é espera. */
+      /**
+       * O provedor recusou por excesso de uso. Não é defeito, é espera — e
+       * QUANTA espera sai do que ele informou, nunca de chute.
+       *
+       * Eram uma frase só, prometendo "um minuto para respirar" em toda
+       * recusa. Num teto diário isso é a pior versão do erro: manda voltar já
+       * já quando não volta hoje, e a pessoa fica tentando a tarde inteira.
+       * A escolha entre as quatro é de `escopoNaTela` (lib/ia-limite).
+       */
+      ocupadaPorDia: string
+      ocupadaPorHoras: (horas: number) => string
+      ocupadaPorMinutos: (minutos: number) => string
+      /** Provedor calado: vago de propósito, sem prometer prazo nenhum. */
       ocupada: string
       /**
        * Bateu no limite DEPOIS de já ter gravado. Duas coisas não pode dizer:
@@ -2145,8 +2157,16 @@ export const pt: Dicionario = {
       semMensagem: "Envie ao menos uma mensagem",
       falhaAoFalar: (provedor) => `Erro ao falar com a IA (${provedor}).`,
       acaoFalhou: "Tentei executar as ações, mas algo deu errado. Confira o resultado e tente novamente.",
+      ocupadaPorDia:
+        "O limite gratuito da IA acabou por hoje — ele só se renova amanhã. Não adianta tentar de novo agora; o resto do app continua funcionando normalmente.",
+      ocupadaPorHoras: (horas) =>
+        `O limite de uso da IA foi atingido e só se renova daqui a cerca de ${horas} ${horas === 1 ? "hora" : "horas"}. O resto do app continua funcionando normalmente.`,
+      ocupadaPorMinutos: (minutos) =>
+        minutos === 1
+          ? "A Neuro recebeu pedidos demais nos últimos instantes e precisa de um minuto para respirar. Tente de novo já já."
+          : `A Neuro recebeu pedidos demais nos últimos instantes e precisa de cerca de ${minutos} minutos para respirar. Tente de novo depois disso.`,
       ocupada:
-        "A Neuro recebeu pedidos demais nos últimos instantes e precisa de um minuto para respirar. Tente de novo já já.",
+        "A Neuro recebeu pedidos demais nos últimos instantes e precisa de alguns minutos para respirar. Tente de novo daqui a pouco.",
       salvouAntesDoLimite: (gravou, pedidos) => {
         const conta = pedidos > gravou ? `${gravou} de ${pedidos}` : `${gravou}`
         const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "itens"
@@ -3296,7 +3316,16 @@ export const en: Dicionario = {
       semMensagem: "Send at least one message",
       falhaAoFalar: (provedor) => `Error talking to the AI (${provedor}).`,
       acaoFalhou: "I tried to carry out the actions, but something went wrong. Check the result and try again.",
-      ocupada: "Neuro got too many requests in the last moments and needs a minute to breathe. Try again shortly.",
+      ocupadaPorDia:
+        "The free AI limit is used up for today — it only resets tomorrow. Trying again now won't help; the rest of the app keeps working normally.",
+      ocupadaPorHoras: (horas) =>
+        `The AI usage limit was reached and only resets in about ${horas} ${horas === 1 ? "hour" : "hours"}. The rest of the app keeps working normally.`,
+      ocupadaPorMinutos: (minutos) =>
+        minutos === 1
+          ? "Neuro got too many requests in the last moments and needs a minute to breathe. Try again shortly."
+          : `Neuro got too many requests in the last moments and needs about ${minutos} minutes to breathe. Try again after that.`,
+      ocupada:
+        "Neuro got too many requests in the last moments and needs a few minutes to breathe. Try again in a bit.",
       salvouAntesDoLimite: (gravou, pedidos) => {
         const conta = pedidos > gravou ? `${gravou} of ${pedidos}` : `${gravou}`
         const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "items"

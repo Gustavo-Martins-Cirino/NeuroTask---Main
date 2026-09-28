@@ -1,7 +1,17 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
 import { recibo, quantasGravou, quantasPediu, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
-import { leEsperaDoGroq, comoDizerAEspera, marcaDeLimite, ehLimite, leMarcaDeLimite, corpoParaLog } from "@/lib/ia-limite"
+import {
+  leEsperaDoLimite,
+  comoDizerAEspera,
+  marcaDeLimite,
+  ehLimite,
+  leMarcaDeLimite,
+  corpoParaLog,
+  escopoNaTela,
+  minutosDeEspera,
+  horasDeEspera,
+} from "@/lib/ia-limite"
 import { blocosDoLote, CRIAR_BLOCOS_EM_LOTE } from "@/lib/ia-lote"
 import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
@@ -1221,7 +1231,7 @@ async function runOpenAIAgent(
         // com o sentinela até quem monta a frase, em vez de morrer aqui — foi
         // a falta disso que fez o reserva prometer "um minuto" quatro vezes
         // seguidas ao longo de sete minutos (rodada Y).
-        const espera = leEsperaDoGroq(detail, res.headers.get("retry-after"))
+        const espera = leEsperaDoLimite(detail, res.headers.get("retry-after"))
         // O corpo CRU junto do que foi lido dele. Sem isso a linha só repetia o
         // resultado do parse, e um parse errado se confirmaria sozinho — foi
         // onde a rodada Z travou: o escopo dizia "minuto" e não havia como
@@ -1376,10 +1386,36 @@ async function streamText(
     // O detalhe do provedor vai para o LOG, não para a tela. Em 19/09/2026 quem
     // usava o app leu um JSON do Google dizendo que um modelo tinha sido
     // desativado — informação que só serve para mim.
-    console.error(`[neuro-ia] ${cfg.provider} ${upstream.status}: ${detail.slice(0, 500)}`)
+    console.error(`[neuro-ia] ${cfg.provider} ${upstream.status}: ${corpoParaLog(detail)}`)
     const textos = dicionario(idioma).ia.erros
-    const amigavel = upstream.status === 429 ? textos.ocupada : textos.falhaAoFalar(cfg.provider)
-    return new Response(amigavel, { status: upstream.status || 502 })
+    if (upstream.status !== 429) {
+      return new Response(textos.falhaAoFalar(cfg.provider), { status: upstream.status || 502 })
+    }
+
+    // Este caminho dizia "precisa de um minuto para respirar" em TODA recusa,
+    // sem ler nada — o mesmo chute da rodada Y, sobrevivendo no outro
+    // provedor. O Gemini diz no corpo quando o teto é o diário (o `PerDay` do
+    // quotaId) e quanto esperar (o `retryDelay` do RetryInfo); a Anthropic diz
+    // no `retry-after`. Agora a frase sai daí.
+    const espera = leEsperaDoLimite(detail, upstream.headers.get("retry-after"))
+    const escopo = escopoNaTela(espera)
+    console.error(
+      `[neuro-ia] limite: provedor=${cfg.provider} escopo=${escopo} segundos=${espera.segundos ?? "?"} ` +
+        `retry-after=${espera.origem ?? "?"}`
+    )
+    const amigavel =
+      escopo === "dia"
+        ? textos.ocupadaPorDia
+        : escopo === "horas"
+          ? textos.ocupadaPorHoras(horasDeEspera(espera.segundos as number))
+          : escopo === "minutos"
+            ? textos.ocupadaPorMinutos(minutosDeEspera(espera.segundos as number))
+            : textos.ocupada
+    const cabecalhos = new Headers({ "Content-Type": "text/plain; charset=utf-8" })
+    cabecalhos.set("x-neuro-estado", "limite")
+    cabecalhos.set("x-neuro-espera", espera.porDia ? "dia" : String(espera.segundos ?? ""))
+    if (espera.origem) cabecalhos.set("x-neuro-espera-origem", espera.origem)
+    return new Response(amigavel, { status: upstream.status, headers: cabecalhos })
   }
 
   const decoder = new TextDecoder()
@@ -1536,6 +1572,12 @@ export async function POST(req: Request) {
         const resposta = await streamText(gcfg, fallbackSystem, messages, idioma)
         const cabecalhos = new Headers(resposta.headers)
         cabecalhos.set("x-neuro-estado", "limite")
+        // Se o RESERVA também recusou por limite, ele já pôs os números dele
+        // aqui — e são esses que descrevem a resposta que está saindo. Os do
+        // Groq falariam de uma chamada que nem chegou a produzir texto.
+        if (resposta.headers.has("x-neuro-espera")) {
+          return new Response(resposta.body, { status: resposta.status, headers: cabecalhos })
+        }
         cabecalhos.set("x-neuro-espera", espera.porDia ? "dia" : String(espera.segundos ?? ""))
         // O número do PROVEDOR, ao lado do nosso, sem passar por conta nenhuma.
         // Sozinho, o `x-neuro-espera` não é falseável: quem mediu "13, 14, 17"

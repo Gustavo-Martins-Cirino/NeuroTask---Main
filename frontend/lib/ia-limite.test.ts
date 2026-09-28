@@ -3,12 +3,15 @@ import { readFileSync, readdirSync } from "node:fs"
 import { join, relative } from "node:path"
 import ts from "typescript"
 import {
-  leEsperaDoGroq,
+  leEsperaDoLimite,
   comoDizerAEspera,
   marcaDeLimite,
   leMarcaDeLimite,
   ehLimite,
   corpoParaLog,
+  escopoNaTela,
+  minutosDeEspera,
+  horasDeEspera,
 } from "./ia-limite"
 
 // Corpos como o Groq escreve de verdade.
@@ -19,30 +22,58 @@ const TPM_LONGO =
 const TPD =
   'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_x` on tokens per day (TPD): Limit 100000, Used 99000, Requested 2900. Please try again in 1h23m45.6s.'
 
-describe("leEsperaDoGroq", () => {
+// E como o Gemini escreve — o mesmo recado, em outra forma. `PerDay` vem
+// colado dentro do quotaId, que era o que `per\s+day` deixava passar.
+const GEMINI_DIA = JSON.stringify({
+  error: {
+    code: 429,
+    message: "You exceeded your current quota.",
+    details: [
+      {
+        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+        violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier" }],
+      },
+      { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "51s" },
+    ],
+  },
+})
+const GEMINI_MINUTO = JSON.stringify({
+  error: {
+    code: 429,
+    details: [
+      {
+        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+        violations: [{ quotaId: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier" }],
+      },
+      { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "17s" },
+    ],
+  },
+})
+
+describe("leEsperaDoLimite", () => {
   it("lê os segundos do formato curto", () => {
-    expect(leEsperaDoGroq(TPM)).toEqual({ segundos: 8, porDia: false, origem: null })
+    expect(leEsperaDoLimite(TPM)).toEqual({ segundos: 8, porDia: false, origem: null })
   })
 
   // "2m59.56s" lido só pelos segundos daria 59 — quase três minutos a menos.
   it("soma minutos e segundos", () => {
-    expect(leEsperaDoGroq(TPM_LONGO).segundos).toBe(180)
+    expect(leEsperaDoLimite(TPM_LONGO).segundos).toBe(180)
   })
 
   // E "1h23m45.6s" lido pelos segundos daria 45s para uma espera de hora e meia.
   it("soma horas, minutos e segundos", () => {
-    expect(leEsperaDoGroq(TPD).segundos).toBe(5026)
+    expect(leEsperaDoLimite(TPD).segundos).toBe(5026)
   })
 
   it("reconhece o teto DIÁRIO, que muda o que se deve dizer", () => {
-    expect(leEsperaDoGroq(TPD).porDia).toBe(true)
-    expect(leEsperaDoGroq(TPM).porDia).toBe(false)
+    expect(leEsperaDoLimite(TPD).porDia).toBe(true)
+    expect(leEsperaDoLimite(TPM).porDia).toBe(false)
   })
 
   it("corpo sem tempo nenhum não inventa número", () => {
-    expect(leEsperaDoGroq("Rate limit reached.")).toEqual({ segundos: null, porDia: false, origem: null })
-    expect(leEsperaDoGroq("")).toEqual({ segundos: null, porDia: false, origem: null })
-    expect(leEsperaDoGroq(undefined as unknown as string)).toEqual({ segundos: null, porDia: false, origem: null })
+    expect(leEsperaDoLimite("Rate limit reached.")).toEqual({ segundos: null, porDia: false, origem: null })
+    expect(leEsperaDoLimite("")).toEqual({ segundos: null, porDia: false, origem: null })
+    expect(leEsperaDoLimite(undefined as unknown as string)).toEqual({ segundos: null, porDia: false, origem: null })
   })
 })
 
@@ -117,34 +148,90 @@ describe("a marca que atravessa o laço", () => {
 
 describe("o retry-after do provedor", () => {
   it("vem cru, sem passar por conta nenhuma", () => {
-    expect(leEsperaDoGroq(TPM, "8").origem).toBe("8")
+    expect(leEsperaDoLimite(TPM, "8").origem).toBe("8")
     // O ponto de existir: quando os dois DIVERGEM, o header mostra a
     // divergência em vez de escondê-la atrás do número já traduzido.
-    expect(leEsperaDoGroq(TPM, "600")).toMatchObject({ segundos: 8, origem: "600" })
+    expect(leEsperaDoLimite(TPM, "600")).toMatchObject({ segundos: 8, origem: "600" })
   })
 
   it("aceita a forma de data que o HTTP também permite", () => {
-    expect(leEsperaDoGroq(TPD, "Wed, 21 Oct 2015 07:28:00 GMT").origem).toBe(
+    expect(leEsperaDoLimite(TPD, "Wed, 21 Oct 2015 07:28:00 GMT").origem).toBe(
       "Wed, 21 Oct 2015 07:28:00 GMT"
     )
   })
 
   it("provedor calado não vira string vazia", () => {
-    expect(leEsperaDoGroq(TPM).origem).toBeNull()
-    expect(leEsperaDoGroq(TPM, null).origem).toBeNull()
-    expect(leEsperaDoGroq(TPM, "   ").origem).toBeNull()
+    expect(leEsperaDoLimite(TPM).origem).toBeNull()
+    expect(leEsperaDoLimite(TPM, null).origem).toBeNull()
+    expect(leEsperaDoLimite(TPM, "   ").origem).toBeNull()
   })
 
   // Vem de fora: `|` parte a marca em pedaços errados e `\n` encerra header.
   it("não deixa o provedor quebrar a marca nem o header", () => {
-    const e = leEsperaDoGroq(TPM, "13|dia\r\nx-injetado: 1")
+    const e = leEsperaDoLimite(TPM, "13|dia\r\nx-injetado: 1")
     expect(e.origem).not.toContain("|")
     expect(e.origem).not.toMatch(/[\r\n]/)
     expect(leMarcaDeLimite(marcaDeLimite(e))).toEqual(e)
   })
 
   it("origem absurdamente longa é cortada", () => {
-    expect(leEsperaDoGroq(TPM, "9".repeat(500)).origem).toHaveLength(40)
+    expect(leEsperaDoLimite(TPM, "9".repeat(500)).origem).toHaveLength(40)
+  })
+})
+
+// O caminho Gemini/Anthropic dizia "precisa de um minuto para respirar" sem
+// ler nada. O sinal sempre esteve no corpo — só ninguém olhava.
+describe("os outros provedores", () => {
+  it("lê o teto diário do Gemini, que vem colado no quotaId", () => {
+    expect(leEsperaDoLimite(GEMINI_DIA)).toMatchObject({ porDia: true, segundos: 51 })
+  })
+
+  it("não confunde o teto por minuto do Gemini com o diário", () => {
+    expect(leEsperaDoLimite(GEMINI_MINUTO)).toMatchObject({ porDia: false, segundos: 17 })
+  })
+
+  // A Anthropic quase não fala no corpo: o que ela dá é o header. Ignorá-lo
+  // deixaria o caminho dela permanentemente vago.
+  it("cai no retry-after quando o corpo cala", () => {
+    expect(leEsperaDoLimite('{"type":"rate_limit_error"}', "42")).toMatchObject({ segundos: 42 })
+  })
+
+  // Um relógio fora de hora inventaria a espera. Melhor não saber que saber
+  // errado — e a data continua visível em `origem`.
+  it("retry-after em forma de data não vira número", () => {
+    const e = leEsperaDoLimite("{}", "Wed, 21 Oct 2015 07:28:00 GMT")
+    expect(e.segundos).toBeNull()
+    expect(e.origem).toBe("Wed, 21 Oct 2015 07:28:00 GMT")
+  })
+
+  // O corpo é mais específico que o header: ele diz de QUAL teto se trata.
+  it("o corpo tem precedência sobre o header", () => {
+    expect(leEsperaDoLimite(TPM, "600").segundos).toBe(8)
+    expect(leEsperaDoLimite(GEMINI_DIA, "600").segundos).toBe(51)
+  })
+})
+
+describe("escopoNaTela", () => {
+  it("o teto diário manda, mesmo com segundos no corpo", () => {
+    expect(escopoNaTela(leEsperaDoLimite(TPD))).toBe("dia")
+    expect(escopoNaTela(leEsperaDoLimite(GEMINI_DIA))).toBe("dia")
+  })
+
+  it("separa hora de minuto — 84 minutos não é frase que se diga", () => {
+    expect(escopoNaTela({ segundos: 5026, porDia: false, origem: null })).toBe("horas")
+    expect(escopoNaTela({ segundos: 3599, porDia: false, origem: null })).toBe("minutos")
+  })
+
+  it("provedor calado não vira promessa", () => {
+    expect(escopoNaTela({ segundos: null, porDia: false, origem: null })).toBe("vago")
+  })
+
+  // "0 minutos" não é espera nenhuma: quem lê conclui que já pode tentar.
+  it("arredonda para cima e nunca chega a zero", () => {
+    expect(minutosDeEspera(8)).toBe(1)
+    expect(minutosDeEspera(61)).toBe(2)
+    expect(horasDeEspera(5026)).toBe(2)
+    expect(horasDeEspera(1)).toBe(1)
   })
 })
 
