@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { separaRecibo, falaDaResposta } from "@/lib/ia-recibo"
+import { ehLimite } from "@/lib/ia-limite"
 import { relogioDeSilencio } from "@/lib/ia-silencio"
 import { comNegrito } from "@/lib/negrito"
 import { OndaSonora } from "@/components/onda-sonora"
@@ -227,8 +228,13 @@ export function VoiceConversation({
     const setPhase = (s: Status) => { phaseRef.current = s; setStatus(s) }
     const goIdle = () => { if (!disposed) setPhase("idle") }
 
+    // `ehLimite` e não igualdade: o sentinela carrega a espera do provedor
+    // desde que lib/ia-limite existe, e a comparação estrita que estava aqui
+    // parou de casar sem ninguém notar. Na voz o estrago era o pior do app —
+    // o `setResting` nunca disparava e o TTS LIA "__RATE_LIMIT__|13|minuto"
+    // em voz alta.
     function handleRateLimit(reply: string): boolean {
-      if (reply !== "__RATE_LIMIT__") return false
+      if (!ehLimite(reply)) return false
       setResting(true)
       goIdle()
       setMessages((m) => [...m, { role: "assistant", content: traducaoRef.current.ia.limiteAtingidoVoz }])

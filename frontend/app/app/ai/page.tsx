@@ -15,6 +15,7 @@ import { avancarRevelacao, revelacaoTerminou, PASSO_MS } from "@/lib/revelacao-r
 import { fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { comNegrito } from "@/lib/negrito"
 import { separaRecibo } from "@/lib/ia-recibo"
+import { ehLimite } from "@/lib/ia-limite"
 import { relogioDeSilencio } from "@/lib/ia-silencio"
 import {
   DropdownMenu,
@@ -41,9 +42,15 @@ function localDateKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
-// Traduz o sinal de limite da IA para uma mensagem amigável (sem jargão técnico)
+// Traduz o sinal de limite da IA para uma mensagem amigável (sem jargão técnico).
+//
+// Quem pergunta é `ehLimite`, e não uma comparação com a string: o sentinela
+// deixou de ser palavra pelada quando passou a carregar a espera lida do
+// provedor (`__RATE_LIMIT__|13|minuto`, ver lib/ia-limite). A igualdade estrita
+// que havia aqui sobreviveu à mudança calada — parou de casar, e o sentinela
+// cru ia para a tela quando não há GEMINI_API_KEY para o modo reserva.
 function prettyReply(t: string, mensagemLimite: string): string {
-  return t.trim() === "__RATE_LIMIT__" ? mensagemLimite : t
+  return ehLimite(t.trim()) ? mensagemLimite : t
 }
 
 // ---- Histórico de conversas (até 3 não-fixadas; fixadas são preservadas) ----
