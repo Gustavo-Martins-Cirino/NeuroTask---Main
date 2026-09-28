@@ -14,7 +14,7 @@ const TPD =
 
 describe("leEsperaDoGroq", () => {
   it("lê os segundos do formato curto", () => {
-    expect(leEsperaDoGroq(TPM)).toEqual({ segundos: 8, porDia: false })
+    expect(leEsperaDoGroq(TPM)).toEqual({ segundos: 8, porDia: false, origem: null })
   })
 
   // "2m59.56s" lido só pelos segundos daria 59 — quase três minutos a menos.
@@ -33,9 +33,9 @@ describe("leEsperaDoGroq", () => {
   })
 
   it("corpo sem tempo nenhum não inventa número", () => {
-    expect(leEsperaDoGroq("Rate limit reached.")).toEqual({ segundos: null, porDia: false })
-    expect(leEsperaDoGroq("")).toEqual({ segundos: null, porDia: false })
-    expect(leEsperaDoGroq(undefined as unknown as string)).toEqual({ segundos: null, porDia: false })
+    expect(leEsperaDoGroq("Rate limit reached.")).toEqual({ segundos: null, porDia: false, origem: null })
+    expect(leEsperaDoGroq("")).toEqual({ segundos: null, porDia: false, origem: null })
+    expect(leEsperaDoGroq(undefined as unknown as string)).toEqual({ segundos: null, porDia: false, origem: null })
   })
 })
 
@@ -43,20 +43,20 @@ describe("comoDizerAEspera", () => {
   // A frase que a rodada Y desmentiu quatro vezes: sem número do provedor, não
   // se promete o minuto.
   it("sem número, a frase é vaga de propósito", () => {
-    expect(comoDizerAEspera({ segundos: null, porDia: false })).toContain("alguns minutos")
-    expect(comoDizerAEspera({ segundos: null, porDia: false })).not.toContain("um minuto")
+    expect(comoDizerAEspera({ segundos: null, porDia: false, origem: null })).toContain("alguns minutos")
+    expect(comoDizerAEspera({ segundos: null, porDia: false, origem: null })).not.toContain("um minuto")
   })
 
   it("espera curta pode prometer o minuto", () => {
-    expect(comoDizerAEspera({ segundos: 8, porDia: false })).toContain("cerca de um minuto")
+    expect(comoDizerAEspera({ segundos: 8, porDia: false, origem: null })).toContain("cerca de um minuto")
   })
 
   it("espera de minutos diz quantos", () => {
-    expect(comoDizerAEspera({ segundos: 180, porDia: false })).toContain("cerca de 3 minutos")
+    expect(comoDizerAEspera({ segundos: 180, porDia: false, origem: null })).toContain("cerca de 3 minutos")
   })
 
   it("espera de horas não vira minutos", () => {
-    const frase = comoDizerAEspera({ segundos: 5026, porDia: false })
+    const frase = comoDizerAEspera({ segundos: 5026, porDia: false, origem: null })
     expect(frase).toContain("horas")
     expect(frase).not.toContain("minuto")
   })
@@ -64,7 +64,7 @@ describe("comoDizerAEspera", () => {
   // Mandar esperar um minuto num teto diário é a pior versão do erro: a pessoa
   // fica tentando a tarde inteira.
   it("teto diário diz que só amanhã", () => {
-    const frase = comoDizerAEspera({ segundos: 5026, porDia: true })
+    const frase = comoDizerAEspera({ segundos: 5026, porDia: true, origem: null })
     expect(frase).toContain("DIÁRIO")
     expect(frase).toContain("amanhã")
   })
@@ -72,32 +72,72 @@ describe("comoDizerAEspera", () => {
 
 describe("a marca que atravessa o laço", () => {
   it("leva e devolve o que foi lido", () => {
-    const e = { segundos: 180, porDia: false }
+    const e = { segundos: 180, porDia: false, origem: null }
     expect(leMarcaDeLimite(marcaDeLimite(e))).toEqual(e)
   })
 
   it("leva e devolve o teto diário", () => {
-    const e = { segundos: 5026, porDia: true }
+    const e = { segundos: 5026, porDia: true, origem: null }
     expect(leMarcaDeLimite(marcaDeLimite(e))).toEqual(e)
   })
 
   it("sem número, continua sem número do outro lado", () => {
-    expect(leMarcaDeLimite(marcaDeLimite({ segundos: null, porDia: false }))).toEqual({
+    expect(leMarcaDeLimite(marcaDeLimite({ segundos: null, porDia: false, origem: null }))).toEqual({
       segundos: null,
       porDia: false,
+      origem: null,
     })
   })
 
   it("reconhece a marca e não confunde com resposta normal", () => {
-    expect(ehLimite(marcaDeLimite({ segundos: null, porDia: false }))).toBe(true)
+    expect(ehLimite(marcaDeLimite({ segundos: null, porDia: false, origem: null }))).toBe(true)
     expect(ehLimite("Criei o bloco às 14:00.")).toBe(false)
     expect(ehLimite("")).toBe(false)
   })
 
   // A regressão que este guarda existe para não deixar acontecer de novo.
   it("a marca com carga não casa por igualdade com a palavra pelada", () => {
-    expect(marcaDeLimite({ segundos: 13, porDia: false })).not.toBe("__RATE_LIMIT__")
-    expect(ehLimite(marcaDeLimite({ segundos: 13, porDia: false }))).toBe(true)
+    const e = { segundos: 13, porDia: false, origem: null }
+    expect(marcaDeLimite(e)).not.toBe("__RATE_LIMIT__")
+    expect(ehLimite(marcaDeLimite(e))).toBe(true)
+  })
+
+  it("o número da origem atravessa junto", () => {
+    const e = { segundos: 13, porDia: false, origem: "13" }
+    expect(leMarcaDeLimite(marcaDeLimite(e))).toEqual(e)
+  })
+})
+
+describe("o retry-after do provedor", () => {
+  it("vem cru, sem passar por conta nenhuma", () => {
+    expect(leEsperaDoGroq(TPM, "8").origem).toBe("8")
+    // O ponto de existir: quando os dois DIVERGEM, o header mostra a
+    // divergência em vez de escondê-la atrás do número já traduzido.
+    expect(leEsperaDoGroq(TPM, "600")).toMatchObject({ segundos: 8, origem: "600" })
+  })
+
+  it("aceita a forma de data que o HTTP também permite", () => {
+    expect(leEsperaDoGroq(TPD, "Wed, 21 Oct 2015 07:28:00 GMT").origem).toBe(
+      "Wed, 21 Oct 2015 07:28:00 GMT"
+    )
+  })
+
+  it("provedor calado não vira string vazia", () => {
+    expect(leEsperaDoGroq(TPM).origem).toBeNull()
+    expect(leEsperaDoGroq(TPM, null).origem).toBeNull()
+    expect(leEsperaDoGroq(TPM, "   ").origem).toBeNull()
+  })
+
+  // Vem de fora: `|` parte a marca em pedaços errados e `\n` encerra header.
+  it("não deixa o provedor quebrar a marca nem o header", () => {
+    const e = leEsperaDoGroq(TPM, "13|dia\r\nx-injetado: 1")
+    expect(e.origem).not.toContain("|")
+    expect(e.origem).not.toMatch(/[\r\n]/)
+    expect(leMarcaDeLimite(marcaDeLimite(e))).toEqual(e)
+  })
+
+  it("origem absurdamente longa é cortada", () => {
+    expect(leEsperaDoGroq(TPM, "9".repeat(500)).origem).toHaveLength(40)
   })
 })
 

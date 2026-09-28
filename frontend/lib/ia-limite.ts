@@ -16,6 +16,33 @@ export interface EsperaDoLimite {
   segundos: number | null
   /** O teto é DIÁRIO. Esperar um minuto não adianta, e dizer que adianta é pior. */
   porDia: boolean
+  /**
+   * O `retry-after` do provedor, cru, como ele mandou — e `null` quando cala.
+   *
+   * Não entra em conta nenhuma: existe para ser CONFERIDO. O relatório da
+   * rodada Z travou exatamente aqui — mediu `x-neuro-espera: 13, 14, 17` e não
+   * teve como saber se o 13 era leitura fiel do provedor ou invenção nossa,
+   * porque nada do que o Groq respondeu chegava ao cliente. Com o número da
+   * origem ao lado do traduzido, a tradução se audita sem abrir log.
+   */
+  origem: string | null
+}
+
+/** O que sai quando não há 429 nenhum para ler. */
+const SEM_LIMITE: EsperaDoLimite = { segundos: null, porDia: false, origem: null }
+
+/**
+ * O `retry-after` cru, seguro para viajar num header e na marca.
+ *
+ * Vem de fora, então nada dele é presumido: `|` é o separador da marca e
+ * quebra de linha encerra header, e os dois viriam de graça se o provedor
+ * resolvesse mandar. O teto de 40 é folga sobre as duas formas que o HTTP
+ * define — segundos ("13") e data ("Wed, 21 Oct 2015 07:28:00 GMT").
+ */
+function origemSegura(bruto: string | null | undefined): string | null {
+  if (typeof bruto !== "string") return null
+  const limpo = bruto.replace(/[|\r\n]/g, " ").trim().slice(0, 40)
+  return limpo || null
 }
 
 /**
@@ -27,19 +54,20 @@ export interface EsperaDoLimite {
  * uma espera de hora e meia, que é exatamente o tipo de erro que este módulo
  * existe para não cometer.
  */
-export function leEsperaDoGroq(detalhe: string): EsperaDoLimite {
+export function leEsperaDoGroq(detalhe: string, retryAfter?: string | null): EsperaDoLimite {
   const texto = typeof detalhe === "string" ? detalhe : ""
+  const origem = origemSegura(retryAfter)
   // "per day (TPD)", "per day (RPD)", "tokens per day" — qualquer um serve.
   const porDia = /per\s+day|\bTPD\b|\bRPD\b/i.test(texto)
 
   const m = texto.match(/try again in\s+(?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?/i)
-  if (!m || (!m[1] && !m[2] && !m[3])) return { segundos: null, porDia }
+  if (!m || (!m[1] && !m[2] && !m[3])) return { segundos: null, porDia, origem }
 
   const horas = Number(m[1] ?? 0)
   const minutos = Number(m[2] ?? 0)
   const segundos = Number(m[3] ?? 0)
   const total = horas * 3600 + minutos * 60 + segundos
-  return { segundos: Number.isFinite(total) && total > 0 ? Math.ceil(total) : null, porDia }
+  return { segundos: Number.isFinite(total) && total > 0 ? Math.ceil(total) : null, porDia, origem }
 }
 
 /**
@@ -71,7 +99,7 @@ const MARCA = "__RATE_LIMIT__"
  * é ela levar carga.
  */
 export function marcaDeLimite(e: EsperaDoLimite): string {
-  return `${MARCA}|${e.segundos ?? ""}|${e.porDia ? "dia" : "minuto"}`
+  return `${MARCA}|${e.segundos ?? ""}|${e.porDia ? "dia" : "minuto"}|${e.origem ?? ""}`
 }
 
 export function ehLimite(texto: string): boolean {
@@ -79,8 +107,12 @@ export function ehLimite(texto: string): boolean {
 }
 
 export function leMarcaDeLimite(texto: string): EsperaDoLimite {
-  if (!ehLimite(texto)) return { segundos: null, porDia: false }
-  const [, seg, escopo] = texto.split("|")
+  if (!ehLimite(texto)) return SEM_LIMITE
+  const [, seg, escopo, origem] = texto.split("|")
   const n = Number(seg)
-  return { segundos: seg && Number.isFinite(n) ? n : null, porDia: escopo === "dia" }
+  return {
+    segundos: seg && Number.isFinite(n) ? n : null,
+    porDia: escopo === "dia",
+    origem: origem || null,
+  }
 }

@@ -1221,9 +1221,10 @@ async function runOpenAIAgent(
         // com o sentinela até quem monta a frase, em vez de morrer aqui — foi
         // a falta disso que fez o reserva prometer "um minuto" quatro vezes
         // seguidas ao longo de sete minutos (rodada Y).
-        const espera = leEsperaDoGroq(detail)
+        const espera = leEsperaDoGroq(detail, res.headers.get("retry-after"))
         console.error(
-          `[neuro-ia] limite: escopo=${espera.porDia ? "dia" : "minuto"} segundos=${espera.segundos ?? "?"}`
+          `[neuro-ia] limite: escopo=${espera.porDia ? "dia" : "minuto"} segundos=${espera.segundos ?? "?"} ` +
+            `retry-after=${espera.origem ?? "?"}`
         )
         return marcaDeLimite(espera)
       }
@@ -1532,6 +1533,12 @@ export async function POST(req: Request) {
         const cabecalhos = new Headers(resposta.headers)
         cabecalhos.set("x-neuro-estado", "limite")
         cabecalhos.set("x-neuro-espera", espera.porDia ? "dia" : String(espera.segundos ?? ""))
+        // O número do PROVEDOR, ao lado do nosso, sem passar por conta nenhuma.
+        // Sozinho, o `x-neuro-espera` não é falseável: quem mediu "13, 14, 17"
+        // na rodada Z não tinha como saber se era leitura fiel do Groq ou
+        // invenção daqui, e o único jeito de conferir era pedir o log da
+        // Vercel. Com os dois lado a lado, a tradução se audita pelo cliente.
+        if (espera.origem) cabecalhos.set("x-neuro-espera-origem", espera.origem)
         return new Response(resposta.body, { status: resposta.status, headers: cabecalhos })
       }
 
