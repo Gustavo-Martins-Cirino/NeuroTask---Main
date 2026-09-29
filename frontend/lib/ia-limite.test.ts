@@ -4,12 +4,12 @@ import { join, relative } from "node:path"
 import ts from "typescript"
 import {
   leEsperaDoLimite,
-  comoDizerAEspera,
   marcaDeLimite,
   leMarcaDeLimite,
   ehLimite,
   corpoParaLog,
   escopoNaTela,
+  fraseDaEspera,
   minutosDeEspera,
   horasDeEspera,
 } from "./ia-limite"
@@ -21,34 +21,6 @@ const TPM_LONGO =
   'Rate limit reached ... on tokens per minute (TPM): Limit 8000, Used 8000, Requested 2900. Please try again in 2m59.56s.'
 const TPD =
   'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_x` on tokens per day (TPD): Limit 100000, Used 99000, Requested 2900. Please try again in 1h23m45.6s.'
-
-// E como o Gemini escreve — o mesmo recado, em outra forma. `PerDay` vem
-// colado dentro do quotaId, que era o que `per\s+day` deixava passar.
-const GEMINI_DIA = JSON.stringify({
-  error: {
-    code: 429,
-    message: "You exceeded your current quota.",
-    details: [
-      {
-        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
-        violations: [{ quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier" }],
-      },
-      { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "51s" },
-    ],
-  },
-})
-const GEMINI_MINUTO = JSON.stringify({
-  error: {
-    code: 429,
-    details: [
-      {
-        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
-        violations: [{ quotaId: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier" }],
-      },
-      { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "17s" },
-    ],
-  },
-})
 
 describe("leEsperaDoLimite", () => {
   it("lê os segundos do formato curto", () => {
@@ -74,37 +46,6 @@ describe("leEsperaDoLimite", () => {
     expect(leEsperaDoLimite("Rate limit reached.")).toEqual({ segundos: null, porDia: false, origem: null })
     expect(leEsperaDoLimite("")).toEqual({ segundos: null, porDia: false, origem: null })
     expect(leEsperaDoLimite(undefined as unknown as string)).toEqual({ segundos: null, porDia: false, origem: null })
-  })
-})
-
-describe("comoDizerAEspera", () => {
-  // A frase que a rodada Y desmentiu quatro vezes: sem número do provedor, não
-  // se promete o minuto.
-  it("sem número, a frase é vaga de propósito", () => {
-    expect(comoDizerAEspera({ segundos: null, porDia: false, origem: null })).toContain("alguns minutos")
-    expect(comoDizerAEspera({ segundos: null, porDia: false, origem: null })).not.toContain("um minuto")
-  })
-
-  it("espera curta pode prometer o minuto", () => {
-    expect(comoDizerAEspera({ segundos: 8, porDia: false, origem: null })).toContain("cerca de um minuto")
-  })
-
-  it("espera de minutos diz quantos", () => {
-    expect(comoDizerAEspera({ segundos: 180, porDia: false, origem: null })).toContain("cerca de 3 minutos")
-  })
-
-  it("espera de horas não vira minutos", () => {
-    const frase = comoDizerAEspera({ segundos: 5026, porDia: false, origem: null })
-    expect(frase).toContain("horas")
-    expect(frase).not.toContain("minuto")
-  })
-
-  // Mandar esperar um minuto num teto diário é a pior versão do erro: a pessoa
-  // fica tentando a tarde inteira.
-  it("teto diário diz que só amanhã", () => {
-    const frase = comoDizerAEspera({ segundos: 5026, porDia: true, origem: null })
-    expect(frase).toContain("DIÁRIO")
-    expect(frase).toContain("amanhã")
   })
 })
 
@@ -179,42 +120,28 @@ describe("o retry-after do provedor", () => {
   })
 })
 
-// O caminho Gemini/Anthropic dizia "precisa de um minuto para respirar" sem
-// ler nada. O sinal sempre esteve no corpo — só ninguém olhava.
-describe("os outros provedores", () => {
-  it("lê o teto diário do Gemini, que vem colado no quotaId", () => {
-    expect(leEsperaDoLimite(GEMINI_DIA)).toMatchObject({ porDia: true, segundos: 51 })
-  })
-
-  it("não confunde o teto por minuto do Gemini com o diário", () => {
-    expect(leEsperaDoLimite(GEMINI_MINUTO)).toMatchObject({ porDia: false, segundos: 17 })
-  })
-
-  // A Anthropic quase não fala no corpo: o que ela dá é o header. Ignorá-lo
-  // deixaria o caminho dela permanentemente vago.
-  it("cai no retry-after quando o corpo cala", () => {
-    expect(leEsperaDoLimite('{"type":"rate_limit_error"}', "42")).toMatchObject({ segundos: 42 })
+// Um provedor só, mas o header é padrão de HTTP e não de fornecedor.
+describe("o header como fonte de segundos", () => {
+  it("entra quando o corpo cala", () => {
+    expect(leEsperaDoLimite("Rate limit reached.", "42")).toMatchObject({ segundos: 42 })
   })
 
   // Um relógio fora de hora inventaria a espera. Melhor não saber que saber
   // errado — e a data continua visível em `origem`.
-  it("retry-after em forma de data não vira número", () => {
+  it("a forma de data não vira número", () => {
     const e = leEsperaDoLimite("{}", "Wed, 21 Oct 2015 07:28:00 GMT")
     expect(e.segundos).toBeNull()
     expect(e.origem).toBe("Wed, 21 Oct 2015 07:28:00 GMT")
   })
 
-  // O corpo é mais específico que o header: ele diz de QUAL teto se trata.
   it("o corpo tem precedência sobre o header", () => {
     expect(leEsperaDoLimite(TPM, "600").segundos).toBe(8)
-    expect(leEsperaDoLimite(GEMINI_DIA, "600").segundos).toBe(51)
   })
 })
 
 describe("escopoNaTela", () => {
   it("o teto diário manda, mesmo com segundos no corpo", () => {
     expect(escopoNaTela(leEsperaDoLimite(TPD))).toBe("dia")
-    expect(escopoNaTela(leEsperaDoLimite(GEMINI_DIA))).toBe("dia")
   })
 
   it("separa hora de minuto — 84 minutos não é frase que se diga", () => {
@@ -232,6 +159,33 @@ describe("escopoNaTela", () => {
     expect(minutosDeEspera(61)).toBe(2)
     expect(horasDeEspera(5026)).toBe(2)
     expect(horasDeEspera(1)).toBe(1)
+  })
+})
+
+// Sem provedor reserva, esta é a ÚNICA frase que a pessoa vê quando bate o
+// limite — não há mais um modelo de reserva conversando por cima dela.
+describe("fraseDaEspera", () => {
+  const TEXTOS = {
+    dia: "só amanhã",
+    horas: (h: number) => `cerca de ${h}h`,
+    minutos: (m: number) => `cerca de ${m}min`,
+    vago: "daqui a pouco",
+  }
+
+  it("o teto diário nunca manda tentar de novo agora", () => {
+    expect(fraseDaEspera(leEsperaDoLimite(TPD), TEXTOS)).toBe("só amanhã")
+  })
+
+  it("espera curta vira um minuto, não zero", () => {
+    expect(fraseDaEspera(leEsperaDoLimite(TPM), TEXTOS)).toBe("cerca de 1min")
+  })
+
+  it("espera longa vira horas, não 84 minutos", () => {
+    expect(fraseDaEspera({ segundos: 5026, porDia: false, origem: null }, TEXTOS)).toBe("cerca de 2h")
+  })
+
+  it("sem número, não promete prazo", () => {
+    expect(fraseDaEspera(leEsperaDoLimite("Rate limit reached."), TEXTOS)).toBe("daqui a pouco")
   })
 })
 

@@ -3,7 +3,7 @@ import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
 import { recibo, quantasGravou, quantasPediu, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
 import {
   leEsperaDoLimite,
-  comoDizerAEspera,
+
   marcaDeLimite,
   ehLimite,
   leMarcaDeLimite,
@@ -62,7 +62,7 @@ function sanitizeOut(text: string): string {
     .trim()
 }
 
-type Provider = "groq" | "gemini" | "anthropic"
+type Provider = "groq"
 
 interface ProviderConfig {
   provider: Provider
@@ -70,37 +70,28 @@ interface ProviderConfig {
   model: string
 }
 
+/**
+ * Um provedor só, e de propósito.
+ *
+ * Isto já tentou Groq → Gemini → Anthropic, e a lista era um risco escondido:
+ * bastava `GROQ_API_KEY` faltar ou vir com um erro de digitação para o app
+ * inteiro passar a rodar no Gemini **sem ferramentas** — a Neuro deixava de
+ * criar tarefas e ninguém era avisado, porque do lado de fora ela continuava
+ * conversando. Uma lista de reservas transforma erro de configuração em perda
+ * silenciosa de função.
+ *
+ * O Groq cobre tudo o que o app faz: é o único com tool-calling aqui, e é dele
+ * também o Whisper de `app/api/ai/transcribe`. (O TTS não usa provedor nenhum —
+ * `msedge-tts`.) Sem chave, a tela diz o que fazer, que é melhor que um reserva
+ * que responde pela metade.
+ */
 function resolveProvider(): ProviderConfig | null {
-  if (process.env.GROQ_API_KEY) {
-    return {
-      provider: "groq",
-      apiKey: process.env.GROQ_API_KEY,
-      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-    }
+  if (!process.env.GROQ_API_KEY) return null
+  return {
+    provider: "groq",
+    apiKey: process.env.GROQ_API_KEY,
+    model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
   }
-  if (process.env.GEMINI_API_KEY) {
-    return {
-      provider: "gemini",
-      apiKey: process.env.GEMINI_API_KEY,
-      // `-latest` de propósito: foi um modelo FIXO (gemini-2.0-flash) sendo
-      // desativado pelo Google que derrubou a Neuro em 19/09/2026 — e o erro
-      // aparecia como JSON cru na tela de quem usa. Alias não morre assim.
-      //
-      // Escolhido medindo, e não pelo nome: com esta chave, `gemini-2.5-flash`
-      // e `-flash-lite` respondem 404 ("no longer available to new users"),
-      // `gemini-flash-latest` oscilou (503 por 39s) e `gemini-3-flash-preview`
-      // levou 23s. O `flash-lite-latest` deu 5/5 entre 450ms e 820ms.
-      model: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
-    }
-  }
-  if (process.env.ANTHROPIC_API_KEY) {
-    return {
-      provider: "anthropic",
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      model: process.env.ANTHROPIC_MODEL || "claude-opus-4-8",
-    }
-  }
-  return null
 }
 
 // ---- Ferramentas (formato OpenAI/Groq) ----
@@ -1335,126 +1326,6 @@ async function narraSemFerramentas(
   }
 }
 
-// Streaming simples de texto (Gemini / Anthropic — sem ferramentas por enquanto)
-async function streamText(
-  cfg: ProviderConfig,
-  system: string,
-  messages: ChatMessage[],
-  idioma: Idioma = "pt"
-): Promise<Response> {
-  let upstream: Response
-  let extract: (e: unknown) => string | null
-
-  if (cfg.provider === "gemini") {
-    upstream = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${cfg.model}:streamGenerateContent?alt=sse&key=${cfg.apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: system }] },
-          contents: messages.map((m) => ({
-            role: m.role === "assistant" ? "model" : "user",
-            parts: [{ text: m.content }],
-          })),
-        }),
-      }
-    )
-    extract = (e) => {
-      const ev = e as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-      return ev.candidates?.[0]?.content?.parts?.[0]?.text ?? null
-    }
-  } else {
-    upstream = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": cfg.apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({ model: cfg.model, max_tokens: 2048, stream: true, system, messages }),
-    })
-    extract = (e) => {
-      const ev = e as { type?: string; delta?: { type?: string; text?: string } }
-      if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") return ev.delta.text ?? null
-      return null
-    }
-  }
-
-  if (!upstream.ok || !upstream.body) {
-    const detail = await upstream.text().catch(() => "")
-    // O detalhe do provedor vai para o LOG, não para a tela. Em 19/09/2026 quem
-    // usava o app leu um JSON do Google dizendo que um modelo tinha sido
-    // desativado — informação que só serve para mim.
-    console.error(`[neuro-ia] ${cfg.provider} ${upstream.status}: ${corpoParaLog(detail)}`)
-    const textos = dicionario(idioma).ia.erros
-    if (upstream.status !== 429) {
-      return new Response(textos.falhaAoFalar(cfg.provider), { status: upstream.status || 502 })
-    }
-
-    // Este caminho dizia "precisa de um minuto para respirar" em TODA recusa,
-    // sem ler nada — o mesmo chute da rodada Y, sobrevivendo no outro
-    // provedor. O Gemini diz no corpo quando o teto é o diário (o `PerDay` do
-    // quotaId) e quanto esperar (o `retryDelay` do RetryInfo); a Anthropic diz
-    // no `retry-after`. Agora a frase sai daí.
-    const espera = leEsperaDoLimite(detail, upstream.headers.get("retry-after"))
-    const escopo = escopoNaTela(espera)
-    console.error(
-      `[neuro-ia] limite: provedor=${cfg.provider} escopo=${escopo} segundos=${espera.segundos ?? "?"} ` +
-        `retry-after=${espera.origem ?? "?"}`
-    )
-    const amigavel =
-      escopo === "dia"
-        ? textos.ocupadaPorDia
-        : escopo === "horas"
-          ? textos.ocupadaPorHoras(horasDeEspera(espera.segundos as number))
-          : escopo === "minutos"
-            ? textos.ocupadaPorMinutos(minutosDeEspera(espera.segundos as number))
-            : textos.ocupada
-    const cabecalhos = new Headers({ "Content-Type": "text/plain; charset=utf-8" })
-    cabecalhos.set("x-neuro-estado", "limite")
-    cabecalhos.set("x-neuro-espera", espera.porDia ? "dia" : String(espera.segundos ?? ""))
-    if (espera.origem) cabecalhos.set("x-neuro-espera-origem", espera.origem)
-    return new Response(amigavel, { status: upstream.status, headers: cabecalhos })
-  }
-
-  const decoder = new TextDecoder()
-  const encoder = new TextEncoder()
-  const reader = upstream.body.getReader()
-  let buffer = ""
-
-  const stream = new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      const { done, value } = await reader.read()
-      if (done) {
-        controller.close()
-        return
-      }
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split("\n")
-      buffer = lines.pop() ?? ""
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed.startsWith("data:")) continue
-        const payload = trimmed.slice(5).trim()
-        if (!payload || payload === "[DONE]") continue
-        try {
-          const text = extract(JSON.parse(payload))
-          if (text) controller.enqueue(encoder.encode(text))
-        } catch {
-          /* ignora */
-        }
-      }
-    },
-    cancel() {
-      reader.cancel()
-    },
-  })
-
-  return new Response(stream, {
-    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
-  })
-}
 
 /**
  * O idioma das respostas de erro que saem ANTES de o corpo ser lido — 401 e 503.
@@ -1523,85 +1394,42 @@ export async function POST(req: Request) {
   // olha primeiro quando duas instruções se cruzam.
   system += `\n\n${instrucaoDeIdioma(idioma)}`
 
-  // Groq → loop com ferramentas (cria/edita/exclui de verdade)
-  if (cfg.provider === "groq") {
-    try {
-      const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0, idioma)
+  // Um caminho só: o laço com ferramentas. Não há mais reserva para onde cair.
+  try {
+    const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0, idioma)
 
-      // Limite do Groq atingido → tenta o Gemini como reserva (sem ferramentas)
-      if (ehLimite(finalText) && process.env.GEMINI_API_KEY) {
-        const gcfg: ProviderConfig = {
-          provider: "gemini",
-          apiKey: process.env.GEMINI_API_KEY,
-          // `-latest` de propósito: foi um modelo FIXO (gemini-2.0-flash) sendo
-      // desativado pelo Google que derrubou a Neuro em 19/09/2026 — e o erro
-      // aparecia como JSON cru na tela de quem usa. Alias não morre assim.
-      //
-      // Escolhido medindo, e não pelo nome: com esta chave, `gemini-2.5-flash`
-      // e `-flash-lite` respondem 404 ("no longer available to new users"),
-      // `gemini-flash-latest` oscilou (503 por 39s) e `gemini-3-flash-preview`
-      // levou 23s. O `flash-lite-latest` deu 5/5 entre 450ms e 820ms.
-      model: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
-        }
-        // "Fora do ar" era MENTIRA nossa, não alucinação do modelo: esta
-        // instrução mandava dizer isso, e o relatório da rodada X registrou o
-        // efeito — alterar um bloco falhou 4 vezes com "minhas ferramentas
-        // estão fora do ar", enquanto criar e listar funcionavam a minutos de
-        // distância. Não havia queda: havia COTA. Editar custa mais chamadas
-        // (listar para achar o id, depois atualizar), então é o pedido que mais
-        // encosta no teto por minuto.
-        //
-        // A diferença importa para quem lê: "fora do ar" manda esperar um
-        // conserto que não vem, e a pessoa volta amanhã com o mesmo resultado.
-        // "Bati no limite deste minuto" diz o que fazer — esperar um minuto.
-        // A espera sai do que o PROVEDOR informou. Sem número, a frase é vaga
-        // ("alguns minutos") em vez de prometer o minuto que a rodada Y
-        // desmentiu quatro vezes.
-        const espera = leMarcaDeLimite(finalText)
-        const quanto = comoDizerAEspera(espera)
-        const fallbackSystem =
-          system +
-          `\n\nMODO RESERVA: ${quanto}. Você não consegue criar, editar nem excluir nada agora, e não há nada quebrado.\n` +
-          "NUNCA diga que as ferramentas estão 'fora do ar', 'indisponíveis', 'com problema' ou 'em manutenção' — isso faz quem está do outro lado esperar um conserto que não existe. Diga que foi o limite de uso.\n" +
-          "Você também não tem onde anotar: esta conversa não deixa registro para você, e depois você não vai lembrar de nada dela.\n" +
-          "Por isso é PROIBIDO dizer qualquer uma destas coisas: 'anotei', 'deixei salvo', 'guardei aqui', 'farei assim que o sistema voltar', 'já deixo pendente'. Todas são mentira, e quem está do outro lado vai contar com elas.\n" +
-          "Quando pedirem uma ação, diga o que está escrito acima sobre a espera — sem inventar outro prazo — e peça para repetir o pedido depois dela. Conversar, explicar e responder perguntas sobre o que já existe continua valendo."
-
-        // Um marcador que NÃO é a frase: hoje o cliente só teria a string para
-        // reconhecer um limite, e string muda. O cabeçalho não.
-        const resposta = await streamText(gcfg, fallbackSystem, messages, idioma)
-        const cabecalhos = new Headers(resposta.headers)
-        cabecalhos.set("x-neuro-estado", "limite")
-        // Se o RESERVA também recusou por limite, ele já pôs os números dele
-        // aqui — e são esses que descrevem a resposta que está saindo. Os do
-        // Groq falariam de uma chamada que nem chegou a produzir texto.
-        if (resposta.headers.has("x-neuro-espera")) {
-          return new Response(resposta.body, { status: resposta.status, headers: cabecalhos })
-        }
-        cabecalhos.set("x-neuro-espera", espera.porDia ? "dia" : String(espera.segundos ?? ""))
-        // O número do PROVEDOR, ao lado do nosso, sem passar por conta nenhuma.
-        // Sozinho, o `x-neuro-espera` não é falseável: quem mediu "13, 14, 17"
-        // na rodada Z não tinha como saber se era leitura fiel do Groq ou
-        // invenção daqui, e o único jeito de conferir era pedir o log da
-        // Vercel. Com os dois lado a lado, a tradução se audita pelo cliente.
-        if (espera.origem) cabecalhos.set("x-neuro-espera-origem", espera.origem)
-        return new Response(resposta.body, { status: resposta.status, headers: cabecalhos })
-      }
-
-      return new Response(sanitizeOut(finalText), {
-        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
+    // Sem reserva, o limite é uma RESPOSTA, não um desvio — e passou a ser o
+    // caminho normal, não um canto raro. Por isso ele sai com os cabeçalhos
+    // que antes só o reserva punha: o cliente precisa saber QUE foi limite
+    // (a string muda, o cabeçalho não) e QUANTO esperar. A frase de verdade
+    // quem escolhe é o cliente, que é onde mora o idioma.
+    if (ehLimite(finalText)) {
+      const espera = leMarcaDeLimite(finalText)
+      const cabecalhos = new Headers({
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
       })
-    } catch (e) {
-      console.error("[neuro-ia] groq:", e instanceof Error ? e.message : e)
-      return new Response(
-        // A mensagem do provedor fica no log: ela cita nome de modelo e cota, e
-        // quem está conversando não tem o que fazer com isso.
-        t.erros.falhaAoFalar("groq"),
-        { status: 502 }
-      )
+      cabecalhos.set("x-neuro-estado", "limite")
+      cabecalhos.set("x-neuro-espera", espera.porDia ? "dia" : String(espera.segundos ?? ""))
+      // O número do PROVEDOR, ao lado do nosso, sem passar por conta nenhuma.
+      // Sozinho, o `x-neuro-espera` não é falseável: quem mediu "13, 14, 17"
+      // na rodada Z não tinha como saber se era leitura fiel do Groq ou
+      // invenção daqui, e o único jeito de conferir era pedir o log da
+      // Vercel. Com os dois lado a lado, a tradução se audita pelo cliente.
+      if (espera.origem) cabecalhos.set("x-neuro-espera-origem", espera.origem)
+      return new Response(finalText, { headers: cabecalhos })
     }
-  }
 
-  // Gemini / Anthropic → chat em streaming (sem ferramentas por enquanto)
-  return streamText(cfg, system, messages, idioma)
+    return new Response(sanitizeOut(finalText), {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
+    })
+  } catch (e) {
+    console.error("[neuro-ia] groq:", e instanceof Error ? e.message : e)
+    return new Response(
+      // A mensagem do provedor fica no log: ela cita nome de modelo e cota, e
+      // quem está conversando não tem o que fazer com isso.
+      t.erros.falhaAoFalar("groq"),
+      { status: 502 }
+    )
+  }
 }

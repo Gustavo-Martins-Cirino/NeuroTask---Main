@@ -59,43 +59,35 @@ function somaHMS(h?: string, m?: string, s?: string): number | null {
 }
 
 /**
- * Lê o corpo do 429 — de qualquer um dos três provedores.
+ * Lê o corpo do 429 do Groq.
  *
- * Era `leEsperaDoGroq`, e o nome estava certo enquanto só o caminho do Groq
- * lia alguma coisa. O caminho Gemini/Anthropic dizia "precisa de um minuto
- * para respirar" sem ler nada, e o minuto era chute — o mesmo defeito da
- * rodada Y, sobrevivendo no outro provedor.
+ * Ele conta as duas coisas que importam, e conta juntas:
  *
- * Cada um conta a mesma coisa do seu jeito:
+ *     "...on tokens per day (TPD): Limit 100000, Used 99000, Requested 2900.
+ *      Please try again in 1h23m45.6s."
  *
- * · Groq    — "on tokens per day (TPD)" / "Please try again in 1h23m45.6s"
- * · Gemini  — quotaId "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
- *             (junto, sem espaço) e RetryInfo `"retryDelay": "51s"`
- * · Anthropic — pouco no corpo; o que ele dá é o header `retry-after`
+ * QUAL teto estourou (minuto ou dia) e QUANTO esperar. A frase da tela sai daí
+ * — antes saía de um "cerca de um minuto" cravado por mim no prompt, que a
+ * rodada Y desmentiu quatro vezes em sete minutos.
  *
- * Por isso o header entra como fonte de segundos quando o corpo cala: é a
- * única coisa que a Anthropic oferece, e ignorá-la deixaria o caminho dela
- * permanentemente vago.
+ * Esta função já leu três provedores; com a política de um provedor só, o que
+ * sobrou do Gemini e da Anthropic saiu junto com eles. O `retry-after` do
+ * header continua aqui porque é padrão de HTTP, não de fornecedor: se o Groq
+ * mandar e o corpo calar, é informação de graça.
  */
 export function leEsperaDoLimite(detalhe: string, retryAfter?: string | null): EsperaDoLimite {
   const texto = typeof detalhe === "string" ? detalhe : ""
   const origem = origemSegura(retryAfter)
-  // "per day (TPD)", "per day (RPD)", "tokens per day" — e o `PerDay` colado do
-  // quotaId do Gemini, que `per\s+day` deixava passar.
+  // \b nas siglas: sem ele, "TPD" casaria no meio de outra palavra.
   const porDia = /per\s*day|\bTPD\b|\bRPD\b/i.test(texto)
 
-  const groq = texto.match(/try again in\s+(?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?/i)
-  const doGroq = groq && (groq[1] || groq[2] || groq[3]) ? somaHMS(groq[1], groq[2], groq[3]) : null
-  if (doGroq !== null) return { segundos: doGroq, porDia, origem }
+  const m = texto.match(/try again in\s+(?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?/i)
+  const doCorpo = m && (m[1] || m[2] || m[3]) ? somaHMS(m[1], m[2], m[3]) : null
+  if (doCorpo !== null) return { segundos: doCorpo, porDia, origem }
 
-  // Gemini: `"retryDelay": "51s"` dentro do RetryInfo.
-  const gemini = texto.match(/"retryDelay"\s*:\s*"(?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?"/i)
-  const doGemini = gemini ? somaHMS(gemini[1], gemini[2], gemini[3]) : null
-  if (doGemini !== null) return { segundos: doGemini, porDia, origem }
-
-  // Último recurso, o header. Só a forma em segundos: a forma de data pede o
-  // relógio de agora, e um relógio fora de hora inventaria uma espera —
-  // preferimos não saber a saber errado. Ela continua visível em `origem`.
+  // Só a forma em segundos: a forma de data pede o relógio de agora, e um
+  // relógio fora de hora inventaria uma espera — preferimos não saber a saber
+  // errado. Ela continua visível em `origem`, para quem quiser conferir.
   const doHeader = origem && /^\d+$/.test(origem) ? Number(origem) : null
   return { segundos: doHeader && doHeader > 0 ? doHeader : null, porDia, origem }
 }
@@ -104,9 +96,12 @@ export function leEsperaDoLimite(detalhe: string, retryAfter?: string | null): E
  * O que a TELA precisa saber — chave, não frase.
  *
  * Módulo puro não fala idioma: aqui sai a chave e o dicionário devolve o
- * texto, como em `saudacao` e `nivel-faixa`. É o que separa esta função de
- * `comoDizerAEspera`, que escreve português porque o destino dela é o prompt
- * do modelo, não a tela.
+ * texto, como em `saudacao` e `nivel-faixa`.
+ *
+ * Houve aqui uma `comoDizerAEspera` que escrevia português direto, porque o
+ * destino dela era o prompt do MODO RESERVA — um modelo lia e repetia. Com o
+ * reserva removido (só Groq), quem lê a espera é gente, e gente lê no idioma
+ * da interface.
  */
 export type EscopoNaTela = "dia" | "horas" | "minutos" | "vago"
 
@@ -127,30 +122,40 @@ export function horasDeEspera(segundos: number): number {
 }
 
 /**
- * Como dizer a espera para quem está conversando.
+ * A frase pronta, montada a partir dos textos que quem mostra escolheu.
  *
- * Vai para o prompt do modo reserva, e por isso é português direto: é o modelo
- * que lê e repete. Sem número do provedor, a frase é **vaga de propósito** —
- * "alguns minutos" não promete nada, e foi a promessa exata ("um minuto") que a
- * rodada Y desmentiu quatro vezes seguidas.
+ * Recebe os quatro textos em vez de importar o dicionário — é o mesmo arranjo
+ * do `recibo`: o módulo decide QUAL frase, o dicionário decide EM QUE LÍNGUA.
+ * Existe porque agora são dois clientes (o chat e a conversa por voz) fazendo
+ * a mesma escolha, e escolha duplicada é escolha que diverge.
  */
-export function comoDizerAEspera(e: EsperaDoLimite): string {
-  if (e.porDia) return "o limite DIÁRIO de uso foi atingido, e ele só se renova amanhã"
-  if (e.segundos === null) return "o limite de uso foi atingido; ele se renova em alguns minutos"
-  if (e.segundos <= 90) return "o limite do minuto foi atingido; ele se renova em cerca de um minuto"
-  if (e.segundos < 3600) {
-    return `o limite de uso foi atingido; ele se renova em cerca de ${Math.ceil(e.segundos / 60)} minutos`
+export function fraseDaEspera(
+  e: EsperaDoLimite,
+  textos: {
+    dia: string
+    horas: (horas: number) => string
+    minutos: (minutos: number) => string
+    vago: string
   }
-  const horas = Math.ceil(e.segundos / 3600)
-  return `o limite de uso foi atingido; ele só se renova daqui a cerca de ${horas} ${horas === 1 ? "hora" : "horas"}`
+): string {
+  switch (escopoNaTela(e)) {
+    case "dia":
+      return textos.dia
+    case "horas":
+      return textos.horas(horasDeEspera(e.segundos as number))
+    case "minutos":
+      return textos.minutos(minutosDeEspera(e.segundos as number))
+    default:
+      return textos.vago
+  }
 }
 
 /**
  * O corpo cru do 429, do jeito que cabe numa linha de log.
  *
  * O log dizia `escopo=minuto segundos=13` — o RESULTADO do parse. Com ele não
- * se falseia o parse: se `leEsperaDoGroq` classificar errado, a linha repete a
- * classificação errada com toda a confiança, e foi exatamente esse o impasse
+ * se falseia o parse: se `leEsperaDoLimite` classificar errado, a linha repete
+ * a classificação errada com toda a confiança, e foi exatamente esse o impasse
  * da rodada Z. O que resolve é o texto que o provedor mandou, ao lado do que
  * nós lemos dele.
  *

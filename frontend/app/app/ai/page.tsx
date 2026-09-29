@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useDicionario, useIdioma } from "@/hooks/use-idioma"
+import type { Dicionario } from "@/lib/i18n"
 import dynamic from "next/dynamic"
 import { Header } from "@/components/header"
 import { Bot, ArrowUp, Loader2, Sparkles, NotebookPen, Mic, Square, AudioLines, Plus, Pin, PinOff, Trash2, MessagesSquare, ClipboardCheck } from "lucide-react"
@@ -15,7 +16,7 @@ import { avancarRevelacao, revelacaoTerminou, PASSO_MS } from "@/lib/revelacao-r
 import { fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { comNegrito } from "@/lib/negrito"
 import { separaRecibo } from "@/lib/ia-recibo"
-import { ehLimite } from "@/lib/ia-limite"
+import { ehLimite, leMarcaDeLimite, fraseDaEspera } from "@/lib/ia-limite"
 import { relogioDeSilencio } from "@/lib/ia-silencio"
 import {
   DropdownMenu,
@@ -46,11 +47,21 @@ function localDateKey() {
 //
 // Quem pergunta é `ehLimite`, e não uma comparação com a string: o sentinela
 // deixou de ser palavra pelada quando passou a carregar a espera lida do
-// provedor (`__RATE_LIMIT__|13|minuto`, ver lib/ia-limite). A igualdade estrita
-// que havia aqui sobreviveu à mudança calada — parou de casar, e o sentinela
-// cru ia para a tela quando não há GEMINI_API_KEY para o modo reserva.
-function prettyReply(t: string, mensagemLimite: string): string {
-  return ehLimite(t.trim()) ? mensagemLimite : t
+// provedor (`__RATE_LIMIT__|13|minuto`, ver lib/ia-limite).
+//
+// E a frase deixou de ser uma só. Sem provedor reserva, este é o ÚNICO lugar
+// onde o limite aparece — então dizer "tente de novo em instantes" num teto
+// diário faria a pessoa tentar a tarde inteira. A espera vem lida do 429 e
+// atravessa no sentinela; aqui ela vira texto.
+function prettyReply(t: string, erros: Dicionario["ia"]["erros"]): string {
+  const bruto = t.trim()
+  if (!ehLimite(bruto)) return t
+  return fraseDaEspera(leMarcaDeLimite(bruto), {
+    dia: erros.ocupadaPorDia,
+    horas: erros.ocupadaPorHoras,
+    minutos: erros.ocupadaPorMinutos,
+    vago: erros.ocupada,
+  })
 }
 
 // ---- Histórico de conversas (até 3 não-fixadas; fixadas são preservadas) ----
@@ -298,7 +309,7 @@ export default function AiPage() {
         acc += decoder.decode(value, { stream: true })
         setMessages((prev) => {
           const copy = [...prev]
-          copy[copy.length - 1] = { role: "assistant", content: prettyReply(acc, traducao.ia.limiteAtingido) }
+          copy[copy.length - 1] = { role: "assistant", content: prettyReply(acc, traducao.ia.erros) }
           return copy
         })
       }

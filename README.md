@@ -124,15 +124,22 @@ Todas em `frontend/.env.local` (e nas envs do projeto na Vercel). O arquivo
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chave pública (aceita `NEXT_PUBLIC_SUPABASE_ANON_KEY` como fallback) |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Só no servidor.** Bypass de RLS no dispatcher de push |
 
-### IA — pelo menos uma
+### IA — uma só, e é obrigatória
 
 | Variável | Observação |
 |---|---|
-| `GROQ_API_KEY` | Padrão e **a única com ferramentas** (criar/editar tarefas, blocos, notas). `GROQ_MODEL` opcional (`llama-3.3-70b-versatile`) |
-| `GEMINI_API_KEY` | Streaming sem ferramentas; também é o fallback quando o Groq bate rate limit. `GEMINI_MODEL` opcional (`gemini-2.0-flash`) |
-| `ANTHROPIC_API_KEY` | Streaming sem ferramentas. `ANTHROPIC_MODEL` opcional |
+| `GROQ_API_KEY` | **Obrigatória.** Sem ela a Neuro IA não sobe — o app avisa na tela. `GROQ_MODEL` opcional (`llama-3.3-70b-versatile`) |
 
-O `GROQ_API_KEY` também serve à transcrição de áudio (Whisper) do botão de microfone.
+A mesma chave serve às duas coisas: o chat com ferramentas (criar/editar tarefas,
+blocos e notas) e a transcrição de áudio (Whisper) do botão de microfone. A voz da
+Neuro não usa provedor nenhum — é `msedge-tts`, local.
+
+**Não há provedor reserva, e é decisão, não pendência.** Houve Gemini e Anthropic
+aqui, numa lista de reservas que era um risco escondido: bastava o `GROQ_API_KEY`
+faltar ou vir com um erro de digitação para o app inteiro rodar em outro modelo
+**sem ferramentas** — a Neuro deixava de criar tarefas e continuava conversando
+como se nada fosse. Quando o Groq recusa por cota, a tela diz quanto esperar (lido
+do próprio 429) e o resto do app segue funcionando.
 
 ### Push e agendamento
 

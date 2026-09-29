@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, Mic, Loader2, RotateCcw, Sparkles, Check } from "lucide-react"
 import { charsRevelados, fatiar, fecharMarcacao } from "@/lib/transcricao-viva"
 import { separaRecibo, falaDaResposta } from "@/lib/ia-recibo"
-import { ehLimite } from "@/lib/ia-limite"
+import { ehLimite, leMarcaDeLimite } from "@/lib/ia-limite"
 import { relogioDeSilencio } from "@/lib/ia-silencio"
 import { comNegrito } from "@/lib/negrito"
 import { OndaSonora } from "@/components/onda-sonora"
@@ -237,7 +237,9 @@ export function VoiceConversation({
       if (!ehLimite(reply)) return false
       setResting(true)
       goIdle()
-      setMessages((m) => [...m, { role: "assistant", content: traducaoRef.current.ia.limiteAtingidoVoz }])
+      const t = traducaoRef.current.ia
+      const texto = leMarcaDeLimite(reply).porDia ? t.limiteAtingidoVozDia : t.limiteAtingidoVoz
+      setMessages((m) => [...m, { role: "assistant", content: texto }])
       return true
     }
 

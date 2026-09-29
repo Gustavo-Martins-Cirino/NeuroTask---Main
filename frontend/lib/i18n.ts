@@ -1072,9 +1072,15 @@ export interface Dicionario {
        */
       demorouDemais: string
     }
-    /** Sinal de limite gratuito da IA, sem jargão técnico. */
-    limiteAtingido: string
-    /** Mesmo sinal, versão curta e falável — para a conversa ao vivo. */
+    /**
+     * O mesmo sinal, curto e FALÁVEL — a conversa ao vivo lê isto em voz alta,
+     * então o texto do chat (que explica direitinho) não serve aqui.
+     *
+     * São duas e não quatro de propósito: falado, o que muda a decisão de quem
+     * ouve é só "acabou por hoje" contra "espera um pouco". Minuto e hora
+     * viram a mesma frase, porque a pessoa vai tentar de novo de qualquer jeito.
+     */
+    limiteAtingidoVozDia: string
     limiteAtingidoVoz: string
     novaConversa: string
     conversas: string
@@ -2152,7 +2158,7 @@ export const pt: Dicionario = {
     erros: {
       naoAutorizado: "Não autorizado",
       naoConfigurada:
-        "A Neuro IA ainda não está configurada. Adicione GROQ_API_KEY (grátis em console.groq.com) ou GEMINI_API_KEY (grátis em aistudio.google.com) ao .env.local e reinicie o servidor.",
+        "A Neuro IA ainda não está configurada. Adicione GROQ_API_KEY (grátis em console.groq.com) ao .env.local e reinicie o servidor.",
       pedidoInvalido: "Requisição inválida",
       semMensagem: "Envie ao menos uma mensagem",
       falhaAoFalar: (provedor) => `Erro ao falar com a IA (${provedor}).`,
@@ -2176,8 +2182,8 @@ export const pt: Dicionario = {
       demorouDemais:
         "Esse pedido demorou demais e eu parei de esperar. Nada foi perdido — tente de novo, e se for uma lista grande, peça em pedaços menores.",
     },
-    limiteAtingido:
-      "A Neuro está descansando 😴 O limite gratuito da IA chegou por agora — tente de novo em instantes.",
+    limiteAtingidoVozDia:
+      "O limite gratuito da IA acabou por hoje 😴 Ele só volta amanhã — mas o resto do app continua funcionando.",
     limiteAtingidoVoz: "Estou descansando um pouquinho 😴 O limite gratuito da IA chegou por agora.",
     novaConversa: "Nova conversa",
     conversas: "Conversas",
@@ -3311,7 +3317,7 @@ export const en: Dicionario = {
     erros: {
       naoAutorizado: "Not authorized",
       naoConfigurada:
-        "Neuro AI isn't set up yet. Add GROQ_API_KEY (free at console.groq.com) or GEMINI_API_KEY (free at aistudio.google.com) to .env.local and restart the server.",
+        "Neuro AI isn't set up yet. Add GROQ_API_KEY (free at console.groq.com) to .env.local and restart the server.",
       pedidoInvalido: "Invalid request",
       semMensagem: "Send at least one message",
       falhaAoFalar: (provedor) => `Error talking to the AI (${provedor}).`,
@@ -3335,8 +3341,8 @@ export const en: Dicionario = {
       demorouDemais:
         "That request took too long and I stopped waiting. Nothing was lost — try again, and if it is a long list, ask for it in smaller pieces.",
     },
-    limiteAtingido:
-      "Neuro is taking a nap 😴 The free AI limit was reached for now — try again in a moment.",
+    limiteAtingidoVozDia:
+      "The free AI limit is used up for today 😴 It only comes back tomorrow — but the rest of the app keeps working.",
     limiteAtingidoVoz: "I'm taking a little nap 😴 The free AI limit was reached for now.",
     novaConversa: "New chat",
     conversas: "Chats",
