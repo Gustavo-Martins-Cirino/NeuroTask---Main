@@ -1,5 +1,6 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
+import { pesoDaChamada, linhaDePeso } from "@/lib/ia-peso"
 import { recibo, quantasGravou, quantasPediu, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
 import {
   leEsperaDoLimite,
@@ -1118,6 +1119,15 @@ function comRecibo(
   return comprovante ? `${limpo}\n\n${MARCA_RECIBO}${comprovante}` : limpo
 }
 
+/**
+ * Quantas idas ao modelo por mensagem — a última delas sem ferramentas.
+ *
+ * Não é um número de conforto: cada volta com ferramentas repete ~1.830 tokens
+ * de schema contra um teto de 8.000 por minuto, então "mais uma volta por via
+ * das dúvidas" é um quarto do minuto.
+ */
+const VOLTAS = 4
+
 async function runOpenAIAgent(
   cfg: ProviderConfig,
   system: string,
@@ -1136,11 +1146,26 @@ async function runOpenAIAgent(
     ...messages.map((m) => ({ role: m.role, content: m.content })),
   ]
 
-  for (let i = 0; i < 4; i++) {
-    const res = await groqChat(cfg, {
-      messages: convo,
-      tools: TOOLS,
-      tool_choice: "auto",
+  for (let i = 0; i < VOLTAS; i++) {
+    // A ÚLTIMA volta não leva ferramentas — e essa é a economia principal.
+    //
+    // O schema custa ~1.830 tokens e ia junto nas quatro voltas: ~7.300 por
+    // mensagem, contra um teto de 8.000 por minuto. Mas a última volta nunca
+    // pôde usá-lo de verdade: se o modelo pedisse ferramenta ali, as chamadas
+    // até rodavam, e então o laço acabava sem ninguém narrar o que aconteceu —
+    // era exatamente o caso que caía no `narraSemFerramentas`, uma QUINTA
+    // chamada. Ou seja: pagávamos o schema para criar um problema que custava
+    // outra chamada para resolver.
+    //
+    // Agora a última volta já nasce sendo a narração. Sobram três voltas com
+    // ferramentas, que é folga sobre o que os pedidos reais usam (criar = 1;
+    // editar = 2, porque lista para achar o id e depois atualiza).
+    const comFerramentas = i < VOLTAS - 1
+    const payload = {
+      messages: comFerramentas ? convo : [...convo, { role: "user", content: pedidoDeResumo(idioma) }],
+      ...(comFerramentas
+        ? { tools: TOOLS, tool_choice: "auto" }
+        : { tool_choice: "none" as const }),
       // Folga para modelos de raciocínio (o "pensar" consome deste teto);
       // sem isso o tool call era truncado e a ação nunca acontecia.
       //
@@ -1150,8 +1175,17 @@ async function runOpenAIAgent(
       // mil tokens SÓ de JSON — o que estourava não era o limite de uso, era
       // este teto, e o tool call truncado nem chega a virar JSON válido para o
       // resgate do `recoverFailedToolCalls` recuperar.
-      max_tokens: 4096,
-    })
+      //
+      // A volta da narração não corre esse risco: ela não gera argumento de
+      // ferramenta, só prosa. Se o Groq contar `max_tokens` no orçamento do
+      // minuto (hipótese em aberto — ver lib/ia-peso), pedir 4.096 para
+      // escrever duas frases seria o desperdício mais caro do arquivo.
+      max_tokens: comFerramentas ? 4096 : 400,
+    }
+    // Sem esta linha não dá para saber PARA ONDE vão os tokens do minuto — e
+    // era essa a pergunta em aberto desde a rodada Z.
+    console.log(linhaDePeso(i, pesoDaChamada(payload), payload.max_tokens))
+    const res = await groqChat(cfg, payload)
 
     if (!res.ok) {
       const detail = await res.text().catch(() => "")
@@ -1286,14 +1320,17 @@ async function runOpenAIAgent(
       continue // deixa o modelo reagir aos resultados
     }
 
-    return comRecibo(msg.content ?? t.erros.semTexto, executadas, tzMin, t, false)
+    // `lacoEstourou` é verdade só na volta da narração: chegar até ela significa
+    // que o modelo pediu ferramenta nas três anteriores e foi ele quem parou de
+    // ter a opção, não quem decidiu parar. Nas outras voltas o silêncio de
+    // ferramenta é escolha dele, e avisar "parei no meio" ali seria alarme
+    // falso — foi o defeito que o relatório de 22/09 registrou.
+    return comRecibo(msg.content ?? t.erros.semTexto, executadas, tzMin, t, !comFerramentas)
   }
 
-  // Esgotou as iterações: força uma resposta de texto (sem mais ferramentas)
-  // resumindo o que foi feito com base nos resultados já no histórico.
-  const resumo = await narraSemFerramentas(cfg, convo, idioma)
-  if (resumo) return comRecibo(resumo, executadas, tzMin, t, true)
-
+  // Inalcançável: a última volta vai com `tool_choice: "none"`, então ela não
+  // tem como devolver tool_calls e sempre cai no `return` acima. Fica como
+  // rede — o TS exige um retorno, e um dia alguém mexe no laço.
   return comRecibo(t.erros.acaoFalhou, executadas, tzMin, t, true)
 }
 
