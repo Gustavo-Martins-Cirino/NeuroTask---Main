@@ -203,8 +203,11 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 
 ## Funcionalidades da IA (Neuro IA)
 
-Rota `app/api/ai/route.ts` (Node runtime). Provedor via env: **Groq** (padrão, com ferramentas),
-Gemini ou Anthropic (streaming, sem ferramentas). Chave: `GROQ_API_KEY` etc.
+Rota `app/api/ai/route.ts` (Node runtime). **Um provedor só: Groq** (`GROQ_API_KEY`, obrigatória)
+— e o mesmo vale para o Whisper de `transcribe`. Houve Gemini e Anthropic numa lista de reservas,
+e ela saiu em 28/09: bastava um typo no nome da env para o app inteiro rodar em outro modelo
+**sem ferramentas**, calado. Sem reserva, o limite de cota é uma resposta com cabeçalho
+(`x-neuro-estado: limite`), e a frase da espera sai lida do próprio 429.
 
 - **Ferramentas** (tool-calling estilo OpenAI): criar/listar/editar/excluir tarefas, blocos de
   tempo e notas — a IA age de verdade no app.

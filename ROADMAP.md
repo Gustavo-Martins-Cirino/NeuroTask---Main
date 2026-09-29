@@ -788,6 +788,39 @@ repositório:
 > `retry-after` da Anthropic). `leEsperaDoGroq` virou `leEsperaDoLimite` e lê os três; a tela
 > ganhou quatro frases no lugar de uma, escolhidas por `escopoNaTela`.
 
+> **Só Groq, e o teto atacado de frente (28/09).** Duas decisões do Gustavo, nesta ordem.
+>
+> **1. Um provedor só.** O `resolveProvider` tentava Groq → Gemini → Anthropic, e isso não era
+> robustez: bastava o `GROQ_API_KEY` faltar ou vir com um erro de digitação para o app inteiro
+> rodar no Gemini **sem ferramentas** — a Neuro deixava de criar tarefas e seguia conversando
+> como se nada fosse. Erro de configuração virando perda silenciosa de função. Saíram junto o
+> `streamText` (120 linhas), o MODO RESERVA e o `comoDizerAEspera`, que escrevia português
+> cravado porque quem lia era um modelo. Líquido: −190 linhas.
+>
+> O Groq cobre tudo — é o único com tool-calling aqui e é dele o Whisper de `transcribe`; o TTS
+> nunca usou provedor (`msedge-tts`). A Anthropic **não tem STT**, então aquela rota ficaria no
+> Groq de qualquer forma: trocar o chat daria dois provedores, não um.
+>
+> Consequência que importa: sem reserva, o limite deixa de ser desvio e vira **a resposta** — o
+> caminho normal. Por isso a frase passou a ser quatro (dia/horas/minutos/vago), escolhidas por
+> `fraseDaEspera` a partir do que o 429 informou. Dizer "tente de novo em instantes" num teto
+> diário poria a pessoa tentando a tarde inteira. Na voz são duas, porque falado o que muda a
+> decisão de quem ouve é só "acabou por hoje" contra "espera um pouco".
+>
+> **2. O schema ia nas quatro voltas, e a última nunca pôde usá-lo.** As 14 ferramentas custam
+> ~1.830 tokens de schema — o maior pedaço de cada chamada, e ele se repetia a cada volta:
+> ~7.300 por mensagem contra um teto de 8.000 por minuto. Pior: se o modelo pedisse ferramenta
+> na última volta, elas rodavam e o laço acabava sem ninguém narrar, caindo no
+> `narraSemFerramentas` — uma QUINTA chamada. Pagávamos o schema para criar um problema que
+> custava outra chamada para resolver.
+>
+> A última volta agora já nasce sendo a narração (`tool_choice: "none"`, 400 de `max_tokens` em
+> vez de 4.096). Pior caso: **10.774 → 8.293 tokens**, de cinco chamadas para quatro — 23% a
+> menos, justamente onde se encosta no teto.
+>
+> Entrou `lib/ia-peso.ts`: cada chamada loga para onde vão seus tokens, separando o que se
+> repete (schema) do que cresce (conversa). É o que torna o item abaixo falseável.
+
 - [ ] **Uma mensagem só pode estourar o teto do minuto sozinha — e nenhuma espera resolve isso.**
       O relatório da rodada Z mediu espera anunciada de 13s, esperou 60s e 150s, e foi recusado
       nas duas. Não é contradição com o teto por minuto: cada volta do laço manda o prompt
@@ -795,8 +828,18 @@ repositório:
       quatro voltas. O balde enche e esvazia dentro do mesmo pedido, então esperar mais não muda
       nada — o que muda é o pedido pesar menos. Isso é hipótese, não medida: a linha
       `[neuro-ia] limite:` agora traz o corpo cru do 429, e o `Used`/`Requested` dele é que
-      confirma ou derruba. **Se confirmar**, o conserto não é na espera, é no tamanho — mandar o
-      schema das ferramentas só na primeira volta, ou encolhê-lo.
+      confirma ou derruba — cruzado com a linha `[neuro-ia] chamada:`, que diz o que cada volta
+      pesou e com que `max_tokens` foi pedida.
+
+      **A suspeita mais barata de testar ficou em aberto: o `max_tokens` pode contar.** Se o Groq
+      reservar o teto de SAÍDA no orçamento do minuto — e não só o que foi gerado —, então os
+      4.096 das voltas com ferramentas são mais da metade dos 8.000 antes de o modelo escrever a
+      primeira palavra, e isso explicaria sozinho por que esperar não resolve. O `Requested` do
+      429 responde: se ele for da ordem de 6.000 numa chamada cuja conversa tem ~2.500, conta.
+
+      Um terço do corte de 28/09 já saiu (23%, tirando o schema da última volta). O que sobra, se
+      a hipótese cair: encolher o próprio schema — `create_time_blocks` sozinha é 1.119 dos 6.592
+      bytes.
 
 - [ ] **Primeiro contato num aparelho que não é o seu.** Criar uma conta nova de verdade e
       percorrer o fluxo principal com o banco zerado: dashboard sem nenhuma tarefa, calendário
