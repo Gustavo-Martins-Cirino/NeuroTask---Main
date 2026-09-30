@@ -106,8 +106,13 @@ export default function DashboardPage() {
     fetchActivityInsights().then(setInsights)
   }, [])
 
+  // O nome e os dados saem JUNTOS. Antes era uma fila: usuário, depois tarefas,
+  // depois blocos, depois lembretes — cada um esperando a volta do anterior. Na
+  // rede de verdade isso eram quatro idas e voltas, e a tela se montava em
+  // quatro ondas, cada uma empurrando o layout enquanto a entrada ainda animava.
+  // Agora é uma ida e volta, e os dados entram num render só.
   useEffect(() => {
-    const fetchData = async () => {
+    ;(async () => {
       // finally: se a busca do usuário falhar, a saudação ainda precisa sair do
       // invisível — senão o dashboard abre sem cabeçalho nenhum.
       try {
@@ -115,19 +120,28 @@ export default function DashboardPage() {
         if (user) {
           setUserName(primeiroNome(user.user_metadata, user.email))
         }
+      } catch {
+        /* a saudação sai sem o nome */
       } finally {
         setPerfilPronto(true)
       }
+    })()
 
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
 
-      const { data: tasks } = await supabase
-        .from("tasks")
-        .select("id, title, status, priority, due_date")
-
+    Promise.all([
+      supabase.from("tasks").select("id, title, status, priority, due_date"),
+      supabase
+        .from("time_blocks")
+        .select("id, title, start_time, end_time")
+        .gte("start_time", today.toISOString())
+        .lt("start_time", tomorrow.toISOString())
+        .order("start_time", { ascending: true }),
+      supabase.from("reminders").select("*").eq("remind_date", localDateKey()),
+    ]).then(([{ data: tasks }, { data: blocks }, { data: rem }]) => {
       if (tasks) {
         setStats((prev) => ({
           ...prev,
@@ -147,27 +161,12 @@ export default function DashboardPage() {
             .slice(0, 5)
         )
       }
-
-      const { data: blocks } = await supabase
-        .from("time_blocks")
-        .select("id, title, start_time, end_time")
-        .gte("start_time", today.toISOString())
-        .lt("start_time", tomorrow.toISOString())
-        .order("start_time", { ascending: true })
-
       if (blocks) {
         setStats((prev) => ({ ...prev, todayBlocks: blocks.length }))
         setTodayBlocks(blocks)
       }
-
-      const { data: rem } = await supabase
-        .from("reminders")
-        .select("*")
-        .eq("remind_date", localDateKey())
       if (rem) setReminders(rem)
-    }
-
-    fetchData()
+    })
   }, [supabase])
 
   const today = agora

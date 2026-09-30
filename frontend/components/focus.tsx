@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useCallback, useEffect, useRef, useState } from "react"
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { createClient } from "@/lib/supabase/client"
 import { GRADIENT_PRESETS, type GradientPreset, type IdAmbiente } from "@/lib/focus-gradient"
@@ -77,6 +77,29 @@ function pad(n: number) {
   return String(Math.max(0, n)).padStart(2, "0")
 }
 
+// O relógio do card mora AQUI, e não no FocusProvider. Lá em cima ele fazia
+// setState a cada segundo, para sempre — com ou sem card na tela — e o
+// provider embrulha o app inteiro: a cada segundo, re-render do provider e do
+// Dock (que lia um valor de contexto novo). Aqui ele só existe enquanto há
+// contagem para mostrar, e o que re-renderiza é uma linha de texto.
+function RestanteDaTarefa({ tarefa }: { tarefa: Task }) {
+  const textos = useDicionario().foco
+  const [agora, setAgora] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setAgora(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  if (!tarefa.estimated_minutes) return null
+  const restante = tarefa.estimated_minutes * 60_000 - (agora - new Date(tarefa.updated_at).getTime())
+  return (
+    <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
+      {restante >= 0
+        ? textos.restantes(`${pad(Math.floor(restante / 60000))}:${pad(Math.floor((restante % 60000) / 1000))}`)
+        : textos.tempoEsgotado}
+    </p>
+  )
+}
+
 // Relógio analógico (hora atual, ponteiros em tempo real)
 function AnalogClock({ stroke }: { stroke: string }) {
   const [now, setNow] = useState(() => new Date())
@@ -120,7 +143,6 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   const [inProgress, setInProgress] = useState<Task | null>(null)
   /** Id da tarefa cujo aviso foi dispensado — some ao trocar de tarefa. */
   const [dispensado, setDispensado] = useState<string | null>(null)
-  const [, setTick] = useState(0)
 
   const [open, setOpen] = useState(false)
   const [focusTask, setFocusTask] = useState<Task | null>(null)
@@ -147,11 +169,6 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("neurotask:tasks-changed", onChange)
     return () => window.removeEventListener("neurotask:tasks-changed", onChange)
   }, [fetchInProgress])
-
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 1000)
-    return () => clearInterval(id)
-  }, [])
 
   useEffect(() => {
     if (!open || !running) return
@@ -233,14 +250,10 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   const fill = m === "themed" ? "bg-primary" : m === "light" ? "bg-neutral-900" : "bg-white"
   const ring = m === "light" ? "border-neutral-900" : m === "themed" ? "border-primary" : "border-white"
 
-  const inProgressRemaining = (() => {
-    if (!inProgress?.estimated_minutes) return null
-    const started = new Date(inProgress.updated_at).getTime()
-    return inProgress.estimated_minutes * 60_000 - (Date.now() - started)
-  })()
+  const contexto = useMemo(() => ({ openFocus, inProgress }), [openFocus, inProgress])
 
   return (
-    <FocusContext.Provider value={{ openFocus, inProgress }}>
+    <FocusContext.Provider value={contexto}>
       {children}
 
       {/* Card de tarefa em andamento.
@@ -274,13 +287,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               </button>
             </div>
             <p className="mt-2 truncate font-medium text-foreground">{inProgress.title}</p>
-            {inProgressRemaining !== null && (
-              <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
-                {inProgressRemaining >= 0
-                  ? textos.restantes(`${pad(Math.floor(inProgressRemaining / 60000))}:${pad(Math.floor((inProgressRemaining % 60000) / 1000))}`)
-                  : textos.tempoEsgotado}
-              </p>
-            )}
+            <RestanteDaTarefa tarefa={inProgress} />
             <button onClick={() => openFocus(inProgress)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.02]">
               <Activity className="h-4 w-4" />
               {textos.entrarNoFoco}

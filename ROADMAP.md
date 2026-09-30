@@ -821,6 +821,64 @@ repositório:
 > Entrou `lib/ia-peso.ts`: cada chamada loga para onde vão seus tokens, separando o que se
 > repete (schema) do que cresce (conversa). É o que torna o item abaixo falseável.
 
+> **"O login e o dashboard vêm pesados, com mini travadinhas" (30/09).** O resto do app
+> navegava liso. Eram quatro causas, e duas hipóteses minhas caíram no caminho.
+>
+> **Login: o brilho do fundo respirava para sempre.** `.nt-auth-glow` é uma mancha enorme com
+> `blur`, e a animação infinita (`scale` + `opacity`, 18s) obrigava o navegador a produzir 60
+> quadros por segundo da tela inteira, parada. Medido no trace do Chrome, somando pintura,
+> raster e composição: **~290 ms de trabalho por segundo** com a tela parada. Tirando só o
+> `scale` e deixando a opacidade: ainda 222–244 ms/s — **qualquer** animação infinita força o
+> quadro inteiro. Estático: **9 ms/s**, trinta vezes menos. O brilho ficou, parado; o ruído por
+> cima também (é barato quando nada se mexe embaixo). Vale para login, cadastro, redefinir
+> senha e a landing, que usam o mesmo `AuthBackdrop`.
+>
+> **Dashboard, 1: o app inteiro montava duas vezes para quem pede menos movimento.** O
+> `SmoothScroll` devolvia `<>{children}</>` ou `<ReactLenis>{children}</ReactLenis>` conforme
+> `prefers-reduced-motion` — que só se lê depois de montar. Trocar o tipo do pai remonta tudo
+> abaixo dele: casca, dock, tela, e todos os efeitos e consultas de novo (65 pedidos contra
+> 37). Agora os filhos ficam sempre na mesma posição e só o motor do Lenis entra e sai; o
+> `useLenis()` das telas continua achando a instância, porque com `root` o Lenis a publica num
+> store global. Isso pega exatamente quem tem "Ajustar para melhor desempenho" no Windows.
+>
+> **Dashboard, 2: um relógio acordava a casca a cada segundo, para sempre.** O
+> `FocusProvider` embrulha o app e fazia `setTick` a cada 1s — com ou sem o card de "em
+> andamento" na tela — e passava um objeto de contexto novo a cada render, o que
+> re-renderizava o Dock junto. A contagem virou um componente próprio (`RestanteDaTarefa`), que
+> só existe enquanto o card mostra tempo, e o contexto ficou em `useMemo`. Parado: de 1 timer/s
+> para zero, e a maior tarefa ociosa de 15 ms para 3 ms (CPU 4× mais lenta).
+>
+> **Dashboard, 3: as consultas saíam em fila.** Usuário, depois tarefas, depois blocos, depois
+> lembretes — cada uma esperando a volta da anterior, e a tela se montando em quatro ondas
+> enquanto a entrada ainda animava. Agora saem juntas. Com 150 ms de latência simulada, da
+> primeira consulta à última resposta: **522 ms → 153 ms**.
+>
+> **As hipóteses que caíram.** (a) `backdrop-blur` nos cartões do dashboard: rolando com e sem
+> ele, o mesmo 7 ms/s de raster da tela de controle. (b) "a rolagem trava": não trava. E um erro
+> de instrumento que vale guardar: a primeira medida, por deltas de `requestAnimationFrame`,
+> deu 17 ms cravados em tudo, controle incluído — o rAF só vê a thread principal, e o custo de
+> blur e composição mora fora dela. Outro: contando pedidos, **tudo parecia sair em par**, até
+> sem movimento reduzido. Era a verificação de CORS (`OPTIONS`) que o navegador manda antes de
+> cada consulta ao Supabase; uma pilha no `fetch` da página mostrou uma chamada só.
+>
+> Por que só essas duas telas: o login é a única com animação infinita de tela cheia, e o
+> dashboard é sempre a **primeira** tela depois de entrar — a que paga a montagem da casca
+> inteira. As outras chegam por navegação interna, com a casca já montada.
+
+- [ ] **O card "Comece por aqui" entra tarde e empurra o dashboard ~300 px para baixo.** Só
+      em conta que ainda não "graduou" (quem já tem tarefa, tarefa concluída e bloco nunca vê o
+      card). Ele nasce `null` e só aparece quando as três contagens voltam — depois dos números,
+      que ficam logo abaixo dele. Medido: um deslocamento de layout de 0,099 sozinho, no limite
+      do "precisa melhorar" do Google. Saídas possíveis: reservar a altura enquanto conta, ou
+      descer o card para baixo dos números. É escolha de desenho, não conserto.
+
+- [ ] **O ticker único roda 60 vezes por segundo mesmo com tudo parado.** Visto medindo o
+      dashboard ocioso: 60 quadros/s de rAF em qualquer tela do app, porque o Lenis está
+      inscrito no `gsap.ticker` e o ticker não dorme. Custa pouco (~0,5 ms por quadro numa CPU
+      normal) e não causa travada, mas impede a aba de ficar ociosa — bateria de notebook.
+      Adormecer o ticker quando o Lenis não está rolando mexe na decisão "um relógio só" do
+      CLAUDE.md, então fica anotado e não feito.
+
 - [ ] **Uma mensagem só pode estourar o teto do minuto sozinha — e nenhuma espera resolve isso.**
       O relatório da rodada Z mediu espera anunciada de 13s, esperou 60s e 150s, e foi recusado
       nas duas. Não é contradição com o teto por minuto: cada volta do laço manda o prompt

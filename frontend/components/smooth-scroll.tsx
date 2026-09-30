@@ -95,29 +95,38 @@ function TopoAoNavegar() {
   return null
 }
 
+// Os filhos NÃO ficam dentro do <ReactLenis>. Antes ficavam, e o embrulho
+// trocava de tipo quando "reduzir movimento" era lido — o que só acontece
+// depois de montar. Trocar o tipo do pai remonta tudo abaixo dele: para quem
+// usa movimento reduzido, o app inteiro montava duas vezes na entrada (medido:
+// 65 pedidos de rede ao Supabase na entrada do dashboard, contra 37). Com os filhos sempre na mesma
+// posição da árvore, só o motor do Lenis entra e sai. O `useLenis()` das telas
+// continua achando a instância: com `root`, o Lenis a publica num store global.
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   const reduzido = usaMovimentoReduzido()
 
-  if (reduzido) return <>{children}</>
-
   return (
-    <ReactLenis
-      root
-      options={{
-        // Quem chama o raf é o TickerUnico abaixo.
-        autoRaf: false,
-        lerp: 0.12,
-        wheelMultiplier: 1,
-        touchMultiplier: 1.6,
-        // Celular já tem inércia nativa boa; suavizar por cima atrasa o toque.
-        syncTouch: false,
-        prevent: (node) => !!(node as Element).closest?.(NATIVO),
-      }}
-    >
-      <TickerUnico />
-      <PausaComDialogo />
-      <TopoAoNavegar />
+    <>
+      {!reduzido && (
+        <ReactLenis
+          root
+          options={{
+            // Quem chama o raf é o TickerUnico abaixo.
+            autoRaf: false,
+            lerp: 0.12,
+            wheelMultiplier: 1,
+            touchMultiplier: 1.6,
+            // Celular já tem inércia nativa boa; suavizar por cima atrasa o toque.
+            syncTouch: false,
+            prevent: (node) => !!(node as Element).closest?.(NATIVO),
+          }}
+        >
+          <TickerUnico />
+          <PausaComDialogo />
+          <TopoAoNavegar />
+        </ReactLenis>
+      )}
       {children}
-    </ReactLenis>
+    </>
   )
 }
