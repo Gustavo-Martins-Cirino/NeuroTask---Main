@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { Play, Pause, X, Check, RotateCcw, Activity, Minus, Plus, Palette, Music, Youtube, Minimize2, Maximize2 } from "lucide-react"
 import { useDicionario } from "@/hooks/use-idioma"
+import { useSinoFoco } from "@/hooks/use-sino-foco"
+import { fimDoTimer, restanteAte } from "@/lib/sino-foco"
 
 interface FocusContextValue {
   openFocus: (task?: Task | null, minutes?: number) => void
@@ -170,13 +172,35 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("neurotask:tasks-changed", onChange)
   }, [fetchInProgress])
 
+  // O fim é um instante no relógio, e não uma contagem de tiques (ver
+  // lib/sino-foco). O intervalo só ATUALIZA a tela; quem encerra é um
+  // setTimeout único marcado para o fim — esse o Chrome não segura em aba de
+  // fundo, então o sino toca na hora mesmo com a pessoa em outra aba. Vale
+  // igual para a tela cheia e para o relógio minimizado: os dois leem daqui.
+  const sino = useSinoFoco()
+  const tocarSino = sino.tocar
+  const restanteRef = useRef(remaining)
+  restanteRef.current = remaining
+
   useEffect(() => {
     if (!open || !running) return
-    const id = setInterval(() => {
-      setRemaining((r) => { if (r <= 1) { setRunning(false); return 0 } return r - 1 })
-    }, 1000)
-    return () => clearInterval(id)
-  }, [open, running])
+    // Play com o tempo zerado não é "acabou agora": não toca, só não começa.
+    if (restanteRef.current <= 0) { setRunning(false); return }
+    const fimEm = fimDoTimer(Date.now(), restanteRef.current)
+    const atualiza = () => setRemaining(restanteAte(fimEm, Date.now()))
+    const id = setInterval(atualiza, 1000)
+    const fim = setTimeout(() => {
+      setRemaining(0)
+      setRunning(false)
+      tocarSino()
+    }, Math.max(0, fimEm - Date.now()))
+    document.addEventListener("visibilitychange", atualiza)
+    return () => {
+      clearInterval(id)
+      clearTimeout(fim)
+      document.removeEventListener("visibilitychange", atualiza)
+    }
+  }, [open, running, tocarSino])
 
   // Fecha o painel (Sons / Ambiente) ao clicar fora dele
   useEffect(() => {
@@ -364,7 +388,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               <button onClick={reset} aria-label={textos.recomecar} className={cn("rounded-full p-3 transition-colors", ctrl)}>
                 <RotateCcw className="h-5 w-5" />
               </button>
-              <button onClick={() => setRunning((r) => !r)} aria-label={running ? textos.pausar : textos.iniciar} className={cn("flex h-16 w-16 items-center justify-center rounded-full transition-transform hover:scale-105", solid)}>
+              <button onClick={() => { sino.preparar(); setRunning((r) => !r) }} aria-label={running ? textos.pausar : textos.iniciar} className={cn("flex h-16 w-16 items-center justify-center rounded-full transition-transform hover:scale-105", solid)}>
                 {running ? <Pause className="h-7 w-7" /> : <Play className="ml-1 h-7 w-7" />}
               </button>
               <div className="w-11" />

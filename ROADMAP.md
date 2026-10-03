@@ -865,6 +865,23 @@ repositório:
 > dashboard é sempre a **primeira** tela depois de entrar — a que paga a montagem da casca
 > inteira. As outras chegam por navegação interna, com a casca já montada.
 
+> **Sino no fim do Modo Foco (02/10).** Pedido do Gustavo: um som discreto quando o timer
+> acaba, na tela cheia e no relógio minimizado do canto. Duas notas de sino sintetizadas
+> (Lá5 → Mi6, senoide, volume no pico 0,12, some em 2,2s) — sem arquivo para baixar.
+>
+> **O som expôs um defeito antigo do timer**: ele contava tiques (`remaining - 1` a cada
+> segundo), e com a aba em segundo plano o Chrome segura o `setInterval` para cerca de uma vez
+> por minuto. Quem fazia 25 minutos de foco em outra aba via o timer — e agora ouviria o sino —
+> terminar bem depois. O restante passou a sair de um instante de fim (`lib/sino-foco.ts`), e
+> quem encerra é um `setTimeout` único, que o Chrome não segura.
+>
+> Verificado no Chrome com o relógio da página acelerado 100× e contando as notas que o
+> `AudioContext` realmente tocou: tela cheia, minimizado, e minimizado com a aba oculta — nos três,
+> nenhuma nota antes do fim, as duas notas no fim, áudio destravado (`running`).
+>
+> **Não tem opção de desligar.** Se alguém pedir silêncio, o lugar natural é um interruptor no
+> painel de Sons do próprio Modo Foco.
+
 - [ ] **O card "Comece por aqui" entra tarde e empurra o dashboard ~300 px para baixo.** Só
       em conta que ainda não "graduou" (quem já tem tarefa, tarefa concluída e bloco nunca vê o
       card). Ele nasce `null` e só aparece quando as três contagens voltam — depois dos números,
