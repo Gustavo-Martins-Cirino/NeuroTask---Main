@@ -444,6 +444,22 @@
 .note-editor:empty::before { content: attr(data-placeholder); color: var(--muted-foreground); }
 .note-editor:focus { outline: none; }
 
+/* A barra de rolagem DA PÁGINA. Sem isto o Chrome no Windows desenhava a dele:
+   grossa, com trilho cinza chapado e setinhas, destoando do resto. O trilho
+   some e o polegar segue o tema — discreto parado, visível o bastante para se
+   achar. `scrollbar-color` é o padrão (Chrome 121+, Firefox) e, quando ele vale,
+   o Chrome ignora os ::-webkit-scrollbar; os de baixo cobrem o Safari. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+}
+html::-webkit-scrollbar { width: 8px; height: 8px; }
+html::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+  border-radius: 9999px;
+}
+
 /* Custom scrollbar */
 @layer utilities {
   .scrollbar-thin {
