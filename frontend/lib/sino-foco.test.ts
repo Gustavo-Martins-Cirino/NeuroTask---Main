@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest"
 import { NOTAS_DO_SINO, duracaoDoSino, fimDoTimer, restanteAte } from "./sino-foco"
 
 describe("sino do Modo Foco", () => {
-  it("é discreto: nenhuma nota passa de 0,15 de volume", () => {
-    for (const n of NOTAS_DO_SINO) expect(n.pico).toBeLessThanOrEqual(0.15)
+  it("é discreto: nenhuma nota passa de 0,25 de volume", () => {
+    for (const n of NOTAS_DO_SINO) expect(n.pico).toBeLessThanOrEqual(0.25)
+  })
+
+  it("se faz ouvir: bate mais de uma vez", () => {
+    const ataques = NOTAS_DO_SINO.filter((n) => n.frequencia === 880).length
+    expect(ataques).toBeGreaterThanOrEqual(2)
   })
 
   it("é curto: some em poucos segundos", () => {
     expect(duracaoDoSino()).toBeGreaterThan(1)
-    expect(duracaoDoSino()).toBeLessThanOrEqual(3)
+    expect(duracaoDoSino()).toBeLessThanOrEqual(3.5)
   })
 
   it("fica numa faixa audível e não estridente", () => {

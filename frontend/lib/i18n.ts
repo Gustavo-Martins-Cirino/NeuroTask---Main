@@ -183,6 +183,10 @@ export interface Dicionario {
     /** "12:30 restantes" — o tempo chega pronto, em mm:ss. */
     restantes: (tempo: string) => string
     tempoEsgotado: string
+    /** Título da notificação e do aviso quando o timer do foco acaba. */
+    fimDoFoco: string
+    /** Corpo do aviso: com a tarefa, se o foco tinha uma. */
+    fimDoFocoCorpo: (tarefa: string | null) => string
     entrarNoFoco: string
     minimizar: string
     cancelarFoco: string
@@ -1398,6 +1402,8 @@ export const pt: Dicionario = {
     dispensarAviso: "Dispensar o aviso",
     restantes: (tempo) => `${tempo} restantes`,
     tempoEsgotado: "Tempo estimado esgotado",
+    fimDoFoco: "Foco concluído",
+    fimDoFocoCorpo: (tarefa) => (tarefa ? `“${tarefa}” — hora de uma pausa.` : "Hora de uma pausa."),
     entrarNoFoco: "Entrar no foco",
     minimizar: "Minimizar",
     cancelarFoco: "Cancelar foco",
@@ -2574,6 +2580,8 @@ export const en: Dicionario = {
     dispensarAviso: "Dismiss",
     restantes: (tempo) => `${tempo} left`,
     tempoEsgotado: "Estimated time is up",
+    fimDoFoco: "Focus complete",
+    fimDoFocoCorpo: (tarefa) => (tarefa ? `“${tarefa}” — time for a break.` : "Time for a break."),
     entrarNoFoco: "Start focusing",
     minimizar: "Minimize",
     cancelarFoco: "Cancel focus",

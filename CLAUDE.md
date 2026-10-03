@@ -108,6 +108,7 @@ frontend/
 │   ├── saudacao.ts           # Cumprimento pela hora + ritmo das letras (puro)
 │   ├── coin-flight.ts        # Curva da moeda até o contador de XP (puro)
 │   ├── sino-foco.ts          # Sino do fim do Modo Foco + relógio por instante de fim (puro)
+│   ├── foco-sessao.ts        # Sessão do Modo Foco guardada na aba: sobrevive a recarregar (puro)
 │   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
 │   ├── neuro-sphere.ts       # Esfera da Neuro: pontos, repulsão e retorno (puro)
 │   ├── transcricao-viva.ts   # Resposta aparecendo no ritmo da fala, na conversa ao vivo (puro)
@@ -231,11 +232,18 @@ e ela saiu em 28/09: bastava um typo no nome da env para o app inteiro rodar em 
 flutuante (continua contando enquanto navega), painéis de **Sons** (mixer) e **Ambiente** que fecham
 ao clicar fora. Mixer com seções **Sons** (loop) · **Músicas** (crossfade, exclusivas) · **Foco** (ruído/binaural).
 
-**Fim do timer toca um sino discreto** (duas notas sintetizadas, `hooks/use-sino-foco`), igual na
-tela cheia e no relógio minimizado — os dois leem o mesmo timer do provider. O tempo restante sai
-de um **instante de fim**, não de tiques: com a aba em segundo plano o Chrome segura o
-`setInterval` para ~1×/min, e quem encerra é um `setTimeout` único, que ele não segura. O áudio é
-destravado no clique do play — o fim chega sem gesto nenhum, e áudio criado ali nasce mudo.
+**Fim do timer toca um sino discreto** (o par Lá5→Mi6 batendo duas vezes, sintetizado,
+`hooks/use-sino-foco`), igual na tela cheia e no relógio minimizado — os dois leem o mesmo timer
+do provider. O tempo restante sai de um **instante de fim**, não de tiques: com a aba em segundo
+plano o Chrome segura o `setInterval` para ~1×/min, e quem encerra é um `setTimeout` único, que ele
+não segura. O áudio é destravado no clique do play — o fim chega sem gesto nenhum, e áudio criado
+ali nasce mudo.
+
+**O foco sobrevive a recarregar** (`lib/foco-sessao.ts`, em `sessionStorage`): o Chrome descarta
+aba parada e o celular faz o mesmo ao trocar de app, e o foco que morava só na memória sumia —
+lia como "o tempo parou". Se o fim passou com a página fora, ela volta zerada com um aviso. Com a
+aba **escondida** no fim, sai também uma **notificação do sistema** (permissão pedida no play, como
+o lembrete do calendário pede ao salvar), porque som de aba escondida passa batido.
 
 ## Estado atual
 

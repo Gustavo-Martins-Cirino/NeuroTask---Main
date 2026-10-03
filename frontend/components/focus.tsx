@@ -17,6 +17,8 @@ import { Play, Pause, X, Check, RotateCcw, Activity, Minus, Plus, Palette, Music
 import { useDicionario } from "@/hooks/use-idioma"
 import { useSinoFoco } from "@/hooks/use-sino-foco"
 import { fimDoTimer, restanteAte } from "@/lib/sino-foco"
+import { CHAVE_SESSAO_FOCO, restauraSessao, serializaSessao } from "@/lib/foco-sessao"
+import { toast } from "sonner"
 
 interface FocusContextValue {
   openFocus: (task?: Task | null, minutes?: number) => void
@@ -77,6 +79,43 @@ const AMBIENTS: Ambient[] = [
 
 function pad(n: number) {
   return String(Math.max(0, n)).padStart(2, "0")
+}
+
+// Pedido no play, que é um clique: o navegador só aceita pedir com gesto, e é
+// a hora em que "avisar quando acabar" faz sentido. Mesmo padrão do lembrete
+// com horário no calendário. Só pergunta uma vez — recusado, não insiste.
+function pedePermissaoDeAviso() {
+  try {
+    if ("Notification" in window && Notification.permission === "default") {
+      void Notification.requestPermission().catch(() => {})
+    }
+  } catch {
+    /* navegador sem notificação: o sino segue sozinho */
+  }
+}
+
+// Pela registration do service worker quando existe — no Android o construtor
+// `new Notification()` lança, e só esse caminho funciona. A URL é a da página
+// atual: o clique na notificação volta para onde o foco estava.
+function avisaNoSistema(titulo: string, corpo: string) {
+  try {
+    if (!("Notification" in window) || Notification.permission !== "granted") return
+    const opcoes = { body: corpo, icon: "/icon-192.png", tag: "neurotask-foco", data: { url: location.pathname } }
+    const direto = () => {
+      try {
+        new Notification(titulo, opcoes)
+      } catch {
+        /* sem construtor e sem service worker: fica o sino */
+      }
+    }
+    if (!("serviceWorker" in navigator)) return direto()
+    navigator.serviceWorker
+      .getRegistration()
+      .then((reg) => (reg ? reg.showNotification(titulo, opcoes) : direto()))
+      .catch(direto)
+  } catch {
+    /* idem */
+  }
 }
 
 // O relógio do card mora AQUI, e não no FocusProvider. Lá em cima ele fazia
@@ -179,20 +218,69 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   // igual para a tela cheia e para o relógio minimizado: os dois leem daqui.
   const sino = useSinoFoco()
   const tocarSino = sino.tocar
+  const prepararSino = sino.preparar
   const restanteRef = useRef(remaining)
   restanteRef.current = remaining
+  const tarefaRef = useRef(focusTask)
+  tarefaRef.current = focusTask
+  const textosRef = useRef(textos)
+  textosRef.current = textos
+  /** O fim do foco que está rodando — é ele que vai para a sessão guardada. */
+  const fimRef = useRef<number | null>(null)
+  /** Fim de uma sessão restaurada: retomar NELE, e não recalcular a partir do
+   *  restante arredondado (cada recarregamento comeria até 1s). */
+  const fimRestauradoRef = useRef<number | null>(null)
+
+  // Volta o foco que estava rodando antes de a página recarregar (ver
+  // lib/foco-sessao: o Chrome descarta aba parada, o celular ao trocar de app).
+  useEffect(() => {
+    let raw: string | null = null
+    try {
+      raw = sessionStorage.getItem(CHAVE_SESSAO_FOCO)
+    } catch {
+      /* sem armazenamento: o foco só não sobrevive a recarregar */
+    }
+    const s = restauraSessao(raw, Date.now(), AMBIENTS.length)
+    if (!s) return
+    setFocusTask(s.tarefa)
+    setDuration(s.duracao)
+    setRemaining(s.restante)
+    setAmbient(s.ambiente)
+    setMinimized(s.minimizado)
+    setOpen(true)
+    if (s.terminouFora) {
+      const t = textosRef.current
+      toast(t.fimDoFoco, { description: t.fimDoFocoCorpo(s.tarefa?.title ?? null) })
+    }
+    if (!s.rodando) return
+    fimRestauradoRef.current = s.fimEm
+    setRunning(true)
+    // Página nova = áudio ainda travado (nenhum gesto aqui ainda). O primeiro
+    // toque em qualquer lugar destrava, a tempo do fim.
+    document.addEventListener("pointerdown", prepararSino, { once: true })
+    return () => document.removeEventListener("pointerdown", prepararSino)
+  }, [prepararSino])
 
   useEffect(() => {
-    if (!open || !running) return
+    if (!open || !running) { fimRef.current = null; return }
     // Play com o tempo zerado não é "acabou agora": não toca, só não começa.
     if (restanteRef.current <= 0) { setRunning(false); return }
-    const fimEm = fimDoTimer(Date.now(), restanteRef.current)
+    const fimEm = fimRestauradoRef.current ?? fimDoTimer(Date.now(), restanteRef.current)
+    fimRestauradoRef.current = null
+    fimRef.current = fimEm
     const atualiza = () => setRemaining(restanteAte(fimEm, Date.now()))
     const id = setInterval(atualiza, 1000)
     const fim = setTimeout(() => {
+      fimRef.current = null
       setRemaining(0)
       setRunning(false)
       tocarSino()
+      // Em outra aba ou em outro aplicativo o som de uma aba escondida passa
+      // batido. A notificação do sistema aparece por cima de tudo.
+      if (document.visibilityState === "hidden") {
+        const t = textosRef.current
+        avisaNoSistema(t.fimDoFoco, t.fimDoFocoCorpo(tarefaRef.current?.title ?? null))
+      }
     }, Math.max(0, fimEm - Date.now()))
     document.addEventListener("visibilitychange", atualiza)
     return () => {
@@ -201,6 +289,30 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
       document.removeEventListener("visibilitychange", atualiza)
     }
   }, [open, running, tocarSino])
+
+  // Guarda a sessão a cada mudança. Rodando, guarda o INSTANTE do fim, então o
+  // tempo que a página passar fora conta igual.
+  useEffect(() => {
+    try {
+      if (!open) {
+        sessionStorage.removeItem(CHAVE_SESSAO_FOCO)
+        return
+      }
+      sessionStorage.setItem(
+        CHAVE_SESSAO_FOCO,
+        serializaSessao({
+          duracao: duration,
+          restante: remaining,
+          fimEm: running ? fimRef.current : null,
+          tarefa: focusTask,
+          minimizado: minimized,
+          ambiente: ambient,
+        })
+      )
+    } catch {
+      /* idem */
+    }
+  }, [open, running, duration, remaining, focusTask, minimized, ambient])
 
   // Fecha o painel (Sons / Ambiente) ao clicar fora dele
   useEffect(() => {
@@ -388,7 +500,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               <button onClick={reset} aria-label={textos.recomecar} className={cn("rounded-full p-3 transition-colors", ctrl)}>
                 <RotateCcw className="h-5 w-5" />
               </button>
-              <button onClick={() => { sino.preparar(); setRunning((r) => !r) }} aria-label={running ? textos.pausar : textos.iniciar} className={cn("flex h-16 w-16 items-center justify-center rounded-full transition-transform hover:scale-105", solid)}>
+              <button onClick={() => { sino.preparar(); if (!running) pedePermissaoDeAviso(); setRunning((r) => !r) }} aria-label={running ? textos.pausar : textos.iniciar} className={cn("flex h-16 w-16 items-center justify-center rounded-full transition-transform hover:scale-105", solid)}>
                 {running ? <Pause className="h-7 w-7" /> : <Play className="ml-1 h-7 w-7" />}
               </button>
               <div className="w-11" />

@@ -882,6 +882,48 @@ repositório:
 > **Não tem opção de desligar.** Se alguém pedir silêncio, o lugar natural é um interruptor no
 > painel de Sons do próprio Modo Foco.
 
+> **"Não ouço o sino, e o tempo parece parar em outra aba ou app" (03/10).** Reproduzido no Chrome
+> em tempo real, com um foco de 15 s, antes de mexer em nada. A aba de fundo e a página congelada
+> o código de 02/10 já aguentava: terminava na hora (ou ao descongelar) e tocava. O furo era o
+> **recarregamento**: o foco morava só na memória da página, e o Chrome descarta aba parada (o
+> celular, ao trocar de app). Na volta, a página recarregava sem foco nenhum — "o tempo parou".
+> Vale registrar: a versão anterior a 02/10 tinha exatamente os dois sintomas (contava tiques e
+> não tinha som), então uma aba aberta antes daquele deploy também os mostraria.
+>
+> · **A sessão vai para o `sessionStorage`** (`lib/foco-sessao.ts`) e volta exata: rodando, guarda
+>   o instante do fim. Se o fim passou com a página fora, volta zerada e avisa com um toast.
+> · **Notificação do sistema** quando o fim chega com a aba escondida — som de aba escondida passa
+>   batido em outro app. Permissão pedida no play, só enquanto ainda é "default".
+> · **O sino bate duas vezes e mais alto** (pico 0,22, antes 0,12) — ainda abaixo de 3,5 s.
+>
+> Verificado nos quatro cenários: aba escondida no fim (sino + notificação), congelada até depois
+> do fim (sino + notificação ao descongelar), recarregada no meio (volta rodando com 00:09 e toca
+> no fim), página fora quando acabou (volta 00:00 com o aviso). Um limite que fica: página
+> CONGELADA não roda JavaScript, então o aviso só sai quando ela descongela. Avisar com a aba
+> congelada ou fechada pede push do servidor marcado para o fim — a infraestrutura de push existe.
+
+- [ ] **Modo Foco vale mais pontos — proposta de 03/10, esperando as decisões do Gustavo.** Ele
+      pensou em pontos em dobro. O que existe hoje: concluir a tarefa pelo botão do foco dá o MESMO
+      XP de concluir na lista (`taskXpAmount`), e todo XP passa pelo teto diário de 150 no servidor
+      (`award_xp`). A metodologia proposta:
+
+      1. **O dobro é da tarefa concluída DENTRO do foco**, e só se o foco rodou de verdade: tempo
+         com o timer correndo (pausa não conta) de pelo menos 15 min, ou a sessão inteira se ela
+         for menor. O relógio por instante de fim e a sessão guardada já dão esse número.
+      2. **O bônus fica fora do teto de 150.** Dentro dele, quem já encosta no teto não sente o
+         dobro — justamente quem mais usa o foco. Proposta: a metade extra vai para uma cota
+         própria de foco (ex.: 60 XP/dia). Pede SQL novo, rodado à mão.
+      3. **Foco completo sem tarefa vale um pouco** (ex.: +5 XP a cada sessão de 25 min que chegou a
+         00:00, até 3 por dia) — premia o hábito sem virar fábrica de pontos.
+      4. **Mostrar antes de dar**: um selo "2×" no botão "Concluir tarefa" quando a sessão já se
+         qualificou. Pontos que só aparecem depois não mudam comportamento.
+
+      Anti-farm herdado: tarefa com menos de 10 min de vida continua valendo zero, e o servidor
+      continua confiando na quantia que o cliente manda até o teto (o modelo de hoje).
+
+      **Decisões dele:** (a) dobro só na tarefa, ou também tempo focado sem tarefa; (b) bônus dentro
+      ou fora do teto, e de quanto; (c) o mínimo de 15 min.
+
 - [ ] **O card "Comece por aqui" entra tarde e empurra o dashboard ~300 px para baixo.** Só
       em conta que ainda não "graduou" (quem já tem tarefa, tarefa concluída e bloco nunca vê o
       card). Ele nasce `null` e só aparece quando as três contagens voltam — depois dos números,

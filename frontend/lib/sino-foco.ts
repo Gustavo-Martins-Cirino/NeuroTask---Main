@@ -16,12 +16,19 @@ export interface NotaDoSino {
   pico: number
 }
 
-// Duas notas de sino, uma quinta acima da outra (Lá5 → Mi6), com cauda longa.
-// Senoide pura e ataque de 15 ms: sem estalo no começo e sem aspereza.
-export const NOTAS_DO_SINO: readonly NotaDoSino[] = [
-  { frequencia: 880, inicio: 0, duracao: 1.6, pico: 0.12 },
-  { frequencia: 1318.51, inicio: 0.22, duracao: 2, pico: 0.09 },
+// Duas notas de sino, uma quinta acima da outra (Lá5 → Mi6), com cauda longa,
+// e o par batendo DUAS vezes. Senoide pura e ataque de 15 ms: sem estalo no
+// começo e sem aspereza.
+//
+// A primeira versão (02/10) era um par só, com pico 0,12: o Gustavo testou e não
+// ouviu. Uma batida isolada some fácil debaixo de uma música do mixer ou com o
+// volume do sistema baixo; a repetição é o que faz o ouvido perceber "isso é um
+// aviso". Continua discreto: menos de 3,5 s e longe do volume cheio.
+const PAR = (atraso: number, ganho: number): NotaDoSino[] => [
+  { frequencia: 880, inicio: atraso, duracao: 1.6, pico: 0.22 * ganho },
+  { frequencia: 1318.51, inicio: atraso + 0.22, duracao: 2, pico: 0.16 * ganho },
 ]
+export const NOTAS_DO_SINO: readonly NotaDoSino[] = [...PAR(0, 1), ...PAR(1.2, 0.85)]
 
 export const ATAQUE_DO_SINO = 0.015
 
