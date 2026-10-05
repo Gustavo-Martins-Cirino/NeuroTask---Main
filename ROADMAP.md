@@ -992,9 +992,12 @@ repositório:
 >   pagar as três consultas de contagem a cada visita. E banco fora não desmarca passo feito
 >   (contagem nula não é zero) — antes, numa queda, quem já tinha graduado via o card voltar "0/3".
 >
-> Medido em build de produção, 1280×900: CLS da primeira visita **0,170 → 0,077**, da segunda
-> **0,116 → 0,053**; sem card nenhum o dashboard fica em 0,024, que é a base (outro elemento, de
-> ~0,024, ainda não identificado). Os dois casos com card estão abaixo de 0,1, a faixa "bom".
+> Medido em build de produção, 1280×900. Com o card no topo, 0,170 (contra 0,024 do dashboard
+> sem card, na mesma medida). Com ele embaixo: **0,053**, na primeira visita e nas seguintes — a
+> contagem guardada não muda o CLS, o que muda é a posição; ela fica pelo resto (as consultas que
+> somem, o "0/3" falso na queda). Sem card nenhum o dashboard fica em **0,0007**: aquele 0,024
+> de base era a **enquete**, que entra tarde logo acima dos atalhos — e que na vida real aparece
+> no máximo uma vez por semana (na bancada o usuário falso tinha pergunta pendente sempre).
 >
 > **A troca, e é decisão revisável:** no celular (390×844) o card começa em 816 px, logo abaixo
 > da dobra — a primeira tela de uma conta nova mostra os números zerados e o "Planejar o dia", e
