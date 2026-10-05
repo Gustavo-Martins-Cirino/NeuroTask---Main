@@ -730,6 +730,29 @@ repositório:
 > cobrem o fuso e os recorrentes — mas vale, no próximo reteste, pedir um bloco às 21h ao lado
 > de outro e um bloco por cima de um recorrente, e conferir o ⚠️ no recibo.
 
+> **Dois caminhos de erro escapavam do recibo (05/10).** Também achados lendo a rota:
+>
+> · **O resgate do `failed_generation`** (o tool call que o parser do Groq recusa e a rota
+>   executa mesmo assim) devolvia frases próprias, em português cravado, e listava SÓ o que
+>   resgatou: se a volta anterior tinha gravado a "Aula" e a recusada era a "Revisão", a tela
+>   dizia "Agendei Revisão" e a Aula sumia da resposta. Agora o resgate entra na mesma lista
+>   do laço e quem conta é o recibo — o pedido inteiro, no idioma de quem usa. O `confirm()`
+>   saiu (−35 linhas).
+> · **Erro do Groq que não é 429, depois de uma volta ter gravado**, lançava exceção, e a tela
+>   dizia "Erro ao falar com a IA" por cima de blocos já salvos — quem lê pede de novo e
+>   duplica. Agora segue o caminho do 429: tenta narrar barato e, se não der, diz quantos itens
+>   entraram e pede só o que faltou (`erros.salvouAntesDaFalha`).
+>
+> Conferido com um Groq falso (a rota com o `fetch` desviado para um roteiro local): resgate em
+> pt e em en com as duas linhas no recibo; falha depois de gravar com e sem narração, as duas
+> em 200 com recibo; falha sem nada gravado continua 502, como deve. **Isto também muda o que o
+> item do lote de 20 vai ver**: se a próxima queda vier depois de uma volta que gravou, ela
+> aparece como recibo + aviso, e a linha `[neuro-ia] groq recusou:` continua no log.
+>
+> **De quebra, a data do recibo em inglês** era "Tuesday, 06/10, 14:00" — que nos EUA (a região
+> do inglês no app) se lê 10 de JUNHO. Agora é "Tuesday, October 6, 2:00 PM"; o português ficou
+> como os retestes validaram.
+
 > **Rodada Y: o `break` que contradizia o próprio comentário, e a espera que eu prometia sem
 > dado.** A cota bateu na primeira mensagem e não liberou, então a rodada rendeu pouco em
 > runtime — mas rendeu os dois achados abaixo, os dois por leitura de código do bundle.
