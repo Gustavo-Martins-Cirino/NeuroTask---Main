@@ -421,7 +421,10 @@ export interface Dicionario {
     semBlocos: string
     planejarODia: string
     tarefasDeHoje: string
+    /** Vazio de verdade: nada atrasado, nada vencendo hoje, nada sem data (lib/tarefas-de-hoje). */
     semTarefasHoje: string
+    /** O card mostra 5; o resto está a um clique, em "Ver todas". */
+    maisTarefasHoje: (n: number) => string
     autoconhecimento: string
     planejadoReal: (planejado: number, real: number) => string
     emDia: string
@@ -1738,7 +1741,8 @@ export const pt: Dicionario = {
     semBlocos: "Nenhum bloco pela frente hoje.",
     planejarODia: "Planejar o dia",
     tarefasDeHoje: "Tarefas de hoje",
-    semTarefasHoje: "Nada com prazo para hoje. 🎉",
+    semTarefasHoje: "Nada pendente para hoje. 🎉",
+    maisTarefasHoje: (n) => `+${n} na lista`,
     autoconhecimento: "Autoconhecimento",
     planejadoReal: (planejado, real) => `planejado ${planejado}min · real ~${real}min`,
     emDia: "em dia",
@@ -2932,7 +2936,8 @@ export const en: Dicionario = {
     semBlocos: "Nothing else scheduled today.",
     planejarODia: "Plan the day",
     tarefasDeHoje: "Today\u2019s tasks",
-    semTarefasHoje: "Nothing due today. 🎉",
+    semTarefasHoje: "Nothing left for today. 🎉",
+    maisTarefasHoje: (n) => `+${n} more`,
     autoconhecimento: "Know yourself",
     planejadoReal: (planejado, real) => `planned ${planejado}min · actual ~${real}min`,
     emDia: "on point",

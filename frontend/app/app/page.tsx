@@ -22,6 +22,7 @@ import { formatTime, formatClock } from "@/lib/time-format"
 import { faixaDoNivel } from "@/lib/nivel-faixa"
 import { XP_UPDATED_EVENT, fetchGamification } from "@/lib/gamification"
 import { useDicionario, useLocale } from "@/hooks/use-idioma"
+import { tarefasDeHoje, type TarefaDoDia } from "@/lib/tarefas-de-hoje"
 
 function localDateKey() {
   const d = new Date()
@@ -88,7 +89,8 @@ export default function DashboardPage() {
   useEffect(() => setAgora(new Date()), [])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [todayBlocks, setTodayBlocks] = useState<{ id: string; title: string; start_time: string; end_time: string }[]>([])
-  const [todayTasks, setTodayTasks] = useState<{ id: string; title: string; priority: string }[]>([])
+  const [todayTasks, setTodayTasks] = useState<TarefaDoDia[]>([])
+  const [todayTotal, setTodayTotal] = useState(0)
   const [insights, setInsights] = useState<ActivityInsight[]>([])
   // Nível: é ele que escolhe a paleta da faixa. Reage ao XP_UPDATED_EVENT para
   // a cor mudar assim que sobe de nível, sem esperar um F5.
@@ -149,17 +151,9 @@ export default function DashboardPage() {
           completedTasks: tasks.filter((t) => t.status === "completed").length,
           pendingTasks: tasks.filter((t) => t.status === "pending" || t.status === "in_progress").length,
         }))
-        setTodayTasks(
-          tasks
-            .filter(
-              (t) =>
-                (t.status === "pending" || t.status === "in_progress") &&
-                t.due_date &&
-                new Date(t.due_date) >= today &&
-                new Date(t.due_date) < tomorrow
-            )
-            .slice(0, 5)
-        )
+        const doDia = tarefasDeHoje(tasks, new Date())
+        setTodayTasks(doDia.itens)
+        setTodayTotal(doDia.total)
       }
       if (blocks) {
         setStats((prev) => ({ ...prev, todayBlocks: blocks.length }))
@@ -332,9 +326,24 @@ export default function DashboardPage() {
                           )}
                         />
                         <span className="truncate">{t.title}</span>
+                        {t.grupo === "atrasada" && (
+                          <span className="ml-auto shrink-0 rounded-full bg-red-500/10 px-2 py-0.5 text-[11px] font-medium text-red-500">
+                            {traducao.tarefas.cartao.atrasada}
+                          </span>
+                        )}
                       </Link>
                     </li>
                   ))}
+                  {todayTotal > todayTasks.length && (
+                    <li>
+                      <Link
+                        href="/app/tasks"
+                        className="-mx-1.5 block rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                      >
+                        {traducao.inicio.maisTarefasHoje(todayTotal - todayTasks.length)}
+                      </Link>
+                    </li>
+                  )}
                 </ul>
               )}
             </div>

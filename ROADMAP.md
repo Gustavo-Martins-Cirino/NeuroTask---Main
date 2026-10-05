@@ -1004,6 +1004,24 @@ repositório:
 > o card aparece no primeiro rolar. Se o Gustavo preferir o card visível sem rolar no celular, a
 > volta é colocá-lo logo abaixo dos números só em telas estreitas, aceitando o pulo ali.
 
+> **"Tarefas de hoje" no dashboard passou a mostrar o dia inteiro (05/10).** O card só via o que
+> vencia HOJE. Duas coisas escapavam, e uma era defeito: a tarefa de ontem que ficou para trás
+> **sumia do dashboard**, e o card ainda comemorava — "Nada com prazo para hoje. 🎉" — com trabalho
+> atrasado na lista. A outra era o relato do Ray: quem anota sem data, que é o jeito mais comum de
+> anotar, via o card vazio com a lista cheia ("esperava aparecer minha lista de tarefas").
+>
+> Não precisou de decisão nova: a tela de Tarefas já define "Hoje" como **vence hoje, está atrasada
+> ou não tem data** (`isUpcoming`), e o card do dashboard com o mesmo nome usava outra regra. Agora
+> usam a mesma (`lib/tarefas-de-hoje.ts`, 12 testes): atrasadas primeiro, com o selo "Atrasada" que
+> o cartão de tarefa já tinha; depois as de hoje; depois as sem data; prioridade mais alta primeiro
+> dentro de cada grupo. Mostra 5 e diz quantas faltam ("+2 na lista", que leva a Tarefas). O 🎉 só
+> sai quando não há nada pendente para hoje mesmo, e a frase virou "Nada pendente para hoje".
+>
+> Conferido em build de produção com tarefas fictícias: uma atrasada, uma urgente de hoje, cinco sem
+> data, uma de amanhã e uma concluída — o card listou a atrasada com o selo, a de hoje, as três sem
+> data de prioridade mais alta e "+2 na lista"; a de amanhã e a concluída ficaram de fora. Só com a
+> de amanhã e a concluída, o card disse "Nada pendente para hoje. 🎉".
+
 - [ ] **O ticker único roda 60 vezes por segundo mesmo com tudo parado.** Visto medindo o
       dashboard ocioso: 60 quadros/s de rAF em qualquer tela do app, porque o Lenis está
       inscrito no `gsap.ticker` e o ticker não dorme. Custa pouco (~0,5 ms por quadro numa CPU

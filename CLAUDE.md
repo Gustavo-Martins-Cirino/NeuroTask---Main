@@ -102,6 +102,7 @@ frontend/
 │   ├── foto-perfil.ts        # Recorte quadrado, limites e caminho da foto (puro)
 │   ├── dashboard-metricas.ts # As 3 perguntas de "Seus números" (puro; dia/semana/hora locais)
 │   ├── comece-por-aqui.ts    # Card "Comece por aqui": contagem guardada e graduação no aparelho (puro)
+│   ├── tarefas-de-hoje.ts    # Card "Tarefas de hoje": atrasadas, de hoje e sem data — o "Hoje" da tela de Tarefas (puro)
 │   ├── avatar.ts             # I/O do retrato: bonequinho + envio/remoção da foto
 │   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
 │   ├── office-city.ts        # Fase do dia + paleta da vista da janela (puro)
