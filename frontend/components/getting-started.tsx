@@ -8,30 +8,53 @@ import { motion } from "framer-motion"
 import { Sparkles, Check, ArrowRight, X, Armchair, Bot, CalendarPlus } from "lucide-react"
 import { useDicionario } from "@/hooks/use-idioma"
 import { type Dicionario } from "@/lib/i18n"
+import {
+  CHAVE_CONTAGEM,
+  CHAVE_DISPENSADO,
+  graduou,
+  leContagem,
+  serializaContagem,
+  type Contagem,
+} from "@/lib/comece-por-aqui"
 
 // "Comece por aqui" — primeiro caminho óbvio pro novo usuário (que hoje cai num
 // dashboard vazio). Os passos se marcam sozinhos a partir do estado real (tarefa
 // criada / concluída / algum bloco no calendário); quando os três fecham, o card
-// some ("graduação"). Dá pra dispensar antes (guardado no localStorage).
-
-const DISMISS_KEY = "neurotask:onboarded"
+// some ("graduação"). Dá pra dispensar antes. Os dois ficam guardados no
+// aparelho, e a última contagem também: ver lib/comece-por-aqui.
 
 /** O texto de cada passo mora no dicionário, indexado por este id. */
 type IdPasso = keyof Dicionario["inicio"]["comecePorAqui"]["passos"]
 
-interface Counts {
-  tasks: number
-  done: number
-  blocks: number
+function guarda(chave: string, valor: string | null) {
+  try {
+    if (valor === null) localStorage.removeItem(chave)
+    else localStorage.setItem(chave, valor)
+  } catch {
+    /* sem armazenamento: o card só volta a esperar a consulta na próxima visita */
+  }
 }
 
 export function GettingStarted() {
   const t = useDicionario().inicio.comecePorAqui
-  const [counts, setCounts] = useState<Counts | null>(null)
+  const [counts, setCounts] = useState<Contagem | null>(null)
   const [dismissed, setDismissed] = useState(true) // some por padrão até saber
 
   useEffect(() => {
-    setDismissed(localStorage.getItem(DISMISS_KEY) === "1")
+    let dispensado = false
+    let guardada: Contagem | null = null
+    try {
+      dispensado = localStorage.getItem(CHAVE_DISPENSADO) === "1"
+      guardada = leContagem(localStorage.getItem(CHAVE_CONTAGEM))
+    } catch {
+      /* idem */
+    }
+    setDismissed(dispensado)
+    // Graduado ou dispensado neste aparelho: nem consulta.
+    if (dispensado) return
+    if (guardada) setCounts(guardada)
+
+    let vivo = true
     const supabase = createClient()
     ;(async () => {
       const [tarefas, feitas, blocos] = await Promise.all([
@@ -39,8 +62,21 @@ export function GettingStarted() {
         supabase.from("tasks").select("id", { count: "exact", head: true }).eq("status", "completed"),
         supabase.from("time_blocks").select("id", { count: "exact", head: true }),
       ])
-      setCounts({ tasks: tarefas.count ?? 0, done: feitas.count ?? 0, blocks: blocos.count ?? 0 })
+      // Banco fora: as contagens voltam nulas, e "nulo" não é "zero". Fica o que
+      // já estava na tela (a guardada, se havia) em vez de desmarcar passo feito.
+      if (!vivo || tarefas.error || feitas.error || blocos.error) return
+      const nova = { tasks: tarefas.count ?? 0, done: feitas.count ?? 0, blocks: blocos.count ?? 0 }
+      setCounts(nova)
+      if (graduou(nova)) {
+        guarda(CHAVE_DISPENSADO, "1")
+        guarda(CHAVE_CONTAGEM, null)
+      } else {
+        guarda(CHAVE_CONTAGEM, serializaContagem(nova))
+      }
     })()
+    return () => {
+      vivo = false
+    }
   }, [])
 
   if (!counts || dismissed) return null
@@ -54,7 +90,8 @@ export function GettingStarted() {
   if (feitos === steps.length) return null // graduou — some sozinho
 
   const dispensar = () => {
-    localStorage.setItem(DISMISS_KEY, "1")
+    guarda(CHAVE_DISPENSADO, "1")
+    guarda(CHAVE_CONTAGEM, null)
     setDismissed(true)
   }
 
