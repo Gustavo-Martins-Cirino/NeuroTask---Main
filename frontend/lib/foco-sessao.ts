@@ -29,6 +29,12 @@ export interface SessaoFoco {
   tarefa: Task | null
   minimizado: boolean
   ambiente: number
+  /** Segundos focados antes de um "recomeçar" ou troca de duração (lib/foco-pontos). */
+  focadoAntes?: number
+  /** Blocos de 5 min já pagos: recarregar não pode pagá-los de novo. */
+  blocosPagos?: number
+  /** XP que o servidor confirmou nesta sessão — o "+N XP neste foco". */
+  xpGanho?: number
 }
 
 export interface SessaoRestaurada extends SessaoFoco {
@@ -38,6 +44,9 @@ export interface SessaoRestaurada extends SessaoFoco {
 }
 
 const numeroFinito = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v)
+
+/** Contador da sessão: ausente (sessão de antes dos pontos do foco) ou torto vira 0. */
+const contador = (v: unknown): number => (numeroFinito(v) && v >= 0 ? Math.floor(v) : 0)
 
 function tarefaValida(v: unknown): Task | null {
   if (!v || typeof v !== "object") return null
@@ -74,6 +83,9 @@ export function restauraSessao(raw: string | null, agora: number, totalAmbientes
     tarefa: tarefaValida(d.tarefa),
     minimizado: d.minimizado === true,
     ambiente: Number.isInteger(ambiente) && (ambiente as number) >= 0 && (ambiente as number) < totalAmbientes ? (ambiente as number) : 0,
+    focadoAntes: contador(d.focadoAntes),
+    blocosPagos: contador(d.blocosPagos),
+    xpGanho: contador(d.xpGanho),
   }
 
   if (fimEm === null) {

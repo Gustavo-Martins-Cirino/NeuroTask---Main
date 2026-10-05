@@ -5,7 +5,8 @@ import dynamic from "next/dynamic"
 import { createClient } from "@/lib/supabase/client"
 import { GRADIENT_PRESETS, type GradientPreset, type IdAmbiente } from "@/lib/focus-gradient"
 import { useRealtime } from "@/hooks/use-realtime"
-import { awardXp, taskXpAmount } from "@/lib/gamification"
+import { awardFocusXp, awardXp, taskXpAmount } from "@/lib/gamification"
+import { MINUTOS_PARA_DOBRAR, MINUTOS_POR_BLOCO, XP_POR_BLOCO, bonusDaTarefa, segundosFocados, xpAPagar } from "@/lib/foco-pontos"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { SoundMixer } from "@/components/sound-mixer"
 import { YouTubePlayer } from "@/components/youtube-player"
@@ -195,6 +196,16 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [minimized, setMinimized] = useState(false)
 
+  // Pontos do foco (lib/foco-pontos). O tempo focado sai do próprio timer; o
+  // que andou antes de um "recomeçar" fica guardado em `focadoAntes`.
+  const [focadoAntes, setFocadoAntes] = useState(0)
+  const [blocosPagos, setBlocosPagos] = useState(0)
+  const [xpGanho, setXpGanho] = useState(0)
+  /** Trava síncrona dos blocos pagos: o estado só atualiza no próximo render. */
+  const pagosRef = useRef(0)
+  /** Muda a cada sessão nova, para um XP que volte atrasado não cair na seguinte. */
+  const sessaoRef = useRef(0)
+
   const fetchInProgress = useCallback(async () => {
     const { data } = await supabase
       .from("tasks").select("*").eq("status", "in_progress")
@@ -247,6 +258,10 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     setRemaining(s.restante)
     setAmbient(s.ambiente)
     setMinimized(s.minimizado)
+    setFocadoAntes(s.focadoAntes ?? 0)
+    pagosRef.current = s.blocosPagos ?? 0
+    setBlocosPagos(pagosRef.current)
+    setXpGanho(s.xpGanho ?? 0)
     setOpen(true)
     if (s.terminouFora) {
       const t = textosRef.current
@@ -307,12 +322,32 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
           tarefa: focusTask,
           minimizado: minimized,
           ambiente: ambient,
+          focadoAntes,
+          blocosPagos,
+          xpGanho,
         })
       )
     } catch {
       /* idem */
     }
-  }, [open, running, duration, remaining, focusTask, minimized, ambient])
+  }, [open, running, duration, remaining, focusTask, minimized, ambient, focadoAntes, blocosPagos, xpGanho])
+
+  // A cada 5 min de timer correndo, paga o que falta. Roda no mesmo compasso da
+  // tela (o intervalo de 1s, e o fim) — e paga a DIFERENÇA, então um tique
+  // atrasado de aba de fundo não perde bloco nem paga dois.
+  const focado = segundosFocados(focadoAntes, duration, remaining)
+  useEffect(() => {
+    if (!open) return
+    const { blocos, xp } = xpAPagar(focado, pagosRef.current)
+    if (xp <= 0) return
+    pagosRef.current = blocos
+    setBlocosPagos(blocos)
+    const sessao = sessaoRef.current
+    void awardFocusXp(xp).then((concedido) => {
+      const entrou = concedido ?? xp
+      if (entrou > 0 && sessaoRef.current === sessao) setXpGanho((g) => g + entrou)
+    })
+  }, [open, focado])
 
   // Fecha o painel (Sons / Ambiente) ao clicar fora dele
   useEffect(() => {
@@ -333,17 +368,26 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     setRemaining(mins * 60)
     setRunning(false)
     setMinimized(false)
+    sessaoRef.current++
+    pagosRef.current = 0
+    setBlocosPagos(0)
+    setFocadoAntes(0)
+    setXpGanho(0)
     setOpen(true)
   }, [])
 
+  // Zerar o timer não zera o tempo que a pessoa já passou focada.
+  const guardaOQueAndou = () => setFocadoAntes((a) => a + Math.max(0, duration - remaining))
+
   const setDurationMin = (mins: number) => {
     const m = Math.min(180, Math.max(5, mins))
+    guardaOQueAndou()
     setDuration(m * 60)
     setRemaining(m * 60)
     setRunning(false)
   }
 
-  const reset = () => { setRemaining(duration); setRunning(false) }
+  const reset = () => { guardaOQueAndou(); setRemaining(duration); setRunning(false) }
 
   const completeTask = async () => {
     if (focusTask) {
@@ -364,6 +408,14 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
       }
       const amt = taskXpAmount(focusTask)
       if (amt > 0) awardXp(amt)
+      const bonus = bonusDaTarefa(amt, focado, duration)
+      if (bonus > 0) {
+        const t = textos
+        void awardFocusXp(bonus).then((concedido) => {
+          const entrou = concedido ?? bonus
+          if (entrou > 0) toast.success(t.bonusDoFoco(entrou))
+        })
+      }
       window.dispatchEvent(new Event("neurotask:tasks-changed"))
     }
     setOpen(false)
@@ -375,6 +427,8 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   const durationMin = Math.round(duration / 60)
   const amb = AMBIENTS[ambient]
   const m = amb.mode
+  // Mostrar ANTES de dar: ponto que só aparece depois não muda comportamento.
+  const dobra = focusTask ? bonusDaTarefa(taskXpAmount(focusTask), focado, duration) > 0 : false
 
   // Classes por modo (themed = segue tema do app; dark = texto branco; light = texto escuro)
   const txt = m === "themed" ? "text-foreground" : m === "light" ? "text-neutral-900" : "text-white"
@@ -478,6 +532,10 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               <motion.div className={cn("h-full rounded-full", fill)} animate={{ width: `${progress}%` }} transition={{ ease: "linear", duration: 0.4 }} />
             </div>
 
+            <p className={cn("mt-3 text-xs tabular-nums", soft)}>
+              {xpGanho > 0 ? textos.xpNesteFoco(xpGanho) : textos.xpPorBloco(XP_POR_BLOCO, MINUTOS_POR_BLOCO)}
+            </p>
+
             {/* Controle de tempo (some quando rodando) */}
             <AnimatePresence>
               {!running && (
@@ -507,9 +565,25 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             </div>
 
             {focusTask && (
-              <button onClick={completeTask} className={cn("mt-8 flex items-center gap-2 rounded-full border px-6 py-2.5 text-sm font-medium transition-colors", m === "light" ? "border-black/20 hover:bg-black/5" : m === "themed" ? "border-border hover:bg-accent" : "border-white/20 hover:bg-white/10")}>
+              <button
+                onClick={completeTask}
+                title={dobra ? textos.xpEmDobroExplicacao(MINUTOS_PARA_DOBRAR) : undefined}
+                className={cn("mt-8 flex items-center gap-2 rounded-full border px-6 py-2.5 text-sm font-medium transition-colors", m === "light" ? "border-black/20 hover:bg-black/5" : m === "themed" ? "border-border hover:bg-accent" : "border-white/20 hover:bg-white/10")}
+              >
                 <Check className="h-4 w-4" />
                 {textos.concluirTarefa}
+                <AnimatePresence>
+                  {dobra && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="ml-1 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-950"
+                    >
+                      {textos.xpEmDobro}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </button>
             )}
 

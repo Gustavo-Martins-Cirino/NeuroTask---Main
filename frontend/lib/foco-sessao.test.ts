@@ -45,6 +45,21 @@ describe("restauraSessao", () => {
     expect(restauraSessao(serializaSessao({ ...base, ambiente: 42 }), 0, AMB)?.ambiente).toBe(0)
   })
 
+  it("leva junto os contadores dos pontos: recarregar não paga o mesmo bloco duas vezes", () => {
+    const s = serializaSessao({ ...base, restante: 600, focadoAntes: 420, blocosPagos: 4, xpGanho: 8 })
+    expect(restauraSessao(s, 0, AMB)).toMatchObject({ focadoAntes: 420, blocosPagos: 4, xpGanho: 8 })
+  })
+
+  it("sessão guardada antes dos pontos do foco volta com os contadores zerados", () => {
+    const antiga = JSON.stringify({ duracao: 1500, restante: 600, fimEm: null, tarefa: null, minimizado: false, ambiente: 0 })
+    expect(restauraSessao(antiga, 0, AMB)).toMatchObject({ focadoAntes: 0, blocosPagos: 0, xpGanho: 0 })
+  })
+
+  it("contador torto vira zero, e não derruba a sessão", () => {
+    const s = JSON.stringify({ ...base, restante: 600, blocosPagos: -3, focadoAntes: "muito", xpGanho: 2.7 })
+    expect(restauraSessao(s, 0, AMB)).toMatchObject({ focadoAntes: 0, blocosPagos: 0, xpGanho: 2 })
+  })
+
   it("números fora da faixa não voltam", () => {
     expect(restauraSessao(serializaSessao({ ...base, duracao: -5 }), 0, AMB)).toBeNull()
     expect(restauraSessao(serializaSessao({ ...base, restante: base.duracao + 1 }), 0, AMB)).toBeNull()

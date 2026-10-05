@@ -198,6 +198,16 @@ export interface Dicionario {
     iniciar: string
     pausar: string
     concluirTarefa: string
+    /** Antes do primeiro bloco: quanto o tempo focado paga (lib/foco-pontos). */
+    xpPorBloco: (xp: number, minutos: number) => string
+    /** O XP que o SERVIDOR confirmou nesta sessão. */
+    xpNesteFoco: (xp: number) => string
+    /** Selo do "Concluir tarefa" quando o foco já rodou o bastante para dobrar. */
+    xpEmDobro: string
+    /** Explica o selo para o leitor de tela e no hover. */
+    xpEmDobroExplicacao: (minutos: number) => string
+    /** Toast do bônus, ao lado do "+N XP" normal da tarefa. */
+    bonusDoFoco: (xp: number) => string
     ambiente: string
     /** Selo da miniatura de ambiente que se mexe. */
     animado: string
@@ -1414,6 +1424,11 @@ export const pt: Dicionario = {
     iniciar: "Iniciar",
     pausar: "Pausar",
     concluirTarefa: "Concluir tarefa",
+    xpPorBloco: (xp, minutos) => `+${xp} XP a cada ${minutos} min focados`,
+    xpNesteFoco: (xp) => `+${xp} XP neste foco`,
+    xpEmDobro: "XP em dobro",
+    xpEmDobroExplicacao: (minutos) => `Depois de ${minutos} min de foco, a tarefa concluída aqui vale o dobro de XP`,
+    bonusDoFoco: (xp) => `+${xp} XP de bônus pelo foco`,
     ambiente: "Ambiente",
     animado: "animado",
     ambientes: {
@@ -2592,6 +2607,11 @@ export const en: Dicionario = {
     iniciar: "Start",
     pausar: "Pause",
     concluirTarefa: "Complete task",
+    xpPorBloco: (xp, minutos) => `+${xp} XP every ${minutos} focused minutes`,
+    xpNesteFoco: (xp) => `+${xp} XP this session`,
+    xpEmDobro: "Double XP",
+    xpEmDobroExplicacao: (minutos) => `After ${minutos} minutes of focus, a task completed here earns double XP`,
+    bonusDoFoco: (xp) => `+${xp} XP focus bonus`,
     ambiente: "Ambience",
     animado: "animated",
     ambientes: {
