@@ -54,6 +54,7 @@ tique atrasado não perder nem repetir bloco, e quando a tarefa concluída no fo
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
 `enquete` (quando perguntar e quando ficar quieto — e que "agora não" cala a enquete
 inteira, não só a pergunta recusada),
+`comece-por-aqui` (a contagem guardada do card de primeiros passos, e que graduar é para sempre),
 `dashboard-metricas` (as três perguntas de "Seus números" — e o agrupamento por dia e
 hora **locais**, que é onde um `toISOString()` distraído jogaria toda noite de trabalho
 para o dia seguinte),

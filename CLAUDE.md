@@ -101,6 +101,7 @@ frontend/
 │   ├── task-recurrence.ts    # Repetição da tarefa: regra → chave + próxima ocorrência (puro)
 │   ├── foto-perfil.ts        # Recorte quadrado, limites e caminho da foto (puro)
 │   ├── dashboard-metricas.ts # As 3 perguntas de "Seus números" (puro; dia/semana/hora locais)
+│   ├── comece-por-aqui.ts    # Card "Comece por aqui": contagem guardada e graduação no aparelho (puro)
 │   ├── avatar.ts             # I/O do retrato: bonequinho + envio/remoção da foto
 │   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
 │   ├── office-city.ts        # Fase do dia + paleta da vista da janela (puro)

@@ -955,12 +955,28 @@ repositório:
       Um furo conhecido e limitado pela cota: concluir no foco, desmarcar na lista e concluir no foco
       de novo devolve só o XP da tarefa, não o bônus — o teto de 60/dia é o que segura.
 
-- [ ] **O card "Comece por aqui" entra tarde e empurra o dashboard ~300 px para baixo.** Só
-      em conta que ainda não "graduou" (quem já tem tarefa, tarefa concluída e bloco nunca vê o
-      card). Ele nasce `null` e só aparece quando as três contagens voltam — depois dos números,
-      que ficam logo abaixo dele. Medido: um deslocamento de layout de 0,099 sozinho, no limite
-      do "precisa melhorar" do Google. Saídas possíveis: reservar a altura enquanto conta, ou
-      descer o card para baixo dos números. É escolha de desenho, não conserto.
+> **O card "Comece por aqui" parou de empurrar o dashboard (05/10).** Das duas saídas que este
+> item listava, reservar a altura foi descartado: puniria quem já graduou — quase todo mundo —
+> com um vão que fecharia no mesmo pulo, só que ao contrário. O que entrou:
+>
+> · **A contagem fica guardada no aparelho** (`lib/comece-por-aqui.ts`) e o card desenha na hora
+>   com ela. Sozinho isso **não bastou**, e a medida mostrou por quê: o HTML do servidor já pinta
+>   os números sem o card, e o `localStorage` só é lido depois da hidratação — o pulo continuava,
+>   só que mais cedo (0,116).
+> · **O card desceu para depois de "Agora" e "Tarefas de hoje"** — o que a pessoa veio ver. Ali
+>   ele só empurra o que vem depois.
+> · **Graduar é para sempre neste aparelho**, na mesma chave do "dispensar": quem graduou para de
+>   pagar as três consultas de contagem a cada visita. E banco fora não desmarca passo feito
+>   (contagem nula não é zero) — antes, numa queda, quem já tinha graduado via o card voltar "0/3".
+>
+> Medido em build de produção, 1280×900: CLS da primeira visita **0,170 → 0,077**, da segunda
+> **0,116 → 0,053**; sem card nenhum o dashboard fica em 0,024, que é a base (outro elemento, de
+> ~0,024, ainda não identificado). Os dois casos com card estão abaixo de 0,1, a faixa "bom".
+>
+> **A troca, e é decisão revisável:** no celular (390×844) o card começa em 816 px, logo abaixo
+> da dobra — a primeira tela de uma conta nova mostra os números zerados e o "Planejar o dia", e
+> o card aparece no primeiro rolar. Se o Gustavo preferir o card visível sem rolar no celular, a
+> volta é colocá-lo logo abaixo dos números só em telas estreitas, aceitando o pulo ali.
 
 - [ ] **O ticker único roda 60 vezes por segundo mesmo com tudo parado.** Visto medindo o
       dashboard ocioso: 60 quadros/s de rAF em qualquer tela do app, porque o Lenis está
