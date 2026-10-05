@@ -10,6 +10,7 @@ import { type HairStyle, type Outfit, type BodyType } from "@/lib/avatar"
 import { type ShopCategory, type ShopItemId } from "@/lib/shop"
 import { type ChaveFundoOffice } from "@/lib/office-bg"
 import { type IdPassoOnboarding } from "@/lib/onboarding"
+import { type FormatoDoMomento } from "@/lib/ia-recibo"
 import { type IdPergunta } from "@/lib/enquete"
 import { type TextosDeErroDoFeedback, type TipoDeFeedback } from "@/lib/feedback"
 import { type IdAmbiente } from "@/lib/focus-gradient"
@@ -1042,6 +1043,12 @@ export interface Dicionario {
       falhou: string
       /** Domingo primeiro, como `Date.getDay()`. */
       diasDaSemana: readonly string[]
+      /**
+       * A data de cada linha. Em português "terça-feira, 06/10, 14:00"; em inglês
+       * isso se lia 10 de JUNHO (a região do inglês é EUA, que também usa 12h) —
+       * o tipo de engano de data que o recibo existe para impedir.
+       */
+      momento: FormatoDoMomento
     }
     /**
      * O que as FERRAMENTAS devolvem junto do que fizeram: conflito, vizinho colado,
@@ -2198,6 +2205,9 @@ export const pt: Dicionario = {
         "sexta-feira",
         "sábado",
       ],
+      momento: (m) =>
+        `${m.diaDaSemana}, ${String(m.dia).padStart(2, "0")}/${String(m.mes).padStart(2, "0")}, ` +
+        `${String(m.hora).padStart(2, "0")}:${String(m.minuto).padStart(2, "0")}`,
     },
     avisos: {
       choque: (titulo) => `⚠️ Esse horário choca com "${titulo}", que já está agendado. Quer ajustar?`,
@@ -3378,6 +3388,13 @@ export const en: Dicionario = {
       excluiu: "deleted",
       falhou: "couldn't",
       diasDaSemana: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      // "Tuesday, October 6, 2:00 PM": o mês por extenso não deixa ordem nenhuma
+      // ser lida errado, e é o que a voz fala sem tropeçar numa barra.
+      momento: (m) => {
+        const mes = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][m.mes - 1] ?? ""
+        const h12 = m.hora % 12 === 0 ? 12 : m.hora % 12
+        return `${m.diaDaSemana}, ${mes} ${m.dia}, ${h12}:${String(m.minuto).padStart(2, "0")} ${m.hora < 12 ? "AM" : "PM"}`
+      },
     },
     avisos: {
       choque: (titulo) => `⚠️ This time clashes with "${titulo}", which is already scheduled. Want to adjust?`,

@@ -39,6 +39,18 @@ describe("quando", () => {
     expect(quando(undefined, BRASIL, DIAS)).toBeNull()
     expect(quando("", BRASIL, DIAS)).toBeNull()
   })
+
+  it("o formato do dicionário em português é o padrão de sempre", () => {
+    const iso = "2026-10-06T17:05:00Z" // 14:05 no Brasil
+    expect(quando(iso, BRASIL, pt.ia.recibo.diasDaSemana, pt.ia.recibo.momento)).toBe(quando(iso, BRASIL, pt.ia.recibo.diasDaSemana))
+  })
+
+  it("em inglês o mês vai por extenso e a hora em 12h: 06/10 se lia 10 de junho nos EUA", () => {
+    const formato = en.ia.recibo.momento
+    expect(quando("2026-10-06T17:05:00Z", BRASIL, en.ia.recibo.diasDaSemana, formato)).toBe("Tuesday, October 6, 2:05 PM")
+    expect(quando("2026-10-06T03:00:00Z", BRASIL, en.ia.recibo.diasDaSemana, formato)).toBe("Tuesday, October 6, 12:00 AM")
+    expect(quando("2026-10-06T15:00:00Z", BRASIL, en.ia.recibo.diasDaSemana, formato)).toBe("Tuesday, October 6, 12:00 PM")
+  })
 })
 
 describe("recibo", () => {
@@ -143,10 +155,11 @@ describe("o recibo com os textos de verdade", () => {
     expect(texto).toContain("sábado, 03/10, 10:00")
   })
 
-  it("em inglês também", () => {
+  it("em inglês também — com a data no jeito de quem lê em inglês", () => {
     const texto = recibo(umSo, 180, { ...en.ia.recibo, repeticao: en.ia.agenda.repeticao }, en.ia.recibo.diasDaSemana)!
     expect(texto).toContain("created")
-    expect(texto).toContain("Saturday, 03/10, 10:00")
+    // Era "Saturday, 03/10, 10:00" — que nos EUA se lê 10 de março.
+    expect(texto).toContain("Saturday, October 3, 10:00 AM")
   })
 
   it("os dois idiomas dizem coisas diferentes", () => {

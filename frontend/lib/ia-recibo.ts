@@ -13,7 +13,7 @@
 // resposta. Se as duas discordarem, quem usa vê a discordância em vez de
 // descobrir dias depois, abrindo o calendário.
 
-import { diaDaSemanaDaChave, diaMesDaChave } from "@/lib/ia-agora"
+import { diaDaSemanaDaChave } from "@/lib/ia-agora"
 
 /** Uma ferramenta executada, com o que ela recebeu e o que devolveu. */
 export interface AcaoExecutada {
@@ -238,7 +238,28 @@ export interface TextosDoRecibo {
   falhou: string
   /** Regra de recorrência → como ela se diz. Vem de `ia.agenda.repeticao`. */
   repeticao: Record<string, string>
+  /** Como a data se escreve na linha. Ausente = o jeito brasileiro (`MOMENTO_BR`). */
+  momento?: FormatoDoMomento
 }
+
+/** Um instante na parede de quem usa, em partes — a ORDEM fica com o dicionário. */
+export interface Momento {
+  diaDaSemana: string
+  dia: number
+  mes: number
+  hora: number
+  minuto: number
+}
+
+export type FormatoDoMomento = (m: Momento) => string
+
+/**
+ * "segunda-feira, 21/09, 09:00". É o padrão porque é o que os relatórios de teste
+ * validaram — mas em inglês ele mente: "Tuesday, 06/10" se lê 10 de JUNHO nos
+ * EUA, que é a região que o inglês implica. O dicionário em inglês passa o dele.
+ */
+export const MOMENTO_BR: FormatoDoMomento = (m) =>
+  `${m.diaDaSemana}, ${dois(m.dia)}/${dois(m.mes)}, ${dois(m.hora)}:${dois(m.minuto)}`
 
 const VERBO: Record<string, keyof Pick<TextosDoRecibo, "criou" | "atualizou" | "excluiu">> = {
   create_task: "criou",
@@ -263,14 +284,24 @@ function dois(n: number): string {
  * O dia da semana entra junto porque foi assim que o bug 1 se escondeu: a
  * confirmação dizia "na segunda" sem a data, e a data errada passava batida.
  */
-export function quando(iso: unknown, tzMin: number, nomesDosDias: readonly string[]): string | null {
+export function quando(
+  iso: unknown,
+  tzMin: number,
+  nomesDosDias: readonly string[],
+  formato: FormatoDoMomento = MOMENTO_BR
+): string | null {
   if (typeof iso !== "string" || !iso) return null
   const t = Date.parse(iso)
   if (!Number.isFinite(t)) return null
   const local = new Date(t - (Number.isFinite(tzMin) ? tzMin : 0) * 60_000)
   const chave = `${local.getUTCFullYear()}-${dois(local.getUTCMonth() + 1)}-${dois(local.getUTCDate())}`
-  const dia = nomesDosDias[diaDaSemanaDaChave(chave)] ?? ""
-  return `${dia}, ${diaMesDaChave(chave)}, ${dois(local.getUTCHours())}:${dois(local.getUTCMinutes())}`
+  return formato({
+    diaDaSemana: nomesDosDias[diaDaSemanaDaChave(chave)] ?? "",
+    dia: local.getUTCDate(),
+    mes: local.getUTCMonth() + 1,
+    hora: local.getUTCHours(),
+    minuto: local.getUTCMinutes(),
+  })
 }
 
 function titulo(args: Record<string, unknown>): string {
@@ -312,7 +343,7 @@ export function recibo(
       return `ℹ️ ${r.note.trim()}`
     }
     const verbo = textos[VERBO[a.nome] ?? "criou"]
-    const momento = quando(a.args.start_time ?? a.args.due_date, tzMin, nomesDosDias)
+    const momento = quando(a.args.start_time ?? a.args.due_date, tzMin, nomesDosDias, textos.momento)
     // `plan_day_backwards` cria vários de uma vez e devolve a contagem.
     const quantos = typeof r.created === "number" ? ` (${r.created})` : ""
     // Bloco que repete precisa dizer que repete: senão o comprovante mostra uma
