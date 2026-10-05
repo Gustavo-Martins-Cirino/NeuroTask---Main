@@ -65,8 +65,10 @@ export function useOfficeCelebration(enabled = true): number {
 
     // Concluiu com o Escritório aberto (Modo Foco, lembrete): festa na hora.
     const onXp = (e: Event) => {
-      const amount = (e as CustomEvent<XpUpdateDetail>).detail?.amount ?? 0
-      if (amount <= 0) return
+      const detalhe = (e as CustomEvent<XpUpdateDetail>).detail
+      const amount = detalhe?.amount ?? 0
+      // XP do tempo de foco é relógio, não conclusão: festa a cada 5 min seria ruído.
+      if (amount <= 0 || detalhe?.silencioso) return
       consume() // já vamos tocar aqui: não deixa pendente para a próxima visita
       tocar(1)
     }

@@ -100,7 +100,7 @@ export function Header({ title, icon, children }: HeaderProps) {
           toast.success(cabecalhoRef.current.subiuDeNivel(detail.gamification.level), {
             description: cabecalhoRef.current.subiuDeNivelDescricao,
           })
-        } else if (detail.amount > 0) {
+        } else if (detail.amount > 0 && !detail.silencioso) {
           toast.success(`+${detail.amount} XP`)
         }
         return detail.gamification
