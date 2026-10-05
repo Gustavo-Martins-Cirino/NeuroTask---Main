@@ -230,8 +230,6 @@ export default function DashboardPage() {
             </p>
           </motion.div>
 
-          <GettingStarted />
-
           <motion.div
             variants={container}
             initial="hidden"
@@ -341,6 +339,13 @@ export default function DashboardPage() {
               )}
             </div>
           </motion.div>
+
+          {/* "Comece por aqui" mora DEPOIS do que a pessoa veio ver, e não no topo.
+              Ele só sabe se aparece depois de contar no banco (ou no aparelho), e o
+              HTML do servidor já pinta os números sem ele: no topo, entrar tarde
+              empurrava o dashboard inteiro ~300 px (CLS 0,17 medido). Aqui embaixo o
+              que ele empurra é só o que vem depois — ver lib/comece-por-aqui. */}
+          <GettingStarted />
 
           {/* Seus números — fechada por padrão, de propósito: o dashboard agrada
               por ser minimalista, e um painel sempre aberto acabaria com isso. */}
