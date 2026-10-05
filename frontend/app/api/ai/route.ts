@@ -15,12 +15,13 @@ import {
 } from "@/lib/ia-limite"
 import { blocosDoLote, CRIAR_BLOCOS_EM_LOTE } from "@/lib/ia-lote"
 import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
-import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia } from "@/lib/ia-agenda"
+import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia, type Ocorrencia } from "@/lib/ia-agenda"
+import { FOLGA_DE_DUPLICATA_MS, FOLGA_MINIMA_MS, conflitoDoBloco, duplicataNaAgenda, janelaDoConflito } from "@/lib/ia-conflito"
 import { createClient } from "@/lib/supabase/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
 import { descreveAgora, sufixoDeFuso } from "@/lib/ia-agora"
-import { ehDuplicata, ehMesmoTitulo } from "@/lib/ia-duplicata"
+import { ehDuplicata } from "@/lib/ia-duplicata"
 
 export const runtime = "nodejs"
 
@@ -372,32 +373,40 @@ function fmtDM(d: Date, tzMin: number): string {
 }
 
 // Bloco de título igual/parecido no mesmo dia, sobrepondo ou colado (< 45 min)
-async function findSimilarSameDay(
+/**
+ * A agenda em volta de [inicio, fim), lida como `list_time_blocks` a lê: os
+ * recorrentes de qualquer idade mais os avulsos que encostam na janela, expandidos
+ * na parede de quem usa. Nada de "dia" do servidor — ver lib/ia-conflito.
+ */
+async function vizinhanca(
+  supabase: SupabaseClient,
+  inicio: number,
+  fim: number,
+  folgaMs: number,
+  tzMin: number
+): Promise<Ocorrencia[]> {
+  const { de, ate } = janelaDoConflito(inicio, fim, folgaMs)
+  const { data } = await supabase
+    .from("time_blocks")
+    .select("id, title, start_time, end_time, is_recurring, recurrence_rule")
+    .lt("start_time", new Date(ate).toISOString())
+    .or(`is_recurring.eq.true,start_time.gte.${new Date(de - 86_400_000).toISOString()}`)
+  return ocorrenciasNaJanela(data ?? [], de, ate, tzMin)
+}
+
+async function duplicataPerto(
   supabase: SupabaseClient,
   title: string,
   start: Date,
-  end: Date
-): Promise<{ id: string; title: string } | null> {
-  const dayIni = new Date(start)
-  dayIni.setHours(0, 0, 0, 0)
-  const dayFim = new Date(dayIni)
-  dayFim.setDate(dayFim.getDate() + 1)
-  const { data: sameDay } = await supabase
-    .from("time_blocks")
-    .select("id, title, start_time, end_time")
-    .gte("start_time", dayIni.toISOString())
-    .lt("start_time", dayFim.toISOString())
-  const GAP = 45 * 60 * 1000
-  return (
-    (sameDay ?? []).find((b) => {
-      if (!ehMesmoTitulo(b.title, title)) return false
-      const bs = new Date(b.start_time).getTime()
-      const be = new Date(b.end_time).getTime()
-      const overlap = start.getTime() < be && end.getTime() > bs
-      const gap = start.getTime() >= be ? start.getTime() - be : bs - end.getTime()
-      return overlap || (gap >= 0 && gap <= GAP)
-    }) ?? null
-  )
+  end: Date,
+  tzMin: number
+): Promise<{ id: string | null; title: string } | null> {
+  const ini = start.getTime()
+  const fim = end.getTime()
+  if (!Number.isFinite(ini) || !Number.isFinite(fim)) return null
+  const agenda = await vizinhanca(supabase, ini, fim, FOLGA_DE_DUPLICATA_MS, tzMin)
+  const dup = duplicataNaAgenda(ini, fim, title, agenda)
+  return dup ? { id: dup.id, title: dup.titulo } : null
 }
 
 /**
@@ -428,39 +437,18 @@ async function checkConflicts(
   supabase: SupabaseClient,
   blockId: string,
   startISO: string,
-  endISO: string
+  endISO: string,
+  tzMin: number
 ): Promise<string | null> {
-  const start = new Date(startISO).getTime()
-  const end = new Date(endISO).getTime()
-  if (isNaN(start) || isNaN(end)) return null
-  const dayStart = new Date(startISO)
-  dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date(dayStart)
-  dayEnd.setDate(dayEnd.getDate() + 1)
-  const { data } = await supabase
-    .from("time_blocks")
-    .select("title, start_time, end_time")
-    .neq("id", blockId)
-    .gte("start_time", dayStart.toISOString())
-    .lt("start_time", dayEnd.toISOString())
-  if (!data || data.length === 0) return null
-  for (const b of data) {
-    const bs = new Date(b.start_time).getTime()
-    const be = new Date(b.end_time).getTime()
-    if (start < be && end > bs) {
-      return `⚠️ Esse horário choca com "${b.title}", que já está agendado. Quer ajustar?`
-    }
-  }
-  const GAP = 15 * 60 * 1000
-  for (const b of data) {
-    const bs = new Date(b.start_time).getTime()
-    const be = new Date(b.end_time).getTime()
-    const gap = start >= be ? start - be : bs - end
-    if (gap >= 0 && gap <= GAP) {
-      return `Ficou bem colado a "${b.title}" (menos de 15 min de intervalo). Que tal um descanso entre os dois?`
-    }
-  }
-  return null
+  const start = Date.parse(startISO)
+  const end = Date.parse(endISO)
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null
+  const agenda = await vizinhanca(supabase, start, end, FOLGA_MINIMA_MS, tzMin)
+  const c = conflitoDoBloco(start, end, agenda, blockId)
+  if (!c) return null
+  return c.tipo === "choque"
+    ? `⚠️ Esse horário choca com "${c.titulo}", que já está agendado. Quer ajustar?`
+    : `Ficou bem colado a "${c.titulo}" (menos de 15 min de intervalo). Que tal um descanso entre os dois?`
 }
 
 // Briefing do dia 100% DETERMINÍSTICO — zero chamada de IA: sem alucinação,
@@ -655,7 +643,7 @@ async function executeTool(
               .single()
             if (!blockErr && block) {
               scheduled = true
-              warning = await checkConflicts(supabase, block.id, start.toISOString(), end.toISOString())
+              warning = await checkConflicts(supabase, block.id, start.toISOString(), end.toISOString(), tzMin)
             }
           }
         }
@@ -709,7 +697,7 @@ async function executeTool(
         }
         // Anti-duplicação (pega o caso "café da manhã"/"manhão")
         {
-          const dup = await findSimilarSameDay(supabase, String(args.title ?? ""), new Date(startT), new Date(endT))
+          const dup = await duplicataPerto(supabase, String(args.title ?? ""), new Date(startT), new Date(endT), tzMin)
           if (dup) {
             return { ok: true, created: dup, note: `Já existe um bloco igual/parecido ("${dup.title}") nesse período — não criei outro.` }
           }
@@ -738,7 +726,7 @@ async function executeTool(
           .select("id, title, start_time")
           .single()
         if (error) return { ok: false, error: error.message }
-        const warning = juntaAvisos(avisoDePassado(startT), await checkConflicts(supabase, data.id, startT, endT))
+        const warning = juntaAvisos(avisoDePassado(startT), await checkConflicts(supabase, data.id, startT, endT, tzMin))
         return { ok: true, created: data, warning, recurrence_rule: regra }
       }
       case "list_time_blocks": {
@@ -813,7 +801,7 @@ async function executeTool(
         // a RLS filtra por dono, então "não achei" é a resposta honesta.
         if (!data) return { ok: false, error: "não achei esse bloco" }
 
-        const warning = await checkConflicts(supabase, data.id, data.start_time, data.end_time)
+        const warning = await checkConflicts(supabase, data.id, data.start_time, data.end_time, tzMin)
         return { ok: true, created: data, warning, recurrence_rule: data.recurrence_rule ?? null }
       }
       case "delete_time_block": {
@@ -869,7 +857,7 @@ async function executeTool(
         let created = 0
         const skipped: string[] = []
         for (const p of plan) {
-          const dup = await findSimilarSameDay(supabase, p.title, p.start, p.end)
+          const dup = await duplicataPerto(supabase, p.title, p.start, p.end, tzMin)
           if (dup) {
             skipped.push(p.title)
             continue
