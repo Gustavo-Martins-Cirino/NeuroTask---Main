@@ -418,10 +418,10 @@ async function duplicataPerto(
  * vai pelo `warning`, que é o caminho estruturado: aparece no recibo e, na voz,
  * é falado.
  */
-function avisoDePassado(startISO: string): string | null {
+function avisoDePassado(startISO: string, avisos: Dicionario["ia"]["avisos"]): string | null {
   const t = Date.parse(startISO)
   if (!Number.isFinite(t) || t >= Date.now()) return null
-  return "Esse horário já passou — criei no dia que você pediu mesmo assim. Se era para outro dia, me diga."
+  return avisos.passado
 }
 
 /** Um `warning` só, sem ⚠️ repetido no meio (o recibo põe o dele na frente). */
@@ -438,7 +438,8 @@ async function checkConflicts(
   blockId: string,
   startISO: string,
   endISO: string,
-  tzMin: number
+  tzMin: number,
+  avisos: Dicionario["ia"]["avisos"]
 ): Promise<string | null> {
   const start = Date.parse(startISO)
   const end = Date.parse(endISO)
@@ -446,9 +447,7 @@ async function checkConflicts(
   const agenda = await vizinhanca(supabase, start, end, FOLGA_MINIMA_MS, tzMin)
   const c = conflitoDoBloco(start, end, agenda, blockId)
   if (!c) return null
-  return c.tipo === "choque"
-    ? `⚠️ Esse horário choca com "${c.titulo}", que já está agendado. Quer ajustar?`
-    : `Ficou bem colado a "${c.titulo}" (menos de 15 min de intervalo). Que tal um descanso entre os dois?`
+  return c.tipo === "choque" ? avisos.choque(c.titulo) : avisos.colado(c.titulo, FOLGA_MINIMA_MS / 60_000)
 }
 
 // Briefing do dia 100% DETERMINÍSTICO — zero chamada de IA: sem alucinação,
@@ -606,7 +605,7 @@ async function executeTool(
         const nova = { title: args.title, due_date: dueDate }
         const dupTask = (existing ?? []).find((t) => ehDuplicata(nova, t, tzMin))
         if (dupTask) {
-          return { ok: true, created: dupTask, note: `Já existe uma tarefa igual/parecida ("${dupTask.title}") — não criei outra.` }
+          return { ok: true, created: dupTask, note: t.avisos.tarefaRepetida(dupTask.title) }
         }
         const { data, error } = await supabase
           .from("tasks")
@@ -643,7 +642,7 @@ async function executeTool(
               .single()
             if (!blockErr && block) {
               scheduled = true
-              warning = await checkConflicts(supabase, block.id, start.toISOString(), end.toISOString(), tzMin)
+              warning = await checkConflicts(supabase, block.id, start.toISOString(), end.toISOString(), tzMin, t.avisos)
             }
           }
         }
@@ -699,7 +698,7 @@ async function executeTool(
         {
           const dup = await duplicataPerto(supabase, String(args.title ?? ""), new Date(startT), new Date(endT), tzMin)
           if (dup) {
-            return { ok: true, created: dup, note: `Já existe um bloco igual/parecido ("${dup.title}") nesse período — não criei outro.` }
+            return { ok: true, created: dup, note: t.avisos.blocoRepetido(dup.title) }
           }
         }
         // Só as três regras que o app sabe expandir. Qualquer outra coisa vira
@@ -726,7 +725,7 @@ async function executeTool(
           .select("id, title, start_time")
           .single()
         if (error) return { ok: false, error: error.message }
-        const warning = juntaAvisos(avisoDePassado(startT), await checkConflicts(supabase, data.id, startT, endT, tzMin))
+        const warning = juntaAvisos(avisoDePassado(startT, t.avisos), await checkConflicts(supabase, data.id, startT, endT, tzMin, t.avisos))
         return { ok: true, created: data, warning, recurrence_rule: regra }
       }
       case "list_time_blocks": {
@@ -801,7 +800,7 @@ async function executeTool(
         // a RLS filtra por dono, então "não achei" é a resposta honesta.
         if (!data) return { ok: false, error: "não achei esse bloco" }
 
-        const warning = await checkConflicts(supabase, data.id, data.start_time, data.end_time, tzMin)
+        const warning = await checkConflicts(supabase, data.id, data.start_time, data.end_time, tzMin, t.avisos)
         return { ok: true, created: data, warning, recurrence_rule: data.recurrence_rule ?? null }
       }
       case "delete_time_block": {

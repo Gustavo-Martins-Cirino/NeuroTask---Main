@@ -1040,6 +1040,19 @@ export interface Dicionario {
       /** Domingo primeiro, como `Date.getDay()`. */
       diasDaSemana: readonly string[]
     }
+    /**
+     * O que as FERRAMENTAS devolvem junto do que fizeram: conflito, vizinho colado,
+     * horário que já passou, duplicata recusada. Aparece no recibo (e, na voz, é
+     * falado), e o modelo lê para repassar — por isso no idioma de quem usa. Era
+     * português cravado na rota, e o recibo em inglês saía com o aviso em português.
+     */
+    avisos: {
+      choque: (titulo: string) => string
+      colado: (titulo: string, minutos: number) => string
+      passado: string
+      tarefaRepetida: (titulo: string) => string
+      blocoRepetido: (titulo: string) => string
+    }
     erros: {
       naoAutorizado: string
       /** Some para quem usa: é recado para mim, com o nome da variável. */
@@ -2175,6 +2188,14 @@ export const pt: Dicionario = {
         "sexta-feira",
         "sábado",
       ],
+    },
+    avisos: {
+      choque: (titulo) => `⚠️ Esse horário choca com "${titulo}", que já está agendado. Quer ajustar?`,
+      colado: (titulo, minutos) =>
+        `Ficou bem colado a "${titulo}" (menos de ${minutos} min de intervalo). Que tal um descanso entre os dois?`,
+      passado: "Esse horário já passou — criei no dia que você pediu mesmo assim. Se era para outro dia, me diga.",
+      tarefaRepetida: (titulo) => `Já existe uma tarefa igual/parecida ("${titulo}") — não criei outra.`,
+      blocoRepetido: (titulo) => `Já existe um bloco igual/parecido ("${titulo}") nesse período — não criei outro.`,
     },
     erros: {
       naoAutorizado: "Não autorizado",
@@ -3341,6 +3362,14 @@ export const en: Dicionario = {
       excluiu: "deleted",
       falhou: "couldn't",
       diasDaSemana: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    },
+    avisos: {
+      choque: (titulo) => `⚠️ This time clashes with "${titulo}", which is already scheduled. Want to adjust?`,
+      colado: (titulo, minutos) =>
+        `This is right up against "${titulo}" (less than ${minutos} minutes apart). How about a break between them?`,
+      passado: "That time has already passed — I created it on the day you asked anyway. If you meant another day, let me know.",
+      tarefaRepetida: (titulo) => `There's already a matching task ("${titulo}") — I didn't create another one.`,
+      blocoRepetido: (titulo) => `There's already a matching block ("${titulo}") around that time — I didn't create another one.`,
     },
     erros: {
       naoAutorizado: "Not authorized",
