@@ -337,7 +337,16 @@ interface Coluna {
   destaque: boolean
 }
 
-function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulosDoEixo: (i: number) => string | null }) {
+function GraficoColunas({
+  colunas,
+  rotulosDoEixo,
+  descricao,
+}: {
+  colunas: Coluna[]
+  rotulosDoEixo: (i: number) => string | null
+  /** O que o leitor de tela anuncia: o que o gráfico MOSTRA, e não só que é um gráfico. */
+  descricao: string
+}) {
   const [ref, largura] = useLargura<HTMLDivElement>()
   const [ativo, setAtivo] = useState<number | null>(null)
   const semMovimento = useReducedMotion()
@@ -359,7 +368,7 @@ function GraficoColunas({ colunas, rotulosDoEixo }: { colunas: Coluna[]; rotulos
       className="relative pt-7"
     >
       {largura > 0 && (
-        <svg width={largura} height={ALTURA_TOTAL} role="img" aria-label={t.graficoColunas}>
+        <svg width={largura} height={ALTURA_TOTAL} role="img" aria-label={descricao}>
           <line x1={0} y1={ALTURA_PLOT} x2={largura} y2={ALTURA_PLOT} stroke="var(--border)" strokeWidth="1" />
 
           {colunas.map((c, i) => {
@@ -689,11 +698,19 @@ export function MetricasDashboard() {
                       <div style={{ minHeight: ALTURA_AREA }}>
                         {aba === "dias" && <GraficoLinha pontos={porDia} />}
                         {aba === "semana" && (
-                          <GraficoColunas colunas={colunasSemana} rotulosDoEixo={(i) => colunasSemana[i].rotulo} />
+                          <GraficoColunas
+                            colunas={colunasSemana}
+                            rotulosDoEixo={(i) => colunasSemana[i].rotulo}
+                            descricao={t.graficoSemana(SEMANAS)}
+                          />
                         )}
                         {aba === "hora" && (
                           // De 24 rótulos cabem uns 6 sem colidir; a dica carrega o resto.
-                          <GraficoColunas colunas={colunasHora} rotulosDoEixo={(i) => (i % 4 === 0 ? rotuloDeHora(i, doze) : null)} />
+                          <GraficoColunas
+                            colunas={colunasHora}
+                            rotulosDoEixo={(i) => (i % 4 === 0 ? rotuloDeHora(i, doze) : null)}
+                            descricao={t.graficoHora(JANELA_DIAS)}
+                          />
                         )}
                       </div>
                     )}

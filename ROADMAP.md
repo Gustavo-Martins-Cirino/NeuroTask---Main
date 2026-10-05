@@ -2716,7 +2716,9 @@ vira ruído.
 > Fica anotado o que a medição mostrou e eu não mexi: os gráficos de coluna se anunciam ao leitor
 > de tela como "Gráfico de colunas", genérico, enquanto o de linha se descreve inteiro ("Tarefas
 > concluídas por dia nos últimos 14 dias"). É acessibilidade, não tradução, e entra na fatia de
-> quem for cuidar dos rótulos de leitor de tela.
+> quem for cuidar dos rótulos de leitor de tela. **Feito (05/10):** cada um diz o que mostra —
+> "Em quantas das últimas 4 semanas você concluiu algo, por dia da semana" e "Tarefas
+> concluídas por hora do dia nos últimos 28 dias", nos dois idiomas.
 
 > **Fatia 5 — as telas de erro e o 404: feita (17/09). Com isso a lista de pendentes do guarda
 > ficou vazia: não sobrou JSX por traduzir.** `app/error.tsx` (rotas públicas), `app/app/error.tsx`

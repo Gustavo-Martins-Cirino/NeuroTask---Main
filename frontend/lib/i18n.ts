@@ -388,7 +388,10 @@ export interface Dicionario {
       tarefas: (n: number) => string
       emDia: (rotulo: string) => string
       graficoLinha: (dias: number) => string
-      graficoColunas: string
+      /** Os de coluna se anunciavam só como "Gráfico de colunas": o leitor de tela
+       *  dizia QUE era um gráfico, e não o que ele mostrava. */
+      graficoSemana: (semanas: number) => string
+      graficoHora: (dias: number) => string
     }
     /** "Comece por aqui": o cartão de primeiros passos da conta nova. */
     comecePorAqui: {
@@ -1677,7 +1680,8 @@ export const pt: Dicionario = {
       tarefas: (n) => `${n} ${n === 1 ? "tarefa" : "tarefas"}`,
       emDia: (rotulo) => ` em ${rotulo}`,
       graficoLinha: (dias) => `Tarefas concluídas por dia nos últimos ${dias} dias`,
-      graficoColunas: "Gráfico de colunas",
+      graficoSemana: (semanas) => `Em quantas das últimas ${semanas} semanas você concluiu algo, por dia da semana`,
+      graficoHora: (dias) => `Tarefas concluídas por hora do dia nos últimos ${dias} dias`,
     },
     comecePorAqui: {
       titulo: "Comece por aqui",
@@ -2863,7 +2867,8 @@ export const en: Dicionario = {
       tarefas: (n) => `${n} ${n === 1 ? "task" : "tasks"}`,
       emDia: (rotulo) => ` on ${rotulo}`,
       graficoLinha: (dias) => `Tasks completed per day over the last ${dias} days`,
-      graficoColunas: "Column chart",
+      graficoSemana: (semanas) => `How many of the last ${semanas} weeks you completed something, by weekday`,
+      graficoHora: (dias) => `Tasks completed by hour of day over the last ${dias} days`,
     },
     comecePorAqui: {
       titulo: "Start here",
