@@ -654,16 +654,11 @@ repositório:
 > e não suprimida. Quando o modelo faz uma pergunta de confirmação não existe recibo nenhum, e
 > é a prosa que mantém a conversa de pé. O risco é redundância, não perda.
 
-- [ ] **A ferramenta de criar bloco é singular, e é por isso que não existe "2 de 10".**
-      Confirmado lendo o schema: `create_time_block` cria UM bloco por chamada — dez blocos são
-      dez chamadas, e quando o laço corta no meio o décimo pedido nunca chegou a existir como
-      dado (`ia-agenda` é só leitura; não há variante plural em lugar nenhum). A ideia do
-      Gustavo resolve sem campo novo: **se a ferramenta aceitar uma LISTA**, o tamanho do lote
-      vira `args.blocos.length` — argumento estruturado, não frase —, e "2 de 10" sai de
-      comparar com `quantasGravou`, sem regex e sem confiar na prosa. De quebra, um lote de dez
-      passa a custar uma chamada em vez de dez, que ataca o teto de tokens pelo lado certo.
-      **Mexe no schema e no prompt, então muda comportamento** — vale medir contra o modelo
-      antes de fechar.
+- [x] **A ferramenta de criar bloco aceita LISTA — feito (ec218d3), e este item tinha ficado
+      aberto por esquecimento.** `create_time_blocks` (`lib/ia-lote.ts`) grava o lote inteiro
+      numa chamada, e o tamanho pedido vira `blocos.length` — é dele que sai o "2 de 10" da frase
+      do limite (`quantasPediu`), sem ler a prosa do modelo. Conferido de novo em 05/10 lendo a
+      rota: o prompt manda usar o lote para vários blocos, e o singular segue para um só.
 
 > **Rodada X (24/09): a escrita segue confiável; caíram quatro coisas, três já consertadas.**
 > Bloco no passado passou inteiro — e por um motivo que vale registrar: o aviso do warning é
@@ -707,12 +702,33 @@ repositório:
       `failed_generation`, volta em que parou. **Na próxima falha, é o log do deploy que fecha
       isso** — `[neuro-ia] groq recusou:`.
 
-- [ ] **"Na terça" resolve para hoje, e o horário pode já ter passado.** Achado do Gustavo:
-      pedir "na terça às 08:00" às 15h de uma terça cria um bloco no passado. Não é bug de data
-      relativa — a data está certa —, e por isso nenhum dos consertos acima o alcança. O app
-      tem o horário de quem usa (`paredeDoUsuario`), então dá para tratar: avisar, empurrar
-      para a próxima ocorrência ou perguntar. **Qual das três é decisão de produto**, e o
-      reteste de 22/09 vai medir com que frequência acontece antes de escolher.
+- [x] **"Na terça" resolve para hoje, e o horário pode já ter passado — a saída escolhida foi
+      AVISAR (5cfeb81, 24/09).** O bloco no passado continua sendo criado no dia pedido (registrar
+      o que já aconteceu é legítimo), e a ferramenta devolve um `warning` — "Esse horário já
+      passou… se era para outro dia, me diga" — que vai ao recibo e, na voz, é falado. Empurrar
+      para a próxima ocorrência ou perguntar antes continuam possíveis **se o uso mostrar que o
+      aviso não basta**; até lá, não há o que decidir.
+
+> **Conflito e duplicata cegos depois das 21h, e para os recorrentes (05/10).** Achado lendo a
+> rota, sem relatório: `checkConflicts` e o anti-duplicata recortavam o dia com
+> `setHours(0,0,0,0)` — no SERVIDOR, que está em UTC. No Brasil o dia UTC vira às 21h, então um
+> bloco das 20:30 às 21:30 não via a Academia das 21:00, e "Estudar" às 21:10 passava ao lado do
+> "Estudar" das 20:30 e duplicava. Pior: as duas só liam blocos que COMEÇAVAM naquele dia, e o
+> recorrente é uma linha só, com a data da primeira ocorrência — o Jiu Jitsu de toda quarta não
+> chocava com nada, nunca. É exatamente o descuido que o `ia-agenda` corrigiu na LEITURA em 19/09;
+> a checagem tinha ficado para trás.
+>
+> Agora as duas leem a VIZINHANÇA do bloco (o intervalo mais 15 min de folga para conflito, 45
+> para duplicata) pelo mesmo `ocorrenciasNaJanela` da leitura (`lib/ia-conflito.ts`, 14 testes):
+> se a Neuro lista um bloco, ela também o enxerga ao checar. De quebra, o bloco que atravessa a
+> meia-noite passou a chocar com o de depois dela.
+>
+> **Junto, os avisos saíram do português cravado** (`ia.avisos` no dicionário): o recibo de quem
+> usa em inglês dizia "created" e logo embaixo "⚠️ Esse horário choca com…".
+>
+> **O que não foi medido contra o modelo**: é conserto de servidor, determinístico, e os testes
+> cobrem o fuso e os recorrentes — mas vale, no próximo reteste, pedir um bloco às 21h ao lado
+> de outro e um bloco por cima de um recorrente, e conferir o ⚠️ no recibo.
 
 > **Rodada Y: o `break` que contradizia o próprio comentário, e a espera que eu prometia sem
 > dado.** A cota bateu na primeira mensagem e não liberou, então a rodada rendeu pouco em

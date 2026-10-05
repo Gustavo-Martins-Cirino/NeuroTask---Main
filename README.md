@@ -70,7 +70,10 @@ reconhecer o padrão — e que "nunca mexeu" e "apagou tudo" são estados difere
 `ia-agora` (a data que a Neuro recebe: por extenso e em ISO,
 com o mês já delimitado — "28/08" obrigava o modelo a adivinhar dia/mês),
 `ia-duplicata` (quando a Neuro recusa criar por já existir: mesmo título E mesmo dia, com
-"na dúvida, cria" como critério de desempate), `ics`, `iniciais` (nome → iniciais e cor do avatar),
+"na dúvida, cria" como critério de desempate),
+`ia-conflito` (com quem o bloco novo choca ou fica colado — lido na vizinhança dele, no fuso
+de quem usa e com os recorrentes expandidos: o dia UTC do servidor deixava cego tudo depois das
+21h no Brasil), `ics`, `iniciais` (nome → iniciais e cor do avatar),
 `nivel-faixa`, `nota-cor` (a paleta das notas: guarda a chave e não o hex nem o nome — o
 nome mora no dicionário —, e cor órfã vira "sem cor" em vez de erro), `regiao` (região ↔ formato de hora, e a ida e volta entre os dois),
 `revelacao-resposta` (a resposta da Neuro entrando escrita no chat: duração fixa e ritmo
