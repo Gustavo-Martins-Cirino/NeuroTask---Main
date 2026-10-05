@@ -1,7 +1,7 @@
 import { dicionario, type Dicionario, type Idioma } from "@/lib/i18n"
 import { instrucaoDeIdioma, pedidoDeResumo } from "@/lib/ia-idioma"
 import { pesoDaChamada, linhaDePeso } from "@/lib/ia-peso"
-import { recibo, quantasGravou, quantasPediu, MARCA_RECIBO, type AcaoExecutada } from "@/lib/ia-recibo"
+import { recibo, quantasGravou, quantasPediu, MARCA_RECIBO, FERRAMENTAS_QUE_ESCREVEM, type AcaoExecutada } from "@/lib/ia-recibo"
 import {
   leEsperaDoLimite,
 
@@ -937,64 +937,29 @@ interface OpenAIMessage {
   tool_call_id?: string
 }
 
-// Confirmação amigável por ferramenta executada
-function confirm(name: string, args: ToolArgs, result: unknown): string {
-  const r = result as { ok?: boolean; error?: string }
-  if (!r?.ok) return `⚠️ Não consegui completar "${name}": ${r?.error ?? "erro desconhecido"}.`
-  switch (name) {
-    case "create_task": {
-      const r2 = result as { scheduled?: boolean; warning?: string; note?: string }
-      if (r2?.note) return `ℹ️ ${r2.note}`
-      return `✅ Criei a tarefa "${args.title}"${r2?.scheduled ? " e agendei no calendário" : ""}.${r2?.warning ? " " + r2.warning : ""}`
-    }
-    case "create_time_block": {
-      const r3 = result as { warning?: string; note?: string }
-      if (r3?.note) return `ℹ️ ${r3.note}`
-      return `✅ Agendei "${args.title}" no calendário.${r3?.warning ? " " + r3.warning : ""}`
-    }
-    case "update_task":
-      return `✅ Atualizei a tarefa.`
-    case "delete_task":
-      return `✅ Excluí a tarefa.`
-    case "delete_time_block":
-      return `✅ Excluí o bloco do calendário.`
-    case "plan_day_backwards": {
-      const r4 = result as { created?: number; proposal?: string[] }
-      if (typeof r4?.created === "number") return `✅ Plano criado: ${r4.created} bloco(s) no calendário.`
-      return `📋 Proposta de plano:\n${(r4?.proposal ?? []).join("\n")}\nPosso confirmar?`
-    }
-    case "create_note":
-      return `✅ Criei a nota${args.title ? ` "${args.title}"` : ""}.`
-    case "update_note":
-      return `✅ Atualizei a nota.`
-    case "delete_note":
-      return `✅ Excluí a nota.`
-    default:
-      return `✅ Pronto (${name}).`
-  }
-}
-
 // Recupera tool calls de um failed_generation do Groq/Llama e executa de verdade.
-// Retorna uma mensagem de confirmação, ou null se nada pôde ser recuperado.
+// Devolve o que rodou, para entrar em `executadas`: quem conta é o recibo, como
+// em toda resposta. Antes o resgate escrevia frases próprias (em português
+// cravado) e esquecia o que as voltas anteriores do mesmo pedido tinham gravado.
 async function recoverFailedToolCalls(
   detail: string,
   supabase: SupabaseClient,
   userId: string,
   tzMin: number,
   idioma: Idioma
-): Promise<string | null> {
+): Promise<AcaoExecutada[]> {
   let failedGen: string
   try {
     const parsed = JSON.parse(detail)
     failedGen = parsed?.error?.failed_generation ?? ""
   } catch {
-    return null
+    return []
   }
-  if (!failedGen) return null
+  if (!failedGen) return []
 
   // Formatos vistos: <function=NAME>{...}</function> e <function=NAME({...})</function>
   const regex = /<function=([a-zA-Z_]+)\s*>?\s*\(?\s*(\{[\s\S]*?\})\s*\)?\s*<\/function>/g
-  const lines: string[] = []
+  const feitas: AcaoExecutada[] = []
   let match: RegExpExecArray | null
   while ((match = regex.exec(failedGen)) !== null) {
     const [, name, jsonArgs] = match
@@ -1011,15 +976,15 @@ async function recoverFailedToolCalls(
     if (name === CRIAR_BLOCOS_EM_LOTE) {
       for (const bloco of blocosDoLote(args)) {
         const r = await executeTool("create_time_block", bloco, supabase, userId, tzMin, idioma)
-        lines.push(confirm("create_time_block", bloco, r))
+        feitas.push({ nome: "create_time_block", args: bloco, resultado: r })
       }
       continue
     }
     const result = await executeTool(name, args, supabase, userId, tzMin, idioma)
-    lines.push(confirm(name, args, result))
+    feitas.push({ nome: name, args, resultado: result })
   }
 
-  return lines.length > 0 ? lines.join("\n") : null
+  return feitas
 }
 
 // Chamada ao Groq com retry automático em caso de rate limit (429)
@@ -1178,9 +1143,15 @@ async function runOpenAIAgent(
       const detail = await res.text().catch(() => "")
       // Rede de segurança: o Llama às vezes gera o tool call num formato que o
       // parser do Groq rejeita (tool_use_failed). Recuperamos a intenção do
-      // failed_generation, executamos de verdade e confirmamos.
-      const recovered = await recoverFailedToolCalls(detail, supabase, userId, tzMin, idioma)
-      if (recovered) return recovered
+      // failed_generation e executamos de verdade — e o que rodou entra na
+      // MESMA lista das voltas anteriores, para o recibo mostrar o pedido
+      // inteiro, e não só o pedaço resgatado.
+      const resgatadas = await recoverFailedToolCalls(detail, supabase, userId, tzMin, idioma)
+      executadas.push(...resgatadas)
+      if (resgatadas.some((a) => FERRAMENTAS_QUE_ESCREVEM.has(a.nome))) {
+        const prosa = quantasGravou(resgatadas) > 0 ? t.erros.semTexto : t.erros.acaoFalhou
+        return comRecibo(prosa, executadas, tzMin, t, false)
+      }
       // Sem isto a rodada X terminou em "ainda falha" sem saber por quê: o
       // erro do provedor ia para o log, mas não o TAMANHO da geração que ele
       // recusou — e é esse número que separa "veio truncado" de "veio
@@ -1253,6 +1224,16 @@ async function runOpenAIAgent(
             `retry-after=${espera.origem ?? "?"} corpo=${corpoParaLog(detail)}`
         )
         return marcaDeLimite(espera)
+      }
+      // Falha que não é limite, DEPOIS de uma volta anterior ter gravado: o
+      // mesmo caso do 429 acima, e pelo mesmo motivo. Lançar aqui virava
+      // "Erro ao falar com a IA" sem recibo, por cima de blocos que já estavam
+      // no calendário — quem lê pede de novo e duplica.
+      const gravouAntes = quantasGravou(executadas)
+      if (gravouAntes > 0) {
+        const resumo = await narraSemFerramentas(cfg, convo, idioma)
+        if (resumo) return comRecibo(resumo, executadas, tzMin, t, false)
+        return comRecibo(t.erros.salvouAntesDaFalha(gravouAntes, quantasPediu(executadas)), executadas, tzMin, t, false)
       }
       throw new Error(`Groq ${res.status}: ${detail}`)
     }

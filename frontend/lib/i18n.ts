@@ -1093,6 +1093,12 @@ export interface Dicionario {
        */
       /** Quantos itens entraram, e quantos o turno tentou gravar. */
       salvouAntesDoLimite: (gravou: number, pedidos: number) => string
+      /**
+       * O mesmo caso, mas a recusa não foi limite: o provedor falhou (5xx, geração
+       * malformada) numa volta DEPOIS de outra ter gravado. Antes isso virava
+       * "Erro ao falar com a IA" sem recibo — e quem lê pede de novo e duplica.
+       */
+      salvouAntesDaFalha: (gravou: number, pedidos: number) => string
       semTexto: string
       /**
        * O pedido ficou sem resposta tempo demais e foi cortado pelo cliente.
@@ -2223,6 +2229,11 @@ export const pt: Dicionario = {
         const conta = pedidos > gravou ? `${gravou} de ${pedidos}` : `${gravou}`
         const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "itens"
         return `Gravei ${conta} ${palavra} — a lista está aqui embaixo. Bati no limite de uso antes de conseguir escrever a resposta, então confira se é tudo que você pediu: se faltou alguma coisa, me diga só o que faltou (repetir o pedido inteiro duplicaria o que já está salvo).`
+      },
+      salvouAntesDaFalha: (gravou, pedidos) => {
+        const conta = pedidos > gravou ? `${gravou} de ${pedidos}` : `${gravou}`
+        const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "itens"
+        return `Gravei ${conta} ${palavra} — a lista está aqui embaixo. A IA falhou antes de eu conseguir escrever a resposta, então confira se é tudo que você pediu: se faltou alguma coisa, me diga só o que faltou (repetir o pedido inteiro duplicaria o que já está salvo).`
       },
       semTexto: "Pronto.",
       demorouDemais:
@@ -3398,6 +3409,11 @@ export const en: Dicionario = {
         const conta = pedidos > gravou ? `${gravou} of ${pedidos}` : `${gravou}`
         const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "items"
         return `I saved ${conta} ${palavra} — the list is right below. I hit the usage limit before I could write the reply, so check whether that is everything you asked for: if something is missing, tell me just what is missing (repeating the whole request would duplicate what is already saved).`
+      },
+      salvouAntesDaFalha: (gravou, pedidos) => {
+        const conta = pedidos > gravou ? `${gravou} of ${pedidos}` : `${gravou}`
+        const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "items"
+        return `I saved ${conta} ${palavra} — the list is right below. The AI failed before I could write the reply, so check whether that is everything you asked for: if something is missing, tell me just what is missing (repeating the whole request would duplicate what is already saved).`
       },
       semTexto: "Done.",
       demorouDemais:
