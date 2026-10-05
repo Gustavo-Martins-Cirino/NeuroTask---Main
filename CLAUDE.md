@@ -109,6 +109,7 @@ frontend/
 │   ├── coin-flight.ts        # Curva da moeda até o contador de XP (puro)
 │   ├── sino-foco.ts          # Sino do fim do Modo Foco + relógio por instante de fim (puro)
 │   ├── foco-sessao.ts        # Sessão do Modo Foco guardada na aba: sobrevive a recarregar (puro)
+│   ├── foco-pontos.ts        # Quanto o foco paga: +2 XP a cada 5 min e tarefa em dobro (puro)
 │   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
 │   ├── neuro-sphere.ts       # Esfera da Neuro: pontos, repulsão e retorno (puro)
 │   ├── transcricao-viva.ts   # Resposta aparecendo no ritmo da fala, na conversa ao vivo (puro)
@@ -244,6 +245,14 @@ aba parada e o celular faz o mesmo ao trocar de app, e o foco que morava só na 
 lia como "o tempo parou". Se o fim passou com a página fora, ela volta zerada com um aviso. Com a
 aba **escondida** no fim, sai também uma **notificação do sistema** (permissão pedida no play, como
 o lembrete do calendário pede ao salvar), porque som de aba escondida passa batido.
+
+**O foco paga XP** (`lib/foco-pontos.ts`): **+2 XP a cada 5 min** com o timer correndo (pausa não
+conta; "recomeçar" não zera o que já foi focado) e a **tarefa concluída dentro do foco vale o
+dobro** depois de 15 min (ou da sessão inteira, se for mais curta). Esse XP vai por
+`award_focus_xp` (`supabase/foco_xp.sql`), uma cota própria de 60/dia **fora** do teto de 150 das
+tarefas; sem o SQL, o cliente cai no `award_xp` comum. É **silencioso** (`XpUpdateDetail.silencioso`):
+sem o toast genérico e sem festa no Escritório a cada 5 min — quem mostra é a própria tela do
+foco ("+6 XP neste foco", selo "XP em dobro" no botão de concluir).
 
 ## Estado atual
 

@@ -15,7 +15,7 @@ em Route Handlers do Next; o banco, a autenticação e o agendamento são do Sup
 - **Frontend/servidor** — Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 ·
   shadcn/ui (Radix) · Framer Motion 12 · React Three Fiber (Escritório 3D)
 - **Dados e auth** — Supabase (Postgres + RLS + Realtime + pg_cron)
-- **IA** — Groq (padrão, com tool-calling), com Gemini e Anthropic como alternativas
+- **IA** — Groq, com tool-calling (provedor único — ver [IA](#ia--uma-só-e-é-obrigatória))
 
 ```
 frontend/     app Next.js (UI + rotas de API)
@@ -48,6 +48,9 @@ compara RAZÕES, porque o defeito antigo era serem o mesmo desenho em dois taman
 `backward-plan`, `calendar-feed`,
 `contraste` (a conta da WCAG a partir do oklch — e o teste varre o `globals.css` do
 ARQUIVO, porque medir no navegador já mentiu duas vezes aqui), `calendar-scroll`, `calendar-warnings`, `focus-gradient`,
+`foco-pontos` (quanto o Modo Foco paga: os blocos de 5 min pagos pela DIFERENÇA, para um
+tique atrasado não perder nem repetir bloco, e quando a tarefa concluída no foco dobra),
+`foco-sessao` e `sino-foco` (o foco que sobrevive a recarregar, e o relógio por instante de fim),
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
 `enquete` (quando perguntar e quando ficar quieto — e que "agora não" cala a enquete
 inteira, não só a pergunta recusada),
@@ -199,8 +202,11 @@ funcionam igual; só escolher uma cor falha, com um aviso dizendo qual arquivo r
 
 **2. Gamificação e loja** — `gamification.sql` cria o `award_xp` de que o resto depende
 ```
-gamification.sql → xp_anticheat.sql → coins_shop.sql → skins.sql · office_3d.sql · avatar_acessorios.sql · office_v4.sql · office_v5.sql · office_v6.sql · office_v7.sql
+gamification.sql → xp_anticheat.sql → coins_shop.sql → foco_xp.sql · skins.sql · office_3d.sql · avatar_acessorios.sql · office_v4.sql · office_v5.sql · office_v6.sql · office_v7.sql
 ```
+`foco_xp.sql` dá ao Modo Foco uma cota de XP própria (60/dia), fora do teto de 150 das
+tarefas: +2 XP a cada 5 min focados e a tarefa concluída no foco valendo o dobro. Sem ele o
+foco paga do mesmo jeito, só que pelo `award_xp` comum — dentro do teto de 150.
 
 **3. Copiloto de rotina**
 ```

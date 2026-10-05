@@ -902,27 +902,42 @@ repositório:
 > CONGELADA não roda JavaScript, então o aviso só sai quando ela descongela. Avisar com a aba
 > congelada ou fechada pede push do servidor marcado para o fim — a infraestrutura de push existe.
 
-- [ ] **Modo Foco vale mais pontos — proposta de 03/10, esperando as decisões do Gustavo.** Ele
-      pensou em pontos em dobro. O que existe hoje: concluir a tarefa pelo botão do foco dá o MESMO
-      XP de concluir na lista (`taskXpAmount`), e todo XP passa pelo teto diário de 150 no servidor
-      (`award_xp`). A metodologia proposta:
+> **O Modo Foco paga mais (05/10).** O Gustavo voltou à proposta de 03/10 com a resposta que
+> faltava: *"a cada 5 min que a pessoa passa no modo foco ganha ponto"*. As três decisões em aberto
+> foram tomadas assim — todas são número numa constante, e mudar qualquer uma é uma linha:
+>
+> · **(a) Tempo focado paga, com ou sem tarefa: +2 XP a cada 5 min** com o timer correndo. Um
+>   pomodoro de 25 min vale 10 XP, o mesmo que uma tarefa média. E a **tarefa concluída dentro do
+>   foco vale o dobro** — o "talvez duplicados" da mensagem dele.
+> · **(b) Fora do teto de 150, numa cota própria de 60 XP/dia** (`award_focus_xp`, em
+>   `supabase/foco_xp.sql`). Moedas pelo ACUMULADO do dia: o `award_xp` faz `granted / 5` por
+>   chamada, e chamadas de 2 XP dariam zero moeda para sempre.
+> · **(c) O dobro vale depois de 15 min focados**, ou da sessão inteira se ela for mais curta.
+>
+> O que segura a conta: o tempo sai do próprio timer (instante de fim), então aba de fundo não come
+> minuto; os blocos são pagos pela DIFERENÇA (`lib/foco-pontos.ts`, 19 testes), e os já pagos vão
+> para a sessão guardada — recarregar não paga de novo. "Recomeçar" zera o timer, não o tempo que a
+> pessoa já passou focada.
+>
+> **Mostrar antes de dar:** a tela do foco diz "+2 XP a cada 5 min focados" e, depois, "+6 XP
+> neste foco" com o número que o SERVIDOR confirmou; o botão "Concluir tarefa" ganha o selo "XP em
+> dobro" quando a sessão se qualifica. É tudo **silencioso** fora dali: sem toast "+2 XP" a cada 5
+> min e sem festa no Escritório, o que seria o oposto de foco.
+>
+> Conferido em build de produção com um Supabase falso: foco restaurado com 16 min corridos pagou
+> 6 XP numa chamada só; concluir mandou `award_xp(10)` + `award_focus_xp(10)` e mostrou "+10 XP" e
+> "+10 XP de bônus pelo foco"; sem a função no banco (PGRST202), o mesmo XP foi pelo `award_xp`;
+> pausado do zero, nenhuma chamada e nenhum selo. Zero erro de JS.
 
-      1. **O dobro é da tarefa concluída DENTRO do foco**, e só se o foco rodou de verdade: tempo
-         com o timer correndo (pausa não conta) de pelo menos 15 min, ou a sessão inteira se ela
-         for menor. O relógio por instante de fim e a sessão guardada já dão esse número.
-      2. **O bônus fica fora do teto de 150.** Dentro dele, quem já encosta no teto não sente o
-         dobro — justamente quem mais usa o foco. Proposta: a metade extra vai para uma cota
-         própria de foco (ex.: 60 XP/dia). Pede SQL novo, rodado à mão.
-      3. **Foco completo sem tarefa vale um pouco** (ex.: +5 XP a cada sessão de 25 min que chegou a
-         00:00, até 3 por dia) — premia o hábito sem virar fábrica de pontos.
-      4. **Mostrar antes de dar**: um selo "2×" no botão "Concluir tarefa" quando a sessão já se
-         qualificou. Pontos que só aparecem depois não mudam comportamento.
+- [ ] **Rodar `supabase/foco_xp.sql` no SQL Editor (passo do Gustavo).** Sem ele o foco já paga —
+      só que pelo `award_xp` comum, dentro do teto de 150, e a tela mostra o XP pedido em vez do
+      confirmado. Depende de `coins_shop.sql`, que já está rodado.
 
-      Anti-farm herdado: tarefa com menos de 10 min de vida continua valendo zero, e o servidor
-      continua confiando na quantia que o cliente manda até o teto (o modelo de hoje).
-
-      **Decisões dele:** (a) dobro só na tarefa, ou também tempo focado sem tarefa; (b) bônus dentro
-      ou fora do teto, e de quanto; (c) o mínimo de 15 min.
+- [ ] **Calibrar os números do foco com uso real.** +2 XP/5 min, 60/dia de cota e 15 min para o
+      dobro são palpites razoáveis, não medidas. Vale olhar no `/admin` se a cota do foco bate no
+      teto todo dia (então está generosa demais para o hábito que quer premiar) ou nunca chega perto.
+      Um furo conhecido e limitado pela cota: concluir no foco, desmarcar na lista e concluir no foco
+      de novo devolve só o XP da tarefa, não o bônus — o teto de 60/dia é o que segura.
 
 - [ ] **O card "Comece por aqui" entra tarde e empurra o dashboard ~300 px para baixo.** Só
       em conta que ainda não "graduou" (quem já tem tarefa, tarefa concluída e bloco nunca vê o
