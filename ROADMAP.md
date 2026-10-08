@@ -1086,6 +1086,155 @@ repositório:
 **Critério de pronto**: alguém que nunca viu o app abre, entende o que fazer sem você do
 lado, e volta no dia seguinte sozinho.
 
+## Antes de divulgar oficialmente — segurança e ser encontrado
+
+Pedido do Gustavo (08/10): antes de anunciar o site para fora do círculo de amigos, conferir a
+segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agrupada por assunto
+— nada foi cortado.
+
+> **O que já existe é uma leitura rápida do código (08/10), não a auditoria.** Ela serviu para
+> cada item dizer ONDE olhar neste repositório. O que está marcado como *lido no código* foi
+> visto no arquivo; nada aqui foi atacado de verdade ainda — isso é o penúltimo item.
+
+### Segurança
+
+- [ ] **Segredos: chave de API, `.env`, senha no código e git sem senha vazada.** *Lido no
+      código:* as chaves secretas (`GROQ_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+      `VAPID_PRIVATE_KEY`, `CRON_SECRET`) só aparecem em código de servidor; as `NEXT_PUBLIC_*`
+      são as públicas por natureza (URL e chave anon/publishable do Supabase, chave pública do
+      VAPID); o `.gitignore` cobre `.env` e `.env.*`. Falta: varrer o **histórico** do git
+      (gitleaks ou trufflehog — segredo commitado e apagado depois continua lá), procurar senha
+      ou chave escrita à mão no código, buscar o VALOR de cada segredo no bundle do cliente
+      (`.next/static`) e conferir as variáveis na Vercel. Achou chave vazada: **trocar a chave**,
+      não só apagar o arquivo.
+
+- [ ] **Login de verdade: senha, força bruta, tokens e cookies.** A senha mora no Supabase Auth,
+      que guarda hash — conferir que nenhuma tabela nossa guarda senha. Limite de tentativas: as
+      taxas do painel do Supabase (Auth → Rate Limits) e um CAPTCHA (Turnstile ou hCaptcha) no
+      login, no cadastro e no "esqueci a senha". Senha mínima, confirmação de e-mail ligada,
+      validade da sessão e rotação do refresh token. Os **tokens que o próprio app emite** — o da
+      agenda pública (`/agenda/<token>`) e o do feed `.ics` (`/api/calendar/<token>`) — precisam
+      ser longos, aleatórios e revogáveis. Cookies: os do Supabase não são `httpOnly` por desenho
+      (o cliente lê a sessão); conferir `Secure` e `SameSite=Lax` em produção.
+
+- [ ] **Cada usuário só vê o que é dele (IDOR, "não confiar no ID da tela", banco trancado).**
+      RLS ligado em TODA tabela do `public`, com política por `auth.uid()`, e `with check` nos
+      inserts — um `user_id` que vem do cliente não pode decidir nada. Conferir no **painel**
+      (Advisors → Security), e não só nos SQLs: eles são rodados à mão, e o que vale é o que está
+      no banco. As funções `security definer` (`award_xp`, `my_friends`, `friend_office`…)
+      conferem quem chama, e têm `search_path` fixo? *Lido no código:* cinco lugares usam a chave
+      de serviço, que **pula o RLS**, e cada um precisa da própria checagem: `app/admin`,
+      `app/agenda/[token]`, `app/api/calendar/[token]`, `app/api/errors` e
+      `app/api/push/dispatch`. Teste prático: duas contas, e a A tentando ler, editar e apagar
+      coisa da B pela API do Supabase direto, com o token da A.
+
+- [ ] **Regras e exposição do Supabase Storage, e o upload.** O app não usa Firebase; o
+      armazenamento é o Storage do Supabase. *Lido no código:* o bucket de fotos é público
+      (`getPublicUrl` em `lib/avatar.ts`), e o recorte quadrado com reconversão para JPEG
+      (`lib/foto-perfil.ts`) acontece **no navegador** — quem chama a API direto pula isso. Então
+      o que protege é o **bucket**: tipo de arquivo e tamanho máximo configurados nele, escrita
+      só na pasta do próprio usuário, listagem desligada. Há um **segundo upload** além da foto:
+      o áudio do microfone, que vai para `/api/ai/transcribe` — a leitura não achou teto de
+      tamanho nem de tipo ali.
+
+- [ ] **Admin protegido.** `/admin` devolve 404 para quem não é `OWNER_EMAIL`. Conferir que a
+      comparação é com o e-mail confirmado da sessão (e não com algo que a pessoa edita, como o
+      `user_metadata`), que a falta do `OWNER_EMAIL` na Vercel não vira "todo mundo é dono", e que
+      as consultas com chave de serviço só rodam depois do gate.
+
+- [ ] **Validar e limpar tudo no servidor (front e back), SQL injection e XSS.** O banco é
+      acessado pelo supabase-js, que parametriza. *Lido no código:* nenhum SQL montado com texto
+      de quem usa (o único `execute format` é de migração, com `%I`), e os `.or()` com
+      interpolação recebem só datas geradas no servidor — a regra a manter é nunca pôr texto do
+      usuário dentro de `.or()`/`.filter()`. Limites também no banco (tamanho de título, nota,
+      mensagem de feedback): o formulário valida, mas o servidor tem que recusar sozinho.
+      **XSS nas notas** (*lido no código*): `rich-text-editor.tsx` põe o HTML salvo direto em
+      `innerHTML`. Hoje a nota é só do dono, mas a Neuro também escreve notas, e um
+      `<img onerror>` executa por esse caminho — sanitizar (DOMPurify) ao carregar e ao salvar.
+
+- [ ] **Rate limit e envio repetido.** Login: item acima. *Lido no código:* `/api/yt-title` está
+      aberta sem login (serve de proxy para o oEmbed do YouTube a qualquer um); `/api/errors`
+      aceita anônimo de propósito, com corpo limitado e teto por IP; `/api/ai/tts` e
+      `/api/ai/transcribe` pedem login, mas gastam a cota do Groq — conferir um teto por usuário.
+      E os botões travados durante o envio, com o servidor aguentando o mesmo pedido chegar duas
+      vezes.
+
+- [ ] **Erros sem detalhes.** Nada de pilha, SQL ou mensagem crua do Supabase na tela.
+      *Lido no código:* `/auth/callback` põe o `error.message` do Supabase na URL
+      (`/auth/error?reason=…`). Conferir as respostas de cada rota de `/api` pelo mesmo critério.
+
+- [ ] **Redirecionamento aberto no login** (*lido no código, não testado*). `/auth/callback` faz
+      `redirect(origin + next)` com o `next` da URL sem validar: `?next=@outro-site.com` vira
+      `https://<site>@outro-site.com`, que o navegador lê como o host `outro-site.com` — a pessoa
+      faz o login de verdade e cai num site falso. Aceitar só caminho que começa com `/` e não
+      com `//`.
+
+- [ ] **Headers, CORS e CSRF.** *Lido no código:* o `next.config.ts` não define nenhum cabeçalho
+      de segurança. *Medido em produção (08/10, `/login`):* só vem o HSTS (a Vercel manda);
+      faltam CSP, `frame-ancestors` (ou `X-Frame-Options`), `X-Content-Type-Options`,
+      `Referrer-Policy` e `Permissions-Policy` (microfone só no próprio site). Medir de novo no
+      domínio próprio. CORS: nenhuma rota abre `Access-Control-Allow-Origin` — manter assim. CSRF:
+      as rotas de `/api` leem o cookie de sessão; o `SameSite=Lax` barra POST vindo de outro site,
+      e conferir o `Origin` nas rotas que mudam dados fecha o resto.
+
+- [ ] **SSRF e arquivos sensíveis expostos.** *Lido no código:* o `next.config.ts` libera o
+      otimizador de imagem para **qualquer** host https (`hostname: '**'`), então
+      `/_next/image?url=` busca imagem de qualquer lugar da internet por conta da cota da Vercel —
+      restringir aos hosts que o app usa (Storage do Supabase, fotos do Google e do GitHub).
+      `/api/yt-title` busca só no youtube.com (host fixo), o que está certo. Arquivos: nada
+      sensível em `public/`, source maps de produção desligados, `.env` nunca servido.
+
+- [ ] **Dependências vulneráveis.** `pnpm audit`, Dependabot (ou Renovate) no GitHub e o Next na
+      última versão de correção.
+
+- [ ] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
+      conta nova: tentar ler o que é de outra pela API direta, trocar ids e tokens nas URLs
+      (`/agenda/<token>` inventado), mandar corpo gigante, vazio e malformado para cada rota.
+
+- [ ] **Auditoria completa.** Depois de tudo acima: o `/security-review` do Claude Code, o
+      Security Advisor do Supabase, OWASP ZAP (varredura básica) contra o domínio,
+      securityheaders.com e o Mozilla Observatory. O que achar vira item aqui.
+
+### Ser encontrado: Google, SEO e medição
+
+> *Lido no código:* hoje **só o `app/layout.tsx` exporta `metadata`** — toda aba tem o mesmo
+> título — e não existe `robots.txt`, `sitemap.xml` nem `llms.txt`. O site ainda não tem domínio
+> próprio (está em `neuro-task-main.vercel.app`), e quase tudo daqui fica melhor depois dele: o
+> histórico do Google fica preso ao endereço em que o site foi registrado.
+
+- [ ] **`robots.txt`** (`app/robots.ts`, convenção do Next). Liberar a landing, `/login` e
+      `/signup`; bloquear `/app`, `/admin`, `/api`, `/auth` e **`/agenda/`** — a agenda pública
+      vive de token, e um link indexado é uma agenda de alguém no Google. Por isso a página da
+      agenda também ganha `noindex`, porque o `robots.txt` sozinho não tira do índice.
+
+- [ ] **`sitemap.xml`** (`app/sitemap.ts`): só as páginas públicas (`/`, `/login`, `/signup`).
+
+- [ ] **`llms.txt`**: um texto curto dizendo o que o NeuroTask é e onde está cada coisa, para as
+      IAs que leem o site. É uma proposta (llmstxt.org), não um padrão — barato de fazer, sem
+      promessa de efeito.
+
+- [ ] **Título e meta description em cada página.** As telas de `/app` são `"use client"` e não
+      podem exportar `metadata`: cada rota ganha um `layout.tsx` de servidor com o próprio título,
+      e o layout raiz um `title.template` ("%s · NeuroTask"). A landing ganha também Open Graph e
+      cartão do Twitter (a imagem de quando o link é colado no WhatsApp) e o endereço canônico. O
+      app tem dois idiomas: o texto do Google sai em português, que é o público de agora.
+
+- [ ] **Google Search Console.** Verificar o domínio (registro TXT no DNS), enviar o sitemap e
+      acompanhar a indexação e os erros de rastreio. Esperar o domínio próprio.
+
+- [ ] **Google Meu Negócio (Perfil da Empresa).** Conferir a elegibilidade antes: as regras do
+      Google recusam negócio **só online**, sem endereço nem atendimento presencial. Se não
+      couber, o que faz o NeuroTask aparecer com cara de marca na busca é o Search Console mais
+      dados estruturados na landing (`Organization` e `SoftwareApplication`).
+
+- [ ] **Google Analytics.** GA4 grava cookie, e isso pede aviso de cookies e uma **política de
+      privacidade** que ainda não existe (LGPD). Se a pergunta for só "quantos visitam e de onde",
+      o Vercel Analytics responde sem cookie e sem aviso. Decisão do Gustavo.
+
+- [ ] **Testar a velocidade do site.** PageSpeed Insights (celular) na landing e no `/login`, que
+      é o que um estranho abre primeiro, e os Core Web Vitals reais depois do lançamento (Search
+      Console ou Vercel Speed Insights). O dashboard já foi medido (CLS) — a landing, nunca.
+
 ## Depois — evoluções por escolha
 
 Nada aqui é pré-requisito de nada; entram conforme fizer sentido, sem pressa.
