@@ -1108,6 +1108,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       (`.next/static`) e conferir as variáveis na Vercel. Achou chave vazada: **trocar a chave**,
       não só apagar o arquivo.
 
+> **Segredos conferidos (09/10): nada vazou.** O histórico inteiro do git (421 commits, todas as
+> branches) foi varrido atrás de chave do Groq, do Supabase (`sb_secret_` e JWT de
+> `service_role`), OpenAI, Anthropic, Google, GitHub, AWS, chave PEM, variável secreta com valor
+> e senha escrita: o único achado foi o rótulo "Password" do dicionário. Nenhum `.env` entrou no
+> git, nunca. O valor de cada uma das 7 variáveis secretas do `.env.local` não aparece em nenhum
+> dos 69 arquivos do `.next/static`, e os 20 scripts das páginas públicas em produção não têm
+> JWT de `service_role` nem padrão de chave. **Passo do Gustavo:** `GEMINI_API_KEY` e
+> `ORIGINKIT_API_KEY` estão no `.env.local` e nenhum código usa — revogar no provedor e tirar da
+> Vercel, se estiverem lá; e conferir no painel da Vercel que nenhuma variável secreta tem nome
+> começando por `NEXT_PUBLIC_`.
+
 - [ ] **Login de verdade: senha, força bruta, tokens e cookies.** A senha mora no Supabase Auth,
       que guarda hash — conferir que nenhuma tabela nossa guarda senha. Limite de tentativas: as
       taxas do painel do Supabase (Auth → Rate Limits) e um CAPTCHA (Turnstile ou hCaptcha) no
@@ -1234,7 +1245,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > fica com o link como nome.
 
 - [ ] **Dependências vulneráveis.** `pnpm audit`, Dependabot (ou Renovate) no GitHub e o Next na
-      última versão de correção.
+      última versão de correção. Sobram 21 avisos de produção, nenhum crítico: postcss, nanoid,
+      browserslist, source-map-js e baseline-browser-mapping (quase tudo ferramenta de build), o
+      axios que vem com o `msedge-tts` (a voz da Neuro) e o `@ai-sdk/provider-utils`.
+
+> **Next 16.2.6 → 16.3.8 (09/10).** O `pnpm audit` de produção achou 43 avisos (3 críticos, 22
+> altos); 17 eram do Next. Três críticos — execução remota de código em servidor Windows, no
+> otimizador de imagem com AVIF e no `next/og` — e um alto que tocava este app em cheio: desvio
+> do Proxy com Turbopack, e o login é o `proxy.ts`. A 16.3.8 é a menor versão que corrige os 17
+> (e trouxe o sharp corrigido junto). Conferido em build local: sem sessão, `/app` e `/admin` vão
+> para o login e a agenda inexistente dá 404; as seis telas internas e as três públicas carregam
+> sem erro de JS; 1364 testes e zero erro de tipo. De 43 avisos para 21.
 
 - [ ] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
       conta nova: tentar ler o que é de outra pela API direta, trocar ids e tokens nas URLs
