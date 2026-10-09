@@ -275,6 +275,18 @@ calendar_feed.sql
 ```
 `calendar_feed.sql` liga o feed assinável (Configurações → "Assinar no Google/Outlook"). Sem dependências.
 
+**9. Segurança do banco** — por último, depois de todos os outros
+```
+seguranca_banco.sql
+```
+Fecha o que a auditoria de 09/10 achou aberto: o bucket `avatars` deixava qualquer um
+**listar** as pastas (cujo nome é o id de cada pessoa) — a foto continua pública pela URL,
+mas listar passa a ser só da própria pasta —, e as funções `security definer` deixam de
+poder ser chamadas por quem não está logado (a `purge_error_log` fica só para o cron).
+Também faz as funções futuras já nascerem fechadas. Termina com uma **conferência**:
+uma consulta que lista cada buraco que sobrar — tabela sem RLS, função sem `search_path`,
+função chamável sem login, leitura aberta no bucket. **Resultado vazio = tudo trancado.**
+
 **Faxina (opcional, e só se você quiser)**
 ```
 remove_extension_screen_time.sql

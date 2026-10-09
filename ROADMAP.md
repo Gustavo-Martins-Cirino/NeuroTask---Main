@@ -1149,13 +1149,32 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > que segue aberto neste item é o lado do banco (RLS e funções `security definer`) e o teste com
 > duas contas.
 
+> **O banco, lido e testado de fora (09/10).** Nos arquivos: as 20 tabelas ligam RLS (a `tasks`
+> e a `time_blocks` no `fix_schema.sql`); a única política aberta é o catálogo da loja, e só
+> para quem está logado; as 20 funções `security definer` fixam o `search_path`, e todas as que
+> a API chama conferem `auth.uid()`. No banco de verdade, com a chave pública e sem login (só
+> leitura): o esquema da API não aparece (401) e as 20 tabelas devolvem zero linhas. Dois
+> buracos — **o bucket `avatars` se deixava listar** (as pastas têm o id de cada pessoa com
+> foto) e **nenhum SQL tinha `revoke`**, então toda função podia ser chamada sem login — estão
+> fechados em `supabase/seguranca_banco.sql`, que termina com uma consulta de conferência
+> (vazia = trancado). Falta rodar o SQL (item abaixo) e o teste com duas contas, que pede uma
+> segunda conta de verdade.
+
+- [ ] **Rodar `supabase/seguranca_banco.sql` no SQL Editor (passo do Gustavo).** Por último,
+      depois de todos os outros. A última parte é uma consulta: **resultado vazio = tudo
+      trancado**; cada linha que voltar é um buraco, com o nome. Depois, repetir o teste anônimo
+      (o bucket tem que parar de listar) — é um script de leitura, roda em segundos.
+
 - [ ] **Regras e exposição do Supabase Storage, e o upload.** O app não usa Firebase; o
       armazenamento é o Storage do Supabase. *Lido no código:* o bucket de fotos é público
       (`getPublicUrl` em `lib/avatar.ts`), e o recorte quadrado com reconversão para JPEG
       (`lib/foto-perfil.ts`) acontece **no navegador** — quem chama a API direto pula isso. Então
       o que protege é o **bucket**: tipo de arquivo e tamanho máximo configurados nele, escrita
       só na pasta do próprio usuário, listagem desligada. O **segundo upload**, o áudio do
-      microfone (`/api/ai/transcribe`), já tem teto e filtro de tipo (nota abaixo).
+      microfone (`/api/ai/transcribe`), já tem teto e filtro de tipo (nota abaixo). *Lido e
+      medido (09/10):* tamanho (1 MB), tipo (só JPEG) e escrita só na própria pasta já estavam
+      no `foto_perfil.sql`; a **listagem estava aberta** para quem não está logado — fechada no
+      `seguranca_banco.sql`, que ainda precisa rodar.
 
 - [ ] **Admin protegido.** `/admin` devolve 404 para quem não é `OWNER_EMAIL`. Conferir que a
       comparação é com o e-mail confirmado da sessão (e não com algo que a pessoa edita, como o
