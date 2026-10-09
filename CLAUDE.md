@@ -28,7 +28,7 @@ frontend/
 │   │   ├── friends/page.tsx  # Amigos (busca, ocupado/livre, visitar escritório)
 │   │   └── settings/page.tsx
 │   ├── api/
-│   │   └── ai/route.ts       # + ai/transcribe/route.ts (Vercel AI SDK)
+│   │   └── ai/route.ts       # + ai/transcribe e ai/tts (Groq por fetch; a voz é do Edge)
 │   ├── auth/
 │   │   ├── callback/route.ts # OAuth callback Supabase
 │   │   └── error/page.tsx
@@ -148,7 +148,7 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 | `/app/calendar` | Calendário / time blocking |
 | `/app/favorites` | Favoritos |
 | `/app/notes` | Notas (rich text editor) |
-| `/app/ai` | Chat de IA (Vercel AI SDK, rota `app/api/ai`) |
+| `/app/ai` | Chat de IA (rota `app/api/ai`, Groq por fetch) |
 | `/app/office` | Escritório — cena 3D (R3F) viva + loja cosmética (moedas via XP) |
 | `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório (em 3D) |
 | `/app/settings` | Configurações (rotina, push, tema) |

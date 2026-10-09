@@ -1245,9 +1245,10 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > fica com o link como nome.
 
 - [ ] **Dependências vulneráveis.** `pnpm audit`, Dependabot (ou Renovate) no GitHub e o Next na
-      última versão de correção. Sobram 21 avisos de produção, nenhum crítico: postcss, nanoid,
-      browserslist, source-map-js e baseline-browser-mapping (quase tudo ferramenta de build), o
-      axios que vem com o `msedge-tts` (a voz da Neuro) e o `@ai-sdk/provider-utils`.
+      última versão de correção. **Produção zerada em 09/10** (nota abaixo). Sobram 15 avisos só
+      de DESENVOLVIMENTO, que não vão para o site: o vitest 3 (o `tinypool` dele tem dois
+      críticos; a correção é o vitest 4, versão maior) e o que o `puppeteer-core` usa para baixar
+      navegador (`ip-address`, `extract-zip`, `basic-ftp`) — a bancada usa o Chrome instalado.
 
 > **Next 16.2.6 → 16.3.8 (09/10).** O `pnpm audit` de produção achou 43 avisos (3 críticos, 22
 > altos); 17 eram do Next. Três críticos — execução remota de código em servidor Windows, no
@@ -1256,6 +1257,14 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > (e trouxe o sharp corrigido junto). Conferido em build local: sem sessão, `/app` e `/admin` vão
 > para o login e a agenda inexistente dá 404; as seis telas internas e as três públicas carregam
 > sem erro de JS; 1364 testes e zero erro de tipo. De 43 avisos para 21.
+
+> **Dependências de produção: nenhum aviso (09/10).** Depois do Next, sobravam 21. Dois pacotes
+> nem eram usados — `ai` e `@ai-sdk/react` (o "Vercel AI SDK"; a Neuro chama o Groq por `fetch`
+> faz tempo) — e saíram. O resto subiu dentro da faixa que cada pacote de cima aceita: postcss,
+> nanoid e source-map-js pelo `pnpm update`; axios (do `msedge-tts`), browserslist e
+> baseline-browser-mapping por `overrides` no `pnpm-workspace.yaml`, com o motivo de cada linha
+> escrito ao lado. `pnpm audit --prod`: "No known vulnerabilities found". Conferido: build, 1364
+> testes, zero erro de tipo, e a voz da Neuro gerando MP3 de verdade com o axios novo.
 
 - [ ] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
       conta nova: tentar ler o que é de outra pela API direta, trocar ids e tokens nas URLs

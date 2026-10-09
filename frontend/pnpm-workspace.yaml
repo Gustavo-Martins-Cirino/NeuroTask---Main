@@ -2,3 +2,12 @@ allowBuilds:
   esbuild: true
   msedge-tts: true
   sharp: true
+
+# Versões corrigidas de dependências INDIRETAS que o pnpm audit acusava e que o
+# pacote de cima não puxa sozinho (09/10). Todas cabem na faixa que o pacote de
+# cima declara. Quando o pacote de cima já trouxer a versão corrigida, a linha
+# pode sair — confirmar com `pnpm audit --prod`.
+overrides:
+  axios: ^1.20.0                     # msedge-tts (voz da Neuro): ReDoS e outros 11 avisos
+  browserslist: ^4.28.7              # autoprefixer (build): memória sem limite
+  baseline-browser-mapping: ^2.11.0  # next e browserslist (build): queda com entrada inválida
