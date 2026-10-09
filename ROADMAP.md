@@ -1163,11 +1163,11 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       *Lido no código:* `/auth/callback` põe o `error.message` do Supabase na URL
       (`/auth/error?reason=…`). Conferir as respostas de cada rota de `/api` pelo mesmo critério.
 
-- [ ] **Redirecionamento aberto no login** (*lido no código, não testado*). `/auth/callback` faz
-      `redirect(origin + next)` com o `next` da URL sem validar: `?next=@outro-site.com` vira
-      `https://<site>@outro-site.com`, que o navegador lê como o host `outro-site.com` — a pessoa
-      faz o login de verdade e cai num site falso. Aceitar só caminho que começa com `/` e não
-      com `//`.
+> **Redirecionamento aberto no login: consertado (09/10).** O `next` do `/auth/callback` passa
+> por `lib/destino-seguro.ts` (29 testes): só caminho do próprio site, conferido pelo parser de
+> URL e não por lista de prefixos — `@outro-site.com`, `//`, `/\` e tab no meio caem em `/app`.
+> A rota foi conferida com o Supabase simulado aceitando o login: os ataques vão para `/app`,
+> `/app/tasks` passa, e o link de "esqueci a senha" continua indo para `/reset-password`.
 
 - [ ] **Headers, CORS e CSRF.** *Lido no código:* o `next.config.ts` não define nenhum cabeçalho
       de segurança. *Medido em produção (08/10, `/login`):* só vem o HSTS (a Vercel manda);

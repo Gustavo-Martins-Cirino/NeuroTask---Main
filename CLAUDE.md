@@ -125,6 +125,7 @@ frontend/
 │   ├── ia-conflito.ts        # Choque/vizinho colado/bloco repetido: vizinhança no fuso de quem usa (puro)
 │   ├── ia-alegacao-vazia.ts  # Corta o "✅ criado" da fala do modelo quando nada foi escrito (puro; par do recibo)
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
+│   ├── destino-seguro.ts     # Para onde o login manda depois de entrar: só caminho do site (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()
