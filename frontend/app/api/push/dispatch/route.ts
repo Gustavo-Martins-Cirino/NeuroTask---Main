@@ -14,8 +14,9 @@ export const runtime = "nodejs"
 const TZ_PADRAO = Number(process.env.DEFAULT_TZ_OFFSET_MIN ?? FUSO_PADRAO_MIN)
 
 async function handle(req: Request) {
-  const url = new URL(req.url)
-  const secret = req.headers.get("x-cron-secret") ?? url.searchParams.get("secret")
+  // Só pelo cabeçalho (é como o pg_cron manda, em push_cron.sql). Aceitar
+  // `?secret=` punha o segredo na URL, e URL vai inteira para o log da Vercel.
+  const secret = req.headers.get("x-cron-secret")
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return new Response("forbidden", { status: 403 })
   }

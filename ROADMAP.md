@@ -1128,6 +1128,16 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       `app/api/push/dispatch`. Teste prático: duas contas, e a A tentando ler, editar e apagar
       coisa da B pela API do Supabase direto, com o token da A.
 
+> **Os cinco lugares com chave de serviço foram lidos um por um (09/10), e cada um tem a própria
+> checagem.** `/admin` e o GET de `/api/errors`: só com `OWNER_EMAIL` configurado e igual ao
+> e-mail da sessão verificada no servidor (sem a variável, ninguém é dono). `/agenda/<token>` e
+> `/api/calendar/<token>`: buscam pelo token — 128 bits de `crypto.getRandomValues`, `unique` no
+> banco, regerável e revogável — e a agenda nem pede título. O POST de `/api/errors` só grava, com
+> teto. `/api/push/dispatch` exige o `CRON_SECRET`, e aceitava também `?secret=` na URL, que vai
+> inteira para o log da Vercel: agora é só pelo cabeçalho, que é como o `push_cron.sql` manda. O
+> que segue aberto neste item é o lado do banco (RLS e funções `security definer`) e o teste com
+> duas contas.
+
 - [ ] **Regras e exposição do Supabase Storage, e o upload.** O app não usa Firebase; o
       armazenamento é o Storage do Supabase. *Lido no código:* o bucket de fotos é público
       (`getPublicUrl` em `lib/avatar.ts`), e o recorte quadrado com reconversão para JPEG
