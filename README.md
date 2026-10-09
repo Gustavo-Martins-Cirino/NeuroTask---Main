@@ -283,7 +283,10 @@ Fecha o que a auditoria de 09/10 achou aberto: o bucket `avatars` deixava qualqu
 **listar** as pastas (cujo nome é o id de cada pessoa) — a foto continua pública pela URL,
 mas listar passa a ser só da própria pasta —, e as funções `security definer` deixam de
 poder ser chamadas por quem não está logado (a `purge_error_log` fica só para o cron).
-Também faz as funções futuras já nascerem fechadas. Termina com uma **conferência**:
+Também faz as funções futuras já nascerem fechadas — e é por isso que **todo SQL rodado depois
+dele pede rodar este de novo** (ele é idempotente): é a reexecução que devolve a quem está
+logado o direito de chamar a função nova. Sem ela, uma RPC nova responde "sem permissão"
+(42501), e o app trata isso como falha, não como "função ainda não existe". Termina com uma **conferência**:
 uma consulta que lista cada buraco que sobrar — tabela sem RLS, função sem `search_path`,
 função chamável sem login, leitura aberta no bucket. **Resultado vazio = tudo trancado.**
 
