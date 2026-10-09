@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { OPCOES_DO_COOKIE } from './cookie'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -21,6 +22,7 @@ export async function updateSession(request: NextRequest) {
     supabaseUrl!,
     supabaseKey!,
     {
+      cookieOptions: OPCOES_DO_COOKIE,
       cookies: {
         getAll() {
           return request.cookies.getAll()

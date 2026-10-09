@@ -83,6 +83,7 @@ frontend/
 │                             # use-office-bg · use-office-celebration (I/O das prefs/festa do Escritório)
 ├── lib/
 │   ├── supabase/             # client.ts · server.ts · middleware.ts (helper de updateSession)
+│   │                         # cookie.ts: o cookie da sessão (Secure em produção) — o MESMO nos três
 │   ├── gamification.ts       # Lógica de XP/níveis (+ anti-farm)
 │   ├── shop.ts               # Catálogo/estado da loja do Escritório (preços no banco)
 │   ├── avatar-accessories.ts # Item da loja → chapéu/óculos (puro; usado pelo 2D e pelo 3D)

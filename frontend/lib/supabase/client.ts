@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { OPCOES_DO_COOKIE } from './cookie'
 import { EVENTO_CONEXAO, respostaIndicaQueda, type PulsoDeConexao } from '@/lib/conexao'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -38,5 +39,6 @@ function fetchObservado(entrada: RequestInfo | URL, init?: RequestInit): Promise
 export function createClient() {
   return createBrowserClient(supabaseUrl!, supabaseKey!, {
     global: { fetch: fetchObservado },
+    cookieOptions: OPCOES_DO_COOKIE,
   })
 }

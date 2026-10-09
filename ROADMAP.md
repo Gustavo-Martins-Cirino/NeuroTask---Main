@@ -1126,7 +1126,19 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       validade da sessão e rotação do refresh token. Os **tokens que o próprio app emite** — o da
       agenda pública (`/agenda/<token>`) e o do feed `.ics` (`/api/calendar/<token>`) — precisam
       ser longos, aleatórios e revogáveis. Cookies: os do Supabase não são `httpOnly` por desenho
-      (o cliente lê a sessão); conferir `Secure` e `SameSite=Lax` em produção.
+      (o cliente lê a sessão); conferir `Secure` e `SameSite=Lax` em produção. *Lido (09/10):*
+      nenhuma tabela nossa tem coluna de senha — ela só passa pelo `supabase.auth`, que guarda
+      hash; os tokens do app são 128 bits de `crypto.getRandomValues`, únicos e revogáveis.
+
+> **Cookie da sessão com `Secure`, e HTTPS forçado (09/10).** Os três clientes do Supabase
+> (navegador, servidor e proxy) passaram a gravar o cookie com a mesma configuração
+> (`lib/supabase/cookie.ts`): `SameSite=Lax` como antes e `Secure` em produção — o cookie recusa
+> viajar por HTTP sem depender do HSTS da plataforma. `httpOnly` continua falso de propósito (o
+> cliente do navegador lê a sessão). Medido com uma sessão vencida, que força o servidor a
+> regravar o cookie: produção antes, `Path=/; Max-Age=0; SameSite=lax`; build novo,
+> `…; Secure; SameSite=lax`. O HTTPS já era forçado — `http://` recebe 308 para `https://`, com
+> HSTS de 2 anos (`includeSubDomains; preload`) —, mas é a Vercel quem faz: conferir de novo no
+> domínio próprio.
 
 - [ ] **Cada usuário só vê o que é dele (IDOR, "não confiar no ID da tela", banco trancado).**
       RLS ligado em TODA tabela do `public`, com política por `auth.uid()`, e `with check` nos
@@ -1288,6 +1300,24 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > **25.13** (as dependências de baixar navegador) e `source-map-js` fixado (vinha do `jsdom`).
 > A suíte passou inteira no vitest 4 sem mudar um teste (1364), e o puppeteer 25 abre o Chrome
 > instalado com `headless: "new"` e com `true`. `pnpm audit`: "No known vulnerabilities found".
+
+- [ ] **Contas com verificação em duas etapas (passo do Gustavo).** Supabase, Vercel e GitHub:
+      quem entra numa delas entra no app inteiro — e o repositório é **público**. Junto, a senha
+      do banco: a conexão direta ao Postgres fica aberta na internet por padrão, e o Supabase tem
+      "Network Restrictions" para limitar por IP.
+
+- [ ] **Criptografia dos dados.** Em repouso e em trânsito é da plataforma: o Supabase cifra o
+      disco (AES-256) e a conexão (TLS), e a Vercel serve só HTTPS. Cifrar campo a campo no
+      servidor (notas, tarefas) quebraria a busca e a Neuro, que precisam ler o texto. Decisão
+      registrada: não agora; rever se o app passar a guardar algo mais sensível que tarefa e nota.
+
+- [ ] **Enxugar o que sai das APIs.** Cada rota devolver só o que a tela usa, e a Neuro mandar ao
+      Groq só o necessário para responder — o Groq é terceiro, e tudo que vai no prompt sai do
+      nosso controle.
+
+- [ ] **Mass assignment (permissão por coluna).** Lido nos SQLs em 09/10: o RLS diz qual LINHA é
+      de quem, e não quais COLUNAS a pessoa pode mudar. A correção está pronta e entra pelo SQL do
+      banco; o detalhe só vem para cá depois de aplicada, porque o repositório é público.
 
 - [ ] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
       conta nova: tentar ler o que é de outra pela API direta, trocar ids e tokens nas URLs
