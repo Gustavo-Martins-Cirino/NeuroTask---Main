@@ -11,3 +11,4 @@ overrides:
   axios: ^1.20.0                     # msedge-tts (voz da Neuro): ReDoS e outros 11 avisos
   browserslist: ^4.28.7              # autoprefixer (build): memória sem limite
   baseline-browser-mapping: ^2.11.0  # next e browserslist (build): queda com entrada inválida
+  source-map-js: ^1.2.2              # jsdom (só testes): event loop travado com source map forjado

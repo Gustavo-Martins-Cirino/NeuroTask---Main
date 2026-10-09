@@ -1244,11 +1244,9 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > vídeo); agora pede login e devolve 401 com `title: null`, que o player já tratava — o favorito
 > fica com o link como nome.
 
-- [ ] **Dependências vulneráveis.** `pnpm audit`, Dependabot (ou Renovate) no GitHub e o Next na
-      última versão de correção. **Produção zerada em 09/10** (nota abaixo). Sobram 15 avisos só
-      de DESENVOLVIMENTO, que não vão para o site: o vitest 3 (o `tinypool` dele tem dois
-      críticos; a correção é o vitest 4, versão maior) e o que o `puppeteer-core` usa para baixar
-      navegador (`ip-address`, `extract-zip`, `basic-ftp`) — a bancada usa o Chrome instalado.
+- [ ] **Dependências vulneráveis: manter em zero.** `pnpm audit` limpo em 09/10, produção e
+      desenvolvimento (notas abaixo). O que falta é não deixar voltar: Dependabot (ou Renovate) no
+      GitHub avisando quando sair correção, e o `pnpm audit` antes de cada divulgação grande.
 
 > **Next 16.2.6 → 16.3.8 (09/10).** O `pnpm audit` de produção achou 43 avisos (3 críticos, 22
 > altos); 17 eram do Next. Três críticos — execução remota de código em servidor Windows, no
@@ -1265,6 +1263,12 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > baseline-browser-mapping por `overrides` no `pnpm-workspace.yaml`, com o motivo de cada linha
 > escrito ao lado. `pnpm audit --prod`: "No known vulnerabilities found". Conferido: build, 1364
 > testes, zero erro de tipo, e a voz da Neuro gerando MP3 de verdade com o axios novo.
+
+> **E as de desenvolvimento também (09/10).** Os 15 avisos que sobravam eram de ferramenta, não
+> do site: vitest 3 → **4.1.11** (o `tinypool` dele tinha dois críticos), `puppeteer-core` 23 →
+> **25.13** (as dependências de baixar navegador) e `source-map-js` fixado (vinha do `jsdom`).
+> A suíte passou inteira no vitest 4 sem mudar um teste (1364), e o puppeteer 25 abre o Chrome
+> instalado com `headless: "new"` e com `true`. `pnpm audit`: "No known vulnerabilities found".
 
 - [ ] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
       conta nova: tentar ler o que é de outra pela API direta, trocar ids e tokens nas URLs
