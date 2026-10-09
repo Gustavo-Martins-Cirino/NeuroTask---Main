@@ -8,6 +8,8 @@
 --     foto, e o nome da pasta é o id dela;
 --   · nenhum SQL desta pasta tem `revoke`, e no Supabase isso quer dizer que toda
 --     função do schema public pode ser chamada pela API, até sem login.
+-- E lido nos arquivos: três políticas de UPDATE valiam para a linha inteira, o
+-- que deixava mudar colunas que só o servidor devia mudar (seção 3).
 
 -- ---- 1. O bucket de fotos para de se deixar listar ----
 -- A política de leitura era `to public using (bucket_id = 'avatars')`, e no
@@ -54,7 +56,31 @@ end $$;
 -- logado — sem isso, o próximo SQL desta pasta reabriria a porta sem ninguém ver.
 alter default privileges in schema public revoke execute on functions from public, anon;
 
--- ---- 3. Conferência ----
+-- ---- 3. Mass assignment: cada tabela deixa mudar só a coluna que o app muda ----
+-- O RLS diz QUAL LINHA é de quem; não diz QUAIS COLUNAS a pessoa pode mudar. Com
+-- a política de UPDATE do dono valendo para a linha inteira, três coisas eram
+-- possíveis direto pela API, com o token de uma conta comum:
+--   · `user_stats`: pôr `coins` e `total_xp` no valor que quisesse — moedas
+--     infinitas, a loja inteira de graça, o anti-farm do `award_xp` contornado;
+--   · `user_items`: trocar o `item_id` de um item comprado por qualquer outro —
+--     o item mais caro da loja pelo preço do mais barato;
+--   · `friendships`: quem RECEBE um pedido trocar o `requester` por qualquer
+--     pessoa e marcar "accepted" — amizade forçada, com acesso à agenda e ao
+--     escritório de quem nunca aceitou nada.
+-- O app só muda, direto: o `avatar` em `user_stats` (upsert, por isso `user_id`
+-- entra junto), o `equipped` em `user_items` e o `status` em `friendships`. O
+-- resto passa pelas funções `security definer` (`award_xp`, `buy_item`, pedido
+-- de amizade), que rodam como dono da tabela e não dependem destas permissões.
+revoke insert, update on public.user_stats from anon, authenticated;
+grant insert (user_id, avatar), update (user_id, avatar) on public.user_stats to authenticated;
+
+revoke insert, update on public.user_items from anon, authenticated;
+grant update (equipped) on public.user_items to authenticated;
+
+revoke insert, update on public.friendships from anon, authenticated;
+grant update (status) on public.friendships to authenticated;
+
+-- ---- 4. Conferência ----
 -- Volta VAZIO quando está tudo trancado. Cada linha é um buraco, com o nome dele.
 select 'tabela sem RLS' as problema, c.relname::text as objeto
 from pg_class c
@@ -76,4 +102,18 @@ union all
 select 'leitura aberta no bucket avatars', policyname::text
 from pg_policies
 where schemaname = 'storage' and tablename = 'objects' and cmd = 'SELECT'
-  and qual ilike '%avatars%' and qual not ilike '%auth.uid()%';
+  and qual ilike '%avatars%' and qual not ilike '%auth.uid()%'
+union all
+select 'coluna que quem está logado não devia poder mudar', v.tabela || '.' || v.coluna
+from (values
+  ('user_stats', 'coins'), ('user_stats', 'total_xp'), ('user_stats', 'xp_today'), ('user_stats', 'xp_day'),
+  ('user_stats', 'focus_xp_today'), ('user_stats', 'focus_xp_day'),
+  ('user_items', 'item_id'), ('user_items', 'user_id'),
+  ('friendships', 'requester'), ('friendships', 'addressee')
+) as v (tabela, coluna)
+-- Só as colunas que existem: `focus_xp_*` nasce no foco_xp.sql, e perguntar a
+-- permissão de coluna inexistente é erro, não "não".
+join information_schema.columns ic
+  on ic.table_schema = 'public' and ic.table_name = v.tabela and ic.column_name = v.coluna
+where has_column_privilege('authenticated', 'public.' || v.tabela, v.coluna, 'UPDATE')
+   or has_column_privilege('authenticated', 'public.' || v.tabela, v.coluna, 'INSERT');

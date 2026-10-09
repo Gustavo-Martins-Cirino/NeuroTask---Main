@@ -1169,13 +1169,16 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > buracos — **o bucket `avatars` se deixava listar** (as pastas têm o id de cada pessoa com
 > foto) e **nenhum SQL tinha `revoke`**, então toda função podia ser chamada sem login — estão
 > fechados em `supabase/seguranca_banco.sql`, que termina com uma consulta de conferência
-> (vazia = trancado). Falta rodar o SQL (item abaixo) e o teste com duas contas, que pede uma
-> segunda conta de verdade.
+> (vazia = trancado). O SQL foi aplicado no mesmo dia (nota abaixo); falta o teste com duas
+> contas, que pede uma segunda conta de verdade.
 
-- [ ] **Rodar `supabase/seguranca_banco.sql` no SQL Editor (passo do Gustavo).** Por último,
-      depois de todos os outros. A última parte é uma consulta: **resultado vazio = tudo
-      trancado**; cada linha que voltar é um buraco, com o nome. Depois, repetir o teste anônimo
-      (o bucket tem que parar de listar) — é um script de leitura, roda em segundos.
+> **`seguranca_banco.sql` aplicado (09/10) e conferido de fora.** Com a chave pública e sem login,
+> depois de rodar: o bucket `avatars` lista 0 itens (antes, 2 pastas); chamar uma função
+> (`my_friends`) dá 42501, sem permissão; e um UPDATE em `user_stats.coins`,
+> `user_items.item_id` e `friendships.requester` (num id que não existe — nada podia mudar)
+> também dá 42501, o que só a seção 3 do SQL explica. O que não dá para conferir de fora é o lado
+> de quem ESTÁ logado: o teste com duas contas, e a conferência rápida do Gustavo de que trocar
+> o avatar, equipar item, aceitar amizade e ganhar XP continuam funcionando.
 
 - [ ] **Regras e exposição do Supabase Storage, e o upload.** O app não usa Firebase; o
       armazenamento é o Storage do Supabase. *Lido no código:* o bucket de fotos é público
@@ -1186,7 +1189,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       microfone (`/api/ai/transcribe`), já tem teto e filtro de tipo (nota abaixo). *Lido e
       medido (09/10):* tamanho (1 MB), tipo (só JPEG) e escrita só na própria pasta já estavam
       no `foto_perfil.sql`; a **listagem estava aberta** para quem não está logado — fechada no
-      `seguranca_banco.sql`, que ainda precisa rodar.
+      `seguranca_banco.sql` (aplicado em 09/10: o bucket lista 0 itens).
 
 - [ ] **Admin protegido.** `/admin` devolve 404 para quem não é `OWNER_EMAIL`. Conferir que a
       comparação é com o e-mail confirmado da sessão (e não com algo que a pessoa edita, como o
@@ -1315,9 +1318,15 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       Groq só o necessário para responder — o Groq é terceiro, e tudo que vai no prompt sai do
       nosso controle.
 
-- [ ] **Mass assignment (permissão por coluna).** Lido nos SQLs em 09/10: o RLS diz qual LINHA é
-      de quem, e não quais COLUNAS a pessoa pode mudar. A correção está pronta e entra pelo SQL do
-      banco; o detalhe só vem para cá depois de aplicada, porque o repositório é público.
+> **Mass assignment: fechado por coluna (09/10).** O RLS diz qual LINHA é de quem, e não quais
+> COLUNAS a pessoa pode mudar — e três políticas de UPDATE valiam para a linha inteira. Com o
+> token de uma conta comum, direto pela API, dava para pôr qualquer valor em `user_stats.coins`
+> e `total_xp` (a loja inteira de graça, o anti-farm contornado); trocar o `item_id` de um item
+> comprado pelo mais caro da loja; e, recebendo um pedido de amizade, trocar o `requester` por
+> qualquer pessoa — amizade forçada, com acesso à agenda e ao escritório dela. Agora quem está
+> logado só muda a coluna que o app muda (`avatar`, `equipped`, `status`); o resto passa pelas
+> funções do servidor. Achado lendo os SQLs, não explorado; o detalhe ficou fora do repositório
+> (que é público) até o SQL estar aplicado no banco.
 
 - [ ] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
       conta nova: tentar ler o que é de outra pela API direta, trocar ids e tokens nas URLs
