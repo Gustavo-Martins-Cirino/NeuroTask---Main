@@ -1176,13 +1176,22 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > A rota foi conferida com o Supabase simulado aceitando o login: os ataques vão para `/app`,
 > `/app/tasks` passa, e o link de "esqueci a senha" continua indo para `/reset-password`.
 
-- [ ] **Headers, CORS e CSRF.** *Lido no código:* o `next.config.ts` não define nenhum cabeçalho
-      de segurança. *Medido em produção (08/10, `/login`):* só vem o HSTS (a Vercel manda);
-      faltam CSP, `frame-ancestors` (ou `X-Frame-Options`), `X-Content-Type-Options`,
-      `Referrer-Policy` e `Permissions-Policy` (microfone só no próprio site). Medir de novo no
-      domínio próprio. CORS: nenhuma rota abre `Access-Control-Allow-Origin` — manter assim. CSRF:
-      as rotas de `/api` leem o cookie de sessão; o `SameSite=Lax` barra POST vindo de outro site,
-      e conferir o `Origin` nas rotas que mudam dados fecha o resto.
+- [ ] **CSP completa, CORS e CSRF.** A CSP de hoje não restringe script (ver a nota abaixo):
+      faltam `script-src`, `connect-src` e `frame-src`, o que pede o inventário de hosts do app
+      (Supabase em https e wss, o iframe do YouTube, o script do Vercel Analytics) e nonce para os
+      scripts do Next — fazer em modo `Report-Only` primeiro. Medir de novo no domínio próprio.
+      CORS: nenhuma rota abre `Access-Control-Allow-Origin` — manter assim. CSRF: as rotas de
+      `/api` leem o cookie de sessão; o `SameSite=Lax` barra POST vindo de outro site, e conferir
+      o `Origin` nas rotas que mudam dados fecha o resto.
+
+> **Cabeçalhos de segurança em toda resposta (09/10).** O `next.config.ts` passou a mandar
+> `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`, uma CSP que só
+> trata de iframe, `<base>` e `<object>` (`frame-ancestors 'none'`) e `Permissions-Policy`
+> (câmera, localização, pagamento e USB desligados; microfone só para o próprio site), e parou
+> de mandar `X-Powered-By`. Conferido em build local: os cinco em página, API, 404 e
+> redirecionamento; a landing, o login e o cadastro abrem; o microfone continua liberado para o
+> site e a câmera não; uma página de fora que tenta pôr o `/login` num iframe recebe a tela de
+> erro do Chrome.
 
 - [ ] **SSRF e arquivos sensíveis expostos.** `/api/yt-title` busca só no youtube.com (host
       fixo), o que está certo. Arquivos: nada sensível em `public/`, source maps de produção
@@ -1242,6 +1251,11 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 - [ ] **Google Analytics.** GA4 grava cookie, e isso pede aviso de cookies e uma **política de
       privacidade** que ainda não existe (LGPD). Se a pergunta for só "quantos visitam e de onde",
       o Vercel Analytics responde sem cookie e sem aviso. Decisão do Gustavo.
+      *Medido (09/10):* o `<Analytics />` da Vercel **já está montado** no `app/layout.tsx`, mas
+      o Web Analytics não está ligado no painel do projeto — em produção o script
+      (`/_vercel/insights/script.js`) responde 404, então nada é coletado e todo carregamento
+      deixa um erro no console. Ligar é um clique no painel (passo do Gustavo); se a escolha for
+      o GA4, tirar o componente.
 
 - [ ] **Testar a velocidade do site.** PageSpeed Insights (celular) na landing e no `/login`, que
       é o que um estranho abre primeiro, e os Core Web Vitals reais depois do lançamento (Search
