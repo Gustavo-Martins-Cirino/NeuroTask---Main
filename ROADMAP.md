@@ -1152,8 +1152,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       `innerHTML`. Hoje a nota é só do dono, mas a Neuro também escreve notas, e um
       `<img onerror>` executa por esse caminho — sanitizar (DOMPurify) ao carregar e ao salvar.
 
-- [ ] **Rate limit e envio repetido.** Login: item acima. *Lido no código:* `/api/yt-title` está
-      aberta sem login (serve de proxy para o oEmbed do YouTube a qualquer um); `/api/errors`
+- [ ] **Rate limit e envio repetido.** Login: item acima. *Lido no código:* `/api/errors`
       aceita anônimo de propósito, com corpo limitado e teto por IP; `/api/ai/tts` e
       `/api/ai/transcribe` pedem login, mas gastam a cota do Groq — conferir um teto por usuário.
       E os botões travados durante o envio, com o servidor aguentando o mesmo pedido chegar duas
@@ -1185,12 +1184,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       as rotas de `/api` leem o cookie de sessão; o `SameSite=Lax` barra POST vindo de outro site,
       e conferir o `Origin` nas rotas que mudam dados fecha o resto.
 
-- [ ] **SSRF e arquivos sensíveis expostos.** *Lido no código:* o `next.config.ts` libera o
-      otimizador de imagem para **qualquer** host https (`hostname: '**'`), então
-      `/_next/image?url=` busca imagem de qualquer lugar da internet por conta da cota da Vercel —
-      restringir aos hosts que o app usa (Storage do Supabase, fotos do Google e do GitHub).
-      `/api/yt-title` busca só no youtube.com (host fixo), o que está certo. Arquivos: nada
-      sensível em `public/`, source maps de produção desligados, `.env` nunca servido.
+- [ ] **SSRF e arquivos sensíveis expostos.** `/api/yt-title` busca só no youtube.com (host
+      fixo), o que está certo. Arquivos: nada sensível em `public/`, source maps de produção
+      desligados, `.env` nunca servido.
+
+> **Duas portas abertas para quem não é usuário, fechadas (09/10).** O otimizador de imagem
+> aceitava QUALQUER host (`hostname: '**'`) — medido em produção antes do conserto,
+> `/_next/image` buscava e devolvia uma imagem do google.com, por conta da cota da Vercel.
+> Nenhuma tela usa `next/image` com foto de fora (as fotos de perfil são `<img>` comum), então a
+> liberação saiu inteira. E `/api/yt-title` respondia sem login (medido: 200 com o título do
+> vídeo); agora pede login e devolve 401 com `title: null`, que o player já tratava — o favorito
+> fica com o link como nome.
 
 - [ ] **Dependências vulneráveis.** `pnpm audit`, Dependabot (ou Renovate) no GitHub e o Next na
       última versão de correção.
