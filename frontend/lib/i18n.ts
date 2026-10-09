@@ -13,6 +13,7 @@ import { type IdPassoOnboarding } from "@/lib/onboarding"
 import { type FormatoDoMomento } from "@/lib/ia-recibo"
 import { type IdPergunta } from "@/lib/enquete"
 import { type TextosDeErroDoFeedback, type TipoDeFeedback } from "@/lib/feedback"
+import { type MotivoLogin } from "@/lib/motivo-login"
 import { type IdAmbiente } from "@/lib/focus-gradient"
 import { type IdFaixa, type SoundCategory } from "@/hooks/use-sound-mixer"
 
@@ -347,7 +348,8 @@ export interface Dicionario {
     erroAutenticacao: {
       titulo: string
       texto: string
-      detalheTecnico: (motivo: string) => string
+      /** Só motivos da lista fechada — a mensagem do Supabase nunca chega aqui. */
+      motivos: Record<MotivoLogin, string>
     }
     social: {
       ou: string
@@ -1638,7 +1640,12 @@ export const pt: Dicionario = {
     erroAutenticacao: {
       titulo: "Erro de autenticação",
       texto: "Ocorreu um erro durante o processo de autenticação. Por favor, tente novamente.",
-      detalheTecnico: (motivo) => `Detalhe técnico: ${motivo}`,
+      motivos: {
+        linkVencido: "O link venceu ou já foi usado. Peça um novo na tela de entrar.",
+        outroNavegador: "Abra o link no mesmo navegador em que você pediu para entrar.",
+        cancelado: "O login foi cancelado antes de terminar.",
+        muitasTentativas: "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.",
+      },
     },
     social: {
       ou: "ou",
@@ -2839,7 +2846,12 @@ export const en: Dicionario = {
     erroAutenticacao: {
       titulo: "Authentication error",
       texto: "Something went wrong while signing you in. Please try again.",
-      detalheTecnico: (motivo) => `Technical detail: ${motivo}`,
+      motivos: {
+        linkVencido: "The link expired or was already used. Request a new one from the sign-in screen.",
+        outroNavegador: "Open the link in the same browser you used to sign in.",
+        cancelado: "Sign-in was cancelled before it finished.",
+        muitasTentativas: "Too many attempts in a row. Wait a few minutes and try again.",
+      },
     },
     social: {
       ou: "or",

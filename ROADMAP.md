@@ -1159,9 +1159,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       E os botões travados durante o envio, com o servidor aguentando o mesmo pedido chegar duas
       vezes.
 
-- [ ] **Erros sem detalhes.** Nada de pilha, SQL ou mensagem crua do Supabase na tela.
-      *Lido no código:* `/auth/callback` põe o `error.message` do Supabase na URL
-      (`/auth/error?reason=…`). Conferir as respostas de cada rota de `/api` pelo mesmo critério.
+- [ ] **Erros sem detalhes.** Nada de pilha, SQL ou mensagem crua do Supabase na tela. Falta
+      conferir as respostas de cada rota de `/api` por esse critério.
+
+> **A tela de erro do login parou de mostrar o que vier na URL (09/10).** O `/auth/callback`
+> mandava o `error.message` do Supabase em `?reason=`, e a tela exibia QUALQUER texto dali como
+> "Detalhe técnico" — inclusive um aviso falso montado por quem fizesse o link. Agora a URL leva
+> um motivo de lista fechada (`lib/motivo-login.ts`, 11 testes: link vencido, outro navegador,
+> cancelado, muitas tentativas), a frase sai do dicionário nos dois idiomas, e a mensagem crua
+> vai para o log da Vercel (`[auth/callback]`). Conferido em build local: os motivos aparecem
+> traduzidos; um texto inventado e a mensagem do Supabase não aparecem na tela (seguem só dentro
+> do `<script>` de dados do Next, que guarda a URL — não é texto exibido).
 
 > **Redirecionamento aberto no login: consertado (09/10).** O `next` do `/auth/callback` passa
 > por `lib/destino-seguro.ts` (29 testes): só caminho do próprio site, conferido pelo parser de

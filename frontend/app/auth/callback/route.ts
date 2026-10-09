@@ -2,6 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { destinoSeguro } from '@/lib/destino-seguro'
+import { motivoDoCodigo } from '@/lib/motivo-login'
+
+// A URL de erro leva um MOTIVO de lista fechada, nunca a mensagem do Supabase:
+// a tela mostra o que vier ali (ver lib/motivo-login.ts). A mensagem crua vai
+// para o log da Vercel, onde ajuda quem conserta.
+function paraErro(origin: string, codigo?: string | null) {
+  const motivo = motivoDoCodigo(codigo)
+  return NextResponse.redirect(`${origin}/auth/error${motivo ? `?reason=${motivo}` : ''}`)
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -29,15 +38,19 @@ export async function GET(request: Request) {
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash })
     if (!error) return NextResponse.redirect(`${origin}${next}`)
-    return NextResponse.redirect(`${origin}/auth/error?reason=${encodeURIComponent(error.message)}`)
+    console.warn('[auth/callback]', error.code, error.message)
+    return paraErro(origin, error.code)
   }
 
   // Fluxo PKCE (OAuth / mesmo navegador)
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) return NextResponse.redirect(`${origin}${next}`)
-    return NextResponse.redirect(`${origin}/auth/error?reason=${encodeURIComponent(error.message)}`)
+    console.warn('[auth/callback]', error.code, error.message)
+    return paraErro(origin, error.code)
   }
 
-  return NextResponse.redirect(`${origin}/auth/error`)
+  // Sem code nem token: o provedor devolveu erro (ex.: a pessoa desistiu na
+  // tela do Google), em `error` ou `error_code`.
+  return paraErro(origin, searchParams.get('error_code') ?? searchParams.get('error'))
 }

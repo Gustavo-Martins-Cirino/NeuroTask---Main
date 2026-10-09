@@ -5,10 +5,11 @@ import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
 import { dicionario } from "@/lib/i18n"
+import type { MotivoLogin } from "@/lib/motivo-login"
 
 // A tela para onde o callback do OAuth manda quando algo dá errado. Fica fora do
 // AppShell, então cuida sozinha do `lang` do documento.
-export function ErroAutenticacao({ motivo }: { motivo?: string }) {
+export function ErroAutenticacao({ motivo }: { motivo: MotivoLogin | null }) {
   const idioma = useIdioma()
   useSincronizarLangDoDocumento(idioma)
   const t = dicionario(idioma).entrada
@@ -23,8 +24,8 @@ export function ErroAutenticacao({ motivo }: { motivo?: string }) {
           <h1 className="text-2xl font-semibold tracking-tight">{t.erroAutenticacao.titulo}</h1>
           <p className="text-muted-foreground">{t.erroAutenticacao.texto}</p>
           {motivo && (
-            <p className="mx-auto max-w-sm rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-              {t.erroAutenticacao.detalheTecnico(motivo)}
+            <p className="mx-auto max-w-sm rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+              {t.erroAutenticacao.motivos[motivo]}
             </p>
           )}
         </div>
