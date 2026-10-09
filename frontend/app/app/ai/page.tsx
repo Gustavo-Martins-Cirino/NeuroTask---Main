@@ -18,6 +18,7 @@ import { comNegrito } from "@/lib/negrito"
 import { separaRecibo } from "@/lib/ia-recibo"
 import { ehLimite, leMarcaDeLimite, fraseDaEspera } from "@/lib/ia-limite"
 import { relogioDeSilencio } from "@/lib/ia-silencio"
+import { falhaDaTranscricao } from "@/lib/audio-transcricao"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -339,9 +340,10 @@ export default function AiPage() {
       form.append("file", blob, "audio.webm")
       form.append("language", idioma)
       const res = await fetch("/api/ai/transcribe", { method: "POST", body: form })
+      // A frase sai do status, nunca do corpo da resposta (lib/audio-transcricao.ts).
       if (!res.ok) {
-        const err = await res.text().catch(() => "")
-        setMessages((prev) => [...prev, { role: "assistant", content: err || traducao.ia.erroTranscricao }])
+        const frase = traducao.ia.falhaTranscricao[falhaDaTranscricao(res.status)]
+        setMessages((prev) => [...prev, { role: "assistant", content: frase }])
         return
       }
       const { text } = await res.json()

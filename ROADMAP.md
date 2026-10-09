@@ -1133,9 +1133,8 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       (`getPublicUrl` em `lib/avatar.ts`), e o recorte quadrado com reconversão para JPEG
       (`lib/foto-perfil.ts`) acontece **no navegador** — quem chama a API direto pula isso. Então
       o que protege é o **bucket**: tipo de arquivo e tamanho máximo configurados nele, escrita
-      só na pasta do próprio usuário, listagem desligada. Há um **segundo upload** além da foto:
-      o áudio do microfone, que vai para `/api/ai/transcribe` — a leitura não achou teto de
-      tamanho nem de tipo ali.
+      só na pasta do próprio usuário, listagem desligada. O **segundo upload**, o áudio do
+      microfone (`/api/ai/transcribe`), já tem teto e filtro de tipo (nota abaixo).
 
 - [ ] **Admin protegido.** `/admin` devolve 404 para quem não é `OWNER_EMAIL`. Conferir que a
       comparação é com o e-mail confirmado da sessão (e não com algo que a pessoa edita, como o
@@ -1153,13 +1152,24 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       `<img onerror>` executa por esse caminho — sanitizar (DOMPurify) ao carregar e ao salvar.
 
 - [ ] **Rate limit e envio repetido.** Login: item acima. *Lido no código:* `/api/errors`
-      aceita anônimo de propósito, com corpo limitado e teto por IP; `/api/ai/tts` e
-      `/api/ai/transcribe` pedem login, mas gastam a cota do Groq — conferir um teto por usuário.
+      aceita anônimo de propósito, com corpo limitado e teto por IP; `/api/ai/transcribe` pede
+      login e tem teto de tamanho, mas gasta a cota do Groq — falta um teto por usuário;
+      `/api/ai/tts` usa a voz do Edge (não o Groq) e já corta o texto em 900 caracteres.
       E os botões travados durante o envio, com o servidor aguentando o mesmo pedido chegar duas
       vezes.
 
 - [ ] **Erros sem detalhes.** Nada de pilha, SQL ou mensagem crua do Supabase na tela. Falta
       conferir as respostas de cada rota de `/api` por esse critério.
+
+> **O áudio do microfone ganhou teto, e o erro do Groq saiu do chat (09/10).**
+> `/api/ai/transcribe` repassava ao Whisper qualquer arquivo, de qualquer tamanho, com a chave
+> do app. Agora recusa acima de 4 MB (413, abaixo do corpo máximo de uma função da Vercel) e o
+> que claramente não é áudio (415), e o nome que segue para o Groq é só `audio.<extensão de
+> áudio>` (`lib/audio-transcricao.ts`, 16 testes). E quando o Groq falhava, a rota devolvia o
+> corpo dele, que a tela da Neuro mostrava **como fala da Neuro** — JSON cru, em qualquer
+> idioma. Agora a resposta de erro vai sem corpo, o detalhe fica no log (`[transcribe]`), e a
+> frase sai do dicionário pelo status (áudio longo, limite, genérica). Conferido com a rota de
+> verdade e o Groq simulado: áudio normal, mp4 do Safari, 4 MB, imagem, erro e limite do Groq.
 
 > **A tela de erro do login parou de mostrar o que vier na URL (09/10).** O `/auth/callback`
 > mandava o `error.message` do Supabase em `?reason=`, e a tela exibia QUALQUER texto dali como

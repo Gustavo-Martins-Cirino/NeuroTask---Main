@@ -127,6 +127,7 @@ frontend/
 │   ├── auth-metodos.ts       # Provedores de login habilitados + último método (puro)
 │   ├── destino-seguro.ts     # Para onde o login manda depois de entrar: só caminho do site (puro)
 │   ├── motivo-login.ts       # Por que o login falhou, como código de lista fechada — nunca a mensagem (puro)
+│   ├── audio-transcricao.ts  # O que a transcrição aceita (teto, tipo, nome) e a frase de cada recusa (puro)
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()

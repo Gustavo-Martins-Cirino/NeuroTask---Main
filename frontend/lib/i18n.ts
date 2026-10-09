@@ -14,6 +14,7 @@ import { type FormatoDoMomento } from "@/lib/ia-recibo"
 import { type IdPergunta } from "@/lib/enquete"
 import { type TextosDeErroDoFeedback, type TipoDeFeedback } from "@/lib/feedback"
 import { type MotivoLogin } from "@/lib/motivo-login"
+import { type FalhaDeTranscricao } from "@/lib/audio-transcricao"
 import { type IdAmbiente } from "@/lib/focus-gradient"
 import { type IdFaixa, type SoundCategory } from "@/hooks/use-sound-mixer"
 
@@ -1147,7 +1148,8 @@ export interface Dicionario {
     transcrevendo: string
     erroResposta: string
     erroConexao: string
-    erroTranscricao: string
+    /** Escolhida pelo status da rota — o corpo da resposta nunca vai para a tela. */
+    falhaTranscricao: Record<FalhaDeTranscricao, string>
     erroTranscricaoGenerica: string
     erroMicrofone: string
     /** As quatro sugestões da tela vazia, antes de a pessoa editar as suas. */
@@ -2280,7 +2282,11 @@ export const pt: Dicionario = {
     transcrevendo: "Transcrevendo seu áudio…",
     erroResposta: "Não consegui responder agora. Tente novamente.",
     erroConexao: "Houve um erro de conexão. Tente novamente.",
-    erroTranscricao: "Não consegui transcrever o áudio.",
+    falhaTranscricao: {
+      generica: "Não consegui transcrever o áudio.",
+      audioLongo: "O áudio ficou longo demais. Grave em partes menores.",
+      limite: "Muitas transcrições seguidas. Espere um pouco e tente de novo.",
+    },
     erroTranscricaoGenerica: "Erro ao transcrever o áudio.",
     erroMicrofone: "Não foi possível acessar o microfone. Verifique a permissão do navegador.",
     atalhosPadrao: [
@@ -3473,7 +3479,11 @@ export const en: Dicionario = {
     transcrevendo: "Transcribing your audio…",
     erroResposta: "I couldn't reply right now. Try again.",
     erroConexao: "There was a connection error. Try again.",
-    erroTranscricao: "I couldn't transcribe the audio.",
+    falhaTranscricao: {
+      generica: "I couldn't transcribe the audio.",
+      audioLongo: "That recording is too long. Try shorter parts.",
+      limite: "Too many transcriptions in a row. Wait a moment and try again.",
+    },
     erroTranscricaoGenerica: "Error transcribing the audio.",
     erroMicrofone: "Couldn't access the microphone. Check your browser permission.",
     atalhosPadrao: [
