@@ -128,6 +128,7 @@ frontend/
 │   ├── destino-seguro.ts     # Para onde o login manda depois de entrar: só caminho do site (puro)
 │   ├── motivo-login.ts       # Por que o login falhou, como código de lista fechada — nunca a mensagem (puro)
 │   ├── audio-transcricao.ts  # O que a transcrição aceita (teto, tipo, nome) e a frase de cada recusa (puro)
+│   ├── html-da-nota.ts       # Limpa o HTML da nota (DOMPurify) antes do innerHTML do editor
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
 │   ├── types.ts
 │   └── utils.ts              # cn()
@@ -284,6 +285,8 @@ pnpm dev     # ou npm run dev
 - Ícones: `lucide-react`
 - Classes: `cn()` de `@/lib/utils` para condicionais
 - Sem comentários desnecessários no código
+- HTML que vem do banco (notas) só vira DOM por `limpaHtmlDaNota` (`lib/html-da-nota.ts`) — nunca
+  `innerHTML` ou `dangerouslySetInnerHTML` direto: a Neuro escreve notas, e o texto do modelo não é confiável
 - Módulo determinístico novo em `lib/` nasce com `lib/<nome>.test.ts` (Vitest, `pnpm test`)
 - Framer Motion: `motion.*` components, `AnimatePresence` para enter/exit, `layoutId` para shared layout animations
 - Efeito pesado é opt-in ou desligável, respeita `prefers-reduced-motion` e tem fallback estático

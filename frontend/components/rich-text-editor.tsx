@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
+import { limpaHtmlDaNota } from "@/lib/html-da-nota"
 import { useDicionario } from "@/hooks/use-idioma"
 import {
   Bold, Italic, Underline, List, ListOrdered, Heading,
@@ -56,10 +57,12 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   const selectedImgRef = useRef<HTMLImageElement | null>(null)
   const [imgPct, setImgPct] = useState<number | null>(null)
 
-  // Define o conteúdo inicial uma vez (não-controlado, evita pulo de cursor)
+  // Define o conteúdo inicial uma vez (não-controlado, evita pulo de cursor).
+  // Limpo antes: a nota pode ter sido escrita pela Neuro, e um `onerror` aqui
+  // rodaria no site com a sessão de quem abriu (lib/html-da-nota.ts).
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value) {
-      ref.current.innerHTML = value || ""
+      ref.current.innerHTML = limpaHtmlDaNota(value || "")
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

@@ -1147,9 +1147,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       interpolação recebem só datas geradas no servidor — a regra a manter é nunca pôr texto do
       usuário dentro de `.or()`/`.filter()`. Limites também no banco (tamanho de título, nota,
       mensagem de feedback): o formulário valida, mas o servidor tem que recusar sozinho.
-      **XSS nas notas** (*lido no código*): `rich-text-editor.tsx` põe o HTML salvo direto em
-      `innerHTML`. Hoje a nota é só do dono, mas a Neuro também escreve notas, e um
-      `<img onerror>` executa por esse caminho — sanitizar (DOMPurify) ao carregar e ao salvar.
+
+> **XSS nas notas: consertado (09/10).** O editor punha o HTML salvo direto em `innerHTML`, e a
+> Neuro grava notas com o texto que o MODELO escreve — um `<img onerror>` ali rodava no site com
+> a sessão de quem abrisse a nota. Agora o editor limpa com o DOMPurify ao carregar
+> (`lib/html-da-nota.ts`, 26 testes com os truques conhecidos: SVG, `noscript`, `math`,
+> `javascript:`, handlers), com a lista do que o editor produz e um filtro de `style` que só
+> deixa cor, fundo, tamanho e alinhamento (nada de `url(` nem `position`). Conferido no
+> navegador com uma nota envenenada vinda do banco: zero execução, e negrito, cor e imagem
+> intactos; o mesmo conteúdo posto direto num `innerHTML` executou (o controle). A limpeza é no
+> carregamento, que é o único lugar onde a nota vira HTML vivo — a lista tira as tags por regex.
+> Dependências novas: `dompurify` e, só para os testes, `jsdom`.
 
 - [ ] **Rate limit e envio repetido.** Login: item acima. *Lido no código:* `/api/errors`
       aceita anônimo de propósito, com corpo limitado e teto por IP; `/api/ai/transcribe` pede
