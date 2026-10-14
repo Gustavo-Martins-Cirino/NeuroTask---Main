@@ -302,6 +302,8 @@ export interface Dicionario {
     senhaFraca: (minimo: number) => string
     /** O que a conferência local achou faltando — dito antes de ir ao servidor. */
     faltaNaSenha: (falta: FaltaNaSenha, minimo: number) => string
+    /** O Supabase recusou o token do CAPTCHA (`captcha_failed`). */
+    captchaFalhou: string
     login: {
       subtitulo: string
       esqueceuSenha: string
@@ -1596,6 +1598,7 @@ export const pt: Dicionario = {
         semLetra: "A senha precisa de ao menos uma letra.",
         semNumero: "A senha precisa de ao menos um número.",
       })[falta],
+    captchaFalhou: "Não deu para confirmar que você não é um robô. Tente de novo.",
     login: {
       subtitulo: "Gerencie suas tarefas com inteligência",
       esqueceuSenha: "Esqueceu a senha?",
@@ -2813,6 +2816,7 @@ export const en: Dicionario = {
         semLetra: "The password needs at least one letter.",
         semNumero: "The password needs at least one number.",
       })[falta],
+    captchaFalhou: "We couldn't confirm you're not a robot. Try again.",
     login: {
       subtitulo: "Manage your tasks intelligently",
       esqueceuSenha: "Forgot your password?",

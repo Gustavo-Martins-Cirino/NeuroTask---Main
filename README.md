@@ -161,6 +161,25 @@ do próprio 429) e o resto do app segue funcionando.
 |---|---|
 | `OWNER_EMAIL` | Seu e-mail. Libera `/admin` (feedbacks, usuários, erros, uso) e o painel de erros em Configurações. **Sem ela `/admin` responde 404 para todo mundo, inclusive você** |
 
+### CAPTCHA no login, no cadastro e no "esqueci a senha" (Cloudflare Turnstile)
+
+| Variável | Para quê |
+|---|---|
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | A **Site Key** do widget do Turnstile (pública). Sem ela, nenhum CAPTCHA aparece e o login segue como antes |
+
+O login e o cadastro vão do navegador direto para o Supabase — um robô chama a API sem passar
+pela página, então só um CAPTCHA que **o Supabase confere** barra isso. Ligar tem ordem, e na
+ordem errada ninguém entra:
+
+1. Cloudflare → Turnstile → Add widget (domínios do site + `localhost`, modo Managed).
+2. A **Site Key** em `NEXT_PUBLIC_TURNSTILE_SITE_KEY` na Vercel → **novo deploy** (variável
+   `NEXT_PUBLIC_` entra no build). Conferir que o widget aparece em `/login` e que entrar funciona.
+3. **Só então** a **Secret Key** no Supabase: Authentication → Attack Protection → CAPTCHA →
+   Turnstile. A partir daí ele recusa login, cadastro e "esqueci a senha" sem token.
+
+Para testar local sem conta no Cloudflare: a chave de teste `1x00000000000000000000AA` sempre
+aprova, e a `2x00000000000000000000AB` sempre recusa.
+
 ### Entrar com Google / GitHub / Apple (opcional)
 
 | Variável | Para quê |

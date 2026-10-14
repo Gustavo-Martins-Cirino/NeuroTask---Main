@@ -16,6 +16,7 @@ import { dicionario, type Dicionario } from "@/lib/i18n"
 import { enfatizar } from "@/lib/enfase"
 import type { AuthError } from "@supabase/supabase-js"
 import { MIN_SENHA, faltaNaSenha } from "@/lib/regra-senha"
+import { Captcha, useCaptcha } from "@/components/captcha"
 
 function textoDoErroDeCadastro(error: AuthError, t: Dicionario["entrada"]): string {
   switch (error.code) {
@@ -32,6 +33,8 @@ function textoDoErroDeCadastro(error: AuthError, t: Dicionario["entrada"]): stri
       return t.muitasTentativas
     case "signup_disabled":
       return t.cadastro.erros.cadastrosDesativados
+    case "captcha_failed":
+      return t.captchaFalhou
     default:
       // A mensagem do Supabase não vai para a tela: vem em inglês e com jargão.
       return t.cadastro.erros.generico
@@ -43,6 +46,7 @@ export default function SignupPage() {
   const idioma = useIdioma()
   useSincronizarLangDoDocumento(idioma)
   const t = dicionario(idioma).entrada
+  const captcha = useCaptcha()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -67,8 +71,10 @@ export default function SignupPage() {
       options: {
         emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
           `${window.location.origin}/auth/callback`,
+        captchaToken: captcha.token ?? undefined,
       },
     })
+    captcha.renovar()
   }
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -90,8 +96,11 @@ export default function SignupPage() {
         data: {
           name,
         },
+        captchaToken: captcha.token ?? undefined,
       },
     })
+    // Deu certo ou não, o token foi gasto — e o reenvio do e-mail pede outro.
+    captcha.renovar()
 
     if (error) {
       setError(textoDoErroDeCadastro(error, t))
@@ -129,11 +138,17 @@ export default function SignupPage() {
                 {resendIn > 0 ? (
                   <span>{t.cadastro.reenviadoAguarde(resendIn)}</span>
                 ) : (
-                  <button type="button" onClick={handleResend} className="font-medium text-primary hover:underline">
+                  <button type="button" onClick={handleResend} disabled={!captcha.pronto} className="font-medium text-primary hover:underline disabled:opacity-50">
                     {t.cadastro.reenviarLink}
                   </button>
                 )}
               </p>
+              {/* O formulário (e o widget dele) já saiu da tela: o reenvio precisa do próprio. */}
+              {resendIn === 0 && (
+                <div className="mt-3">
+                  <Captcha captcha={captcha} idioma={idioma} />
+                </div>
+              )}
             </div>
           </div>
           <Link href="/login">
@@ -205,7 +220,9 @@ export default function SignupPage() {
             <p className="text-sm text-destructive">{error}</p>
           )}
 
-          <Button type="submit" className="w-full h-11" disabled={loading}>
+          <Captcha captcha={captcha} idioma={idioma} />
+
+          <Button type="submit" className="w-full h-11" disabled={loading || !captcha.pronto}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

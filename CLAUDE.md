@@ -57,6 +57,7 @@ frontend/
 │   ├── enquete.tsx           # Enquete de uma pergunta no fim do dashboard (resposta vira feedback)
 │   ├── fundo-grao.tsx        # Grão do fundo da Neuro IA — DESMONTADO (ver ROADMAP)
 │   ├── social-login.tsx      # Entrar com Google/GitHub/Apple + selo do último acesso
+│   ├── captcha.tsx           # Widget do Turnstile no login/cadastro/senha — some sem a Site Key
 │   ├── avatar-iniciais.tsx   # Retrato: foto enviada → foto da conta → bonequinho → iniciais
 │   ├── foto-perfil-campo.tsx # Enviar/remover a foto (Configurações → Perfil)
 │   ├── metricas-dashboard.tsx# "Seus números" — 3 abas, SVG à mão, fechada por padrão
@@ -129,6 +130,7 @@ frontend/
 │   ├── destino-seguro.ts     # Para onde o login manda depois de entrar: só caminho do site (puro)
 │   ├── motivo-login.ts       # Por que o login falhou, como código de lista fechada — nunca a mensagem (puro)
 │   ├── regra-senha.ts        # Mínimo 8, com letra e número — a MESMA regra do painel do Supabase (puro)
+│   ├── captcha.ts            # Turnstile: ligado pela Site Key + o token no "esqueci a senha" (puro)
 │   ├── audio-transcricao.ts  # O que a transcrição aceita (teto, tipo, nome) e a frase de cada recusa (puro)
 │   ├── html-da-nota.ts       # Limpa o HTML da nota (DOMPurify) antes do innerHTML do editor
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)

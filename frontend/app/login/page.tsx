@@ -16,6 +16,7 @@ import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
 import { dicionario, type Dicionario } from "@/lib/i18n"
 import { enfatizar } from "@/lib/enfase"
 import type { AuthError } from "@supabase/supabase-js"
+import { Captcha, useCaptcha } from "@/components/captcha"
 
 // O erro do Supabase vem pelo CÓDIGO; a frase é do idioma. Sem código
 // conhecido, a mensagem crua do Supabase ainda diz mais que um "tente de novo".
@@ -29,8 +30,11 @@ function textoDoErroDeLogin(error: AuthError, t: Dicionario["entrada"]): string 
       return t.muitasTentativas
     case "user_banned":
       return t.login.erros.contaSuspensa
+    case "captcha_failed":
+      return t.captchaFalhou
     default:
-      return error.message || t.login.erros.generico
+      // A mensagem do Supabase não vai para a tela: vem em inglês e com jargão.
+      return t.login.erros.generico
   }
 }
 
@@ -39,6 +43,7 @@ export default function LoginPage() {
   const idioma = useIdioma()
   useSincronizarLangDoDocumento(idioma)
   const t = dicionario(idioma).entrada
+  const captcha = useCaptcha()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -54,8 +59,9 @@ export default function LoginPage() {
     await supabase.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback`, captchaToken: captcha.token ?? undefined },
     })
+    captcha.renovar()
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -67,9 +73,11 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: { captchaToken: captcha.token ?? undefined },
     })
 
     if (error) {
+      captcha.renovar()
       setError(textoDoErroDeLogin(error, t))
       setUnconfirmed(error.code === "email_not_confirmed")
       setResent(false)
@@ -139,14 +147,16 @@ export default function LoginPage() {
               {resent ? (
                 <span className="font-medium text-emerald-600 dark:text-emerald-400">{t.login.linkReenviado}</span>
               ) : (
-                <button type="button" onClick={handleResend} className="font-medium text-primary hover:underline">
+                <button type="button" onClick={handleResend} disabled={!captcha.pronto} className="font-medium text-primary hover:underline disabled:opacity-50">
                   {t.login.reenviarConfirmacao}
                 </button>
               )}
             </p>
           )}
 
-          <Button type="submit" className="w-full h-11" disabled={loading}>
+          <Captcha captcha={captcha} idioma={idioma} />
+
+          <Button type="submit" className="w-full h-11" disabled={loading || !captcha.pronto}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

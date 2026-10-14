@@ -1148,6 +1148,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > no navegador com o cadastro barrado na bancada: `abcdefgh` e `12345678` voltam com a frase
 > certa e nenhum pedido sai. **Mudou a regra no painel, muda o `MIN_SENHA` também.**
 
+> **CAPTCHA pronto no código, esperando as chaves (13/10).** Com a decisão de divulgar
+> amplamente, o CAPTCHA deixou de ser "depois": aqui o login vai do navegador direto para o
+> Supabase, e só um CAPTCHA que ele mesmo confere barra robô. Login, cadastro (e o reenvio do
+> e-mail) e o "esqueci a senha" mandam o token do Cloudflare Turnstile (`components/captcha.tsx`,
+> `lib/captcha.ts`, 3 testes), e o botão espera o token. Sem `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
+> nada aparece — foi isso que deixou publicar antes de ligar. Conferido com a chave de teste do
+> Cloudflare: o widget aparece, o botão destrava com o token, e o login e o "esqueci a senha"
+> levam `gotrue_meta_security.captcha_token`. **Falta (Gustavo):** o widget no Cloudflare, a
+> Site Key na Vercel com novo deploy e, só depois, a Secret Key no Supabase — a ordem está no
+> README, porque ao contrário ninguém entra.
+
 - [ ] **Cada usuário só vê o que é dele (IDOR, "não confiar no ID da tela", banco trancado).**
       RLS ligado em TODA tabela do `public`, com política por `auth.uid()`, e `with check` nos
       inserts — um `user_id` que vem do cliente não pode decidir nada. Conferir no **painel**

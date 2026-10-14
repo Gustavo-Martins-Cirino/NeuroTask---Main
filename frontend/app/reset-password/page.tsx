@@ -14,6 +14,8 @@ import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
 import { dicionario } from "@/lib/i18n"
 import { enfatizar } from "@/lib/enfase"
 import { MIN_SENHA, faltaNaSenha } from "@/lib/regra-senha"
+import { Captcha, useCaptcha } from "@/components/captcha"
+import { corpoDoPedidoDeSenha } from "@/lib/captcha"
 
 // Três caminhos:
 // 1. Sem sessão e sem token → pede o e-mail e envia o link de redefinição.
@@ -26,6 +28,7 @@ export default function ResetPasswordPage() {
   const idioma = useIdioma()
   useSincronizarLangDoDocumento(idioma)
   const t = dicionario(idioma).entrada
+  const captcha = useCaptcha()
   const [checking, setChecking] = useState(true)
   const [hasSession, setHasSession] = useState(false)
   const [tokenHash, setTokenHash] = useState<string | null>(null)
@@ -64,11 +67,19 @@ export default function ResetPasswordPage() {
         apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email: email.trim() }),
+      body: JSON.stringify(corpoDoPedidoDeSenha(email, captcha.token)),
     })
+    captcha.renovar()
     setLoading(false)
     if (!res.ok) {
-      setError(res.status === 429 ? t.senhaNova.erros.muitasTentativasMinuto : t.senhaNova.erros.naoEnviou)
+      const codigo = await res.json().then((j) => j?.error_code ?? j?.code).catch(() => null)
+      setError(
+        res.status === 429
+          ? t.senhaNova.erros.muitasTentativasMinuto
+          : codigo === "captcha_failed"
+            ? t.captchaFalhou
+            : t.senhaNova.erros.naoEnviou,
+      )
       return
     }
     setSent(true)
@@ -219,7 +230,8 @@ export default function ResetPasswordPage() {
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="h-11 w-full" disabled={loading}>
+            <Captcha captcha={captcha} idioma={idioma} />
+            <Button type="submit" className="h-11 w-full" disabled={loading || !captcha.pronto}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
