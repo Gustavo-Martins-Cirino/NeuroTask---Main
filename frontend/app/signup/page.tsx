@@ -15,6 +15,7 @@ import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
 import { dicionario, type Dicionario } from "@/lib/i18n"
 import { enfatizar } from "@/lib/enfase"
 import type { AuthError } from "@supabase/supabase-js"
+import { MIN_SENHA, faltaNaSenha } from "@/lib/regra-senha"
 
 function textoDoErroDeCadastro(error: AuthError, t: Dicionario["entrada"]): string {
   switch (error.code) {
@@ -22,7 +23,7 @@ function textoDoErroDeCadastro(error: AuthError, t: Dicionario["entrada"]): stri
     case "email_exists":
       return t.cadastro.erros.emailEmUso
     case "weak_password":
-      return t.senhaFraca
+      return t.senhaFraca(MIN_SENHA)
     case "email_address_invalid":
     case "validation_failed":
       return t.cadastro.erros.emailInvalido
@@ -32,7 +33,8 @@ function textoDoErroDeCadastro(error: AuthError, t: Dicionario["entrada"]): stri
     case "signup_disabled":
       return t.cadastro.erros.cadastrosDesativados
     default:
-      return error.message || t.cadastro.erros.generico
+      // A mensagem do Supabase não vai para a tela: vem em inglês e com jargão.
+      return t.cadastro.erros.generico
   }
 }
 
@@ -72,6 +74,11 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    const falta = faltaNaSenha(password)
+    if (falta) {
+      setError(t.faltaNaSenha(falta, MIN_SENHA))
+      return
+    }
     setLoading(true)
 
     const { data, error } = await supabase.auth.signUp({
@@ -185,11 +192,11 @@ export default function SignupPage() {
             <Label htmlFor="password">{t.senha}</Label>
             <CampoSenha
               id="password"
-              placeholder={t.minimoSeisCaracteres}
+              placeholder={t.regraDaSenha(MIN_SENHA)}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={MIN_SENHA}
               className="h-11"
             />
           </div>

@@ -13,6 +13,7 @@ import { KeyRound, Loader2, CheckCircle } from "lucide-react"
 import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
 import { dicionario } from "@/lib/i18n"
 import { enfatizar } from "@/lib/enfase"
+import { MIN_SENHA, faltaNaSenha } from "@/lib/regra-senha"
 
 // Três caminhos:
 // 1. Sem sessão e sem token → pede o e-mail e envia o link de redefinição.
@@ -80,6 +81,11 @@ export default function ResetPasswordPage() {
       setError(t.senhaNova.erros.senhasDiferentes)
       return
     }
+    const falta = faltaNaSenha(password)
+    if (falta) {
+      setError(t.faltaNaSenha(falta, MIN_SENHA))
+      return
+    }
     setLoading(true)
     // Consome o token de uso único agora (não no clique do link do e-mail)
     if (!hasSession && tokenHash) {
@@ -99,8 +105,8 @@ export default function ResetPasswordPage() {
         error.code === "same_password"
           ? t.senhaNova.erros.senhaIgual
           : error.code === "weak_password"
-            ? t.senhaFraca
-            : error.message
+            ? t.senhaFraca(MIN_SENHA)
+            : t.senhaNova.erros.generico
       )
       return
     }
@@ -166,11 +172,11 @@ export default function ResetPasswordPage() {
               <Label htmlFor="password">{t.senhaNova.novaSenha}</Label>
               <CampoSenha
                 id="password"
-                placeholder={t.minimoSeisCaracteres}
+                placeholder={t.regraDaSenha(MIN_SENHA)}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={MIN_SENHA}
                 className="h-11"
               />
             </div>
@@ -182,7 +188,7 @@ export default function ResetPasswordPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
-                minLength={6}
+                minLength={MIN_SENHA}
                 className="h-11"
               />
             </div>

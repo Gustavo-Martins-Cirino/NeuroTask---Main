@@ -15,6 +15,7 @@ import { type IdPergunta } from "@/lib/enquete"
 import { type TextosDeErroDoFeedback, type TipoDeFeedback } from "@/lib/feedback"
 import { type MotivoLogin } from "@/lib/motivo-login"
 import { type FalhaDeTranscricao } from "@/lib/audio-transcricao"
+import { type FaltaNaSenha } from "@/lib/regra-senha"
 import { type IdAmbiente } from "@/lib/focus-gradient"
 import { type IdFaixa, type SoundCategory } from "@/hooks/use-sound-mixer"
 
@@ -293,10 +294,14 @@ export interface Dicionario {
     entrar: string
     criarConta: string
     voltarParaLogin: string
-    minimoSeisCaracteres: string
+    /** A regra de `lib/regra-senha.ts`, dita no campo antes de digitar. */
+    regraDaSenha: (minimo: number) => string
     verifiqueSeuEmail: string
     muitasTentativas: string
-    senhaFraca: string
+    /** Quando o SUPABASE recusa com `weak_password` (a conferência local deixou passar). */
+    senhaFraca: (minimo: number) => string
+    /** O que a conferência local achou faltando — dito antes de ir ao servidor. */
+    faltaNaSenha: (falta: FaltaNaSenha, minimo: number) => string
     login: {
       subtitulo: string
       esqueceuSenha: string
@@ -344,6 +349,8 @@ export interface Dicionario {
         senhasDiferentes: string
         linkExpirado: string
         senhaIgual: string
+        /** Erro que ninguém previu: a mensagem do Supabase fica fora da tela. */
+        generico: string
       }
     }
     erroAutenticacao: {
@@ -1579,10 +1586,16 @@ export const pt: Dicionario = {
     entrar: "Entrar",
     criarConta: "Criar conta",
     voltarParaLogin: "Voltar para o login",
-    minimoSeisCaracteres: "Mínimo 6 caracteres",
+    regraDaSenha: (minimo) => `Mínimo ${minimo} caracteres, com letras e números`,
     verifiqueSeuEmail: "Verifique seu email",
     muitasTentativas: "Muitas tentativas. Aguarde um momento e tente de novo.",
-    senhaFraca: "Senha muito fraca. Use ao menos 6 caracteres.",
+    senhaFraca: (minimo) => `Senha fraca demais. Use ao menos ${minimo} caracteres, com letras e números.`,
+    faltaNaSenha: (falta, minimo) =>
+      ({
+        curta: `A senha precisa de ao menos ${minimo} caracteres.`,
+        semLetra: "A senha precisa de ao menos uma letra.",
+        semNumero: "A senha precisa de ao menos um número.",
+      })[falta],
     login: {
       subtitulo: "Gerencie suas tarefas com inteligência",
       esqueceuSenha: "Esqueceu a senha?",
@@ -1637,6 +1650,7 @@ export const pt: Dicionario = {
         senhasDiferentes: "As senhas não coincidem.",
         linkExpirado: "Este link já foi usado ou expirou. Peça um novo abaixo.",
         senhaIgual: "A nova senha precisa ser diferente da atual.",
+        generico: "Não deu para salvar a nova senha. Tente de novo.",
       },
     },
     erroAutenticacao: {
@@ -2789,10 +2803,16 @@ export const en: Dicionario = {
     entrar: "Sign in",
     criarConta: "Create account",
     voltarParaLogin: "Back to sign in",
-    minimoSeisCaracteres: "At least 6 characters",
+    regraDaSenha: (minimo) => `At least ${minimo} characters, with letters and numbers`,
     verifiqueSeuEmail: "Check your email",
     muitasTentativas: "Too many attempts. Wait a moment and try again.",
-    senhaFraca: "Password too weak. Use at least 6 characters.",
+    senhaFraca: (minimo) => `Password too weak. Use at least ${minimo} characters, with letters and numbers.`,
+    faltaNaSenha: (falta, minimo) =>
+      ({
+        curta: `The password needs at least ${minimo} characters.`,
+        semLetra: "The password needs at least one letter.",
+        semNumero: "The password needs at least one number.",
+      })[falta],
     login: {
       subtitulo: "Manage your tasks intelligently",
       esqueceuSenha: "Forgot your password?",
@@ -2847,6 +2867,7 @@ export const en: Dicionario = {
         senhasDiferentes: "The passwords don't match.",
         linkExpirado: "This link was already used or has expired. Request a new one below.",
         senhaIgual: "The new password must be different from the current one.",
+        generico: "Couldn't save the new password. Try again.",
       },
     },
     erroAutenticacao: {

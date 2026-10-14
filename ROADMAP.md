@@ -1140,6 +1140,14 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > HSTS de 2 anos (`includeSubDomains; preload`) —, mas é a Vercel quem faz: conferir de novo no
 > domínio próprio.
 
+> **Senha: mínimo 8, com letra e número (13/10).** A regra mora no painel do Supabase
+> (Authentication → Sign In / Providers → Email) e, igual, em `lib/regra-senha.ts` (5 testes): o
+> cadastro e a nova senha conferem antes de enviar e dizem o que falta ("precisa de um número"),
+> em vez de um "senha fraca" depois da ida ao servidor. Antes as duas telas diziam "mínimo 6".
+> As mesmas telas pararam de mostrar o erro cru do Supabase quando ele não é conhecido. Conferido
+> no navegador com o cadastro barrado na bancada: `abcdefgh` e `12345678` voltam com a frase
+> certa e nenhum pedido sai. **Mudou a regra no painel, muda o `MIN_SENHA` também.**
+
 - [ ] **Cada usuário só vê o que é dele (IDOR, "não confiar no ID da tela", banco trancado).**
       RLS ligado em TODA tabela do `public`, com política por `auth.uid()`, e `with check` nos
       inserts — um `user_id` que vem do cliente não pode decidir nada. Conferir no **painel**
