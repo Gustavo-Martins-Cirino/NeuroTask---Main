@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { MIN_SENHA, faltaNaSenha } from "./regra-senha"
+import { MIN_SENHA, REQUISITOS_SENHA, faltaNaSenha, requisitosDaSenha } from "./regra-senha"
 
 describe("faltaNaSenha", () => {
   it("passa com 8 caracteres, letra e número", () => {
@@ -27,5 +27,32 @@ describe("faltaNaSenha", () => {
   it("sem número", () => {
     expect(faltaNaSenha("abcdefgh")).toBe("semNumero")
     expect(faltaNaSenha("SenhaForte!")).toBe("semNumero")
+  })
+})
+
+describe("requisitosDaSenha", () => {
+  it("vazia: nenhum cumprido", () => {
+    expect(requisitosDaSenha("")).toEqual({ tamanho: false, letra: false, numero: false })
+  })
+
+  it("cada requisito acende sozinho, sem depender dos outros", () => {
+    expect(requisitosDaSenha("a")).toEqual({ tamanho: false, letra: true, numero: false })
+    expect(requisitosDaSenha("1")).toEqual({ tamanho: false, letra: false, numero: true })
+    expect(requisitosDaSenha("!!!!!!!!")).toEqual({ tamanho: true, letra: false, numero: false })
+  })
+
+  it("todos cumpridos com 8 caracteres, letra e número", () => {
+    expect(requisitosDaSenha("abcdefg1")).toEqual({ tamanho: true, letra: true, numero: true })
+  })
+
+  it("lista e trava do envio nunca discordam", () => {
+    for (const senha of ["", "a", "1", "abc123", "abcdefgh", "12345678", "ççççãã12", "abcdefg1", "Neuro2026!"]) {
+      const todos = REQUISITOS_SENHA.every((r) => requisitosDaSenha(senha)[r])
+      expect(todos).toBe(faltaNaSenha(senha) === null)
+    }
+  })
+
+  it("a ordem da lista é tamanho, letra, número", () => {
+    expect(REQUISITOS_SENHA).toEqual(["tamanho", "letra", "numero"])
   })
 })

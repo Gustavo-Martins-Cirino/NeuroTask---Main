@@ -1148,6 +1148,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > no navegador com o cadastro barrado na bancada: `abcdefgh` e `12345678` voltam com a frase
 > certa e nenhum pedido sai. **Mudou a regra no painel, muda o `MIN_SENHA` também.**
 
+> **Cadeado de 3 pinos embaixo do campo de senha (15/10).** No cadastro e na nova senha (não no
+> login: quem já tem conta pode ter senha de antes da regra), um cadeado pequeno com um pino por
+> requisito e a lista ao lado (`components/cadeado-senha.tsx`). Cada requisito cumprido sobe o
+> seu pino até a linha de corte e acende em verde; com os três, a alça desce, o cadeado tranca
+> com um pulinho e um brilho verde. Perdeu um requisito, o pino desce de novo. A lista e a trava
+> do envio usam a mesma conta (`requisitosDaSenha`, com teste de que nunca discordam); o desenho
+> é `aria-hidden` e o leitor de tela ouve o resumo ("2 de 3 cumpridos"). Com movimento
+> reduzido, tudo muda sem mola. O corpo do cadeado é translúcido de propósito: um corpo da cor
+> do fundo virava um bloco branco no tema claro, porque as telas de entrada são escuras mesmo
+> no tema claro.
+
 > **CAPTCHA pronto no código, esperando as chaves (13/10).** Com a decisão de divulgar
 > amplamente, o CAPTCHA deixou de ser "depois": aqui o login vai do navegador direto para o
 > Supabase, e só um CAPTCHA que ele mesmo confere barra robô. Login, cadastro (e o reenvio do

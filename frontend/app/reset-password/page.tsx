@@ -8,6 +8,7 @@ import { AuthBackdrop } from "@/components/auth-backdrop"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CampoSenha } from "@/components/campo-senha"
+import { CadeadoDaSenha } from "@/components/cadeado-senha"
 import { Label } from "@/components/ui/label"
 import { KeyRound, Loader2, CheckCircle } from "lucide-react"
 import { useIdioma, useSincronizarLangDoDocumento } from "@/hooks/use-idioma"
@@ -190,6 +191,7 @@ export default function ResetPasswordPage() {
                 minLength={MIN_SENHA}
                 className="h-11"
               />
+              <CadeadoDaSenha senha={password} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm">{t.senhaNova.confirmarNovaSenha}</Label>

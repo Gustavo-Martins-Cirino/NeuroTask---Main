@@ -15,7 +15,7 @@ import { type IdPergunta } from "@/lib/enquete"
 import { type TextosDeErroDoFeedback, type TipoDeFeedback } from "@/lib/feedback"
 import { type MotivoLogin } from "@/lib/motivo-login"
 import { type FalhaDeTranscricao } from "@/lib/audio-transcricao"
-import { type FaltaNaSenha } from "@/lib/regra-senha"
+import { type FaltaNaSenha, type RequisitoSenha } from "@/lib/regra-senha"
 import { type IdAmbiente } from "@/lib/focus-gradient"
 import { type IdFaixa, type SoundCategory } from "@/hooks/use-sound-mixer"
 
@@ -304,6 +304,15 @@ export interface Dicionario {
     faltaNaSenha: (falta: FaltaNaSenha, minimo: number) => string
     /** O Supabase recusou o token do CAPTCHA (`captcha_failed`). */
     captchaFalhou: string
+    /** O cadeado de 3 pinos e a lista de requisitos, embaixo do campo de senha. */
+    requisitosSenha: {
+      itens: (minimo: number) => Record<RequisitoSenha, string>
+      /** Só para leitor de tela, depois de cada item da lista. */
+      cumprido: string
+      pendente: string
+      /** Anunciado (aria-live) a cada mudança. */
+      resumo: (cumpridos: number, total: number) => string
+    }
     login: {
       subtitulo: string
       esqueceuSenha: string
@@ -1599,6 +1608,19 @@ export const pt: Dicionario = {
         semNumero: "A senha precisa de ao menos um número.",
       })[falta],
     captchaFalhou: "Não deu para confirmar que você não é um robô. Tente de novo.",
+    requisitosSenha: {
+      itens: (minimo) => ({
+        tamanho: `${minimo} caracteres ou mais`,
+        letra: "Uma letra",
+        numero: "Um número",
+      }),
+      cumprido: "cumprido",
+      pendente: "pendente",
+      resumo: (cumpridos, total) =>
+        cumpridos === total
+          ? "Senha pronta: todos os requisitos cumpridos."
+          : `Requisitos da senha: ${cumpridos} de ${total} cumpridos.`,
+    },
     login: {
       subtitulo: "Gerencie suas tarefas com inteligência",
       esqueceuSenha: "Esqueceu a senha?",
@@ -2817,6 +2839,19 @@ export const en: Dicionario = {
         semNumero: "The password needs at least one number.",
       })[falta],
     captchaFalhou: "We couldn't confirm you're not a robot. Try again.",
+    requisitosSenha: {
+      itens: (minimo) => ({
+        tamanho: `${minimo} or more characters`,
+        letra: "One letter",
+        numero: "One number",
+      }),
+      cumprido: "met",
+      pendente: "missing",
+      resumo: (cumpridos, total) =>
+        cumpridos === total
+          ? "Password ready: all requirements met."
+          : `Password requirements: ${cumpridos} of ${total} met.`,
+    },
     login: {
       subtitulo: "Manage your tasks intelligently",
       esqueceuSenha: "Forgot your password?",

@@ -8,6 +8,7 @@ import { AuthBackdrop } from "@/components/auth-backdrop"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CampoSenha } from "@/components/campo-senha"
+import { CadeadoDaSenha } from "@/components/cadeado-senha"
 import { Label } from "@/components/ui/label"
 import { Sparkles, Loader2, CheckCircle } from "lucide-react"
 import { SocialLogin } from "@/components/social-login"
@@ -214,6 +215,7 @@ export default function SignupPage() {
               minLength={MIN_SENHA}
               className="h-11"
             />
+            <CadeadoDaSenha senha={password} />
           </div>
 
           {error && (
