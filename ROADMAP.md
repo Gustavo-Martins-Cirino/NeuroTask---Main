@@ -1159,6 +1159,16 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > Site Key na Vercel com novo deploy e, só depois, a Secret Key no Supabase — a ordem está no
 > README, porque ao contrário ninguém entra.
 
+> **CAPTCHA ligado (15/10).** Widget no Cloudflare (modo Managed, com o domínio do site e
+> `localhost`), Site Key na Vercel só em Production — os endereços de Preview não estão no
+> widget, então lá ela não funcionaria — e a Secret Key no Supabase só depois de o widget estar
+> conferido no ar. Medido de fora: um login sem token volta `400 captcha_failed` ("no
+> captcha_token found"), recusado antes de a senha ser conferida; num navegador automatizado o
+> widget não passa e o botão fica travado nas três telas. No navegador de verdade ele passa
+> sozinho, sem pedir clique — é o comportamento do modo Managed, que só mostra o quadradinho
+> quando algo parece suspeito. **Para desligar numa emergência:** Supabase → Authentication →
+> Attack Protection → "Enable Captcha protection"; o login volta como antes na hora.
+
 - [ ] **Cada usuário só vê o que é dele (IDOR, "não confiar no ID da tela", banco trancado).**
       RLS ligado em TODA tabela do `public`, com política por `auth.uid()`, e `with check` nos
       inserts — um `user_id` que vem do cliente não pode decidir nada. Conferir no **painel**
