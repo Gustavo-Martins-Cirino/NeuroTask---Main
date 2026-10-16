@@ -1376,6 +1376,32 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       Security Advisor do Supabase, OWASP ZAP (varredura básica) contra o domínio,
       securityheaders.com e o Mozilla Observatory. O que achar vira item aqui.
 
+### Lei: termos, privacidade e excluir a conta
+
+- [x] **Termos de uso e política de privacidade (16/10).** Uma página só, `/termos`, pública (o
+      proxy libera: quem vai criar a conta precisa ler antes de concordar), em pt e en. O texto
+      mora em `lib/termos.ts`, e cada fornecedor e cada dado citado existe no código: Supabase,
+      Vercel, Groq, a voz da Microsoft, o CAPTCHA da Cloudflare, Google/GitHub no login, o
+      reconhecimento de fala do Chrome e o player do YouTube. Responsável e contato: o Gustavo,
+      pelo e-mail dele; idade mínima de 13 anos (menor de 18 com ciência do responsável). O
+      cadastro avisa que criar a conta é concordar, com o link, e a landing ganhou o link no
+      rodapé. **Mudou o que o app guarda ou para quem manda, muda o texto e a data no mesmo
+      commit.** O teste confere que os dois idiomas têm as mesmas seções e os mesmos itens.
+
+- [x] **Excluir minha conta (16/10).** Configurações → Conta. A lista do que some e uma palavra
+      para digitar (EXCLUIR/DELETE): atrito na medida de um clique sem querer, não de quem já
+      decidiu. A rota `/api/conta/excluir` tira o id da sessão verificada (nunca do corpo),
+      confere a origem do pedido (CSRF), apaga a foto do Storage e então o usuário no Auth; o
+      banco apaga o resto por `on delete cascade`. Feedback e `error_log` ficam, anônimos
+      (`set null`) — é o que a política diz, e `lib/excluir-conta.test.ts` quebra se uma tabela
+      nova referenciar `auth.users` sem cascade nem set null (o Postgres recusaria o DELETE e a
+      pessoa ficaria presa no app).
+      *Conferido (16/10):* sem Origin e de outro site → 403; sem sessão → 401; o diálogo testado
+      com a API simulada nos dois idiomas. **Ainda não apagou uma conta de verdade**: o primeiro
+      teste real é com uma conta descartável, depois de rodar no SQL Editor a consulta das
+      chaves estrangeiras para `auth.users` sem cascade (tem de voltar vazia — o teste só lê os
+      arquivos, e uma tabela criada pelo painel escaparia dele).
+
 ### Ser encontrado: Google, SEO e medição
 
 > *Lido no código:* hoje **só o `app/layout.tsx` exporta `metadata`** — toda aba tem o mesmo
@@ -1388,7 +1414,8 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       vive de token, e um link indexado é uma agenda de alguém no Google. Por isso a página da
       agenda também ganha `noindex`, porque o `robots.txt` sozinho não tira do índice.
 
-- [ ] **`sitemap.xml`** (`app/sitemap.ts`): só as páginas públicas (`/`, `/login`, `/signup`).
+- [ ] **`sitemap.xml`** (`app/sitemap.ts`): só as páginas públicas (`/`, `/login`, `/signup`,
+      `/termos`).
 
 - [ ] **`llms.txt`**: um texto curto dizendo o que o NeuroTask é e onde está cada coisa, para as
       IAs que leem o site. É uma proposta (llmstxt.org), não um padrão — barato de fazer, sem
@@ -1408,8 +1435,8 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       couber, o que faz o NeuroTask aparecer com cara de marca na busca é o Search Console mais
       dados estruturados na landing (`Organization` e `SoftwareApplication`).
 
-- [ ] **Google Analytics.** GA4 grava cookie, e isso pede aviso de cookies e uma **política de
-      privacidade** que ainda não existe (LGPD). Se a pergunta for só "quantos visitam e de onde",
+- [ ] **Google Analytics.** GA4 grava cookie, e isso pede aviso de cookies e mudar a **política
+      de privacidade** (`/termos` diz hoje que não há cookie de rastreamento). Se a pergunta for só "quantos visitam e de onde",
       o Vercel Analytics responde sem cookie e sem aviso. Decisão do Gustavo.
       *Medido (09/10):* o `<Analytics />` da Vercel **já está montado** no `app/layout.tsx`, mas
       o Web Analytics não está ligado no painel do projeto — em produção o script

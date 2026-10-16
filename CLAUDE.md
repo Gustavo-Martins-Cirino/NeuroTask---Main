@@ -28,7 +28,8 @@ frontend/
 │   │   ├── friends/page.tsx  # Amigos (busca, ocupado/livre, visitar escritório)
 │   │   └── settings/page.tsx
 │   ├── api/
-│   │   └── ai/route.ts       # + ai/transcribe e ai/tts (Groq por fetch; a voz é do Edge)
+│   │   ├── ai/route.ts       # + ai/transcribe e ai/tts (Groq por fetch; a voz é do Edge)
+│   │   └── conta/excluir/route.ts # Exclui QUEM está logado: foto do Storage + usuário no Auth
 │   ├── auth/
 │   │   ├── callback/route.ts # OAuth callback Supabase
 │   │   └── error/page.tsx
@@ -36,6 +37,7 @@ frontend/
 │   ├── login/page.tsx
 │   ├── signup/page.tsx
 │   ├── page.tsx              # Landing pública (17/09; antes era só um redirect p/ /app)
+│   ├── termos/page.tsx       # Termos de uso + política de privacidade (pública; texto em lib/termos)
 │   └── globals.css           # Tokens de cor (oklch), tema claro/escuro
 ├── components/
 │   ├── app-shell.tsx         # Layout wrapper: Dock + main content
@@ -61,6 +63,8 @@ frontend/
 │   ├── cadeado-senha.tsx     # Cadeado de 3 pinos + lista dos requisitos (cadastro e nova senha)
 │   ├── avatar-iniciais.tsx   # Retrato: foto enviada → foto da conta → bonequinho → iniciais
 │   ├── foto-perfil-campo.tsx # Enviar/remover a foto (Configurações → Perfil)
+│   ├── excluir-conta.tsx     # Excluir minha conta (Configurações → Conta): lista + palavra digitada
+│   ├── termos-view.tsx       # A forma da página /termos (o texto mora em lib/termos.ts)
 │   ├── metricas-dashboard.tsx# "Seus números" — 3 abas, SVG à mão, fechada por padrão
 │   ├── seletor-regiao.tsx    # Região (Brasil/EUA) com bandeira e painel que abre
 │   ├── bandeira.tsx          # As duas bandeiras em SVG (emoji não renderiza no Windows)
@@ -132,6 +136,8 @@ frontend/
 │   ├── motivo-login.ts       # Por que o login falhou, como código de lista fechada — nunca a mensagem (puro)
 │   ├── regra-senha.ts        # Mínimo 8, letra e número — a MESMA do Supabase; requisito a requisito (puro)
 │   ├── captcha.ts            # Turnstile: ligado pela Site Key + o token no "esqueci a senha" (puro)
+│   ├── excluir-conta.ts      # Palavra de confirmação + mesma origem (CSRF); o teste vigia o cascade dos SQLs (puro)
+│   ├── termos.ts             # Termos + privacidade em pt/en. Mudou dado ou fornecedor → muda o texto e a data (puro)
 │   ├── audio-transcricao.ts  # O que a transcrição aceita (teto, tipo, nome) e a frase de cada recusa (puro)
 │   ├── html-da-nota.ts       # Limpa o HTML da nota (DOMPurify) antes do innerHTML do editor
 │   ├── iniciais.ts           # Nome → iniciais e matiz da cor do avatar (puro)
@@ -147,7 +153,8 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 
 | Rota | Status |
 |------|--------|
-| `/` | **Pública, sem login** — a landing. Quem já tem sessão nem passa por ela: o proxy manda para `/app`. É a única rota que o proxy **não** manda para o login quando não há sessão. Mesmo fundo das telas de entrada (`AuthBackdrop`), e tudo que ela promete existe |
+| `/` | **Pública, sem login** — a landing. Quem já tem sessão nem passa por ela: o proxy manda para `/app`. As rotas que o proxy deixa abrir sem sessão estão numa lista só, em `lib/supabase/middleware.ts`. Mesmo fundo das telas de entrada (`AuthBackdrop`), e tudo que ela promete existe |
+| `/termos` | **Pública, sem login** — termos de uso + política de privacidade (LGPD), pt/en. O proxy libera: quem vai criar a conta lê antes de concordar. O cadastro e o rodapé da landing apontam para cá |
 | `/app` | Dashboard (stats + quick actions) |
 | `/app/tasks` | Lista de tarefas com filtros e tabs |
 | `/app/calendar` | Calendário / time blocking |
@@ -156,7 +163,7 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 | `/app/ai` | Chat de IA (rota `app/api/ai`, Groq por fetch) |
 | `/app/office` | Escritório — cena 3D (R3F) viva + loja cosmética (moedas via XP) |
 | `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório (em 3D) |
-| `/app/settings` | Configurações (rotina, push, tema) |
+| `/app/settings` | Configurações (rotina, push, tema). Em Conta: link para `/termos` e **Excluir minha conta** (`/api/conta/excluir`) |
 | `/agenda/[token]` | **Pública, sem login** — agenda compartilhada com quem não usa o app. Mostra SÓ faixas ocupadas (a consulta nem pede título). O token é a credencial; o proxy libera `/agenda/` de propósito (`lib/supabase/middleware.ts`) |
 | `/admin` | Painel do dono — feedbacks, usuários, erros e uso. Server component: quem não é `OWNER_EMAIL` recebe `notFound()`. Fora de `/app` (sem dock) e sem link na navegação |
 

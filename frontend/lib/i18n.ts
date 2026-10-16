@@ -280,6 +280,7 @@ export interface Dicionario {
     privacidadeTitulo: string
     privacidadeTexto: string
     rodape: string
+    termos: string
   }
   entrada: {
     /**
@@ -330,6 +331,9 @@ export interface Dicionario {
       nomePlaceholder: string
       criandoConta: string
       jaTemConta: string
+      /** "Ao criar a conta, você concorda com os" + link — o link é a segunda parte. */
+      concordaAntes: string
+      concordaLink: string
       /** Tem ênfase (§) em volta do e-mail. */
       enviamosConfirmacao: (email: string) => string
       /** Tem ênfase (§). */
@@ -632,7 +636,27 @@ export interface Dicionario {
       toastAtivadasDetalhe: string
       erroAtivar: string
     }
-    conta: { titulo: string; sair: string }
+    conta: {
+      titulo: string
+      sair: string
+      termos: string
+      excluir: {
+        botao: string
+        aviso: string
+        tituloDialogo: string
+        oQueSai: string
+        itens: string[]
+        feedbackFica: string
+        /** Tem ênfase (§) em volta da palavra. */
+        digite: (palavra: string) => string
+        confirmar: string
+        excluindo: string
+        cancelar: string
+        excluida: string
+        /** Pelo motivo que a rota devolve — a mensagem do Supabase fica no log. */
+        erros: { sessao: string; confirmacao: string; generico: string }
+      }
+    }
   }
   compartilhar: {
     explicacao: string
@@ -1587,6 +1611,7 @@ export const pt: Dicionario = {
     privacidadeTexto:
       "O link de agenda que você manda para alguém de fora mostra só as faixas ocupadas. Nunca o que você faz nelas — nem o título, porque a consulta nem chega a pedir.",
     rodape: "Um projeto pessoal, feito com cuidado.",
+    termos: "Termos de uso e privacidade",
   },
   entrada: {
     mostrarSenha: "Mostrar senha",
@@ -1642,6 +1667,8 @@ export const pt: Dicionario = {
       nomePlaceholder: "Seu nome",
       criandoConta: "Criando conta...",
       jaTemConta: "Já tem uma conta?",
+      concordaAntes: "Ao criar a conta, você concorda com os",
+      concordaLink: "Termos de uso e a Política de privacidade",
       enviamosConfirmacao: (email) =>
         `Enviamos um link de confirmação para §${email}§. Clique no link para ativar sua conta.`,
       naoChegou: "Não chegou? Olhe o §spam§ e as abas §Promoções/Atualizações§ (Gmail) ou §Outros§ (Outlook) —",
@@ -1967,7 +1994,34 @@ export const pt: Dicionario = {
       toastAtivadasDetalhe: "Lembretes e check-ins chegam mesmo com o app fechado.",
       erroAtivar: "Não deu para ativar",
     },
-    conta: { titulo: "Conta", sair: "Sair da conta" },
+    conta: {
+      titulo: "Conta",
+      sair: "Sair da conta",
+      termos: "Termos de uso e privacidade",
+      excluir: {
+        botao: "Excluir minha conta",
+        aviso: "Apaga a conta e tudo o que está nela. Não tem volta.",
+        tituloDialogo: "Excluir sua conta?",
+        oQueSai: "Sai para sempre, sem como recuperar:",
+        itens: [
+          "Tarefas, listas, blocos do calendário, notas e lembretes",
+          "Rotina, XP, moedas, itens e o seu Escritório",
+          "Amigos, convites e links de agenda compartilhada",
+          "Foto, perfil e @usuário",
+        ],
+        feedbackFica: "Os feedbacks que você mandou continuam, mas sem o seu nome.",
+        digite: (palavra) => `Para confirmar, digite §${palavra}§:`,
+        confirmar: "Excluir para sempre",
+        excluindo: "Excluindo…",
+        cancelar: "Cancelar",
+        excluida: "Sua conta foi excluída.",
+        erros: {
+          sessao: "Sua sessão expirou. Entre de novo e tente outra vez.",
+          confirmacao: "A palavra de confirmação não bateu.",
+          generico: "Não deu para excluir agora. Tente de novo em instantes.",
+        },
+      },
+    },
   },
   compartilhar: {
     explicacao:
@@ -2818,6 +2872,7 @@ export const en: Dicionario = {
     privacidadeTexto:
       "The schedule link you send to someone outside shows only the busy hours. Never what you're doing in them — not even the title, because the query never asks for it.",
     rodape: "A personal project, made with care.",
+    termos: "Terms of use and privacy",
   },
   entrada: {
     mostrarSenha: "Show password",
@@ -2873,6 +2928,8 @@ export const en: Dicionario = {
       nomePlaceholder: "Your name",
       criandoConta: "Creating account...",
       jaTemConta: "Already have an account?",
+      concordaAntes: "By creating an account, you agree to the",
+      concordaLink: "Terms of Use and Privacy Policy",
       enviamosConfirmacao: (email) =>
         `We sent a confirmation link to §${email}§. Click the link to activate your account.`,
       naoChegou: "Didn't get it? Check §spam§ and the §Promotions/Updates§ tabs (Gmail) or §Other§ (Outlook) —",
@@ -3192,7 +3249,34 @@ export const en: Dicionario = {
       toastAtivadasDetalhe: "Reminders and check-ins arrive even with the app closed.",
       erroAtivar: "Could not turn it on",
     },
-    conta: { titulo: "Account", sair: "Sign out" },
+    conta: {
+      titulo: "Account",
+      sair: "Sign out",
+      termos: "Terms of use and privacy",
+      excluir: {
+        botao: "Delete my account",
+        aviso: "Erases the account and everything in it. There is no undo.",
+        tituloDialogo: "Delete your account?",
+        oQueSai: "Gone for good, with no way to recover:",
+        itens: [
+          "Tasks, lists, calendar blocks, notes and reminders",
+          "Routine, XP, coins, items and your Office",
+          "Friends, invites and shared schedule links",
+          "Photo, profile and @username",
+        ],
+        feedbackFica: "Feedback you sent stays, but without your name.",
+        digite: (palavra) => `To confirm, type §${palavra}§:`,
+        confirmar: "Delete forever",
+        excluindo: "Deleting…",
+        cancelar: "Cancel",
+        excluida: "Your account was deleted.",
+        erros: {
+          sessao: "Your session expired. Sign in again and try once more.",
+          confirmacao: "The confirmation word didn't match.",
+          generico: "Couldn't delete it right now. Try again in a moment.",
+        },
+      },
+    },
   },
   compartilhar: {
     explicacao:

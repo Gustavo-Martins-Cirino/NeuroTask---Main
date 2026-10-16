@@ -51,6 +51,7 @@ export async function updateSession(request: NextRequest) {
   // tem conta aqui, e mandá-lo para o login transformaria o compartilhamento
   // numa tela de cadastro. O token secreto é a credencial (ver
   // supabase/agenda_publica.sql), e a página só mostra horários — nunca títulos.
+  // `/termos` também: quem vai criar a conta precisa ler antes de concordar.
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
@@ -58,6 +59,7 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/reset-password') &&
     !request.nextUrl.pathname.startsWith('/agenda/') &&
+    request.nextUrl.pathname !== '/termos' &&
     request.nextUrl.pathname !== '/'
   ) {
     const url = request.nextUrl.clone()

@@ -20,6 +20,8 @@ import { explicaFalha } from "@/lib/falha"
 import { fetchRoutineSuggestions, ignoreSuggestion, type RoutineSuggestion } from "@/lib/routine-insights"
 import { SeletorRegiao } from "@/components/seletor-regiao"
 import { FotoPerfilCampo } from "@/components/foto-perfil-campo"
+import { ExcluirConta } from "@/components/excluir-conta"
+import Link from "next/link"
 import { toast } from "sonner"
 import {
   fetchRoutine, saveRoutine, DEFAULT_ROUTINE, type RoutineProfile,
@@ -590,6 +592,12 @@ export default function SettingsPage() {
               <LogOut className="h-4 w-4" />
               {traducao.configuracoes.conta.sair}
             </button>
+            <Link href="/termos" className="mt-3 inline-block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+              {traducao.configuracoes.conta.termos}
+            </Link>
+            <div className="mt-4">
+              <ExcluirConta />
+            </div>
           </Section>
         </div>
       </div>

@@ -238,6 +238,15 @@ export default function SignupPage() {
 
         <SocialLogin modo="criar" />
 
+        {/* Depois do Google/GitHub também: entrar por eles cria a conta do mesmo jeito. */}
+        <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          {t.cadastro.concordaAntes}{" "}
+          <Link href="/termos" className="font-medium text-foreground underline-offset-2 hover:underline">
+            {t.cadastro.concordaLink}
+          </Link>
+          .
+        </p>
+
         <p className="text-center text-sm text-muted-foreground">
           {t.cadastro.jaTemConta}{" "}
           <Link href="/login" className="font-medium text-primary hover:underline">

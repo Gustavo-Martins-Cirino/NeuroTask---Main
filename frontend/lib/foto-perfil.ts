@@ -109,6 +109,10 @@ export function problemaDoArquivo(arquivo: { type: string; size: number }): Prob
   return null
 }
 
+/** O bucket do Storage (`foto_perfil.sql`). Mora aqui, no módulo puro, porque a
+ *  rota que exclui a conta também precisa dele, e ela roda no servidor. */
+export const BUCKET_FOTOS = "avatars"
+
 /** Sempre o mesmo caminho por pessoa: trocar a foto sobrescreve a anterior em
  *  vez de deixar lixo acumulado no bucket. A primeira pasta é o dono, e é ela
  *  que as políticas de `foto_perfil.sql` conferem. */

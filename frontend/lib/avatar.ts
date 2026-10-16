@@ -3,6 +3,7 @@ import { type AvatarModo } from "@/lib/avatar-modo"
 import { acessoriosEquipados, type AvatarAccessories } from "@/lib/avatar-accessories"
 import {
   recorteQuadrado, caminhoDaFoto, urlComCarimbo, motivoDoUpload, FalhaDaFoto, LADO_FOTO, QUALIDADE_JPEG,
+  BUCKET_FOTOS,
 } from "@/lib/foto-perfil"
 
 // Avatar editável do Escritório (paper-doll 2D). A configuração mora em
@@ -115,8 +116,6 @@ export async function fetchRetrato(): Promise<Retrato | null> {
 // Foto de perfil — o degrau de cima do retrato. As contas ficam em
 // lib/foto-perfil.ts; aqui mora o que toca o navegador e o Supabase.
 // ---------------------------------------------------------------------------
-
-const BUCKET_FOTOS = "avatars"
 
 // O arquivo escolhido vira um JPEG quadrado de 256px ANTES de sair do
 // navegador. Não é só economia de banda: subir o original deixaria a decisão do

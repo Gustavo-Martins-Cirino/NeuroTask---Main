@@ -89,6 +89,9 @@ export default function Landing() {
               disso antes de criar a conta. */}
           <SeletorRegiao />
           <p className="text-xs text-muted-foreground">{t.rodape}</p>
+          <Link href="/termos" className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+            {t.termos}
+          </Link>
         </footer>
       </div>
     </AuthBackdrop>
