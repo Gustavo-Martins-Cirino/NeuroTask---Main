@@ -1096,6 +1096,31 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > cada item dizer ONDE olhar neste repositório. O que está marcado como *lido no código* foi
 > visto no arquivo; nada aqui foi atacado de verdade ainda — isso é o penúltimo item.
 
+> **O que falta para divulgar (16/10).** Os itens abaixo continuam com o detalhe; isto é só o
+> mapa de quem faz o quê.
+>
+> **Passos do Gustavo (painel e conta):**
+> 1. Apagar uma conta de verdade: uma descartável (outro e-mail) → Configurações → Excluir
+>    minha conta. Conferir que cai na landing e que entrar de novo com ela falha.
+> 2. Verificação em duas etapas no Supabase, na Vercel e no GitHub, e "Network Restrictions" no
+>    banco.
+> 3. Tirar a `GEMINI_API_KEY` da Vercel e do `.env.local` e revogar a chave no Google — o app não
+>    usa mais o Gemini desde 28/09.
+> 4. Rodar `supabase/foco_xp.sql` e, depois dele, `seguranca_banco.sql` de novo (o segundo
+>    tranca a função que o primeiro cria).
+> 5. Ligar o Web Analytics no painel da Vercel (ou escolher o GA4, que muda a política de
+>    privacidade).
+> 6. Com domínio próprio: Search Console.
+>
+> **No código (Claude):**
+> 1. `robots.txt`, `sitemap.xml` e `llms.txt` — e o proxy liberar os três: hoje os três
+>    respondem 307 para o `/login`.
+> 2. `noindex` em `/agenda/<token>`; título, descrição, Open Graph e cartão do Twitter.
+> 3. Teto por usuário na Neuro e na transcrição (gastam a cota do Groq), e a decisão do plano do
+>    Groq.
+> 4. PageSpeed no celular na landing e no `/login`.
+> 5. Por último: testar como um usuário estranho e a auditoria completa.
+
 ### Segurança
 
 - [ ] **Segredos: chave de API, `.env`, senha no código e git sem senha vazada.** *Lido no
@@ -1397,10 +1422,13 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       nova referenciar `auth.users` sem cascade nem set null (o Postgres recusaria o DELETE e a
       pessoa ficaria presa no app).
       *Conferido (16/10):* sem Origin e de outro site → 403; sem sessão → 401; o diálogo testado
-      com a API simulada nos dois idiomas. **Ainda não apagou uma conta de verdade**: o primeiro
-      teste real é com uma conta descartável, depois de rodar no SQL Editor a consulta das
-      chaves estrangeiras para `auth.users` sem cascade (tem de voltar vazia — o teste só lê os
-      arquivos, e uma tabela criada pelo painel escaparia dele).
+      com a API simulada nos dois idiomas. No banco de produção, o Gustavo rodou no SQL Editor a
+      consulta das chaves estrangeiras para `auth.users` sem cascade nem set null, e ela **voltou
+      vazia** — o teste só lê os arquivos, e uma tabela criada pelo painel escaparia dele.
+
+- [ ] **Apagar uma conta de verdade (passo do Gustavo).** Uma conta descartável → Configurações →
+      Excluir minha conta. Conferir que cai na landing com o aviso e que entrar de novo com ela
+      falha. É o único pedaço que ainda não rodou contra o Supabase de verdade.
 
 ### Ser encontrado: Google, SEO e medição
 
