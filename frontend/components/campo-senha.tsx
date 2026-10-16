@@ -68,7 +68,9 @@ export function CampoSenha({ value, className, ...props }: CampoSenhaProps) {
         value={value}
         type={visivel ? "text" : "password"}
         // Espaço à direita para os olhos não ficarem por cima do que foi escrito.
-        className={cn("pr-12", className)}
+        // `::-ms-reveal` é o olho que o Edge põe sozinho em todo campo de senha:
+        // ao lado do nosso, ficavam dois botões fazendo a mesma coisa.
+        className={cn("pr-12 [&::-ms-reveal]:hidden", className)}
       />
       <button
         type="button"
