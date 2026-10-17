@@ -24,7 +24,13 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   async headers() {
-    return [{ source: '/:path*', headers: CABECALHOS }]
+    return [
+      { source: '/:path*', headers: CABECALHOS },
+      // Links com token (agenda pública e feed .ics): o endereço é a credencial,
+      // então nunca no índice de busca — nem o 404 de um token revogado.
+      { source: '/agenda/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] },
+      { source: '/api/calendar/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] },
+    ]
   },
   // Sem `images.remotePatterns`: nenhuma tela usa `next/image` com foto de fora
   // (as fotos de perfil são <img> comum). Com `hostname: '**'`, o

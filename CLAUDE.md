@@ -36,7 +36,8 @@ frontend/
 │   ├── admin/page.tsx        # Painel do dono (server component, gate por OWNER_EMAIL)
 │   ├── login/page.tsx
 │   ├── signup/page.tsx
-│   ├── page.tsx              # Landing pública (17/09; antes era só um redirect p/ /app)
+│   ├── page.tsx              # Landing pública: invólucro de servidor (metadados) de components/landing.tsx
+│   ├── robots.ts · sitemap.ts · llms.txt/route.ts · opengraph-image.tsx  # Para robô; saem de lib/site.ts
 │   ├── termos/page.tsx       # Termos de uso + política de privacidade (pública; texto em lib/termos)
 │   └── globals.css           # Tokens de cor (oklch), tema claro/escuro
 ├── components/
@@ -65,6 +66,7 @@ frontend/
 │   ├── foto-perfil-campo.tsx # Enviar/remover a foto (Configurações → Perfil)
 │   ├── excluir-conta.tsx     # Excluir minha conta (Configurações → Conta): lista + palavra digitada
 │   ├── termos-view.tsx       # A forma da página /termos (o texto mora em lib/termos.ts)
+│   ├── landing.tsx           # A landing (client: idioma e região moram no navegador)
 │   ├── metricas-dashboard.tsx# "Seus números" — 3 abas, SVG à mão, fechada por padrão
 │   ├── seletor-regiao.tsx    # Região (Brasil/EUA) com bandeira e painel que abre
 │   ├── bandeira.tsx          # As duas bandeiras em SVG (emoji não renderiza no Windows)
@@ -136,6 +138,7 @@ frontend/
 │   ├── motivo-login.ts       # Por que o login falhou, como código de lista fechada — nunca a mensagem (puro)
 │   ├── regra-senha.ts        # Mínimo 8, letra e número — a MESMA do Supabase; requisito a requisito (puro)
 │   ├── captcha.ts            # Turnstile: ligado pela Site Key + o token no "esqueci a senha" (puro)
+│   ├── site.ts               # Endereço do site + rotas públicas: o proxy e o sitemap leem a MESMA lista (puro)
 │   ├── excluir-conta.ts      # Palavra de confirmação + mesma origem (CSRF); o teste vigia o cascade dos SQLs (puro)
 │   ├── termos.ts             # Termos + privacidade em pt/en. Mudou dado ou fornecedor → muda o texto e a data (puro)
 │   ├── audio-transcricao.ts  # O que a transcrição aceita (teto, tipo, nome) e a frase de cada recusa (puro)
@@ -153,7 +156,7 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 
 | Rota | Status |
 |------|--------|
-| `/` | **Pública, sem login** — a landing. Quem já tem sessão nem passa por ela: o proxy manda para `/app`. As rotas que o proxy deixa abrir sem sessão estão numa lista só, em `lib/supabase/middleware.ts`. Mesmo fundo das telas de entrada (`AuthBackdrop`), e tudo que ela promete existe |
+| `/` | **Pública, sem login** — a landing. Quem já tem sessão nem passa por ela: o proxy manda para `/app`. As rotas que o proxy deixa abrir sem sessão estão numa lista só, em `lib/site.ts` (`ehRotaPublica`) — a mesma de onde saem o sitemap e o robots.txt. Mesmo fundo das telas de entrada (`AuthBackdrop`), e tudo que ela promete existe |
 | `/termos` | **Pública, sem login** — termos de uso + política de privacidade (LGPD), pt/en. O proxy libera: quem vai criar a conta lê antes de concordar. O cadastro e o rodapé da landing apontam para cá |
 | `/app` | Dashboard (stats + quick actions) |
 | `/app/tasks` | Lista de tarefas com filtros e tabs |
@@ -164,7 +167,7 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
 | `/app/office` | Escritório — cena 3D (R3F) viva + loja cosmética (moedas via XP) |
 | `/app/friends` | Amigos — busca por @, ocupado/livre, agenda de hoje, convites de compromisso, visitar escritório (em 3D) |
 | `/app/settings` | Configurações (rotina, push, tema). Em Conta: link para `/termos` e **Excluir minha conta** (`/api/conta/excluir`) |
-| `/agenda/[token]` | **Pública, sem login** — agenda compartilhada com quem não usa o app. Mostra SÓ faixas ocupadas (a consulta nem pede título). O token é a credencial; o proxy libera `/agenda/` de propósito (`lib/supabase/middleware.ts`) |
+| `/agenda/[token]` | **Pública, sem login** — agenda compartilhada com quem não usa o app. Mostra SÓ faixas ocupadas (a consulta nem pede título). O token é a credencial; o proxy libera `/agenda/` de propósito (`lib/site.ts`). Fora do Google por `noindex` + `X-Robots-Tag` — e NÃO pelo robots.txt, que impediria o Google de ver o `noindex` |
 | `/admin` | Painel do dono — feedbacks, usuários, erros e uso. Server component: quem não é `OWNER_EMAIL` recebe `notFound()`. Fora de `/app` (sem dock) e sem link na navegação |
 
 ## Decisões de design ativas

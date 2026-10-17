@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { notFound } from "next/navigation"
 import { AgendaPublicaView } from "@/components/agenda-publica-view"
@@ -14,6 +15,10 @@ import type { BlocoBruto } from "@/lib/faixas-ocupadas"
 // de exibição depois. Ver supabase/agenda_publica.sql.
 
 export const dynamic = "force-dynamic"
+
+// Fora do Google: o endereço é a credencial. O next.config manda também o
+// X-Robots-Tag, que vale até para o 404 de um token revogado.
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 
 const DIA_MS = 86_400_000
 

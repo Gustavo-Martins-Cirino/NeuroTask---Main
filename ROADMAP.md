@@ -1112,9 +1112,9 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > 6. Search Console — feito.
 >
 > **No código (Claude):**
-> 1. `robots.txt`, `sitemap.xml` e `llms.txt` — e o proxy liberar os três: hoje os três
->    respondem 307 para o `/login`.
-> 2. `noindex` em `/agenda/<token>`; título, descrição, Open Graph e cartão do Twitter.
+> 1. ~~`robots.txt`, `sitemap.xml` e `llms.txt`~~ — feito (17/10).
+> 2. ~~`noindex` em `/agenda/<token>`; título, descrição, Open Graph e cartão do Twitter~~ —
+>    feito (17/10).
 > 3. Teto por usuário na Neuro e na transcrição (gastam a cota do Groq), e a decisão do plano do
 >    Groq.
 > 4. PageSpeed no celular na landing e no `/login`.
@@ -1401,7 +1401,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       securityheaders.com e o Mozilla Observatory. O que achar vira item aqui.
       *Estado do GitHub (medido 17/10):* secret scanning e push protection **ligados**; CodeQL
       (análise estática do próprio GitHub, grátis em repositório público) e alertas do Dependabot
-      **desligados**. O Docker existe na máquina, então o ZAP roda daqui.
+      **desligados** — ligados pelo `gh` no mesmo dia, a pedido do Gustavo (CodeQL no modo
+      padrão, alertas e correções automáticas do Dependabot). O Sonar ficou de fora de propósito:
+      acusa mais "código feio" que falha de segurança, e o CodeQL cobre a parte de segurança
+      seguindo o dado da entrada até o uso.
+      *ZAP, varredura passiva (17/10), contra produção:* **0 falhas, 56 regras aprovadas, 5
+      avisos.** Nenhum explorável: (1) a CSP não define `form-action` nem `script-src` — é o item
+      "CSP completa" acima; (2) `Access-Control-Allow-Origin: *` nas páginas estáticas, posto pela
+      Vercel — inofensivo em página pública e sem cookie, e as rotas `/api` não o mandam;
+      (3) cache público com revalidação, (4) "veio do cache" e (5) "app moderno" são informativos.
+      A varredura ATIVA (que ataca) não roda contra produção: dispararia o CAPTCHA e os limites,
+      sujaria o `error_log` e gastaria a cota do Groq no Supabase de verdade.
 
 ### Lei: termos, privacidade e excluir a conta
 
@@ -1438,23 +1448,24 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > próprio (está em `neuro-task-main.vercel.app`), e quase tudo daqui fica melhor depois dele: o
 > histórico do Google fica preso ao endereço em que o site foi registrado.
 
-- [ ] **`robots.txt`** (`app/robots.ts`, convenção do Next). Liberar a landing, `/login` e
-      `/signup`; bloquear `/app`, `/admin`, `/api`, `/auth` e **`/agenda/`** — a agenda pública
-      vive de token, e um link indexado é uma agenda de alguém no Google. Por isso a página da
-      agenda também ganha `noindex`, porque o `robots.txt` sozinho não tira do índice.
+- [x] **`robots.txt`, `sitemap.xml` e `llms.txt` (17/10).** `app/robots.ts`, `app/sitemap.ts` e
+      `app/llms.txt/route.ts`, todos saindo de `lib/site.ts` — a mesma lista que o proxy consulta
+      (`ehRotaPublica`), e um teste quebra se uma página do sitemap pedir login ou estiver fechada
+      no robots. O proxy deixou de passar por eles (e pela imagem de prévia): robô nunca tem
+      sessão, e os três respondiam 307 para o `/login`.
+      **Mudança em relação ao plano:** `/agenda/` NÃO entrou no `Disallow`. Fechada no robots, o
+      Google não lê a página, não vê o `noindex` e pode indexar o endereço nu — que é a
+      credencial — se alguém o postar num lugar público. Aberta, ele lê o `noindex` (no HTML e no
+      `X-Robots-Tag`, que vale até para o 404 de token revogado) e a deixa fora do índice.
 
-- [ ] **`sitemap.xml`** (`app/sitemap.ts`): só as páginas públicas (`/`, `/login`, `/signup`,
-      `/termos`).
-
-- [ ] **`llms.txt`**: um texto curto dizendo o que o NeuroTask é e onde está cada coisa, para as
-      IAs que leem o site. É uma proposta (llmstxt.org), não um padrão — barato de fazer, sem
-      promessa de efeito.
-
-- [ ] **Título e meta description em cada página.** As telas de `/app` são `"use client"` e não
-      podem exportar `metadata`: cada rota ganha um `layout.tsx` de servidor com o próprio título,
-      e o layout raiz um `title.template` ("%s · NeuroTask"). A landing ganha também Open Graph e
-      cartão do Twitter (a imagem de quando o link é colado no WhatsApp) e o endereço canônico. O
-      app tem dois idiomas: o texto do Google sai em português, que é o público de agora.
+- [x] **Título, descrição e prévia de link (17/10).** Layout raiz com `title.template`
+      ("%s · NeuroTask"), descrição, Open Graph e cartão grande do Twitter; a imagem
+      (`app/opengraph-image.tsx`, 1200×630) é a frase da landing sobre o fundo das telas de
+      entrada. Páginas client ganharam `layout.tsx` de servidor com o próprio título e o endereço
+      canônico (`/login`, `/signup`); a landing virou `components/landing.tsx` com um invólucro de
+      servidor. `/reset-password` e `/auth/error` saem do índice. Saiu também o
+      `generator: v0.app` que sobrou do template. As telas de `/app` ficam com o título padrão: o
+      Google nunca as vê, e um título em português numa interface em inglês seria pior.
 
 - [ ] **Google Search Console.** Verificar o domínio (registro TXT no DNS), enviar o sitemap e
       acompanhar a indexação e os erros de rastreio. Esperar o domínio próprio.
