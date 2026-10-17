@@ -18,6 +18,7 @@ import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia, type Ocorrencia } from "@/lib/ia-agenda"
 import { FOLGA_DE_DUPLICATA_MS, FOLGA_MINIMA_MS, conflitoDoBloco, duplicataNaAgenda, janelaDoConflito } from "@/lib/ia-conflito"
 import { createClient } from "@/lib/supabase/server"
+import { consomeCotaDeIa } from "@/lib/cota-ia"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
 import { descreveAgora, sufixoDeFuso } from "@/lib/ia-agora"
@@ -1390,6 +1391,25 @@ export async function POST(req: Request) {
   }
 
   if (messages.length === 0) return new Response(t.erros.semMensagem, { status: 400 })
+
+  // O teto diário da pessoa (lib/cota-ia) conta só o que vai ao Groq — por isso
+  // depois do briefing, que é determinístico. Batido, sai o MESMO sinal do
+  // limite diário do provedor: para quem conversa, é a mesma coisa — a IA
+  // acabou por hoje — e o chat e a voz já sabem dizer isso nos dois idiomas.
+  // O `x-neuro-limite` separa os dois casos para quem audita.
+  const cota = await consomeCotaDeIa(supabase, "neuro")
+  if (!cota.permitido) {
+    console.info(`[neuro-ia] cota pessoal batida: ${user.id} usos=${cota.usos}`)
+    return new Response(marcaDeLimite({ segundos: null, porDia: true, origem: null }), {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+        "x-neuro-estado": "limite",
+        "x-neuro-espera": "dia",
+        "x-neuro-limite": "pessoal",
+      },
+    })
+  }
 
   // Injeta a agenda real compacta — fonte da verdade p/ perguntas sobre o dia
   system += `\n\n${await buildDayContext(supabase, body.tz ?? 0)}`

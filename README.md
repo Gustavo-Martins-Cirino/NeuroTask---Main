@@ -136,6 +136,7 @@ Todas em `frontend/.env.local` (e nas envs do projeto na Vercel). O arquivo
 | Variável | Observação |
 |---|---|
 | `GROQ_API_KEY` | **Obrigatória.** Sem ela a Neuro IA não sobe — o app avisa na tela. `GROQ_MODEL` opcional (`llama-3.3-70b-versatile`) |
+| `NEURO_LIMITE_DIARIO` · `TRANSCRICAO_LIMITE_DIARIO` | Opcionais. Teto por pessoa por dia (padrão 30 mensagens da Neuro e 40 transcrições), contado por `limite_ia.sql`. Trocou de plano no Groq, troca aqui — sem SQL novo |
 
 A mesma chave serve às duas coisas: o chat com ferramentas (criar/editar tarefas,
 blocos e notas) e a transcrição de áudio (Whisper) do botão de microfone. A voz da
@@ -293,6 +294,14 @@ feita à mão pode ter batizado o constraint de outro jeito.
 calendar_feed.sql
 ```
 `calendar_feed.sql` liga o feed assinável (Configurações → "Assinar no Google/Outlook"). Sem dependências.
+
+**8b. Limite diário da IA por pessoa** — sem dependências
+```
+limite_ia.sql
+```
+`limite_ia.sql` cria o contador que a Neuro e a transcrição consultam antes de ir ao Groq: a cota
+do Groq é uma só para o app inteiro, e sem teto por pessoa uma conta esgota o dia de todos. Sem
+ele, as duas rotas deixam passar e avisam no log (`[cota-ia] ... não rodado`). O teto vem da env.
 
 **9. Segurança do banco** — por último, depois de todos os outros
 ```

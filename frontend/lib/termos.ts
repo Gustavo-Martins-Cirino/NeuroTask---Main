@@ -43,7 +43,7 @@ export interface DocumentoLegal {
 export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
   pt: {
     titulo: "Termos de uso e privacidade",
-    atualizado: "Última atualização: 16 de outubro de 2026",
+    atualizado: "Última atualização: 17 de outubro de 2026",
     intro:
       "Estas são as regras de uso do NeuroTask e o que acontece com os seus dados. Escrevemos em linguagem direta de propósito. Ao criar uma conta, você concorda com as duas partes.",
     voltar: "Voltar ao início",
@@ -102,6 +102,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
                 "A Neuro pede confirmação antes de criar, editar ou excluir algo, mas a decisão final é sua.",
                 "Não use a Neuro para decisões médicas, jurídicas ou financeiras.",
                 "O que você escreve ou fala para a Neuro é enviado ao fornecedor de IA para gerar a resposta (veja a Política de Privacidade).",
+                "Para a cota da IA dar para todo mundo, cada pessoa tem um limite diário de mensagens com a Neuro e de transcrições de áudio. Ele se renova todo dia.",
               ],
             ],
           },
@@ -185,7 +186,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
                 "§O que você cria:§ tarefas, listas, blocos do calendário, notas, lembretes, rotina e atividades.",
                 "§Jogo e amigos:§ XP, moedas, itens, amizades, convites e os links de agenda compartilhada.",
                 "§Notificações:§ o endereço técnico do aparelho para o push e o seu fuso horário.",
-                "§Neuro IA:§ as mensagens e os áudios que você manda, para gerar a resposta. O histórico das conversas fica guardado no seu navegador, não no nosso banco.",
+                "§Neuro IA:§ as mensagens e os áudios que você manda, para gerar a resposta. O histórico das conversas fica guardado no seu navegador, não no nosso banco. Contamos quantas vezes você usou a Neuro e a transcrição no dia, para o limite diário — só o número, nunca o conteúdo.",
                 "§Técnicos:§ registros de erro (a mensagem, a tela em que aconteceu e a versão do app), os feedbacks que você envia, e o endereço IP e dados do navegador, que os fornecedores de hospedagem e de segurança processam para proteger o serviço.",
               ],
             ],
@@ -243,7 +244,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
               [
                 "Os dados da conta ficam guardados enquanto a conta existir.",
                 "Ao excluir a conta, apagamos na hora a conta, a foto e tudo o que você criou. Os feedbacks que você enviou continuam, sem identificar você.",
-                "Registros de erro são apagados automaticamente depois de 30 dias.",
+                "Registros de erro são apagados automaticamente depois de 30 dias, e o contador do limite diário da IA, no dia seguinte.",
                 "Cópias de segurança dos fornecedores podem manter dados por um período curto, até serem substituídas.",
               ],
             ],
@@ -290,7 +291,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
   },
   en: {
     titulo: "Terms of use and privacy",
-    atualizado: "Last updated: October 16, 2026",
+    atualizado: "Last updated: October 17, 2026",
     intro:
       "These are the rules for using NeuroTask and what happens to your data. We wrote them in plain language on purpose. By creating an account, you agree to both parts.",
     voltar: "Back to home",
@@ -349,6 +350,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
                 "Neuro asks for confirmation before creating, editing or deleting anything, but the final decision is yours.",
                 "Don't use Neuro for medical, legal or financial decisions.",
                 "What you type or say to Neuro is sent to the AI provider to generate the answer (see the Privacy Policy).",
+                "So the AI quota is enough for everyone, each person has a daily limit of messages with Neuro and of audio transcriptions. It resets every day.",
               ],
             ],
           },
@@ -432,7 +434,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
                 "§What you create:§ tasks, lists, calendar blocks, notes, reminders, routine and activities.",
                 "§Game and friends:§ XP, coins, items, friendships, invites and shared schedule links.",
                 "§Notifications:§ your device's technical push address and your time zone.",
-                "§Neuro AI:§ the messages and audio you send, to generate the answer. The conversation history is stored in your browser, not in our database.",
+                "§Neuro AI:§ the messages and audio you send, to generate the answer. The conversation history is stored in your browser, not in our database. We count how many times you used Neuro and transcription each day, for the daily limit — only the number, never the content.",
                 "§Technical:§ error logs (the message, the screen where it happened and the app version), the feedback you send, and your IP address and browser data, which the hosting and security providers process to protect the service.",
               ],
             ],
@@ -490,7 +492,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
               [
                 "Account data is kept for as long as the account exists.",
                 "When you delete your account, we immediately erase the account, the photo and everything you created. Feedback you sent stays, without identifying you.",
-                "Error logs are deleted automatically after 30 days.",
+                "Error logs are deleted automatically after 30 days, and the AI daily-limit counter, the next day.",
                 "Providers' backups may keep data for a short period, until they are replaced.",
               ],
             ],

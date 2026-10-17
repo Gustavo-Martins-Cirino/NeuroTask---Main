@@ -139,6 +139,7 @@ frontend/
 │   ├── regra-senha.ts        # Mínimo 8, letra e número — a MESMA do Supabase; requisito a requisito (puro)
 │   ├── captcha.ts            # Turnstile: ligado pela Site Key + o token no "esqueci a senha" (puro)
 │   ├── site.ts               # Endereço do site + rotas públicas: o proxy e o sitemap leem a MESMA lista (puro)
+│   ├── cota-ia.ts            # Limite diário por pessoa (Neuro e transcrição): teto da env, falha aberta sem o SQL
 │   ├── excluir-conta.ts      # Palavra de confirmação + mesma origem (CSRF); o teste vigia o cascade dos SQLs (puro)
 │   ├── termos.ts             # Termos + privacidade em pt/en. Mudou dado ou fornecedor → muda o texto e a data (puro)
 │   ├── audio-transcricao.ts  # O que a transcrição aceita (teto, tipo, nome) e a frase de cada recusa (puro)
@@ -233,6 +234,10 @@ Rota `app/api/ai/route.ts` (Node runtime). **Um provedor só: Groq** (`GROQ_API_
 e ela saiu em 28/09: bastava um typo no nome da env para o app inteiro rodar em outro modelo
 **sem ferramentas**, calado. Sem reserva, o limite de cota é uma resposta com cabeçalho
 (`x-neuro-estado: limite`), e a frase da espera sai lida do próprio 429.
+**Teto por pessoa** (`lib/cota-ia.ts` + `supabase/limite_ia.sql`): a cota do Groq é uma só para
+o app inteiro, então cada pessoa tem N mensagens e N transcrições por dia (env
+`NEURO_LIMITE_DIARIO`/`TRANSCRICAO_LIMITE_DIARIO`, padrão 30/40). Batido, sai o MESMO sinal do
+limite diário do provedor (+ `x-neuro-limite: pessoal`) — chat e voz já sabem dizê-lo.
 
 - **Ferramentas** (tool-calling estilo OpenAI): criar/listar/editar/excluir tarefas, blocos de
   tempo e notas — a IA age de verdade no app.

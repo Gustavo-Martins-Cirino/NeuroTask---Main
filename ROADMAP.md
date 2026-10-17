@@ -1115,8 +1115,8 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > 1. ~~`robots.txt`, `sitemap.xml` e `llms.txt`~~ — feito (17/10).
 > 2. ~~`noindex` em `/agenda/<token>`; título, descrição, Open Graph e cartão do Twitter~~ —
 >    feito (17/10).
-> 3. Teto por usuário na Neuro e na transcrição (gastam a cota do Groq), e a decisão do plano do
->    Groq.
+> 3. ~~Teto por usuário na Neuro e na transcrição~~ — feito (17/10); falta o Gustavo rodar
+>    `supabase/limite_ia.sql` e decidir o plano do Groq (números no item "Rate limit" abaixo).
 > 4. PageSpeed no celular na landing e no `/login`.
 > 5. Por último: testar como um usuário estranho e a auditoria completa.
 
@@ -1284,6 +1284,31 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       `/api/ai/tts` usa a voz do Edge (não o Groq) e já corta o texto em 900 caracteres.
       E os botões travados durante o envio, com o servidor aguentando o mesmo pedido chegar duas
       vezes.
+
+> **Teto por pessoa na Neuro e na transcrição (17/10).** `lib/cota-ia.ts` + `supabase/limite_ia.sql`:
+> um contador por pessoa, por dia (o de Brasília) e por tipo, somado por uma função
+> `security definer` atômica — dois pedidos juntos não passam os dois no último uso, e a tabela
+> não se lê nem se escreve direto. O teto vem da env (`NEURO_LIMITE_DIARIO`, padrão 30;
+> `TRANSCRICAO_LIMITE_DIARIO`, padrão 40), então trocar de plano no Groq não pede SQL. Conta só o
+> que vai ao Groq: o briefing, que é determinístico, fica de fora, e a transcrição só conta
+> depois das recusas baratas (tamanho, tipo). Batido, a Neuro devolve o MESMO sinal do limite
+> diário do provedor (`x-neuro-estado: limite`, `x-neuro-espera: dia`) e mais
+> `x-neuro-limite: pessoal` — o chat e a voz já diziam "acabou por hoje, volta amanhã" nos dois
+> idiomas, e para quem conversa é a mesma coisa. **Falha aberta**: sem o SQL, ou com erro do
+> banco, passa e avisa no log; é limite de custo e partilha, não trava de segurança. Os termos
+> e a política de privacidade ganharam o limite e o contador (só o número, apagado no dia
+> seguinte), com a data nova.
+>
+> **Os números do Groq, medidos (17/10)** nos cabeçalhos da própria API, para o modelo de
+> produção (`openai/gpt-oss-120b`): **1.000 pedidos/dia, 8.000 tokens/minuto e 200.000
+> tokens/dia** (o dia confere com a tabela de limites do Groq). Cada ida ao modelo leva ~1.830
+> tokens de ferramentas + ~1.100 de prompt + a agenda e o histórico, e uma mensagem que age faz
+> duas ou três idas: **o plano gratuito aguenta umas 30 mensagens por dia somando todo mundo**,
+> e ~1 por minuto. O teto por pessoa impede que uma conta coma o dia das outras; não faz caber
+> mais gente. **Decisão do Gustavo: o plano pago (Developer).** Preço público hoje
+> (`gpt-oss-120b`): US$ 0,15 por milhão de tokens de entrada e US$ 0,60 de saída — perto de
+> **US$ 0,001 por mensagem**, uns US$ 1 a cada mil. O Whisper turbo sai a US$ 0,04 por hora de
+> áudio. Com o teto de 30/dia, o pior caso de uma conta abusando é ~US$ 0,03 por dia.
 
 - [ ] **Erros sem detalhes.** Nada de pilha, SQL ou mensagem crua do Supabase na tela. Falta
       conferir as respostas de cada rota de `/api` por esse critério.
