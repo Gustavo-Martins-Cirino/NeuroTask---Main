@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts"
+import { textoParaVoz } from "@/lib/texto-da-voz"
 
 export const runtime = "nodejs"
 
@@ -14,13 +15,14 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new Response("Não autorizado", { status: 401 })
 
-  let body: { text?: string }
+  let body: unknown
   try {
     body = await req.json()
   } catch {
     return new Response("Requisição inválida", { status: 400 })
   }
-  const text = (body.text ?? "").trim().slice(0, 900)
+  // Tipo conferido, cortado e escapado para o XML da voz (lib/texto-da-voz).
+  const text = textoParaVoz(body && typeof body === "object" ? (body as { text?: unknown }).text : undefined)
   if (!text) return new Response("Texto vazio", { status: 400 })
 
   try {

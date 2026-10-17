@@ -318,14 +318,17 @@ logado o direito de chamar a função nova. Sem ela, uma RPC nova responde "sem 
 uma consulta que lista cada buraco que sobrar — tabela sem RLS, função sem `search_path`,
 função chamável sem login, leitura aberta no bucket. **Resultado vazio = tudo trancado.**
 
-**Faxina (opcional, e só se você quiser)**
+**Faxina do banco antigo** (destrutivo; recomendado para quem tem um banco de antes de setembro)
 ```
-remove_extension_screen_time.sql
+faxina_legado.sql
 ```
-Apaga as tabelas da extensão de tempo de tela, que foi abandonada. Nada no app depende
-delas — quem está começando do zero nunca as criou, e quem tem um banco antigo pode
-deixá-las lá sem prejuízo nenhum. É o único script destrutivo da pasta; está separado dos
-outros justamente por isso.
+Apaga o que sobrou de versões antigas e não existe em nenhum outro SQL desta pasta: o scaffold
+FastAPI/Alembic (`users`, `alembic_version`), o bot do Telegram, a extensão de tempo de tela e a
+função `ai_consume` com a tabela dela. Deixou de ser "opcional e inofensivo" em 17/10: a
+`ai_consume` recebia o id da pessoa como parâmetro e qualquer conta logada a chamava com o id de
+outra, e a `alembic_version` não tinha RLS. Nada no app depende delas, e quem começou do zero
+nunca as teve (os `if exists` deixam rodar mesmo assim). Termina com uma conferência que tem de
+voltar **vazia**. É o único script destrutivo da pasta; está separado dos outros por isso.
 
 ### Ver os erros que aconteceram
 

@@ -1117,8 +1117,11 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 >    feito (17/10).
 > 3. ~~Teto por usuário na Neuro e na transcrição~~ — feito (17/10); falta o Gustavo rodar
 >    `supabase/limite_ia.sql` e decidir o plano do Groq (números no item "Rate limit" abaixo).
-> 4. PageSpeed no celular na landing e no `/login`.
-> 5. Por último: testar como um usuário estranho e a auditoria completa.
+> 4. ~~PageSpeed no celular na landing e no `/login`~~ — medido (17/10), números no item
+>    "Testar a velocidade" abaixo.
+> 5. ~~Testar como um usuário estranho e a auditoria completa~~ — feito (17/10). Sobrou para o
+>    Gustavo: rodar `faxina_legado.sql`, `limite_ia.sql`, o Security Advisor do Supabase, e daqui
+>    a uns dias decidir se a CSP completa vira trava (ver "CSP completa").
 
 ### Segurança
 
@@ -1346,6 +1349,25 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       `/api` leem o cookie de sessão; o `SameSite=Lax` barra POST vindo de outro site, e conferir
       o `Origin` nas rotas que mudam dados fecha o resto.
 
+> **CSP completa em modo só-relatório (17/10).** `lib/csp.ts` monta as duas: a que TRAVA ganhou
+> `form-action 'self'` (o ZAP apontou a falta), e a completa — `default-src 'self'` e um host por
+> dono no código: Supabase em https e wss, Cloudflare (CAPTCHA), YouTube (player), `date.nager.at`
+> (feriados), fotos de conta do Google e do GitHub, `gstatic` e `wasm-unsafe-eval` + `worker-src
+> blob:` para o decodificador 3D — vai como `Content-Security-Policy-Report-Only`. O navegador não
+> bloqueia nada; manda para `/api/csp` o que TERIA bloqueado, e a rota grava no `error_log` com
+> origem `csp` (o `/admin` já mostra). O token de `/agenda/<token>` e do feed sai mascarado do
+> relatório, e violação de extensão do navegador é descartada.
+> *Medido antes de publicar:* varredura logada (conta descartável) em 13 telas — landing, entrada,
+> termos e as nove do app, Escritório 3D incluído — com **zero violações**, e um **controle
+> positivo** (um `fetch` proposital a um host de fora) aparecendo no console e no relatório, para
+> o zero valer alguma coisa. A rota foi testada de ponta a ponta contra o banco (linha gravada com
+> o token mascarado, depois apagada). Mozilla Observatory hoje: **B+ (80), 11 de 12** — o que
+> falta é justamente esta CSP travada.
+> **Falta (decisão de uns dias):** olhar o `/admin` à procura de origem `csp`. Sem violação de
+> verdade (CAPTCHA e Vercel Analytics só existem em produção, e a varredura local não os viu),
+> trocar `Report-Only` por trava é uma linha no `next.config.ts`. O `'unsafe-inline'` em script
+> continua: tirá-lo pede nonce, que deixa toda página dinâmica.
+
 > **Cabeçalhos de segurança em toda resposta (09/10).** O `next.config.ts` passou a mandar
 > `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`, uma CSP que só
 > trata de iframe, `<base>` e `<object>` (`frame-ancestors 'none'`) e `Permissions-Policy`
@@ -1420,6 +1442,35 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 - [ ] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
       conta nova: tentar ler o que é de outra pela API direta, trocar ids e tokens nas URLs
       (`/agenda/<token>` inventado), mandar corpo gigante, vazio e malformado para cada rota.
+
+> **Feito (17/10), contra produção.** *Sem conta:* nenhuma das 20 tabelas devolve linha, o
+> bucket de fotos não lista, e cada rota de `/api` responde 401/403/404 (ou 204 de propósito, no
+> `/api/errors`); `/app` e `/admin` mandam para o login. *Com duas contas descartáveis* (criadas
+> pela chave de serviço, sem e-mail): a A não leu, não mudou e não apagou nada da B em 17 tabelas,
+> e sem filtro não viu linha de NINGUÉM; não criou tarefa em nome da B, não deu XP nem moedas a si
+> mesma (42501), não pegou item sem pagar, não passou do teto de XP (`award_xp(100000)` → 150),
+> não trocou nem apagou a foto da B, não aceitou o próprio pedido de amizade nem trocou os lados
+> dele, não aceitou o próprio convite. Amiga com a agenda liberada, viu só horários — sem título;
+> a página pública da agenda também. **No fim, as duas contas apagadas e nenhuma linha delas em
+> tabela nenhuma** — o cascade conferido de verdade, e não pelos arquivos.
+>
+> **O que o teste achou:**
+> 1. **Sobras do banco antigo, fora do repositório**: `users`, `alembic_version`, `ai_usage`,
+>    `telegram_*`, `extension_*`, `screen_time_log` e a função `ai_consume(p_user_id, ...)` — que
+>    recebe o id como parâmetro, e a conta A a chamou com o id da B. O app não a usa (efeito nulo),
+>    mas é o formato de função que este repositório não aceita; a `alembic_version` não tem RLS
+>    (até sem login se lê a linha). `supabase/faxina_legado.sql` apaga tudo — **passo do
+>    Gustavo**, porque é destrutivo; ele termina com uma conferência que tem de voltar vazia.
+> 2. **A Neuro confiava no `slice(-6)` do cliente**: uma chamada direta mandava qualquer
+>    histórico (e "anotações do dia" sem fim) ao Groq — no plano pago, conta. `lib/ia-entrada.ts`:
+>    corpo até 64 KB (413 acima), 8 mensagens, 4.000 caracteres cada, fuso dentro do real.
+> 3. **`/api/ai/tts` caía com 500** quando `text` não era string — e, pior, o `msedge-tts` cola o
+>    texto CRU no SSML: **toda resposta com `&` saía muda** (medido: "Pão & café" → 0 bytes de
+>    áudio; escapado → 11 KB). `lib/texto-da-voz.ts` confere o tipo, corta e escapa.
+> 4. **A voz da Microsoft estava fora do ar em produção** (403 do serviço para qualquer texto; a
+>    rota respondia 502 até para "Pronto, criei a tarefa."). Ninguém percebeu porque a conversa por
+>    voz cai na voz do navegador quando ela falha. O `msedge-tts` 2.1.0 (13/10) volta a funcionar
+>    — atualizado, `pnpm audit` limpo.
 
 - [ ] **Auditoria completa.** Depois de tudo acima: o `/security-review` do Claude Code, o
       Security Advisor do Supabase, OWASP ZAP (varredura básica) contra o domínio,
@@ -1525,6 +1576,18 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 - [ ] **Testar a velocidade do site.** PageSpeed Insights (celular) na landing e no `/login`, que
       é o que um estranho abre primeiro, e os Core Web Vitals reais depois do lançamento (Search
       Console ou Vercel Speed Insights). O dashboard já foi medido (CLS) — a landing, nunca.
+      *Medido (17/10)* com o Lighthouse 12.8 do PageSpeed (perfil celular, simulado), rodado daqui
+      porque a API pública estava sem cota:
+      | | desempenho | acessib. | boas práticas | SEO | LCP | TBT | CLS |
+      |---|---|---|---|---|---|---|---|
+      | landing | 85 | 100 | 100 | 100 | 3,6 s | 180 ms | 0 |
+      | `/login` | 79 | 100 | 100 | 100 | 4,4 s | 200 ms | 0 |
+      O LCP é texto que já vem no HTML (o título da landing, o subtítulo do login), e quase todo o
+      tempo é "atraso de renderização" — que a simulação **infla**: ela contou o CSS de 136 KB como
+      se viesse sem compressão, e a Vercel o serve com brotli (conferido). Falta o número de
+      verdade: rodar o pagespeed.web.dev quando a cota voltar, e os dados de campo (CrUX) só
+      existem com visitas. Se o real confirmar, o suspeito é o CSS único de 136 KB, que bloqueia a
+      primeira pintura de toda página.
 
 ## Depois — evoluções por escolha
 

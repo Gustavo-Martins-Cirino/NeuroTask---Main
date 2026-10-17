@@ -20,6 +20,7 @@ import { FOLGA_DE_DUPLICATA_MS, FOLGA_MINIMA_MS, conflitoDoBloco, duplicataNaAge
 import { createClient } from "@/lib/supabase/server"
 import { consomeCotaDeIa } from "@/lib/cota-ia"
 import { chamadasRecusadas } from "@/lib/ia-resgate"
+import { MAX_CORPO_IA, limitaAnotacoes, limitaConversa, limitaFuso } from "@/lib/ia-entrada"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
 import { descreveAgora, sufixoDeFuso } from "@/lib/ia-agora"
@@ -1352,16 +1353,23 @@ export async function POST(req: Request) {
     return new Response(dicionario(idiomaDoPedido(req)).ia.erros.naoConfigurada, { status: 503 })
   }
 
-  let body: { messages?: ChatMessage[]; dayNotes?: string; now?: string; mode?: string; tz?: number; idioma?: string }
+  // O tamanho é conferido AQUI, e não confiado ao `slice(-6)` do cliente: uma
+  // chamada direta à API mandava qualquer histórico ao Groq (lib/ia-entrada).
+  const bruto = await req.text()
+  if (bruto.length > MAX_CORPO_IA) {
+    return new Response(dicionario(idiomaDoPedido(req)).ia.erros.pedidoInvalido, { status: 413 })
+  }
+  let body: { messages?: unknown; dayNotes?: unknown; now?: string; mode?: string; tz?: unknown; idioma?: string }
   try {
-    body = await req.json()
+    body = JSON.parse(bruto)
+    if (!body || typeof body !== "object") throw new Error("corpo")
   } catch {
     return new Response(dicionario(idiomaDoPedido(req)).ia.erros.pedidoInvalido, { status: 400 })
   }
 
-  let messages = (body.messages ?? []).filter(
-    (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
-  )
+  const messages: ChatMessage[] = limitaConversa(body.messages)
+  const tz = limitaFuso(body.tz)
+  const anotacoes = limitaAnotacoes(body.dayNotes)
 
   // Só "en" muda alguma coisa: qualquer outra coisa (ausente, lixo, idioma que o
   // app não tem) cai no português, que é o que o app sempre fez.
@@ -1373,9 +1381,9 @@ export async function POST(req: Request) {
   // (um `toLocaleString("pt-BR")`) não é mais usado. "28/08/2026" obriga o
   // modelo a adivinhar se é dia/mês ou mês/dia, e quando ele erra, erra calado.
   // Ver lib/ia-agora.
-  system += `\n\n${descreveAgora(Date.now(), body.tz ?? 0)}`
-  if (body.dayNotes?.trim()) {
-    system += `\n\nAnotações do dia do usuário:\n"""\n${body.dayNotes.trim()}\n"""`
+  system += `\n\n${descreveAgora(Date.now(), tz)}`
+  if (anotacoes) {
+    system += `\n\nAnotações do dia do usuário:\n"""\n${anotacoes}\n"""`
   }
   if (body.mode === "voice") {
     system += `\n\nMODO VOZ (conversa falada em tempo real): responda de forma curta, natural e conversacional, como uma pessoa falando. Em geral 1 a 3 frases. Evite listas longas, markdown, asteriscos, emojis e símbolos — o texto será lido em voz alta. Quando você tiver uma PERGUNTA, escreva-a em frase separada, nunca colada numa afirmação pela vírgula ("Pronto. Quer ajustar?" e não "Salvei tudo, quer ajustar?") — só a pergunta é lida junto com o comprovante, e grudada numa afirmação ela arrasta a afirmação para o áudio. Se precisar destacar um conceito, cite no máximo 3 pontos-chave bem curtos, em frases simples.`
@@ -1383,7 +1391,7 @@ export async function POST(req: Request) {
   // Briefing: 100% determinístico (algoritmo, não IA) — factual, instantâneo
   // e sem consumir o limite de tokens.
   if (body.mode === "briefing") {
-    const text = await buildBriefing(supabase, body.tz ?? 0)
+    const text = await buildBriefing(supabase, tz)
     return new Response(text, {
       headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache" },
     })
@@ -1411,7 +1419,7 @@ export async function POST(req: Request) {
   }
 
   // Injeta a agenda real compacta — fonte da verdade p/ perguntas sobre o dia
-  system += `\n\n${await buildDayContext(supabase, body.tz ?? 0)}`
+  system += `\n\n${await buildDayContext(supabase, tz)}`
 
   // O idioma fica por ÚLTIMO, depois do modo voz e da agenda: é a instrução que
   // não pode ser diluída pelas que vêm depois, e o fim do prompt é onde o modelo
@@ -1420,7 +1428,7 @@ export async function POST(req: Request) {
 
   // Um caminho só: o laço com ferramentas. Não há mais reserva para onde cair.
   try {
-    const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, body.tz ?? 0, idioma)
+    const finalText = await runOpenAIAgent(cfg, system, messages, supabase, user.id, tz, idioma)
 
     // Sem reserva, o limite é uma RESPOSTA, não um desvio — e passou a ser o
     // caminho normal, não um canto raro. Por isso ele sai com os cabeçalhos

@@ -29,7 +29,8 @@ frontend/
 │   │   └── settings/page.tsx
 │   ├── api/
 │   │   ├── ai/route.ts       # + ai/transcribe e ai/tts (Groq por fetch; a voz é do Edge)
-│   │   └── conta/excluir/route.ts # Exclui QUEM está logado: foto do Storage + usuário no Auth
+│   │   ├── conta/excluir/route.ts # Exclui QUEM está logado: foto do Storage + usuário no Auth
+│   │   └── csp/route.ts      # Relatórios da CSP só-relatório → error_log (origem "csp"), token mascarado
 │   ├── auth/
 │   │   ├── callback/route.ts # OAuth callback Supabase
 │   │   └── error/page.tsx
@@ -141,6 +142,9 @@ frontend/
 │   ├── site.ts               # Endereço do site + rotas públicas: o proxy e o sitemap leem a MESMA lista (puro)
 │   ├── cota-ia.ts            # Limite diário por pessoa (Neuro e transcrição): teto da env, falha aberta sem o SQL
 │   ├── ia-resgate.ts         # Tool calls no `failed_generation` do Groq — leitura LINEAR (a regex era ReDoS) (puro)
+│   ├── ia-entrada.ts         # Tetos do que a Neuro aceita: corpo, nº de mensagens, tamanho, fuso (puro)
+│   ├── texto-da-voz.ts       # Texto → SSML da voz: tipo conferido, cortado e ESCAPADO (`&` emudecia a fala) (puro)
+│   ├── csp.ts                # As duas CSP: a que trava e a completa em só-relatório (+ leitor dos relatórios) (puro)
 │   ├── youtube-embed.ts      # Link colado → src do embed: host exato, id e lista pelo formato (puro)
 │   ├── excluir-conta.ts      # Palavra de confirmação + mesma origem (CSRF); o teste vigia o cascade dos SQLs (puro)
 │   ├── termos.ts             # Termos + privacidade em pt/en. Mudou dado ou fornecedor → muda o texto e a data (puro)
