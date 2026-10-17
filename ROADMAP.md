@@ -1437,6 +1437,19 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       (3) cache público com revalidação, (4) "veio do cache" e (5) "app moderno" são informativos.
       A varredura ATIVA (que ataca) não roda contra produção: dispararia o CAPTCHA e os limites,
       sujaria o `error_log` e gastaria a cota do Groq no Supabase de verdade.
+      *Primeira análise do CodeQL (17/10):* **3 alertas, todos no player do YouTube** — o host
+      conferido por sufixo (`endsWith("youtube.com")` aceitava `evilyoutube.com`, dois alertas) e o
+      texto colado chegando ao `src` do iframe sem validação. Impacto baixo — a URL montada sempre
+      começava em `www.youtube.com/embed`, então o iframe nunca saía do YouTube —, mas consertado:
+      `lib/youtube-embed.ts` compara o host inteiro e só deixa passar id e lista no formato do
+      YouTube (19 testes). *Dependabot:* nenhum alerta aberto.
+      *SonarLint na IDE (17/10):* a regex que resgatava tool call do `failed_generation` do Groq
+      voltava atrás ao **cubo** — medido: `<function=a` + 4.000 espaços = **28 s** numa busca. O
+      texto é do modelo, e o modelo escreve o que o pedido manda: dava para prender a função do
+      servidor até o tempo limite. Virou leitura linear em `lib/ia-resgate.ts` (o mesmo texto com
+      20.000 espaços passa em menos de 50 ms, e o teste vigia isso). Os outros avisos do SonarLint
+      nesse arquivo são de estilo (complexidade, `Number.isNaN`) — o motivo de o Sonar não ter
+      entrado como ferramenta.
 
 ### Lei: termos, privacidade e excluir a conta
 

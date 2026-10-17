@@ -140,6 +140,8 @@ frontend/
 │   ├── captcha.ts            # Turnstile: ligado pela Site Key + o token no "esqueci a senha" (puro)
 │   ├── site.ts               # Endereço do site + rotas públicas: o proxy e o sitemap leem a MESMA lista (puro)
 │   ├── cota-ia.ts            # Limite diário por pessoa (Neuro e transcrição): teto da env, falha aberta sem o SQL
+│   ├── ia-resgate.ts         # Tool calls no `failed_generation` do Groq — leitura LINEAR (a regex era ReDoS) (puro)
+│   ├── youtube-embed.ts      # Link colado → src do embed: host exato, id e lista pelo formato (puro)
 │   ├── excluir-conta.ts      # Palavra de confirmação + mesma origem (CSRF); o teste vigia o cascade dos SQLs (puro)
 │   ├── termos.ts             # Termos + privacidade em pt/en. Mudou dado ou fornecedor → muda o texto e a data (puro)
 │   ├── audio-transcricao.ts  # O que a transcrição aceita (teto, tipo, nome) e a frase de cada recusa (puro)

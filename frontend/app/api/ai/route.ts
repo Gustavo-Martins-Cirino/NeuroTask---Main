@@ -19,6 +19,7 @@ import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia, type Ocorrencia } fro
 import { FOLGA_DE_DUPLICATA_MS, FOLGA_MINIMA_MS, conflitoDoBloco, duplicataNaAgenda, janelaDoConflito } from "@/lib/ia-conflito"
 import { createClient } from "@/lib/supabase/server"
 import { consomeCotaDeIa } from "@/lib/cota-ia"
+import { chamadasRecusadas } from "@/lib/ia-resgate"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { planejarDeTrasPraFrente } from "@/lib/backward-plan"
 import { descreveAgora, sufixoDeFuso } from "@/lib/ia-agora"
@@ -958,12 +959,10 @@ async function recoverFailedToolCalls(
   }
   if (!failedGen) return []
 
-  // Formatos vistos: <function=NAME>{...}</function> e <function=NAME({...})</function>
-  const regex = /<function=([a-zA-Z_]+)\s*>?\s*\(?\s*(\{[\s\S]*?\})\s*\)?\s*<\/function>/g
+  // A leitura é linear de propósito (lib/ia-resgate): o texto é do modelo, e a
+  // regex que estava aqui travava 28 s num `<function=a` com 4.000 espaços.
   const feitas: AcaoExecutada[] = []
-  let match: RegExpExecArray | null
-  while ((match = regex.exec(failedGen)) !== null) {
-    const [, name, jsonArgs] = match
+  for (const { nome: name, json: jsonArgs } of chamadasRecusadas(failedGen)) {
     let args: ToolArgs = {}
     try {
       args = JSON.parse(jsonArgs)

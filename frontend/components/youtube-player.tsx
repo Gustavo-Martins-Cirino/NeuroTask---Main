@@ -5,6 +5,7 @@ import { Youtube, Play, Star, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useDicionario } from "@/hooks/use-idioma"
 import { enfatizar } from "@/lib/enfase"
+import { embedDoYoutube } from "@/lib/youtube-embed"
 
 // Player do YouTube EMBUTIDO (embed oficial) — toca vídeo/live direto do
 // YouTube dentro do app, sem copiar/hospedar áudio (respeita direitos autorais;
@@ -14,40 +15,11 @@ import { enfatizar } from "@/lib/enfase"
 
 const STORAGE_KEY = "neurotask:yt-url"
 const FAV_KEY = "neurotask:yt-favorites"
-const EMBED_PARAMS = "autoplay=1&rel=0&modestbranding=1&playsinline=1"
 
 interface Fav {
   id: string
   url: string
   title: string
-}
-
-// Extrai o src do embed a partir de vários formatos de link do YouTube.
-function toEmbedSrc(raw: string): string | null {
-  const url = raw.trim()
-  if (!url) return null
-  let id = ""
-  let list = ""
-  try {
-    const u = new URL(url.startsWith("http") ? url : `https://${url}`)
-    const host = u.hostname.replace(/^www\./, "")
-    if (host === "youtu.be") {
-      id = u.pathname.slice(1)
-    } else if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
-      list = u.searchParams.get("list") || ""
-      if (u.pathname === "/watch") id = u.searchParams.get("v") || ""
-      else if (u.pathname.startsWith("/live/")) id = u.pathname.split("/")[2] || ""
-      else if (u.pathname.startsWith("/embed/")) id = u.pathname.split("/")[2] || ""
-      else if (u.pathname.startsWith("/shorts/")) id = u.pathname.split("/")[2] || ""
-    }
-  } catch {
-    if (/^[\w-]{11}$/.test(url)) id = url
-  }
-  id = id.split(/[&?/]/)[0]
-  if (id && list) return `https://www.youtube.com/embed/${id}?list=${list}&${EMBED_PARAMS}`
-  if (list) return `https://www.youtube.com/embed/videoseries?list=${list}&${EMBED_PARAMS}`
-  if (id) return `https://www.youtube.com/embed/${id}?${EMBED_PARAMS}`
-  return null
 }
 
 export function YouTubePlayer() {
@@ -70,12 +42,12 @@ export function YouTubePlayer() {
     }
   }, [])
 
-  const src = useMemo(() => toEmbedSrc(current), [current])
-  const inputValido = toEmbedSrc(input) !== null
+  const src = useMemo(() => embedDoYoutube(current), [current])
+  const inputValido = embedDoYoutube(input) !== null
   // O link a salvar/favoritar é o do campo (se válido) ou o que está tocando.
-  const linkAlvo = (toEmbedSrc(input) ? input : current).trim()
-  const srcAlvo = toEmbedSrc(linkAlvo)
-  const jaFavoritado = srcAlvo !== null && favs.some((f) => toEmbedSrc(f.url) === srcAlvo)
+  const linkAlvo = (embedDoYoutube(input) ? input : current).trim()
+  const srcAlvo = embedDoYoutube(linkAlvo)
+  const jaFavoritado = srcAlvo !== null && favs.some((f) => embedDoYoutube(f.url) === srcAlvo)
 
   const persistFavs = (next: Fav[]) => {
     setFavs(next)
@@ -84,7 +56,7 @@ export function YouTubePlayer() {
 
   const tocar = (link: string) => {
     const v = link.trim()
-    if (!toEmbedSrc(v)) return
+    if (!embedDoYoutube(v)) return
     setInput(v)
     setCurrent(v)
     localStorage.setItem(STORAGE_KEY, v)
@@ -92,7 +64,7 @@ export function YouTubePlayer() {
 
   const alternarFavorito = async () => {
     if (!srcAlvo) return
-    const existente = favs.find((f) => toEmbedSrc(f.url) === srcAlvo)
+    const existente = favs.find((f) => embedDoYoutube(f.url) === srcAlvo)
     if (existente) {
       persistFavs(favs.filter((f) => f.id !== existente.id))
       return
@@ -141,7 +113,7 @@ export function YouTubePlayer() {
       {favs.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {favs.map((f) => {
-            const ativo = src !== null && toEmbedSrc(f.url) === src
+            const ativo = src !== null && embedDoYoutube(f.url) === src
             return (
               <span
                 key={f.id}
