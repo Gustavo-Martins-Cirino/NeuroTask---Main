@@ -1,11 +1,13 @@
 import type { NextConfig } from 'next'
+import { POLITICA_TRAVADA, politicaCompleta } from './lib/csp'
 
 // Cabeçalhos de segurança em toda resposta. Medido em produção antes deles
 // (08/10): só vinha o HSTS, que a Vercel manda sozinha.
 //
-// A CSP aqui é a parte que não restringe script: quem pode pôr o site num
-// iframe (ninguém — clickjacking), `<base>` e `<object>`. A CSP completa
-// (script-src, connect-src) pede o inventário de hosts do app e fica no ROADMAP.
+// A CSP que TRAVA é a parte que não restringe script: quem pode pôr o site num
+// iframe (ninguém — clickjacking), `<base>`, `<object>` e para onde um
+// formulário pode mandar. A completa (script-src, connect-src...) vai junto em
+// modo só-relatório até provar que não quebra nada — ver lib/csp.ts.
 //
 // Permissions-Policy desliga o que o app não usa e deixa o microfone só para o
 // próprio site (a conversa por voz). Notificação e área de transferência não
@@ -14,7 +16,8 @@ const CABECALHOS = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'X-Frame-Options', value: 'DENY' },
-  { key: 'Content-Security-Policy', value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'" },
+  { key: 'Content-Security-Policy', value: POLITICA_TRAVADA },
+  { key: 'Content-Security-Policy-Report-Only', value: politicaCompleta(process.env.NEXT_PUBLIC_SUPABASE_URL) },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()' },
 ]
 
