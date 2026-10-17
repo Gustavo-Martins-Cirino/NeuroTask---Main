@@ -1099,18 +1099,17 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > **O que falta para divulgar (16/10).** Os itens abaixo continuam com o detalhe; isto é só o
 > mapa de quem faz o quê.
 >
-> **Passos do Gustavo (painel e conta):**
-> 1. Apagar uma conta de verdade: uma descartável (outro e-mail) → Configurações → Excluir
->    minha conta. Conferir que cai na landing e que entrar de novo com ela falha.
-> 2. Verificação em duas etapas no Supabase, na Vercel e no GitHub, e "Network Restrictions" no
->    banco.
-> 3. Tirar a `GEMINI_API_KEY` da Vercel e do `.env.local` e revogar a chave no Google — o app não
->    usa mais o Gemini desde 28/09.
-> 4. Rodar `supabase/foco_xp.sql` e, depois dele, `seguranca_banco.sql` de novo (o segundo
->    tranca a função que o primeiro cria).
-> 5. Ligar o Web Analytics no painel da Vercel (ou escolher o GA4, que muda a política de
->    privacidade).
-> 6. Com domínio próprio: Search Console.
+> **Passos do Gustavo (painel e conta): os seis feitos (17/10).** O que dá para medir de fora
+> foi medido:
+> 1. Apagar uma conta de verdade com uma descartável — feito.
+> 2. Verificação em duas etapas e "Network Restrictions" — feito (não dá para conferir de fora).
+> 3. `GEMINI_API_KEY` revogada — *medido:* o Google responde 401 "API key not valid" para ela.
+>    A linha ainda está no `.env.local`, morta; pode sair.
+> 4. `foco_xp.sql` e `seguranca_banco.sql` de novo — *medido:* `award_focus_xp` existe e a chave
+>    pública recebe 42501 (permissão negada) ao chamá-la.
+> 5. Web Analytics ligado — o script (`/_vercel/insights/script.js`) só passa a existir no
+>    deploy seguinte ao clique; conferir depois dele.
+> 6. Search Console — feito.
 >
 > **No código (Claude):**
 > 1. `robots.txt`, `sitemap.xml` e `llms.txt` — e o proxy liberar os três: hoje os três
@@ -1400,6 +1399,9 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 - [ ] **Auditoria completa.** Depois de tudo acima: o `/security-review` do Claude Code, o
       Security Advisor do Supabase, OWASP ZAP (varredura básica) contra o domínio,
       securityheaders.com e o Mozilla Observatory. O que achar vira item aqui.
+      *Estado do GitHub (medido 17/10):* secret scanning e push protection **ligados**; CodeQL
+      (análise estática do próprio GitHub, grátis em repositório público) e alertas do Dependabot
+      **desligados**. O Docker existe na máquina, então o ZAP roda daqui.
 
 ### Lei: termos, privacidade e excluir a conta
 
@@ -1426,9 +1428,8 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       consulta das chaves estrangeiras para `auth.users` sem cascade nem set null, e ela **voltou
       vazia** — o teste só lê os arquivos, e uma tabela criada pelo painel escaparia dele.
 
-- [ ] **Apagar uma conta de verdade (passo do Gustavo).** Uma conta descartável → Configurações →
-      Excluir minha conta. Conferir que cai na landing com o aviso e que entrar de novo com ela
-      falha. É o único pedaço que ainda não rodou contra o Supabase de verdade.
+- [x] **Apagar uma conta de verdade (passo do Gustavo, 17/10).** Uma conta descartável →
+      Configurações → Excluir minha conta, contra o Supabase de verdade.
 
 ### Ser encontrado: Google, SEO e medição
 
