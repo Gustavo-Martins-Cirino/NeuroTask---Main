@@ -1470,7 +1470,21 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > 4. **A voz da Microsoft estava fora do ar em produção** (403 do serviço para qualquer texto; a
 >    rota respondia 502 até para "Pronto, criei a tarefa."). Ninguém percebeu porque a conversa por
 >    voz cai na voz do navegador quando ela falha. O `msedge-tts` 2.1.0 (13/10) volta a funcionar
->    — atualizado, `pnpm audit` limpo.
+>    — atualizado, `pnpm audit` limpo. *Medido em produção:* 4 de 6 pedidos espaçados; com uma
+>    segunda tentativa na rota, **7 de 10**. Quando falha, falha nas duas — cara de limite por IP
+>    de um serviço que não é oficial (localmente, o segundo pedido seguido levou 429). Se a voz
+>    importar, a saída é um TTS de verdade, pago e com contrato; até lá, a voz do navegador
+>    segura as falhas.
+>
+> **A CSP completa varrida também em produção (17/10)**, onde o CAPTCHA e o Vercel Analytics
+> existem de verdade: as mesmas 13 telas, logado, **zero violações** além do controle positivo.
+>
+> **CodeQL no conjunto estendido (17/10):** os 3 alertas do player foram fechados pelo próprio
+> GitHub depois do conserto. O estendido trouxe 3 `js/user-controlled-bypass` (no
+> `/auth/callback` e no `/reset-password`), **falsos positivos** dispensados com a justificativa
+> escrita no alerta: o `if` só escolhe o caminho (recovery, link ou OAuth), e quem decide é o
+> Supabase no servidor — `verifyOtp` só aceita token válido, `updateUser` só troca a senha com
+> sessão. **Alertas abertos: 0.** O Dependabot também: 0.
 
 - [ ] **Auditoria completa.** Depois de tudo acima: o `/security-review` do Claude Code, o
       Security Advisor do Supabase, OWASP ZAP (varredura básica) contra o domínio,
