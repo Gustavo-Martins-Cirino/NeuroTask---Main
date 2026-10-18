@@ -1119,9 +1119,12 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 >    `supabase/limite_ia.sql` e decidir o plano do Groq (números no item "Rate limit" abaixo).
 > 4. ~~PageSpeed no celular na landing e no `/login`~~ — medido (17/10), números no item
 >    "Testar a velocidade" abaixo.
-> 5. ~~Testar como um usuário estranho e a auditoria completa~~ — feito (17/10). Sobrou para o
->    Gustavo: rodar `faxina_legado.sql`, `limite_ia.sql`, o Security Advisor do Supabase, e daqui
->    a uns dias decidir se a CSP completa vira trava (ver "CSP completa").
+> 5. ~~Testar como um usuário estranho e a auditoria completa~~ — feito (17/10). O Gustavo
+>    rodou `faxina_legado.sql` e `limite_ia.sql` (*conferido de fora:* as sobras e a `ai_consume`
+>    sumiram; o contador conta, barra no teto, separa Neuro de transcrição, recusa leitura direta
+>    e some com a conta). Security Advisor do Supabase: **0 erros, 17 avisos e 1 sugestão** — os
+>    avisos ainda por ler. Falta: os 17 avisos, o PageSpeed real (pagespeed.web.dev) e, daqui a
+>    uns dias, decidir se a CSP completa vira trava (ver "CSP completa").
 
 ### Segurança
 
@@ -1308,7 +1311,8 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > tokens de ferramentas + ~1.100 de prompt + a agenda e o histórico, e uma mensagem que age faz
 > duas ou três idas: **o plano gratuito aguenta umas 30 mensagens por dia somando todo mundo**,
 > e ~1 por minuto. O teto por pessoa impede que uma conta coma o dia das outras; não faz caber
-> mais gente. **Decisão do Gustavo: o plano pago (Developer).** Preço público hoje
+> mais gente. **Decisão (17/10): fica no gratuito por enquanto — é teste.** Quando a
+> divulgação crescer, o caminho é o plano pago (Developer). Preço público hoje
 > (`gpt-oss-120b`): US$ 0,15 por milhão de tokens de entrada e US$ 0,60 de saída — perto de
 > **US$ 0,001 por mensagem**, uns US$ 1 a cada mil. O Whisper turbo sai a US$ 0,04 por hora de
 > áudio. Com o teto de 30/dia, o pior caso de uma conta abusando é ~US$ 0,03 por dia.
