@@ -224,7 +224,7 @@ export default function NotesPage() {
         {/* A cor também aparece aqui, mas só como um fio no topo: um véu sobre a
             área de escrita é onde a cor deixaria de ser etiqueta e começaria a
             disputar com o texto. */}
-        <main
+        <section
           className="relative flex min-h-[55vh] flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-card/30 md:min-h-0"
         >
           {active && tarjaDaNota(active.color) && (
@@ -350,7 +350,7 @@ export default function NotesPage() {
               <p className="text-sm text-muted-foreground">{traducao.notas.selecione}</p>
             </div>
           )}
-        </main>
+        </section>
       </div>
     </div>
   )

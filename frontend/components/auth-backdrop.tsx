@@ -23,8 +23,10 @@ export function AuthBackdrop({ children, className }: { children: React.ReactNod
     >
       <div aria-hidden className="nt-auth-glow" />
       <div aria-hidden className="nt-auth-noise" />
-      {/* z-10: o conteúdo fica acima do brilho e do ruído. */}
-      <div className="relative z-10 flex w-full flex-col items-center">{children}</div>
+      {/* z-10: o conteúdo fica acima do brilho e do ruído. É o <main> das telas de
+          fora do app (landing, entrada, termos): sem ele, leitor de tela não tem
+          para onde pular, e o Lighthouse tirava ponto de acessibilidade. */}
+      <main className="relative z-10 flex w-full flex-col items-center">{children}</main>
     </div>
   )
 }

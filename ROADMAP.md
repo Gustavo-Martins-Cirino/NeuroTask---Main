@@ -1123,8 +1123,8 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 >    rodou `faxina_legado.sql` e `limite_ia.sql` (*conferido de fora:* as sobras e a `ai_consume`
 >    sumiram; o contador conta, barra no teto, separa Neuro de transcrição, recusa leitura direta
 >    e some com a conta). Security Advisor do Supabase: **0 erros, 17 avisos e 1 sugestão** — os
->    avisos ainda por ler. Falta: os 17 avisos, o PageSpeed real (pagespeed.web.dev) e, daqui a
->    uns dias, decidir se a CSP completa vira trava (ver "CSP completa").
+>    avisos ainda por ler. PageSpeed real feito (ver "Testar a velocidade"). Falta: os 17 avisos
+>    e, daqui a uns dias, decidir se a CSP completa vira trava (ver "CSP completa").
 
 ### Segurança
 
@@ -1606,6 +1606,23 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       verdade: rodar o pagespeed.web.dev quando a cota voltar, e os dados de campo (CrUX) só
       existem com visitas. Se o real confirmar, o suspeito é o CSS único de 136 KB, que bloqueia a
       primeira pintura de toda página.
+      *O real (pagespeed.web.dev, Lighthouse 13.5, celular, 17/10 — rodado pelo Gustavo):*
+      | | desempenho | acessib. | boas práticas | SEO | FCP | LCP | TBT | CLS |
+      |---|---|---|---|---|---|---|---|---|
+      | landing | **93** | 98 | 100 | 100 | 0,9 s | 3,0 s | 120 ms | 0 |
+      | `/login` | **93** | 98 | 100 | 100 | 0,9 s | 3,2 s | 40 ms | 0 |
+      Melhor que a simulação daqui, como esperado. O que sobra no desempenho é o LCP (meta: 2,5 s),
+      e o insight principal é o CSS bloqueando a renderização (~600 ms) — a saída candidata é o
+      `inlineCss` do Next, a medir antes de adotar. Os dois pontos de acessibilidade eram a falta de
+      `<main>`: o `AuthBackdrop` passou a ser o `<main>` das telas de fora do app (e a tela de Notas
+      tinha um `<main>` DENTRO do `<main>` do app, virou `<section>`). A categoria nova,
+      "Navegação agêntica" (3/4), acusava um `ai-catalog.json` "inválido" que não existe: o
+      Lighthouse busca `/.well-known/ai-catalog.json`, o proxy mandava para o login com 200, e ele
+      validava a tela de login como catálogo (lido no código do Lighthouse 13.5). `/.well-known/`
+      saiu do proxy — o que não existe dá 404, e a verificação vira "não se aplica". Junto entrou o
+      `/.well-known/security.txt` (RFC 9116: contato para quem achar falha de segurança).
+      **O `Expires` dele vence em 01/10/2027** — renovar antes, senão o arquivo passa a dizer que o
+      contato está velho.
 
 ## Depois — evoluções por escolha
 
