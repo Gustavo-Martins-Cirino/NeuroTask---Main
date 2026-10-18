@@ -29,7 +29,10 @@ function textoDoErroDeCadastro(error: AuthError, t: Dicionario["entrada"]): stri
     case "email_address_invalid":
     case "validation_failed":
       return t.cadastro.erros.emailInvalido
+    // O limite de ENVIO de e-mail é do app inteiro, não de quem tentou: "muitas
+    // tentativas" culpava quem tentou uma vez só. A saída real é o login social.
     case "over_email_send_rate_limit":
+      return t.cadastro.erros.limiteDeEmail
     case "over_request_rate_limit":
       return t.muitasTentativas
     case "signup_disabled":

@@ -340,7 +340,8 @@ export interface Dicionario {
       naoChegou: string
       reenviadoAguarde: (segundos: number) => string
       reenviarLink: string
-      erros: { emailEmUso: string; emailInvalido: string; cadastrosDesativados: string; generico: string }
+      /** `limiteDeEmail`: o Supabase parou de mandar e-mail por um tempo — a pessoa tentou UMA vez. */
+      erros: { emailEmUso: string; emailInvalido: string; cadastrosDesativados: string; limiteDeEmail: string; generico: string }
     }
     senhaNova: {
       novaSenha: string
@@ -1678,6 +1679,8 @@ export const pt: Dicionario = {
         emailEmUso: "Este email já está em uso. Tente fazer login.",
         emailInvalido: "Email inválido. Verifique e tente novamente.",
         cadastrosDesativados: "Os cadastros estão temporariamente desativados.",
+        limiteDeEmail:
+          "Muita gente se cadastrando agora, e o envio do e-mail de confirmação deu uma pausa. Tente de novo daqui a pouco — ou entre com Google ou GitHub, que não dependem de e-mail.",
         generico: "Não foi possível criar a conta. Tente novamente.",
       },
     },
@@ -2939,6 +2942,8 @@ export const en: Dicionario = {
         emailEmUso: "This email is already in use. Try signing in.",
         emailInvalido: "Invalid email. Check it and try again.",
         cadastrosDesativados: "Sign-ups are temporarily disabled.",
+        limiteDeEmail:
+          "Lots of people are signing up right now, and confirmation emails are paused for a bit. Try again shortly — or continue with Google or GitHub, which don't need an email.",
         generico: "Couldn't create the account. Please try again.",
       },
     },
