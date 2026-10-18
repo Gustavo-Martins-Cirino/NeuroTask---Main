@@ -1128,7 +1128,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 
 ### Segurança
 
-- [ ] **Segredos: chave de API, `.env`, senha no código e git sem senha vazada.** *Lido no
+- [x] **Segredos: chave de API, `.env`, senha no código e git sem senha vazada.** *Lido no
       código:* as chaves secretas (`GROQ_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
       `VAPID_PRIVATE_KEY`, `CRON_SECRET`) só aparecem em código de servidor; as `NEXT_PUBLIC_*`
       são as públicas por natureza (URL e chave anon/publishable do Supabase, chave pública do
@@ -1149,7 +1149,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > Vercel, se estiverem lá; e conferir no painel da Vercel que nenhuma variável secreta tem nome
 > começando por `NEXT_PUBLIC_`.
 
-- [ ] **Login de verdade: senha, força bruta, tokens e cookies.** A senha mora no Supabase Auth,
+- [x] **Login de verdade: senha, força bruta, tokens e cookies.** A senha mora no Supabase Auth,
       que guarda hash — conferir que nenhuma tabela nossa guarda senha. Limite de tentativas: as
       taxas do painel do Supabase (Auth → Rate Limits) e um CAPTCHA (Turnstile ou hCaptcha) no
       login, no cadastro e no "esqueci a senha". Senha mínima, confirmação de e-mail ligada,
@@ -1210,7 +1210,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > quando algo parece suspeito. **Para desligar numa emergência:** Supabase → Authentication →
 > Attack Protection → "Enable Captcha protection"; o login volta como antes na hora.
 
-- [ ] **Cada usuário só vê o que é dele (IDOR, "não confiar no ID da tela", banco trancado).**
+- [x] **Cada usuário só vê o que é dele (IDOR, "não confiar no ID da tela", banco trancado).**
       RLS ligado em TODA tabela do `public`, com política por `auth.uid()`, e `with check` nos
       inserts — um `user_id` que vem do cliente não pode decidir nada. Conferir no **painel**
       (Advisors → Security), e não só nos SQLs: eles são rodados à mão, e o que vale é o que está
@@ -1250,7 +1250,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > de quem ESTÁ logado: o teste com duas contas, e a conferência rápida do Gustavo de que trocar
 > o avatar, equipar item, aceitar amizade e ganhar XP continuam funcionando.
 
-- [ ] **Regras e exposição do Supabase Storage, e o upload.** O app não usa Firebase; o
+- [x] **Regras e exposição do Supabase Storage, e o upload.** O app não usa Firebase; o
       armazenamento é o Storage do Supabase. *Lido no código:* o bucket de fotos é público
       (`getPublicUrl` em `lib/avatar.ts`), e o recorte quadrado com reconversão para JPEG
       (`lib/foto-perfil.ts`) acontece **no navegador** — quem chama a API direto pula isso. Então
@@ -1261,12 +1261,16 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       no `foto_perfil.sql`; a **listagem estava aberta** para quem não está logado — fechada no
       `seguranca_banco.sql` (aplicado em 09/10: o bucket lista 0 itens).
 
-- [ ] **Admin protegido.** `/admin` devolve 404 para quem não é `OWNER_EMAIL`. Conferir que a
+- [x] **Admin protegido.** `/admin` devolve 404 para quem não é `OWNER_EMAIL`. Conferir que a
       comparação é com o e-mail confirmado da sessão (e não com algo que a pessoa edita, como o
       `user_metadata`), que a falta do `OWNER_EMAIL` na Vercel não vira "todo mundo é dono", e que
       as consultas com chave de serviço só rodam depois do gate.
+      *Conferido (17/10):* o portão compara com `user.email` da sessão verificada no servidor, e
+      sem `OWNER_EMAIL` dá 404 para todo mundo. Em produção, uma conta comum com
+      `user_metadata` dizendo ser o dono recebeu **404** em `/admin` e `owner: false` no painel
+      de erros.
 
-- [ ] **Validar e limpar tudo no servidor (front e back), SQL injection e XSS.** O banco é
+- [x] **Validar e limpar tudo no servidor (front e back), SQL injection e XSS.** O banco é
       acessado pelo supabase-js, que parametriza. *Lido no código:* nenhum SQL montado com texto
       de quem usa (o único `execute format` é de migração, com `%I`), e os `.or()` com
       interpolação recebem só datas geradas no servidor — a regra a manter é nunca pôr texto do
@@ -1284,7 +1288,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > carregamento, que é o único lugar onde a nota vira HTML vivo — a lista tira as tags por regex.
 > Dependências novas: `dompurify` e, só para os testes, `jsdom`.
 
-- [ ] **Rate limit e envio repetido.** Login: item acima. *Lido no código:* `/api/errors`
+- [x] **Rate limit e envio repetido.** Login: item acima. *Lido no código:* `/api/errors`
       aceita anônimo de propósito, com corpo limitado e teto por IP; `/api/ai/transcribe` pede
       login e tem teto de tamanho, mas gasta a cota do Groq — falta um teto por usuário;
       `/api/ai/tts` usa a voz do Edge (não o Groq) e já corta o texto em 900 caracteres.
@@ -1317,8 +1321,13 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > **US$ 0,001 por mensagem**, uns US$ 1 a cada mil. O Whisper turbo sai a US$ 0,04 por hora de
 > áudio. Com o teto de 30/dia, o pior caso de uma conta abusando é ~US$ 0,03 por dia.
 
-- [ ] **Erros sem detalhes.** Nada de pilha, SQL ou mensagem crua do Supabase na tela. Falta
+- [x] **Erros sem detalhes.** Nada de pilha, SQL ou mensagem crua do Supabase na tela. Falta
       conferir as respostas de cada rota de `/api` por esse critério.
+      *Conferido (17/10)* no teste de corpos ruins: toda rota de `/api` respondeu com frase do
+      dicionário, motivo de lista fechada (`{"motivo":"confirmacao"}`) ou corpo vazio — nenhuma
+      pilha, SQL ou mensagem do Supabase. Exceção consciente, já comentada no código: telas de
+      Configurações mostram a mensagem do PostgREST para código de erro desconhecido, porque
+      inventar texto esconderia a causa.
 
 > **O áudio do microfone ganhou teto, e o erro do Groq saiu do chat (09/10).**
 > `/api/ai/transcribe` repassava ao Whisper qualquer arquivo, de qualquer tamanho, com a chave
@@ -1381,7 +1390,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > site e a câmera não; uma página de fora que tenta pôr o `/login` num iframe recebe a tela de
 > erro do Chrome.
 
-- [ ] **SSRF e arquivos sensíveis expostos.** `/api/yt-title` busca só no youtube.com (host
+- [x] **SSRF e arquivos sensíveis expostos.** `/api/yt-title` busca só no youtube.com (host
       fixo), o que está certo. Arquivos: nada sensível em `public/`, source maps de produção
       desligados, `.env` nunca servido.
 
@@ -1393,7 +1402,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > vídeo); agora pede login e devolve 401 com `title: null`, que o player já tratava — o favorito
 > fica com o link como nome.
 
-- [ ] **Dependências vulneráveis: manter em zero.** `pnpm audit` limpo em 09/10, produção e
+- [x] **Dependências vulneráveis: manter em zero.** `pnpm audit` limpo em 09/10, produção e
       desenvolvimento (notas abaixo). O que falta é não deixar voltar: Dependabot (ou Renovate) no
       GitHub avisando quando sair correção, e o `pnpm audit` antes de cada divulgação grande.
 
@@ -1419,12 +1428,12 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > A suíte passou inteira no vitest 4 sem mudar um teste (1364), e o puppeteer 25 abre o Chrome
 > instalado com `headless: "new"` e com `true`. `pnpm audit`: "No known vulnerabilities found".
 
-- [ ] **Contas com verificação em duas etapas (passo do Gustavo).** Supabase, Vercel e GitHub:
+- [x] **Contas com verificação em duas etapas (passo do Gustavo).** Supabase, Vercel e GitHub:
       quem entra numa delas entra no app inteiro — e o repositório é **público**. Junto, a senha
       do banco: a conexão direta ao Postgres fica aberta na internet por padrão, e o Supabase tem
       "Network Restrictions" para limitar por IP.
 
-- [ ] **Criptografia dos dados.** Em repouso e em trânsito é da plataforma: o Supabase cifra o
+- [x] **Criptografia dos dados.** Em repouso e em trânsito é da plataforma: o Supabase cifra o
       disco (AES-256) e a conexão (TLS), e a Vercel serve só HTTPS. Cifrar campo a campo no
       servidor (notas, tarefas) quebraria a busca e a Neuro, que precisam ler o texto. Decisão
       registrada: não agora; rever se o app passar a guardar algo mais sensível que tarefa e nota.
@@ -1443,7 +1452,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > funções do servidor. Achado lendo os SQLs, não explorado; o detalhe ficou fora do repositório
 > (que é público) até o SQL estar aplicado no banco.
 
-- [ ] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
+- [x] **Testar como um usuário estranho.** Sem conta: abrir cada rota e cada `/api/*`. Com uma
       conta nova: tentar ler o que é de outra pela API direta, trocar ids e tokens nas URLs
       (`/agenda/<token>` inventado), mandar corpo gigante, vazio e malformado para cada rota.
 
@@ -1591,7 +1600,7 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
       deixa um erro no console. Ligar é um clique no painel (passo do Gustavo); se a escolha for
       o GA4, tirar o componente.
 
-- [ ] **Testar a velocidade do site.** PageSpeed Insights (celular) na landing e no `/login`, que
+- [x] **Testar a velocidade do site.** PageSpeed Insights (celular) na landing e no `/login`, que
       é o que um estranho abre primeiro, e os Core Web Vitals reais depois do lançamento (Search
       Console ou Vercel Speed Insights). O dashboard já foi medido (CLS) — a landing, nunca.
       *Medido (17/10)* com o Lighthouse 12.8 do PageSpeed (perfil celular, simulado), rodado daqui
