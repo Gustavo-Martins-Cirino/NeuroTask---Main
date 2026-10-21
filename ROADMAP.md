@@ -33,6 +33,27 @@ chega é o pior resultado possível.
 O que sobrou não é código, é **verificação** — e é a parte que não dá para fazer lendo o
 repositório:
 
+> **Música do YouTube no Foco virou reprodutor de verdade (21/10).** Pedido do Gustavo, com uma
+> reclamação de quem testa: "não consigo parar a música". As causas eram três: o player era um
+> `<iframe>` solto, então a pausa só existia DENTRO do vídeo; o vídeo ficava num painel fechado; e
+> minimizar o Foco deixava a música tocando sem nenhum botão à vista. Somava-se o último link
+> guardado tocando SOZINHO a cada vez que o Foco abria (`autoplay=1` no link salvo).
+> Agora: uma **lista** (miniatura, título, barrinhas de "tocando"), tocada em sequência e passando
+> sozinha para a próxima; um **mini reprodutor** discreto (voltar, pausar/continuar, próxima) no
+> canto do Foco e na ilha minimizada; nada toca sem um toque, e a última música aparece para
+> continuar de onde parou. O app manda no player pela **API oficial do YouTube**, carregada só no
+> primeiro play e pelo domínio `youtube-nocookie`. Os antigos favoritos viraram a lista, sem
+> migração (mesma chave, mesmo formato). Lógica pura em `lib/fila-musica.ts` (15 testes).
+> *Medido com o YouTube de verdade:* tocar, **pausar pela ilha e o `<video>` dentro do iframe
+> parar** (o tempo congelou), continuar, próxima/anterior, a passagem automática no fim de um vídeo
+> de 19 s, vídeo que não toca sendo pulado com aviso, a mesma música em outro formato não
+> duplicando, recarregar sem tocar nada — e, no Foco de verdade (computador e celular), o mini
+> sem encostar na barra de ferramentas e fechar o Foco parando a música. Dois defeitos achados no
+> caminho: sem o parâmetro `origin`, o player do nocookie tocava mas **nunca avisava o app** que
+> estava tocando ou pausado; e apertar pausar durante o carregamento mandava tocar de novo (agora
+> cancela). Detalhe de ambiente: o `hosts` desta máquina bloqueia `www.youtube.com`, e a bancada
+> só rodou resolvendo o nome pelo DNS dentro do navegador de teste.
+
 > **As telas vazias foram abertas (28/08) — a metade que dava para fazer daqui.** As sete
 > telas protegidas foram montadas fora do `/app` e carregadas com o banco respondendo VAZIO
 > em tudo (nenhuma tarefa, bloco, nota, item comprado, amigo; `single` devolvendo PGRST116).

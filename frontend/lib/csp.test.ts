@@ -16,6 +16,8 @@ describe("politicaCompleta", () => {
 
   it("o que o app usa de fora tem lugar: CAPTCHA, YouTube, feriados, 3D", () => {
     expect(diretiva(p, "script-src")).toContain("https://challenges.cloudflare.com")
+    expect(diretiva(p, "script-src")).toContain("https://www.youtube.com")
+    expect(diretiva(p, "img-src")).toContain("https://i.ytimg.com")
     expect(diretiva(p, "frame-src")).toEqual(expect.arrayContaining(["https://www.youtube.com", "https://challenges.cloudflare.com"]))
     expect(diretiva(p, "connect-src")).toContain("https://date.nager.at")
     expect(diretiva(p, "script-src")).toContain("'wasm-unsafe-eval'")

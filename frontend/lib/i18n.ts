@@ -233,14 +233,25 @@ export interface Dicionario {
       continuar: string
       parar: string
     }
+    /** O reprodutor de músicas do YouTube (components/musica-youtube.tsx). */
     youtube: {
       placeholder: string
-      tocar: string
-      favoritar: string
-      removerDosFavoritos: string
-      remover: string
+      adicionar: string
       /** Tem ênfase (§): passa por `enfatizar`. */
       ajuda: string
+      suaLista: (quantas: number) => string
+      /** aria-label de cada música da lista. */
+      tocarFaixa: (titulo: string) => string
+      remover: string
+      tocandoAgora: string
+      continuar: string
+      pausar: string
+      proxima: string
+      anterior: string
+      abrirLista: string
+      jaNaLista: string
+      naoToca: string
+      semPlayer: string
     }
   }
   /**
@@ -1566,13 +1577,22 @@ export const pt: Dicionario = {
       parar: "Parar",
     },
     youtube: {
-      placeholder: "Cole o link do YouTube (vídeo ou live)…",
-      tocar: "Tocar",
-      favoritar: "Favoritar este link",
-      removerDosFavoritos: "Remover dos favoritos",
-      remover: "Remover",
+      placeholder: "Cole o link de uma música do YouTube…",
+      adicionar: "Adicionar",
       ajuda:
-        "Cole um link, dê §Tocar§ e clique na §★§ pra favoritar. O áudio continua enquanto você trabalha — é só deixar o Foco §minimizado§.",
+        "Cole um link e toque em §Adicionar§: a música entra na sua lista e começa a tocar. Ela continua com o Foco §minimizado§, e o mini reprodutor pausa e pula.",
+      suaLista: (quantas) => (quantas === 1 ? "Sua lista · 1 música" : `Sua lista · ${quantas} músicas`),
+      tocarFaixa: (titulo) => `Tocar ${titulo}`,
+      remover: "Remover da lista",
+      tocandoAgora: "Tocando agora",
+      continuar: "Continuar",
+      pausar: "Pausar",
+      proxima: "Próxima",
+      anterior: "Anterior",
+      abrirLista: "Abrir a lista de músicas",
+      jaNaLista: "Essa música já está na sua lista.",
+      naoToca: "Esse vídeo não pode tocar fora do YouTube.",
+      semPlayer: "Não deu para carregar o player do YouTube. Confira a conexão e tente de novo.",
     },
   },
   landing: {
@@ -2829,13 +2849,22 @@ export const en: Dicionario = {
       parar: "Stop",
     },
     youtube: {
-      placeholder: "Paste a YouTube link (video or live)…",
-      tocar: "Play",
-      favoritar: "Add this link to favorites",
-      removerDosFavoritos: "Remove from favorites",
-      remover: "Remove",
+      placeholder: "Paste a YouTube song link…",
+      adicionar: "Add",
       ajuda:
-        "Paste a link, hit §Play§ and click the §★§ to save it. The audio keeps playing while you work — just leave Focus §minimized§.",
+        "Paste a link and tap §Add§: the song joins your list and starts playing. It keeps going with Focus §minimized§, and the mini player pauses and skips.",
+      suaLista: (quantas) => (quantas === 1 ? "Your list · 1 song" : `Your list · ${quantas} songs`),
+      tocarFaixa: (titulo) => `Play ${titulo}`,
+      remover: "Remove from list",
+      tocandoAgora: "Now playing",
+      continuar: "Resume",
+      pausar: "Pause",
+      proxima: "Next",
+      anterior: "Previous",
+      abrirLista: "Open the song list",
+      jaNaLista: "That song is already in your list.",
+      naoToca: "This video can't play outside YouTube.",
+      semPlayer: "Couldn't load the YouTube player. Check your connection and try again.",
     },
   },
   landing: {

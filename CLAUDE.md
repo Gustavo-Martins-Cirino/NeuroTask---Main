@@ -49,6 +49,7 @@ frontend/
 │   ├── confetti.tsx          # Confete ao concluir tarefas
 │   ├── focus.tsx             # Modo Foco (timer + minimizar p/ relógio flutuante + painéis)
 │   ├── sound-mixer.tsx       # Mixer: seções Sons/Músicas/Foco (ver public/sounds/README.md)
+│   ├── musica-youtube.tsx    # Reprodutor do YouTube no Foco: lista + mini reprodutor (API oficial do player)
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
 │   ├── robot-mascot.tsx      # Robozinho SVG animado — DESMONTADO (a conversa ao vivo virou transcrição)
@@ -145,7 +146,8 @@ frontend/
 │   ├── ia-entrada.ts         # Tetos do que a Neuro aceita: corpo, nº de mensagens, tamanho, fuso (puro)
 │   ├── texto-da-voz.ts       # Texto → SSML da voz: tipo conferido, cortado e ESCAPADO (`&` emudecia a fala) (puro)
 │   ├── csp.ts                # As duas CSP: a que trava e a completa em só-relatório (+ leitor dos relatórios) (puro)
-│   ├── youtube-embed.ts      # Link colado → src do embed: host exato, id e lista pelo formato (puro)
+│   ├── youtube-embed.ts      # Link colado → ids (vídeo/lista) e src do embed: host exato, formato conferido (puro)
+│   ├── fila-musica.ts        # A lista de músicas do Foco: guardar, não repetir, próxima/anterior, de onde continuar (puro)
 │   ├── excluir-conta.ts      # Palavra de confirmação + mesma origem (CSRF); o teste vigia o cascade dos SQLs (puro)
 │   ├── termos.ts             # Termos + privacidade em pt/en. Mudou dado ou fornecedor → muda o texto e a data (puro)
 │   ├── audio-transcricao.ts  # O que a transcrição aceita (teto, tipo, nome) e a frase de cada recusa (puro)
@@ -265,6 +267,15 @@ limite diário do provedor (+ `x-neuro-limite: pessoal`) — chat e voz já sabe
 `focus.tsx` (montado global no AppShell). Timer, ambientes visuais, **minimizar** para um relógio
 flutuante (continua contando enquanto navega), painéis de **Sons** (mixer) e **Ambiente** que fecham
 ao clicar fora. Mixer com seções **Sons** (loop) · **Músicas** (crossfade, exclusivas) · **Foco** (ruído/binaural).
+
+**Música do YouTube** (`components/musica-youtube.tsx`): uma **lista** (miniatura, título, "tocando"),
+e o app manda no player pela **API oficial do YouTube** — carregada só no primeiro play, pelo domínio
+`youtube-nocookie` e com `origin` (sem ele, o player tocava mas nunca avisava o app que estava tocando ou
+pausado). Toca seguindo a lista; ao acabar, passa para a próxima; o que o YouTube não deixa tocar fora
+dele é pulado com aviso. Um **mini reprodutor** (voltar, pausar/continuar, próxima) fica no canto do Foco
+e na ilha minimizada — era a falta dele que gerava o "não consigo parar a música". **Nada toca sozinho**:
+a última música aparece para continuar de onde parou. Minimizar mantém o som; fechar o Foco para. A lista
+mora no localStorage, na chave dos antigos favoritos (`lib/fila-musica.ts`).
 
 **Fim do timer toca um sino discreto** (o par Lá5→Mi6 batendo duas vezes, sintetizado,
 `hooks/use-sino-foco`), igual na tela cheia e no relógio minimizado — os dois leem o mesmo timer

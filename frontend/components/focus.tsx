@@ -9,7 +9,7 @@ import { awardFocusXp, awardXp, taskXpAmount } from "@/lib/gamification"
 import { MINUTOS_PARA_DOBRAR, MINUTOS_POR_BLOCO, XP_POR_BLOCO, bonusDaTarefa, segundosFocados, xpAPagar } from "@/lib/foco-pontos"
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { SoundMixer } from "@/components/sound-mixer"
-import { YouTubePlayer } from "@/components/youtube-player"
+import { MiniReprodutor, MusicaYoutubeProvider, PainelMusica } from "@/components/musica-youtube"
 import { NumeroRolante } from "@/components/numero-rolante"
 import type { Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -486,6 +486,9 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
+      {/* A música do YouTube vale para a tela do Foco E para a ilha minimizada:
+          os dois leem o mesmo player. Fechar o Foco (open=false) para a música. */}
+      <MusicaYoutubeProvider ativo={open}>
       {/* Modo Foco */}
       <AnimatePresence>
         {open && (
@@ -587,6 +590,15 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               </button>
             )}
 
+            {/* Mini reprodutor: com música no player e o painel do YouTube
+                fechado. Tocar na capa abre a lista. */}
+            {panel !== "youtube" && (
+              <MiniReprodutor
+                onAbrirLista={() => setPanel("youtube")}
+                className={cn("absolute bottom-6 left-4 rounded-2xl border py-1.5 pl-1.5 pr-1 shadow-lg sm:left-6", panelCls)}
+              />
+            )}
+
             {/* Toolbar discreta */}
             <div ref={toolbarRef} className="absolute bottom-6 right-6 flex flex-col items-end gap-3">
               {/* Painel Ambiente */}
@@ -632,9 +644,9 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.mixerDeSons}</p>
                 <SoundMixer />
               </div>
-              <div className={cn("w-[min(92vw,640px)] rounded-2xl border p-4 shadow-xl", panelCls, panel === "youtube" ? "block" : "hidden")}>
+              <div className={cn("max-h-[calc(100dvh-7rem)] w-[min(92vw,640px)] overflow-y-auto rounded-2xl border p-4 shadow-xl", panelCls, panel === "youtube" ? "block" : "hidden")}>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.musicaDoYoutube}</p>
-                <YouTubePlayer />
+                <PainelMusica />
               </div>
 
               <div className="flex items-center gap-2 self-end">
@@ -656,13 +668,17 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
       {/* Timer minimizado — discreto, permite navegar pela plataforma */}
       <AnimatePresence>
         {open && minimized && (
-          <motion.button
+          <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 12 }}
+            className="fixed bottom-20 right-4 z-[110] overflow-hidden rounded-2xl border border-border/50 bg-card/90 shadow-lg backdrop-blur-xl md:bottom-6 md:right-6"
+          >
+          <button
+            type="button"
             onClick={() => setMinimized(false)}
             aria-label={textos.restaurar}
-            className="fixed bottom-20 right-4 z-[110] flex items-center gap-3 overflow-hidden rounded-2xl border border-border/50 bg-card/90 px-4 py-3 shadow-lg backdrop-blur-xl transition-transform hover:scale-[1.03] md:bottom-6 md:right-6"
+            className="relative flex w-full items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/40"
           >
             <span className="relative flex h-2.5 w-2.5 shrink-0">
               {running && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />}
@@ -684,9 +700,18 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                 />
               </span>
             )}
-          </motion.button>
+          </button>
+          {/* Com música tocando, a ilha ganha o mini reprodutor: pausar sem
+              precisar voltar ao Foco — o que faltava nas reclamações. */}
+          <MiniReprodutor
+            compacto
+            onAbrirLista={() => { setMinimized(false); setPanel("youtube") }}
+            className="border-t border-border/40 px-2 py-1.5 text-foreground"
+          />
+          </motion.div>
         )}
       </AnimatePresence>
+      </MusicaYoutubeProvider>
     </FocusContext.Provider>
   )
 }

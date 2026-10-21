@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { PARAMETROS_DO_EMBED, embedDoYoutube } from "./youtube-embed"
+import { PARAMETROS_DO_EMBED, embedDoYoutube, idsDoYoutube } from "./youtube-embed"
 
 const ID = "jfKfPfyJRdk"
 const so = (id: string) => `https://www.youtube.com/embed/${id}?${PARAMETROS_DO_EMBED}`
@@ -64,6 +64,20 @@ describe("embedDoYoutube: o que não pode virar src de iframe", () => {
   it("texto vazio ou qualquer coisa", () => {
     for (const lixo of ["", "   ", "olá mundo", "https://www.youtube.com/", "https://www.youtube.com/@canal"]) {
       expect(embedDoYoutube(lixo), lixo).toBeNull()
+    }
+  })
+})
+
+describe("idsDoYoutube: o que a API do player recebe", () => {
+  it("vídeo, lista, e os dois juntos", () => {
+    expect(idsDoYoutube(`https://youtu.be/${ID}`)).toEqual({ video: ID, lista: null })
+    expect(idsDoYoutube("https://www.youtube.com/playlist?list=PLabc_-123")).toEqual({ video: null, lista: "PLabc_-123" })
+    expect(idsDoYoutube(`https://www.youtube.com/watch?v=${ID}&list=PLabc_-123`)).toEqual({ video: ID, lista: "PLabc_-123" })
+  })
+
+  it("o que não é do YouTube, ou não tem nada para tocar, é null", () => {
+    for (const ruim of ["", "javascript:alert(1)", `https://evilyoutube.com/watch?v=${ID}`, "https://www.youtube.com/@canal"]) {
+      expect(idsDoYoutube(ruim), ruim).toBeNull()
     }
   })
 })

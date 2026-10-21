@@ -34,12 +34,14 @@ export function politicaCompleta(supabaseUrl: string | undefined): string {
 
   const diretivas: Record<string, string[]> = {
     "default-src": ["'self'"],
-    // Cloudflare: o widget do Turnstile. wasm-unsafe-eval: o decodificador Draco
-    // dos modelos 3D roda em WebAssembly.
-    "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://challenges.cloudflare.com"],
+    // Cloudflare: o widget do Turnstile. YouTube: a API do player de músicas do
+    // Foco (carregada só quando alguém toca). wasm-unsafe-eval: o decodificador
+    // Draco dos modelos 3D roda em WebAssembly.
+    "script-src": ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", "https://challenges.cloudflare.com", "https://www.youtube.com"],
     "style-src": ["'self'", "'unsafe-inline'"],
     // Fotos: do Storage (enviadas) e da conta do Google/GitHub (login social).
-    "img-src": ["'self'", "data:", "blob:", supabase, "https://lh3.googleusercontent.com", "https://avatars.githubusercontent.com"],
+    // i.ytimg.com: as capas da lista de músicas do Foco.
+    "img-src": ["'self'", "data:", "blob:", supabase, "https://lh3.googleusercontent.com", "https://avatars.githubusercontent.com", "https://i.ytimg.com"],
     "font-src": ["'self'", "data:"],
     // Supabase (REST, Auth e Realtime por websocket), feriados do calendário,
     // CAPTCHA e o decodificador Draco que o drei busca no gstatic.

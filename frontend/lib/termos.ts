@@ -43,7 +43,7 @@ export interface DocumentoLegal {
 export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
   pt: {
     titulo: "Termos de uso e privacidade",
-    atualizado: "Última atualização: 17 de outubro de 2026",
+    atualizado: "Última atualização: 21 de outubro de 2026",
     intro:
       "Estas são as regras de uso do NeuroTask e o que acontece com os seus dados. Escrevemos em linguagem direta de propósito. Ao criar uma conta, você concorda com as duas partes.",
     voltar: "Voltar ao início",
@@ -225,7 +225,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
                 "§Cloudflare§ — o CAPTCHA do login, do cadastro e da troca de senha.",
                 "§Google e GitHub§ — só se você entrar com a conta deles.",
                 "§Google§ — na conversa por voz ao vivo, quem reconhece a fala é o próprio navegador; no Chrome, pelo serviço de voz do Google.",
-                "§YouTube§ — só se você usar o player de música do Modo Foco, que carrega o vídeo direto do YouTube.",
+                "§YouTube§ — só se você usar o player de música do Modo Foco, que carrega o vídeo, o player e as capas direto do YouTube (pelo domínio youtube-nocookie, que guarda menos dados de quem assiste).",
               ],
               "Seus amigos veem apenas o que você liberar nas Configurações. Fora isso, só compartilhamos dados se a lei exigir.",
             ],
@@ -261,7 +261,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
             id: "navegador",
             titulo: "9. Cookies e armazenamento no navegador",
             blocos: [
-              "Usamos um cookie essencial, o da sessão de login, sem o qual não há como você entrar. No armazenamento do navegador ficam as suas preferências (tema, região, último jeito de entrar), o histórico das conversas com a Neuro e o estado do Modo Foco. Não usamos cookies de publicidade nem de rastreamento.",
+              "Usamos um cookie essencial, o da sessão de login, sem o qual não há como você entrar. No armazenamento do navegador ficam as suas preferências (tema, região, último jeito de entrar), o histórico das conversas com a Neuro, o estado do Modo Foco e a sua lista de músicas do YouTube. Não usamos cookies de publicidade nem de rastreamento.",
             ],
           },
           {
@@ -291,7 +291,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
   },
   en: {
     titulo: "Terms of use and privacy",
-    atualizado: "Last updated: October 17, 2026",
+    atualizado: "Last updated: October 21, 2026",
     intro:
       "These are the rules for using NeuroTask and what happens to your data. We wrote them in plain language on purpose. By creating an account, you agree to both parts.",
     voltar: "Back to home",
@@ -473,7 +473,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
                 "§Cloudflare§ — the CAPTCHA on sign-in, sign-up and password reset.",
                 "§Google and GitHub§ — only if you sign in with their account.",
                 "§Google§ — in the live voice conversation, speech is recognized by your browser itself; in Chrome, by Google's speech service.",
-                "§YouTube§ — only if you use the Focus Mode music player, which loads the video straight from YouTube.",
+                "§YouTube§ — only if you use the Focus Mode music player, which loads the video, the player and the covers straight from YouTube (through the youtube-nocookie domain, which keeps less data about viewers).",
               ],
               "Your friends only see what you allow in Settings. Other than that, we only share data when the law requires it.",
             ],
@@ -509,7 +509,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
             id: "navegador",
             titulo: "9. Cookies and browser storage",
             blocos: [
-              "We use one essential cookie, the sign-in session, without which you couldn't sign in. Your browser's storage keeps your preferences (theme, region, last sign-in method), your conversation history with Neuro and the Focus Mode state. We don't use advertising or tracking cookies.",
+              "We use one essential cookie, the sign-in session, without which you couldn't sign in. Your browser's storage keeps your preferences (theme, region, last sign-in method), your conversation history with Neuro, the Focus Mode state and your YouTube song list. We don't use advertising or tracking cookies.",
             ],
           },
           {
