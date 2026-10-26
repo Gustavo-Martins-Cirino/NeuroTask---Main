@@ -141,7 +141,7 @@ frontend/
 │   ├── regra-senha.ts        # Mínimo 8, letra e número — a MESMA do Supabase; requisito a requisito (puro)
 │   ├── captcha.ts            # Turnstile: ligado pela Site Key + o token no "esqueci a senha" (puro)
 │   ├── site.ts               # Endereço do site + rotas públicas: o proxy e o sitemap leem a MESMA lista (puro)
-│   ├── cota-ia.ts            # Limite diário por pessoa (Neuro e transcrição): teto da env, falha aberta sem o SQL
+│   ├── cota-ia.ts            # Cota da Neuro por nível (5 +1/nível, teto da env) + 3/min; falha aberta sem o SQL
 │   ├── ia-resgate.ts         # Tool calls no `failed_generation` do Groq — leitura LINEAR (a regex era ReDoS) (puro)
 │   ├── ia-entrada.ts         # Tetos do que a Neuro aceita: corpo, nº de mensagens, tamanho, fuso (puro)
 │   ├── texto-da-voz.ts       # Texto → SSML da voz: tipo conferido, cortado e ESCAPADO (`&` emudecia a fala) (puro)
@@ -242,10 +242,13 @@ Rota `app/api/ai/route.ts` (Node runtime). **Um provedor só: Groq** (`GROQ_API_
 e ela saiu em 28/09: bastava um typo no nome da env para o app inteiro rodar em outro modelo
 **sem ferramentas**, calado. Sem reserva, o limite de cota é uma resposta com cabeçalho
 (`x-neuro-estado: limite`), e a frase da espera sai lida do próprio 429.
-**Teto por pessoa** (`lib/cota-ia.ts` + `supabase/limite_ia.sql`): a cota do Groq é uma só para
-o app inteiro, então cada pessoa tem N mensagens e N transcrições por dia (env
-`NEURO_LIMITE_DIARIO`/`TRANSCRICAO_LIMITE_DIARIO`, padrão 30/40). Batido, sai o MESMO sinal do
-limite diário do provedor (+ `x-neuro-limite: pessoal`) — chat e voz já sabem dizê-lo.
+**Cota por pessoa que cresce com o nível** (`lib/cota-ia.ts` + `supabase/limite_ia.sql`): a cota do
+Groq é uma só para o app inteiro (no gratuito, ~28 mensagens/dia somando todos), então a Neuro dá
+**5 mensagens/dia no nível 1, +1 por nível**, até o teto `NEURO_LIMITE_DIARIO` (padrão 20), e no
+máximo **3 por minuto**; transcrição tem teto fixo (`TRANSCRICAO_LIMITE_DIARIO`, padrão 40). Não é
+trava por nível de propósito: 46 de 48 pessoas estão no nível 1, e a Neuro é o "uau" do app. Batido,
+sai o sinal de limite com a marca **`pessoal`** (`lib/ia-limite`), e chat e voz dizem "suas
+mensagens de hoje acabaram — subir de nível libera mais", não "a IA acabou".
 
 - **Ferramentas** (tool-calling estilo OpenAI): criar/listar/editar/excluir tarefas, blocos de
   tempo e notas — a IA age de verdade no app.

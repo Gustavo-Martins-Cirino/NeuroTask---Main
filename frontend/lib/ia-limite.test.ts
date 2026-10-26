@@ -296,3 +296,17 @@ describe("ninguém escreve o sentinela à mão", () => {
     }
   })
 })
+
+describe("o limite da PESSOA atravessa a marca", () => {
+  it("ida e volta com a marca de pessoal, no dia e no minuto", () => {
+    const dia = { segundos: null, porDia: true, origem: null, pessoal: true as const }
+    const minuto = { segundos: 38, porDia: false, origem: null, pessoal: true as const }
+    expect(leMarcaDeLimite(marcaDeLimite(dia))).toEqual(dia)
+    expect(leMarcaDeLimite(marcaDeLimite(minuto))).toEqual(minuto)
+  })
+
+  it("o limite do provedor continua sem a marca (e a marca antiga, de 4 campos, segue lendo igual)", () => {
+    expect(leMarcaDeLimite(marcaDeLimite({ segundos: 8, porDia: false, origem: "8" }))).not.toHaveProperty("pessoal")
+    expect(leMarcaDeLimite("__RATE_LIMIT__||dia|")).toEqual({ segundos: null, porDia: true, origem: null })
+  })
+})

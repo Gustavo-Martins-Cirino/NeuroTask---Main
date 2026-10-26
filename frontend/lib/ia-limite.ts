@@ -26,6 +26,13 @@ export interface EsperaDoLimite {
    * origem ao lado do traduzido, a tradução se audita sem abrir log.
    */
   origem: string | null
+  /**
+   * O limite é da PESSOA (lib/cota-ia: a cota que cresce com o nível, ou o teto
+   * por minuto), e não do provedor. A espera é a mesma ideia; a frase, não:
+   * "a IA acabou por hoje" para quem só gastou as mensagens DELE mente sobre o
+   * que aconteceu e esconde que subir de nível libera mais. Só aparece quando é.
+   */
+  pessoal?: true
 }
 
 /** O que sai quando não há 429 nenhum para ler. */
@@ -178,7 +185,7 @@ const MARCA = "__RATE_LIMIT__"
  * é ela levar carga.
  */
 export function marcaDeLimite(e: EsperaDoLimite): string {
-  return `${MARCA}|${e.segundos ?? ""}|${e.porDia ? "dia" : "minuto"}|${e.origem ?? ""}`
+  return `${MARCA}|${e.segundos ?? ""}|${e.porDia ? "dia" : "minuto"}|${e.origem ?? ""}${e.pessoal ? "|pessoal" : ""}`
 }
 
 export function ehLimite(texto: string): boolean {
@@ -187,11 +194,12 @@ export function ehLimite(texto: string): boolean {
 
 export function leMarcaDeLimite(texto: string): EsperaDoLimite {
   if (!ehLimite(texto)) return SEM_LIMITE
-  const [, seg, escopo, origem] = texto.split("|")
+  const [, seg, escopo, origem, quem] = texto.split("|")
   const n = Number(seg)
   return {
     segundos: seg && Number.isFinite(n) ? n : null,
     porDia: escopo === "dia",
     origem: origem || null,
+    ...(quem === "pessoal" ? { pessoal: true as const } : {}),
   }
 }

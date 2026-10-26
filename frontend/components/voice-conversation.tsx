@@ -238,7 +238,10 @@ export function VoiceConversation({
       setResting(true)
       goIdle()
       const t = traducaoRef.current.ia
-      const texto = leMarcaDeLimite(reply).porDia ? t.limiteAtingidoVozDia : t.limiteAtingidoVoz
+      const espera = leMarcaDeLimite(reply)
+      const texto = espera.pessoal
+        ? espera.porDia ? t.limitePessoalVozDia : t.limitePessoalVozMinuto
+        : espera.porDia ? t.limiteAtingidoVozDia : t.limiteAtingidoVoz
       setMessages((m) => [...m, { role: "assistant", content: texto }])
       return true
     }

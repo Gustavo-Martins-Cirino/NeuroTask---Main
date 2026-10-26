@@ -1149,6 +1149,10 @@ export interface Dicionario {
       ocupadaPorMinutos: (minutos: number) => string
       /** Provedor calado: vago de propósito, sem prometer prazo nenhum. */
       ocupada: string
+      /** A PESSOA usou a cota do dia (lib/cota-ia) — e subir de nível libera mais. */
+      limitePessoalDia: string
+      /** A PESSOA mandou mensagens demais no mesmo minuto. */
+      limitePessoalMinuto: string
       /**
        * Bateu no limite DEPOIS de já ter gravado. Duas coisas não pode dizer:
        * "tente de novo" (faz reenviar e DUPLICAR o que já entrou), "salvei
@@ -1185,6 +1189,9 @@ export interface Dicionario {
      */
     limiteAtingidoVozDia: string
     limiteAtingidoVoz: string
+    /** Na voz: o que `erros.limitePessoalDia`/`limitePessoalMinuto` dizem, em frase falável. */
+    limitePessoalVozDia: string
+    limitePessoalVozMinuto: string
     novaConversa: string
     conversas: string
     desafixar: string
@@ -2364,6 +2371,9 @@ export const pt: Dicionario = {
           : `A Neuro recebeu pedidos demais nos últimos instantes e precisa de cerca de ${minutos} minutos para respirar. Tente de novo depois disso.`,
       ocupada:
         "A Neuro recebeu pedidos demais nos últimos instantes e precisa de alguns minutos para respirar. Tente de novo daqui a pouco.",
+      limitePessoalDia:
+        "Você usou todas as suas mensagens com a Neuro hoje — amanhã tem mais. E cada nível que você sobe libera mais mensagens por dia: concluir tarefas dá XP.",
+      limitePessoalMinuto: "Calma, são muitas mensagens seguidas 😅 Espere um minutinho e me chame de novo.",
       salvouAntesDoLimite: (gravou, pedidos) => {
         const conta = pedidos > gravou ? `${gravou} de ${pedidos}` : `${gravou}`
         const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "itens"
@@ -2381,6 +2391,8 @@ export const pt: Dicionario = {
     limiteAtingidoVozDia:
       "O limite gratuito da IA acabou por hoje 😴 Ele só volta amanhã — mas o resto do app continua funcionando.",
     limiteAtingidoVoz: "Estou descansando um pouquinho 😴 O limite gratuito da IA chegou por agora.",
+    limitePessoalVozDia: "Suas mensagens de hoje com a Neuro acabaram. Amanhã tem mais, e cada nível libera mais um pouco.",
+    limitePessoalVozMinuto: "Muitas mensagens seguidas. Me dá um minutinho e a gente continua.",
     novaConversa: "Nova conversa",
     conversas: "Conversas",
     desafixar: "Desafixar",
@@ -3623,6 +3635,9 @@ export const en: Dicionario = {
           : `Neuro got too many requests in the last moments and needs about ${minutos} minutes to breathe. Try again after that.`,
       ocupada:
         "Neuro got too many requests in the last moments and needs a few minutes to breathe. Try again in a bit.",
+      limitePessoalDia:
+        "You've used all your messages with Neuro for today — more tomorrow. And every level you reach unlocks more messages per day: completing tasks earns XP.",
+      limitePessoalMinuto: "Easy there, that's a lot of messages in a row 😅 Wait a minute and call me again.",
       salvouAntesDoLimite: (gravou, pedidos) => {
         const conta = pedidos > gravou ? `${gravou} of ${pedidos}` : `${gravou}`
         const palavra = Math.max(gravou, pedidos) === 1 ? "item" : "items"
@@ -3640,6 +3655,8 @@ export const en: Dicionario = {
     limiteAtingidoVozDia:
       "The free AI limit is used up for today 😴 It only comes back tomorrow — but the rest of the app keeps working.",
     limiteAtingidoVoz: "I'm taking a little nap 😴 The free AI limit was reached for now.",
+    limitePessoalVozDia: "Your messages with Neuro are done for today. More tomorrow, and every level unlocks a few more.",
+    limitePessoalVozMinuto: "That's a lot of messages in a row. Give me a minute and we'll keep going.",
     novaConversa: "New chat",
     conversas: "Chats",
     desafixar: "Unpin",

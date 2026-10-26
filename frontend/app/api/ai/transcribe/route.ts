@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { MAX_AUDIO_BYTES, nomeDoAudio, tipoDeAudioAceito } from "@/lib/audio-transcricao"
-import { consomeCotaDeIa } from "@/lib/cota-ia"
+import { consomeCotaDeIa, limiteDaTranscricao } from "@/lib/cota-ia"
 
 export const runtime = "nodejs"
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   // Depois das recusas baratas (tamanho, tipo), antes do Groq: um áudio recusado
   // aqui não gasta o dia de ninguém. O 429 é o mesmo do limite do provedor, e a
   // tela já tem a frase dele (lib/audio-transcricao.ts).
-  const cota = await consomeCotaDeIa(supabase, "transcricao")
+  const cota = await consomeCotaDeIa(supabase, "transcricao", limiteDaTranscricao())
   if (!cota.permitido) {
     console.info(`[transcribe] cota pessoal batida: ${user.id} usos=${cota.usos}`)
     return new Response(null, { status: 429, headers: { "x-neuro-limite": "pessoal" } })

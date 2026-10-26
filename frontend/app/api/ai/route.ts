@@ -18,7 +18,8 @@ import { semAlegacaoVazia } from "@/lib/ia-alegacao-vazia"
 import { ocorrenciasNaJanela, linhasDaAgenda, inicioDoDia, type Ocorrencia } from "@/lib/ia-agenda"
 import { FOLGA_DE_DUPLICATA_MS, FOLGA_MINIMA_MS, conflitoDoBloco, duplicataNaAgenda, janelaDoConflito } from "@/lib/ia-conflito"
 import { createClient } from "@/lib/supabase/server"
-import { consomeCotaDeIa } from "@/lib/cota-ia"
+import { NEURO_POR_MINUTO, consomeCotaDeIa, limiteDaNeuro } from "@/lib/cota-ia"
+import { computeGamification } from "@/lib/gamification"
 import { chamadasRecusadas } from "@/lib/ia-resgate"
 import { MAX_CORPO_IA, limitaAnotacoes, limitaConversa, limitaFuso } from "@/lib/ia-entrada"
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -1399,20 +1400,25 @@ export async function POST(req: Request) {
 
   if (messages.length === 0) return new Response(t.erros.semMensagem, { status: 400 })
 
-  // O teto diário da pessoa (lib/cota-ia) conta só o que vai ao Groq — por isso
-  // depois do briefing, que é determinístico. Batido, sai o MESMO sinal do
-  // limite diário do provedor: para quem conversa, é a mesma coisa — a IA
-  // acabou por hoje — e o chat e a voz já sabem dizer isso nos dois idiomas.
-  // O `x-neuro-limite` separa os dois casos para quem audita.
-  const cota = await consomeCotaDeIa(supabase, "neuro")
+  // A cota da pessoa (lib/cota-ia) conta só o que vai ao Groq — por isso
+  // depois do briefing, que é determinístico. Ela cresce com o NÍVEL (lido da
+  // própria linha de user_stats; o RLS só deixa ler a sua) e tem um teto por
+  // minuto. Batida, sai o sinal de limite com a marca `pessoal`: o chat e a voz
+  // dizem "suas mensagens de hoje acabaram — subir de nível libera mais", e não
+  // "a IA acabou", que é o que se diz quando o limite é do provedor.
+  const { data: stats } = await supabase.from("user_stats").select("total_xp").maybeSingle()
+  const nivel = computeGamification(stats?.total_xp ?? 0).level
+  const cota = await consomeCotaDeIa(supabase, "neuro", limiteDaNeuro(nivel), NEURO_POR_MINUTO)
   if (!cota.permitido) {
-    console.info(`[neuro-ia] cota pessoal batida: ${user.id} usos=${cota.usos}`)
-    return new Response(marcaDeLimite({ segundos: null, porDia: true, origem: null }), {
+    const porDia = cota.motivo === "dia"
+    const segundos = cota.motivo === "minuto" ? cota.esperaSegundos : null
+    console.info(`[neuro-ia] cota pessoal batida (${cota.motivo}): ${user.id} nivel=${nivel} usos=${cota.usos}`)
+    return new Response(marcaDeLimite({ segundos, porDia, origem: null, pessoal: true }), {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
         "x-neuro-estado": "limite",
-        "x-neuro-espera": "dia",
+        "x-neuro-espera": porDia ? "dia" : String(segundos),
         "x-neuro-limite": "pessoal",
       },
     })

@@ -57,7 +57,11 @@ function localDateKey() {
 function prettyReply(t: string, erros: Dicionario["ia"]["erros"]): string {
   const bruto = t.trim()
   if (!ehLimite(bruto)) return t
-  return fraseDaEspera(leMarcaDeLimite(bruto), {
+  const espera = leMarcaDeLimite(bruto)
+  // O limite da PESSOA (lib/cota-ia) tem frase própria: "a IA acabou" seria
+  // mentira para quem só gastou as mensagens dele — e esconderia o nível.
+  if (espera.pessoal) return espera.porDia ? erros.limitePessoalDia : erros.limitePessoalMinuto
+  return fraseDaEspera(espera, {
     dia: erros.ocupadaPorDia,
     horas: erros.ocupadaPorHoras,
     minutos: erros.ocupadaPorMinutos,

@@ -43,7 +43,7 @@ export interface DocumentoLegal {
 export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
   pt: {
     titulo: "Termos de uso e privacidade",
-    atualizado: "Última atualização: 21 de outubro de 2026",
+    atualizado: "Última atualização: 26 de outubro de 2026",
     intro:
       "Estas são as regras de uso do NeuroTask e o que acontece com os seus dados. Escrevemos em linguagem direta de propósito. Ao criar uma conta, você concorda com as duas partes.",
     voltar: "Voltar ao início",
@@ -102,7 +102,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
                 "A Neuro pede confirmação antes de criar, editar ou excluir algo, mas a decisão final é sua.",
                 "Não use a Neuro para decisões médicas, jurídicas ou financeiras.",
                 "O que você escreve ou fala para a Neuro é enviado ao fornecedor de IA para gerar a resposta (veja a Política de Privacidade).",
-                "Para a cota da IA dar para todo mundo, cada pessoa tem um limite diário de mensagens com a Neuro e de transcrições de áudio. Ele se renova todo dia.",
+                "Para a cota da IA dar para todo mundo, cada pessoa tem um limite diário de mensagens com a Neuro — que cresce com o seu nível — e de transcrições de áudio, além de um limite de mensagens por minuto. Ele se renova todo dia.",
               ],
             ],
           },
@@ -291,7 +291,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
   },
   en: {
     titulo: "Terms of use and privacy",
-    atualizado: "Last updated: October 21, 2026",
+    atualizado: "Last updated: October 26, 2026",
     intro:
       "These are the rules for using NeuroTask and what happens to your data. We wrote them in plain language on purpose. By creating an account, you agree to both parts.",
     voltar: "Back to home",
@@ -350,7 +350,7 @@ export const DOCUMENTOS: Record<Idioma, DocumentoLegal> = {
                 "Neuro asks for confirmation before creating, editing or deleting anything, but the final decision is yours.",
                 "Don't use Neuro for medical, legal or financial decisions.",
                 "What you type or say to Neuro is sent to the AI provider to generate the answer (see the Privacy Policy).",
-                "So the AI quota is enough for everyone, each person has a daily limit of messages with Neuro and of audio transcriptions. It resets every day.",
+                "So the AI quota is enough for everyone, each person has a daily limit of messages with Neuro — which grows with your level — and of audio transcriptions, plus a per-minute message limit. It resets every day.",
               ],
             ],
           },

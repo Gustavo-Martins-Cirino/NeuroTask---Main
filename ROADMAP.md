@@ -1330,6 +1330,26 @@ segurança inteira e preparar o app para o Google. A lista abaixo é a dele, agr
 > e a política de privacidade ganharam o limite e o contador (só o número, apagado no dia
 > seguinte), com a data nova.
 >
+> **A cota passou a crescer com o nível, e ganhou teto por minuto (26/10).** Pedido do Gustavo:
+> "uma pessoa não pode quebrar o site estourando o token da IA". O site não quebra — quando a
+> cota do Groq acaba, só a Neuro para, com aviso —, mas o teto de 30/dia por pessoa era do plano
+> pago: no gratuito (~28 mensagens/dia somando TODOS), uma conta sozinha, dentro do próprio
+> limite, gastava o dia de todo mundo. E não havia teto por minuto: uma rajada estourava os 8 mil
+> tokens/minuto do Groq e travava a Neuro de todos por minutos.
+> Ele sugeriu liberar a IA só a partir de um nível. Os dados desaconselharam a TRAVA: **46 das 48
+> pessoas estão no nível 1** (subir pede 100 XP, ~10 tarefas em dias diferentes), então qualquer
+> nível acima do 1 desligaria a Neuro para quase todos — e ela foi o 2º item que mais chamou
+> atenção no formulário. Decidido junto: **a cota cresce com o nível** — 5/dia no nível 1, +1 por
+> nível, até o teto da env (padrão 20) — e **no máximo 3 por minuto**. Todo mundo usa desde o
+> primeiro dia, ninguém novo come mais que ~1/6 do dia de todos, e o XP passa a valer alguma
+> coisa fora do Escritório. Batido, a marca `pessoal` no sinal de limite faz o chat e a voz dizerem
+> "suas mensagens de hoje acabaram — subir de nível libera mais", e não "a IA acabou".
+> O `limite_ia.sql` novo conta por minuto (linha travada com `for update`, então dois pedidos
+> juntos não passam os dois no último uso) e troca a função de dois parâmetros pela de três. **A
+> ordem SQL × deploy não abre brecha**: código novo com SQL velho cai na versão antiga (teto do
+> dia valendo); SQL novo com código velho funciona pelo parâmetro com default.
+> **Passo do Gustavo:** rodar o `limite_ia.sql` de novo.
+
 > **Os números do Groq, medidos (17/10)** nos cabeçalhos da própria API, para o modelo de
 > produção (`openai/gpt-oss-120b`): **1.000 pedidos/dia, 8.000 tokens/minuto e 200.000
 > tokens/dia** (o dia confere com a tabela de limites do Groq). Cada ida ao modelo leva ~1.830
