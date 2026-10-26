@@ -17,6 +17,7 @@ import { type MotivoLogin } from "@/lib/motivo-login"
 import { type FalhaDeTranscricao } from "@/lib/audio-transcricao"
 import { type FaltaNaSenha, type RequisitoSenha } from "@/lib/regra-senha"
 import { type IdAmbiente } from "@/lib/focus-gradient"
+import type { IdCena } from "@/lib/foco-cenas"
 import { type IdFaixa, type SoundCategory } from "@/hooks/use-sound-mixer"
 
 // Tradução do app — a primeira fatia.
@@ -216,6 +217,23 @@ export interface Dicionario {
     /** Selo da miniatura de ambiente que se mexe. */
     animado: string
     ambientes: Record<IdAmbiente, string>
+    /** Os ambientes pagos (lib/foco-cenas): a vitrine no painel de ambientes. */
+    loja: {
+      titulo: string
+      descricoes: Record<IdCena, string>
+      comprar: (preco: number) => string
+      experimentar: (segundos: number) => string
+      saldo: (moedas: number) => string
+      faltam: (moedas: number) => string
+      previa: (segundos: number) => string
+      sairDaPrevia: string
+      comprado: (nome: string) => string
+      seu: string
+      moedas: string
+      /** Fôlego: a palavra que guia a respiração. */
+      inspire: string
+      solte: string
+    }
     mixerDeSons: string
     musicaDoYoutube: string
     sons: string
@@ -1539,6 +1557,32 @@ export const pt: Dicionario = {
       brasa: "Brasa",
       mare: "Maré",
       algodao: "Algodão",
+      correnteza: "Correnteza",
+      formulas: "Fórmulas",
+      folego: "Fôlego",
+      "buraco-negro": "Buraco negro",
+      constelacao: "Constelação",
+    },
+    loja: {
+      titulo: "Da loja",
+      descricoes: {
+        correnteza: "Correntes de luz que correm devagar. Passe o cursor e elas giram.",
+        formulas: "Equações famosas passando como numa lousa viva. A roda do mouse acelera ou freia a correnteza.",
+        folego: "Fitas de luz que respiram com você: inspire 4 s, solte 6 s. Acalma sem esforço.",
+        "buraco-negro": "Um disco de luz girando em volta do escuro. Role o mouse para inclinar; o giro desacelera conforme você foca.",
+        constelacao: "A cada 5 minutos focados, uma estrela acende. No fim da sessão, sua constelação está completa.",
+      },
+      comprar: (preco) => `Comprar por ${preco}`,
+      experimentar: (segundos) => `Experimentar ${segundos} s`,
+      saldo: (moedas) => `Você tem ${moedas} ${moedas === 1 ? "moeda" : "moedas"}`,
+      faltam: (moedas) => `Faltam ${moedas} ${moedas === 1 ? "moeda" : "moedas"}`,
+      previa: (segundos) => `Prévia · ${segundos} s`,
+      sairDaPrevia: "Voltar",
+      comprado: (nome) => `${nome} é seu! ✨`,
+      seu: "Seu",
+      moedas: "moedas",
+      inspire: "Inspire",
+      solte: "Solte devagar",
     },
     mixerDeSons: "Mixer de sons",
     musicaDoYoutube: "Música do YouTube",
@@ -2816,6 +2860,32 @@ export const en: Dicionario = {
       brasa: "Embers",
       mare: "Tide",
       algodao: "Cotton",
+      correnteza: "Current",
+      formulas: "Formulas",
+      folego: "Breath",
+      "buraco-negro": "Black hole",
+      constelacao: "Constellation",
+    },
+    loja: {
+      titulo: "From the shop",
+      descricoes: {
+        correnteza: "Slow currents of light. Move the cursor and they swirl.",
+        formulas: "Famous equations drifting like a living chalkboard. The mouse wheel speeds the stream up or down.",
+        folego: "Ribbons of light that breathe with you: in for 4 s, out for 6 s. Calm without effort.",
+        "buraco-negro": "A disc of light spinning around the dark. Scroll to tilt it; the spin slows down as you focus.",
+        constelacao: "Every 5 minutes of focus lights up a star. By the end of the session, your constellation is complete.",
+      },
+      comprar: (preco) => `Buy for ${preco}`,
+      experimentar: (segundos) => `Try for ${segundos} s`,
+      saldo: (moedas) => `You have ${moedas} ${moedas === 1 ? "coin" : "coins"}`,
+      faltam: (moedas) => `${moedas} more ${moedas === 1 ? "coin" : "coins"} needed`,
+      previa: (segundos) => `Preview · ${segundos} s`,
+      sairDaPrevia: "Back",
+      comprado: (nome) => `${nome} is yours! ✨`,
+      seu: "Yours",
+      moedas: "coins",
+      inspire: "Breathe in",
+      solte: "Breathe out slowly",
     },
     mixerDeSons: "Sound mixer",
     musicaDoYoutube: "YouTube music",

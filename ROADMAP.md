@@ -33,6 +33,28 @@ chega é o pior resultado possível.
 O que sobrou não é código, é **verificação** — e é a parte que não dá para fazer lendo o
 repositório:
 
+> **Ambientes pagos no Modo Foco (26/10).** Pedido do Gustavo: modos de foco comprados com as
+> moedinhas, "quanto melhor, mais caro", inspirados nas referências que ele mandou (Fluid Field,
+> Formula Stream, Accretion Disc e Ribbon Glow do Originkit; shadergradient, Lenis, three.js) e
+> com interação pela roda do mouse. Saíram cinco, todos **reescritos** — nada colado das
+> referências: **Correnteza** 60 (fluido em shader; o cursor faz redemoinho), **Fórmulas** 120
+> (equações correndo em faixas curvas; o cursor afasta e a roda acelera), **Fôlego** 200 (fitas de
+> luz que respiram 4 s inspirando e 6 s soltando — o Ribbon Glow virou respiração guiada),
+> **Buraco negro** 320 (26 mil partículas em WebGL; a roda inclina o disco, o cursor gira a
+> vista) e **Constelação** 480 (a única que mostra o foco acontecendo: uma estrela a cada 5 min,
+> o traço até a próxima se desenhando, e a figura completa no fim da sessão; a roda dá zoom com
+> paralaxe). A compra é a `buy_item` do Escritório (`supabase/foco_cenas.sql`); antes dá para
+> **experimentar 20 s**, e a vitrine diz quanto falta quando as moedas não dão.
+> *Medido em build de produção:* as cinco cenas sem erro de JS, ~56 fps na GPU, quadro parado com
+> `prefers-reduced-motion`; e no Foco de verdade, com uma conta descartável de 150 moedas, a
+> vitrine com os preços, "Faltam 330 moedas" na Constelação, a prévia com contagem, o "Voltar" e
+> a compra sem o SQL recusando com o nome do arquivo e **sem cobrar**. Um defeito achado na foto:
+> a Constelação caía atrás dos números do timer — a figura agora contorna a área do timer, e um
+> teste garante isso para 3, 5, 12 e 24 estrelas.
+
+- [ ] **Rodar `supabase/foco_cenas.sql` no SQL Editor (passo do Gustavo)** e, depois, a compra de
+      verdade com uma conta descartável (cobrar 60 de 150, a Correnteza já no fundo).
+
 > **Música do YouTube no Foco virou reprodutor de verdade (21/10).** Pedido do Gustavo, com uma
 > reclamação de quem testa: "não consigo parar a música". As causas eram três: o player era um
 > `<iframe>` solto, então a pausa só existia DENTRO do vídeo; o vídeo ficava num painel fechado; e

@@ -50,6 +50,8 @@ frontend/
 │   ├── focus.tsx             # Modo Foco (timer + minimizar p/ relógio flutuante + painéis)
 │   ├── sound-mixer.tsx       # Mixer: seções Sons/Músicas/Foco (ver public/sounds/README.md)
 │   ├── musica-youtube.tsx    # Reprodutor do YouTube no Foco: lista + mini reprodutor (API oficial do player)
+│   ├── foco-cenas/           # Os 5 ambientes PAGOS do Foco (um arquivo por cena, import dinâmico)
+│   │                         # motor.ts: canvas + ticker único + cursor/roda + reduced-motion
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
 │   ├── robot-mascot.tsx      # Robozinho SVG animado — DESMONTADO (a conversa ao vivo virou transcrição)
@@ -123,6 +125,7 @@ frontend/
 │   ├── sino-foco.ts          # Sino do fim do Modo Foco + relógio por instante de fim (puro)
 │   ├── foco-sessao.ts        # Sessão do Modo Foco guardada na aba: sobrevive a recarregar (puro)
 │   ├── foco-pontos.ts        # Quanto o foco paga: +2 XP a cada 5 min e tarefa em dobro (puro)
+│   ├── foco-cenas.ts         # Ambientes pagos do Foco: catálogo/preços + a matemática das cenas (puro)
 │   ├── frame-clock.ts        # Tempo que a cena 3D recebe do ticker do GSAP (puro)
 │   ├── neuro-sphere.ts       # Esfera da Neuro: pontos, repulsão e retorno (puro)
 │   ├── transcricao-viva.ts   # Resposta aparecendo no ritmo da fala, na conversa ao vivo (puro)
@@ -158,7 +161,7 @@ frontend/
 └── styles/global.css
 
 supabase/                     # SQLs por feature, idempotentes, rodados à mão no SQL Editor
-  40 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
+  42 arquivos + email-templates/ — a ORDEM de execução (há dependências) está no README.md
 ```
 
 ## Rotas existentes
@@ -193,7 +196,9 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
   com `frameloop="never"` — nunca reescrevendo a inscrição no ticker à mão, porque o
   vigia que vem junto é a metade que importa: sem alguém chamando `advance()`, a cena
   não fica lenta, congela. O tempo passa por `lib/frame-clock.ts` (o `advance()` quer
-  **segundos de cena**, não o instante do rAF).
+  **segundos de cena**, não o instante do rAF). Canvas sem R3F (2D ou WebGL cru, como os
+  ambientes pagos do Foco) entra por `useMotorDaCena` (`components/foco-cenas/motor.ts`), que
+  traz o mesmo vigia.
 - **Efeito de fundo prefere CSS a canvas.** A Neuro IA tem borda animada (`@property` +
   `conic-gradient`) e malha pastel em CSS puro; o único WebGL da página é a esfera. O
   motivo não é economia: o `<Canvas>` do ShaderGradient é o que **não** entra no ticker
@@ -300,6 +305,20 @@ dobro** depois de 15 min (ou da sessão inteira, se for mais curta). Esse XP vai
 tarefas; sem o SQL, o cliente cai no `award_xp` comum. É **silencioso** (`XpUpdateDetail.silencioso`):
 sem o toast genérico e sem festa no Escritório a cada 5 min — quem mostra é a própria tela do
 foco ("+6 XP neste foco", selo "XP em dobro" no botão de concluir).
+
+**Ambientes pagos** (`components/foco-cenas/` + `lib/foco-cenas.ts`): cinco cenas vivas compradas
+com moedas, mais caras quanto mais fazem — **Correnteza** 60 (fluido em shader, o cursor faz
+redemoinho), **Fórmulas** 120 (equações correndo; o cursor afasta, a roda muda a velocidade),
+**Fôlego** 200 (fitas de luz que respiram 4 s/6 s, com "inspire/solte"), **Buraco negro** 320
+(26 mil partículas em WebGL; a roda inclina o disco, o cursor gira) e **Constelação** 480 (uma
+estrela acende a cada 5 min focados e a figura fecha no fim da sessão; a figura **contorna** a
+área do timer — `foraDoMiolo`, com teste). Referências do pedido (Originkit, shadergradient,
+Lenis, three.js) foram **inspiração, reescritas** — nada colado. A compra é a mesma `buy_item` do
+Escritório (`supabase/foco_cenas.sql`, categoria `foco`, ids `foco-*`); o preço que vale é o do
+banco, e um teste confere que o da tela é igual. Antes de comprar dá para **experimentar 20 s**.
+Cada cena é um `<canvas>` desenhado por `motor.ts`, que entra no **ticker único** (com o vigia de
+volta ao rAF), sai no `prefers-reduced-motion` com um quadro parado e ignora a roda sobre os
+controles (`data-sem-cena`). Minimizado, a cena não é montada.
 
 ## Estado atual
 

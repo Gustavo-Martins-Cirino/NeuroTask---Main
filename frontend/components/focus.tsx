@@ -10,11 +10,14 @@ import { MINUTOS_PARA_DOBRAR, MINUTOS_POR_BLOCO, XP_POR_BLOCO, bonusDaTarefa, se
 import { nextFutureOccurrence } from "@/lib/task-recurrence"
 import { SoundMixer } from "@/components/sound-mixer"
 import { MiniReprodutor, MusicaYoutubeProvider, PainelMusica } from "@/components/musica-youtube"
+import { CenaDoFoco } from "@/components/foco-cenas"
+import { CENAS, SEGUNDOS_DE_PREVIA, cenaLiberada, moedasQueFaltam, type CenaDoFoco as CenaPaga } from "@/lib/foco-cenas"
+import { buyItem, fetchShopState } from "@/lib/shop"
 import { NumeroRolante } from "@/components/numero-rolante"
 import type { Task } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Play, Pause, X, Check, RotateCcw, Activity, Minus, Plus, Palette, Music, Youtube, Minimize2, Maximize2 } from "lucide-react"
+import { Play, Pause, X, Check, RotateCcw, Activity, Minus, Plus, Palette, Music, Youtube, Minimize2, Maximize2, Coins, Loader2 } from "lucide-react"
 import { useDicionario } from "@/hooks/use-idioma"
 import { useSinoFoco } from "@/hooks/use-sino-foco"
 import { fimDoTimer, restanteAte } from "@/lib/sino-foco"
@@ -47,6 +50,8 @@ interface Ambient {
   clock: boolean
   /** Presente = ambiente ANIMADO (ShaderGradient). */
   gradient?: GradientPreset
+  /** Presente = ambiente PAGO, comprado com moedas (lib/foco-cenas). */
+  cena?: CenaPaga
 }
 
 // Os estáticos vêm primeiro e continuam sendo o padrão: os animados entram ao
@@ -76,7 +81,12 @@ const AMBIENTS: Ambient[] = [
     clock: false,
     gradient: g,
   })),
+  // Os pagos vêm por último, do mais barato ao mais caro: são vitrine, não padrão.
+  ...CENAS.map((c) => ({ id: c.id, bg: "", mode: "dark" as const, clock: false, cena: c })),
 ]
+
+/** Índice do ambiente para onde cai quem está num pago sem tê-lo comprado. */
+const AMBIENTE_PADRAO = 1
 
 function pad(n: number) {
   return String(Math.max(0, n)).padStart(2, "0")
@@ -195,6 +205,17 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
   const [panel, setPanel] = useState<"none" | "ambient" | "sounds" | "youtube">("none")
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [minimized, setMinimized] = useState(false)
+
+  // Ambientes pagos (lib/foco-cenas): o inventário é lido quando o Foco abre;
+  // `null` = ainda não sabemos (ninguém é tirado do ambiente antes de saber).
+  const traducao = useDicionario()
+  const [comprados, setComprados] = useState<ReadonlySet<string> | null>(null)
+  const [moedas, setMoedas] = useState(0)
+  /** Experimentar antes de comprar: um ambiente pago por alguns segundos, sem ir para a sessão guardada. */
+  const [previa, setPrevia] = useState<{ indice: number; ate: number } | null>(null)
+  const [agoraPrevia, setAgoraPrevia] = useState(0)
+  const [cenaEmDetalhe, setCenaEmDetalhe] = useState<number | null>(null)
+  const [comprando, setComprando] = useState(false)
 
   // Pontos do foco (lib/foco-pontos). O tempo focado sai do próprio timer; o
   // que andou antes de um "recomeçar" fica guardado em `focadoAntes`.
@@ -421,11 +442,90 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     setOpen(false)
   }
 
+  // Inventário e saldo, a cada vez que o Foco abre.
+  useEffect(() => {
+    if (!open) return
+    let vivo = true
+    fetchShopState()
+      .then((estado) => {
+        if (!vivo) return
+        setMoedas(estado.coins)
+        setComprados(new Set(estado.owned.map((o) => o.item_id)))
+      })
+      .catch(() => {
+        /* sem a loja no banco: os pagos só ficam trancados */
+      })
+    return () => {
+      vivo = false
+    }
+  }, [open])
+
+  // A prévia acaba sozinha; e fechar o Foco acaba com ela.
+  useEffect(() => {
+    if (!previa) return
+    setAgoraPrevia(Date.now())
+    const relogio = setInterval(() => setAgoraPrevia(Date.now()), 500)
+    const fim = setTimeout(() => setPrevia(null), Math.max(0, previa.ate - Date.now()))
+    return () => {
+      clearInterval(relogio)
+      clearTimeout(fim)
+    }
+  }, [previa])
+  useEffect(() => {
+    if (!open) {
+      setPrevia(null)
+      setCenaEmDetalhe(null)
+    }
+  }, [open])
+
+  const escolherAmbiente = (indice: number) => {
+    setPrevia(null)
+    setCenaEmDetalhe(null)
+    setAmbient(indice)
+  }
+
+  const experimentar = (indice: number) => {
+    setPrevia({ indice, ate: Date.now() + SEGUNDOS_DE_PREVIA * 1000 })
+    setPanel("none")
+  }
+
+  // A compra é a mesma do Escritório: a RPC buy_item cobra no servidor.
+  const comprarCena = async (indice: number) => {
+    const cena = AMBIENTS[indice]?.cena
+    if (!cena || comprando) return
+    setComprando(true)
+    const r = await buyItem(cena.itemId)
+    setComprando(false)
+    if (r.errorCode || r.errorBruto) {
+      const erros = traducao.escritorio.loja.erros
+      toast.error(
+        r.errorCode === "SALDO_INSUFICIENTE" ? erros.saldoInsuficiente
+        : r.errorCode === "JA_COMPRADO" ? erros.jaComprado
+        : r.errorCode === "ITEM_INEXISTENTE" ? erros.itemInexistente(r.arquivoSql ?? "foco_cenas.sql")
+        : r.errorBruto!
+      )
+      return
+    }
+    setMoedas(r.coins ?? 0)
+    setComprados((antes) => new Set([...(antes ?? []), cena.itemId]))
+    escolherAmbiente(indice)
+    toast.success(textos.loja.comprado(textos.ambientes[cena.id]))
+  }
+
+  const segundosDePrevia = previa ? Math.max(0, Math.ceil((previa.ate - agoraPrevia) / 1000)) : 0
+
   const mm = pad(Math.floor(remaining / 60))
   const ss = pad(remaining % 60)
   const progress = duration > 0 ? ((duration - remaining) / duration) * 100 : 0
   const durationMin = Math.round(duration / 60)
-  const amb = AMBIENTS[ambient]
+  // O ambiente que aparece: a prévia, se houver; senão o escolhido — e um pago
+  // que a pessoa não tem (sessão de outro aparelho, item devolvido) cai no padrão.
+  const ambienteEscolhido = AMBIENTS[ambient] ?? AMBIENTS[AMBIENTE_PADRAO]
+  const amb = previa
+    ? AMBIENTS[previa.indice]
+    : ambienteEscolhido.cena && comprados && !cenaLiberada(ambienteEscolhido.cena.id, comprados)
+      ? AMBIENTS[AMBIENTE_PADRAO]
+      : ambienteEscolhido
   const m = amb.mode
   // Mostrar ANTES de dar: ponto que só aparece depois não muda comportamento.
   const dobra = focusTask ? bonusDaTarefa(taskXpAmount(focusTask), focado, duration) > 0 : false
@@ -502,6 +602,35 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                 minimizado (não adianta animar o que ninguém está vendo). */}
             {amb.gradient && !minimized && (
               <FocusGradient preset={amb.gradient} progresso={progress / 100} />
+            )}
+            {amb.cena && !minimized && (
+              <CenaDoFoco
+                id={amb.cena.id}
+                progresso={progress / 100}
+                duracao={duration}
+                textos={{ inspire: textos.loja.inspire, solte: textos.loja.solte }}
+              />
+            )}
+
+            {/* Prévia de um ambiente pago: quanto falta e o botão de comprar à vista. */}
+            {previa && amb.cena && (
+              <div data-sem-cena className="absolute left-1/2 top-6 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-black/55 py-1.5 pl-4 pr-1.5 text-xs text-white shadow-lg backdrop-blur-xl">
+                <span className="tabular-nums opacity-80">{textos.loja.previa(segundosDePrevia)}</span>
+                <button
+                  type="button"
+                  onClick={() => comprarCena(previa.indice)}
+                  disabled={comprando || moedasQueFaltam(amb.cena.preco, moedas) > 0}
+                  className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-medium text-neutral-900 transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {comprando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Coins className="h-3.5 w-3.5" />}
+                  {moedasQueFaltam(amb.cena.preco, moedas) > 0
+                    ? textos.loja.faltam(moedasQueFaltam(amb.cena.preco, moedas))
+                    : textos.loja.comprar(amb.cena.preco)}
+                </button>
+                <button type="button" onClick={() => setPrevia(null)} className="rounded-full px-3 py-1.5 transition-colors hover:bg-white/10">
+                  {textos.loja.sairDaPrevia}
+                </button>
+              </div>
             )}
 
             <div className="absolute right-6 top-6 flex items-center gap-1">
@@ -600,15 +729,15 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             )}
 
             {/* Toolbar discreta */}
-            <div ref={toolbarRef} className="absolute bottom-6 right-6 flex flex-col items-end gap-3">
+            <div ref={toolbarRef} data-sem-cena className="absolute bottom-6 right-6 flex flex-col items-end gap-3">
               {/* Painel Ambiente */}
               <AnimatePresence>
                 {panel === "ambient" && (
-                  <motion.div initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.97 }} className={cn("w-60 rounded-2xl border p-4 shadow-xl", panelCls)}>
+                  <motion.div initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.97 }} className={cn("max-h-[calc(100dvh-7rem)] w-72 overflow-y-auto rounded-2xl border p-4 shadow-xl", panelCls)}>
                     <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.ambiente}</p>
                     <div className="grid grid-cols-3 gap-2">
-                      {AMBIENTS.map((a, i) => (
-                        <button key={a.id} onClick={() => setAmbient(i)} className="flex flex-col items-center gap-1">
+                      {AMBIENTS.map((a, i) => a.cena ? null : (
+                        <button key={a.id} onClick={() => escolherAmbiente(i)} className="flex flex-col items-center gap-1">
                           <span
                             className={cn(
                               "relative h-12 w-full overflow-hidden rounded-lg border-2 transition-transform hover:scale-105",
@@ -633,6 +762,76 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                           <span className="text-[10px] opacity-70">{textos.ambientes[a.id]}</span>
                         </button>
                       ))}
+                    </div>
+
+                    {/* A vitrine dos pagos: do mais barato ao mais caro. */}
+                    <div className="mt-4 flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{textos.loja.titulo}</p>
+                      <span className="flex items-center gap-1 text-[11px] tabular-nums opacity-70" title={textos.loja.saldo(moedas)}>
+                        <Coins className="h-3 w-3" />
+                        {moedas}
+                      </span>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      {AMBIENTS.map((a, i) => {
+                        if (!a.cena) return null
+                        const cena = a.cena
+                        const liberada = !!comprados && cenaLiberada(cena.id, comprados)
+                        const aberta = cenaEmDetalhe === i
+                        const faltam = moedasQueFaltam(cena.preco, moedas)
+                        return (
+                          <div key={a.id} className={cn("rounded-xl transition-colors", aberta && "bg-current/[0.06]")}>
+                            <button
+                              type="button"
+                              onClick={() => (liberada ? escolherAmbiente(i) : setCenaEmDetalhe(aberta ? null : i))}
+                              aria-pressed={liberada ? ambient === i : undefined}
+                              aria-expanded={liberada ? undefined : aberta}
+                              className="flex w-full items-center gap-2.5 rounded-xl p-1.5 text-left transition-colors hover:bg-current/[0.06]"
+                            >
+                              <span
+                                className={cn("h-8 w-12 shrink-0 rounded-md border-2", liberada && ambient === i ? ring : "border-transparent")}
+                                style={{ background: cena.previa }}
+                              />
+                              <span className="min-w-0 flex-1 truncate text-xs font-medium">{textos.ambientes[cena.id]}</span>
+                              {liberada ? (
+                                <span className="flex items-center gap-1 text-[10px] font-medium opacity-70">
+                                  <Check className="h-3 w-3" />
+                                  {textos.loja.seu}
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-[11px] tabular-nums opacity-80">
+                                  <Coins className="h-3 w-3" />
+                                  {cena.preco}
+                                </span>
+                              )}
+                            </button>
+                            {aberta && !liberada && (
+                              <div className="space-y-2 px-2 pb-2.5 pt-0.5">
+                                <p className="text-[11px] leading-relaxed opacity-75">{textos.loja.descricoes[cena.id]}</p>
+                                <p className="text-[10px] tabular-nums opacity-60">{textos.loja.saldo(moedas)}</p>
+                                <div className="flex gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => experimentar(i)}
+                                    className="flex-1 rounded-lg border border-current/20 px-2 py-1.5 text-[11px] font-medium transition-colors hover:bg-current/10"
+                                  >
+                                    {textos.loja.experimentar(SEGUNDOS_DE_PREVIA)}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => comprarCena(i)}
+                                    disabled={comprando || faltam > 0}
+                                    className={cn("flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50", solid)}
+                                  >
+                                    {comprando ? <Loader2 className="h-3 w-3 animate-spin" /> : <Coins className="h-3 w-3" />}
+                                    {faltam > 0 ? textos.loja.faltam(faltam) : textos.loja.comprar(cena.preco)}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   </motion.div>
                 )}

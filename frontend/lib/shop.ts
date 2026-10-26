@@ -173,6 +173,12 @@ export const SQL_DO_ITEM: Record<string, string> = {
   "parede-cimento": "office_v6.sql",
   "parede-tijolinho": "office_v6.sql",
   "parede-ripada": "office_v6.sql",
+  // Ambientes pagos do Modo Foco (lib/foco-cenas) — compram pela mesma RPC.
+  "foco-correnteza": "foco_cenas.sql",
+  "foco-formulas": "foco_cenas.sql",
+  "foco-folego": "foco_cenas.sql",
+  "foco-buraco-negro": "foco_cenas.sql",
+  "foco-constelacao": "foco_cenas.sql",
 }
 
 export type BuyErrorCode = "SALDO_INSUFICIENTE" | "JA_COMPRADO" | "ITEM_INEXISTENTE"

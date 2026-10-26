@@ -1,3 +1,5 @@
+import type { IdCena } from "@/lib/foco-cenas"
+
 // Ambientes ANIMADOS do Modo Foco (ShaderGradient). Os estáticos continuam
 // existindo ao lado destes — quem achar o movimento distraente escolhe um deles
 // e pronto. Aqui mora só o que é determinístico: os presets e a regra de
@@ -13,7 +15,8 @@ export type IdGradiente = "aurora" | "brasa" | "mare" | "algodao"
  */
 export type IdAmbienteEstatico = "transparent" | "black" | "gray" | "light" | "white" | "clock"
 
-export type IdAmbiente = IdAmbienteEstatico | IdGradiente
+/** Os pagos, comprados com moedas (lib/foco-cenas). */
+export type IdAmbiente = IdAmbienteEstatico | IdGradiente | IdCena
 
 export interface GradientPreset {
   id: IdGradiente
