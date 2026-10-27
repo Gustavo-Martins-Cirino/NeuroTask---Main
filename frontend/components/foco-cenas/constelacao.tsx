@@ -31,6 +31,9 @@ interface Fundo {
 }
 
 const CAMADAS = [0.25, 0.55, 1] // profundidade: quanto a camada se mexe com o cursor e o zoom
+// O céu é gerado MAIOR que a tela: no zoom mínimo (0,85) as estrelas se juntam
+// para o centro, e sem essa sobra a borda da tela ficava vazia — uma moldura preta.
+const SOBRA = 0.12
 
 interface Cadente {
   x: number
@@ -66,11 +69,19 @@ export function Constelacao({ progresso, duracao }: PropsDaCena) {
       const monta = (W: number, H: number) => {
         const r = aleatorioComSemente(2718)
         fundo = []
-        const area = W * H
+        const lado = 1 + 2 * SOBRA
+        const area = W * H * lado * lado
         CAMADAS.forEach((_, camada) => {
           const total = Math.round(area / [7000, 13000, 26000][camada])
           for (let i = 0; i < total; i++) {
-            fundo.push({ x: r(), y: r(), raio: (0.4 + r() * 0.9) * (0.6 + camada * 0.35), fase: r() * 6.28, ritmo: 0.4 + r() * 1.4, camada })
+            fundo.push({
+              x: -SOBRA + r() * lado,
+              y: -SOBRA + r() * lado,
+              raio: (0.4 + r() * 0.9) * (0.6 + camada * 0.35),
+              fase: r() * 6.28,
+              ritmo: 0.4 + r() * 1.4,
+              camada,
+            })
           }
         })
         // A nebulosa é desenhada uma vez, pequena, e esticada: borrão não precisa de resolução.
@@ -133,7 +144,8 @@ export function Constelacao({ progresso, duracao }: PropsDaCena) {
           ctx.fillStyle = "#03040a"
           ctx.fillRect(0, 0, W, H)
           if (nebulosa) {
-            const z = 1 + (zoom - 1) * 0.3
+            // Nunca menor que a tela (com folga para a paralaxe): a borda da nebulosa era a margem preta.
+            const z = Math.max(1, 1 + (zoom - 1) * 0.3) * 1.06
             ctx.drawImage(nebulosa, W / 2 - (W * z) / 2 - ox * 0.2, H / 2 - (H * z) / 2 - oy * 0.2, W * z, H * z)
           }
 
@@ -153,8 +165,9 @@ export function Constelacao({ progresso, duracao }: PropsDaCena) {
           }
           ctx.globalAlpha = 1
 
-          // A constelação da sessão.
-          const z = zoom
+          // A constelação da sessão. Ela não encolhe com o zoom: encolher a puxaria
+          // para trás do timer, e o céu indo para longe atrás dela já dá a profundidade.
+          const z = Math.max(1, zoom)
           const pos = desenho.map((e) => ({
             x: W / 2 + e.x * (W / 2) * z - ox * 1.3,
             y: H / 2 + e.y * (H / 2) * z - oy * 1.3,

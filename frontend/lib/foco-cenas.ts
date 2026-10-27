@@ -14,7 +14,15 @@
 // teste confere) e a matemática das cenas. O canvas de cada uma vive em
 // components/foco-cenas/.
 
-export type IdCena = "correnteza" | "formulas" | "folego" | "buraco-negro" | "constelacao"
+export type IdCena =
+  | "correnteza"
+  | "formulas"
+  | "folego"
+  | "revoada"
+  | "buraco-negro"
+  | "ferrofluido"
+  | "constelacao"
+  | "sinapses"
 
 export interface CenaDoFoco {
   id: IdCena
@@ -50,6 +58,13 @@ export const CENAS: CenaDoFoco[] = [
     previa: "linear-gradient(160deg, transparent 30%, rgba(255,120,200,0.55) 45%, transparent 55%), linear-gradient(200deg, transparent 40%, rgba(90,200,255,0.55) 52%, transparent 62%), #06060f",
   },
   {
+    id: "revoada",
+    itemId: "foco-revoada",
+    preco: 260,
+    fundo: "#2a2350",
+    previa: "radial-gradient(1px 1px at 38% 34%, #140f22, transparent), radial-gradient(1px 1px at 44% 30%, #140f22, transparent), radial-gradient(1px 1px at 50% 36%, #140f22, transparent), radial-gradient(40% 30% at 45% 33%, rgba(20,15,34,0.55), transparent 70%), radial-gradient(18% 14% at 72% 80%, #ffd9a0, transparent 70%), linear-gradient(180deg, #1d2b5e 0%, #6b4a8a 45%, #e0806a 75%, #ffc38a 82%, #120d1e 83%)",
+  },
+  {
     id: "buraco-negro",
     itemId: "foco-buraco-negro",
     preco: 320,
@@ -57,11 +72,25 @@ export const CENAS: CenaDoFoco[] = [
     previa: "radial-gradient(circle at 50% 50%, #000 0 16%, rgba(255,217,160,0.9) 18%, rgba(255,95,0,0.55) 30%, transparent 58%), #000",
   },
   {
+    id: "ferrofluido",
+    itemId: "foco-ferrofluido",
+    preco: 400,
+    fundo: "#16161b",
+    previa: "radial-gradient(10% 8% at 40% 40%, rgba(255,255,255,0.9), transparent 70%), radial-gradient(30% 28% at 46% 50%, #050507 62%, rgba(120,160,255,0.6) 67%, rgba(255,120,220,0.35) 71%, transparent 74%), radial-gradient(16% 14% at 72% 64%, #050507 60%, rgba(120,255,220,0.45) 68%, transparent 74%), radial-gradient(80% 70% at 50% 30%, #3d3d44, #121216)",
+  },
+  {
     id: "constelacao",
     itemId: "foco-constelacao",
     preco: 480,
     fundo: "#03040a",
     previa: "radial-gradient(1.5px 1.5px at 20% 30%, #fff, transparent), radial-gradient(2px 2px at 60% 25%, #cfe0ff, transparent), radial-gradient(1.5px 1.5px at 75% 70%, #fff, transparent), radial-gradient(2px 2px at 35% 65%, #ffe9b8, transparent), linear-gradient(160deg, #0a1030, #03040a)",
+  },
+  {
+    id: "sinapses",
+    itemId: "foco-sinapses",
+    preco: 600,
+    fundo: "#020806",
+    previa: "radial-gradient(6% 6% at 30% 40%, #fff3d0, transparent 70%), radial-gradient(5% 5% at 72% 62%, #ffe0a0, transparent 70%), linear-gradient(120deg, transparent 44%, rgba(127,224,192,0.6) 46%, transparent 48%), linear-gradient(35deg, transparent 50%, rgba(19,143,128,0.7) 51.5%, transparent 53%), linear-gradient(160deg, transparent 58%, rgba(127,224,192,0.45) 59%, transparent 60.5%), #020806",
   },
 ]
 
@@ -275,3 +304,141 @@ export const FORMULAS = [
   "e^{x} = Σ x^{n} / n!",
   "Σ_{k=1}^{n} k = n(n + 1) / 2",
 ]
+
+const entre0e1 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0)
+const suave = (a: number, b: number, v: number) => {
+  const t = entre0e1((v - a) / (b - a))
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * Quanto um ponto está DENTRO do miolo do timer: 1 no meio, 0 fora, com borda
+ * macia. `escala` encolhe ou cresce a área (em fração da meia-tela, como as
+ * estrelas). As Sinapses usam para a rede crescer em volta do timer.
+ */
+export function pesoDoMiolo(x: number, y: number, escala = 1): number {
+  const v = (x / (MIOLO_DO_TIMER.rx * escala)) ** 4 + (y / (MIOLO_DO_TIMER.ry * escala)) ** 4
+  return 1 - suave(0.55, 1.35, v)
+}
+
+// Revoada: o sol se põe enquanto você foca. Três céus — fim de tarde, pôr do
+// sol e a hora azul — e o progresso da sessão anda entre eles.
+export type Rgb = [number, number, number]
+
+const CEUS: Rgb[][] = [
+  // do alto até o horizonte
+  [[29, 43, 94], [107, 74, 138], [224, 128, 106], [255, 195, 138]],
+  [[20, 26, 64], [74, 47, 110], [194, 80, 106], [255, 138, 90]],
+  [[10, 15, 46], [29, 26, 72], [62, 39, 88], [106, 63, 106]],
+]
+
+export function misturaRgb(a: Rgb, b: Rgb, t: number): Rgb {
+  const k = entre0e1(t)
+  return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]
+}
+
+export interface Entardecer {
+  /** Quatro cores, do alto da tela até o horizonte. */
+  ceu: Rgb[]
+  /** Altura do centro do sol acima do horizonte, em fração da altura da tela (negativo = já se pôs). */
+  sol: number
+  /** 0 = ainda é dia, 1 = noite: as janelas e as estrelas acendem com ele. */
+  noite: number
+}
+
+export function entardecer(progresso: number): Entardecer {
+  const p = entre0e1(progresso)
+  const [a, b, t] = p < 0.5 ? [CEUS[0], CEUS[1], p / 0.5] : [CEUS[1], CEUS[2], (p - 0.5) / 0.5]
+  return {
+    ceu: a.map((c, i) => misturaRgb(c, b[i], t)),
+    sol: 0.13 - 0.2 * p,
+    noite: suave(0.55, 0.95, p),
+  }
+}
+
+// Ferrofluido: as gotas se procuram mais conforme o foco avança — soltas no
+// começo, uma gota só no fim da sessão.
+export function coesaoDasGotas(progresso: number): number {
+  return 0.12 + 0.88 * suave(0, 1, entre0e1(progresso))
+}
+
+// Sinapses: uma rede de agentes (o modelo do mofo limoso, Physarum) que deixa
+// rastro e segue o rastro dos outros. Roda na CPU, numa grade mais grossa que a
+// tela — e a grade é escolhida para caber num teto de células, o que segura o
+// custo em qualquer tamanho de janela.
+export interface GradeDaRede {
+  /** Lado da célula, em pixels de CSS. */
+  celula: number
+  colunas: number
+  linhas: number
+}
+
+export function gradeDaRede(largura: number, altura: number, maxCelulas: number): GradeDaRede {
+  const w = Math.max(1, Number.isFinite(largura) ? largura : 1)
+  const h = Math.max(1, Number.isFinite(altura) ? altura : 1)
+  const teto = Math.max(1, maxCelulas)
+  let celula = Math.max(2, Math.ceil(Math.sqrt((w * h) / teto)))
+  while (Math.ceil(w / celula) * Math.ceil(h / celula) > teto) celula++
+  return { celula, colunas: Math.ceil(w / celula), linhas: Math.ceil(h / celula) }
+}
+
+/** A rede cresce enquanto você foca: 30% dos agentes no começo, todos no fim. */
+export function agentesAtivos(total: number, progresso: number): number {
+  return Math.round(Math.max(0, total) * (0.3 + 0.7 * entre0e1(progresso)))
+}
+
+export interface JeitoDaRede {
+  /** Radianos: quão aberto o agente "cheira" para os lados. */
+  anguloSensor: number
+  /** Radianos: quanto ele vira para o lado do cheiro. */
+  anguloGiro: number
+  /** Células: quão longe ele cheira. */
+  distanciaSensor: number
+}
+
+/** A roda muda o JEITO da rede: fios longos (0) → a rede clássica → células fechadas (1). */
+export function jeitoDaRede(roda: number): JeitoDaRede {
+  const w = entre0e1(roda)
+  const grau = Math.PI / 180
+  return {
+    anguloSensor: (20 + 35 * w) * grau,
+    anguloGiro: (30 + 30 * w) * grau,
+    distanciaSensor: 8 - 4 * w,
+  }
+}
+
+/** Quantos rumos o agente conhece: o ângulo vira índice de tabela (seno e cosseno sem conta). */
+export const RUMOS_DA_REDE = 256
+
+export function rumosDoAngulo(radianos: number): number {
+  return Math.max(1, Math.round((radianos / (Math.PI * 2)) * RUMOS_DA_REDE))
+}
+
+/** Os neurônios: pontos fixos (com semente) em volta do timer, longe uns dos outros. */
+export interface Neuronio {
+  /** -1 a 1, fração da meia-tela, como as estrelas. */
+  x: number
+  y: number
+}
+
+export const NEURONIOS_DA_REDE = 12
+
+export function neuroniosDaRede(total = NEURONIOS_DA_REDE, semente = 2718): Neuronio[] {
+  const rnd = aleatorioComSemente(semente)
+  const lista: Neuronio[] = []
+  for (let tentativa = 0; lista.length < total && tentativa < 4000; tentativa++) {
+    const x = (rnd() * 2 - 1) * 0.86
+    const y = (rnd() * 2 - 1) * 0.8
+    if (pesoDoMiolo(x, y, 1.05) > 0) continue
+    // Folga mínima entre eles, que afrouxa se a tela não comportar todos.
+    const folga = tentativa < 2000 ? 0.36 : 0.22
+    if (lista.every((n) => (n.x - x) ** 2 + (n.y - y) ** 2 > folga * folga)) lista.push({ x, y })
+  }
+  return lista
+}
+
+/** Três neurônios desde o começo; os outros acendem conforme o foco avança. */
+export function neuroniosAcesos(progresso: number, total = NEURONIOS_DA_REDE): number {
+  const base = Math.min(3, total)
+  return Math.min(total, base + Math.floor(entre0e1(progresso) * (total - base + 0.999)))
+}

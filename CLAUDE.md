@@ -50,7 +50,7 @@ frontend/
 │   ├── focus.tsx             # Modo Foco (timer + minimizar p/ relógio flutuante + painéis)
 │   ├── sound-mixer.tsx       # Mixer: seções Sons/Músicas/Foco (ver public/sounds/README.md)
 │   ├── musica-youtube.tsx    # Reprodutor do YouTube no Foco: lista + mini reprodutor (API oficial do player)
-│   ├── foco-cenas/           # Os 5 ambientes PAGOS do Foco (um arquivo por cena, import dinâmico)
+│   ├── foco-cenas/           # Os 8 ambientes PAGOS do Foco (um arquivo por cena, import dinâmico)
 │   │                         # motor.ts: canvas + ticker único + cursor/roda + reduced-motion
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
@@ -306,13 +306,20 @@ tarefas; sem o SQL, o cliente cai no `award_xp` comum. É **silencioso** (`XpUpd
 sem o toast genérico e sem festa no Escritório a cada 5 min — quem mostra é a própria tela do
 foco ("+6 XP neste foco", selo "XP em dobro" no botão de concluir).
 
-**Ambientes pagos** (`components/foco-cenas/` + `lib/foco-cenas.ts`): cinco cenas vivas compradas
+**Ambientes pagos** (`components/foco-cenas/` + `lib/foco-cenas.ts`): oito cenas vivas compradas
 com moedas, mais caras quanto mais fazem — **Correnteza** 60 (fluido em shader, o cursor faz
 redemoinho), **Fórmulas** 120 (equações correndo; o cursor afasta, a roda muda a velocidade),
-**Fôlego** 200 (fitas de luz que respiram 4 s/6 s, com "inspire/solte"), **Buraco negro** 320
-(26 mil partículas em WebGL; a roda inclina o disco, o cursor gira) e **Constelação** 480 (uma
-estrela acende a cada 5 min focados e a figura fecha no fim da sessão; a figura **contorna** a
-área do timer — `foraDoMiolo`, com teste). Referências do pedido (Originkit, shadergradient,
+**Fôlego** 200 (fitas de luz que respiram 4 s/6 s, com "inspire/solte"), **Revoada** 260 (3200
+estorninhos com as regras de Reynolds e teto de vizinhos; o cursor é o falcão, a roda junta ou
+espalha, e o sol se põe durante a sessão — `entardecer`), **Buraco negro** 320 (26 mil partículas
+em WebGL; a roda inclina o disco, o cursor gira), **Ferrofluido** 400 (metaballs em shader com a
+coroa de espinhos em volta do cursor-ímã; a roda é a força do ímã, as gotas se fundem com o
+progresso), **Constelação** 480 (uma estrela acende a cada 5 min focados e a figura fecha no fim
+da sessão; a figura **contorna** a área do timer — `foraDoMiolo`, com teste) e **Sinapses** 600
+(Physarum na CPU: agentes que seguem o rastro e ligam os neurônios, que acendem com o foco; sinais
+correm pela rede). O Physarum é a cena mais cara de rodar: ângulo em **tabela de 256 rumos**
+(o seno/cosseno por agente custava 8,8 ms), 30 passos/s e grade com teto de células — ~25% de
+uma thread em 1080p; mexer nela pede medir de novo. Referências do pedido (Originkit, shadergradient,
 Lenis, three.js) foram **inspiração, reescritas** — nada colado. A compra é a mesma `buy_item` do
 Escritório (`supabase/foco_cenas.sql`, categoria `foco`, ids `foco-*`); o preço que vale é o do
 banco, e um teste confere que o da tela é igual. Antes de comprar dá para **experimentar 20 s**.

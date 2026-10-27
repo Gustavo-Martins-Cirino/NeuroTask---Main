@@ -11,8 +11,11 @@ const CENAS: Record<IdCena, ComponentType<PropsDaCena>> = {
   correnteza: dynamic(() => import("./correnteza").then((m) => m.Correnteza), { ssr: false }),
   formulas: dynamic(() => import("./formulas").then((m) => m.Formulas), { ssr: false }),
   folego: dynamic(() => import("./folego").then((m) => m.Folego), { ssr: false }),
+  revoada: dynamic(() => import("./revoada").then((m) => m.Revoada), { ssr: false }),
   "buraco-negro": dynamic(() => import("./buraco-negro").then((m) => m.BuracoNegro), { ssr: false }),
+  ferrofluido: dynamic(() => import("./ferrofluido").then((m) => m.Ferrofluido), { ssr: false }),
   constelacao: dynamic(() => import("./constelacao").then((m) => m.Constelacao), { ssr: false }),
+  sinapses: dynamic(() => import("./sinapses").then((m) => m.Sinapses), { ssr: false }),
 }
 
 /** O fundo da cena, atrás do timer. A cor sólida fica por baixo enquanto carrega — e se o WebGL falhar. */

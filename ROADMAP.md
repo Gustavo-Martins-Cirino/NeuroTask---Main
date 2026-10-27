@@ -52,8 +52,27 @@ repositório:
 > a Constelação caía atrás dos números do timer — a figura agora contorna a área do timer, e um
 > teste garante isso para 3, 5, 12 e 24 estrelas.
 
-- [ ] **Rodar `supabase/foco_cenas.sql` no SQL Editor (passo do Gustavo)** e, depois, a compra de
-      verdade com uma conta descartável (cobrar 60 de 150, a Correnteza já no fundo).
+> **Mais três ambientes pagos (26/10).** O Gustavo gostou das cinco e pediu mais três, "extremamente
+> criativos", sem repetir fundo. Saíram **Revoada** 260 (3200 estorninhos com as regras de Reynolds,
+> cada um olhando só 10 vizinhos, como os de verdade; o cursor é o falcão e abre buraco no bando, a
+> roda junta ou espalha, e o **sol se põe durante a sessão** até as janelas acenderem), **Ferrofluido**
+> 400 (metal líquido preto em shader, que segue o cursor como um ímã e faz a coroa de espinhos de
+> Rosensweig; a roda é a força do ímã, e as gotas se fundem com o foco) e **Sinapses** 600 (o
+> Physarum, o modelo do mofo limoso: agentes que seguem o rastro uns dos outros e **ligam os
+> neurônios**, que vão acendendo com o foco; sinais disparam pela rede, e ela cresce em volta do
+> timer). E a margem preta que ele achou na Constelação ao tirar zoom: a nebulosa era desenhada
+> menor que a tela e o céu se encolhia para o centro — agora a nebulosa sempre cobre, o céu é gerado
+> maior que a tela e a figura não encolhe para trás do timer.
+> *Medido (build de produção, GPU real, 1080p):* Revoada ~3 ms por quadro na thread principal,
+> Ferrofluido 0,4 ms; as Sinapses começaram em **100% da thread** — o perfil apontou o passo dos
+> agentes, e o culpado era seno/cosseno por agente (8,8 ms no laço isolado). Com o ângulo em tabela
+> de 256 rumos, 30 passos por segundo e teto de células, caiu para ~25%. As três sem erro de JS, a
+> 60 quadros/s no computador e no celular (toque), com quadro parado em movimento reduzido, e no Foco
+> de verdade com conta descartável: vitrine, "Faltam N moedas", prévia e "Voltar".
+
+- [ ] **Rodar `supabase/foco_cenas.sql` no SQL Editor (passo do Gustavo)** — de novo, se já tinha
+      rodado: os três ambientes novos entram pelo mesmo arquivo. Depois, a compra de verdade com
+      uma conta descartável (cobrar 60 de 150, a Correnteza já no fundo).
 
 > **Música do YouTube no Foco virou reprodutor de verdade (21/10).** Pedido do Gustavo, com uma
 > reclamação de quem testa: "não consigo parar a música". As causas eram três: o player era um

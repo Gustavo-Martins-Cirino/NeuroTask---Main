@@ -52,7 +52,9 @@ ARQUIVO, porque medir no navegador já mentiu duas vezes aqui), `calendar-scroll
 tique atrasado não perder nem repetir bloco, e quando a tarefa concluída no foco dobra),
 `foco-sessao` e `sino-foco` (o foco que sobrevive a recarregar, e o relógio por instante de fim),
 `foco-cenas` (os ambientes pagos do Foco: o preço da tela é o MESMO do SQL, a respiração
-guiada, uma estrela a cada 5 min — e a figura da Constelação nunca passando por trás do timer),
+guiada, uma estrela a cada 5 min — e a figura da Constelação nunca passando por trás do timer —,
+o pôr do sol da Revoada que só desce, a grade das Sinapses que nunca passa do teto de células e
+os neurônios dela fora do miolo do timer),
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
 `enquete` (quando perguntar e quando ficar quieto — e que "agora não" cala a enquete
 inteira, não só a pergunta recusada),
@@ -234,9 +236,10 @@ gamification.sql → xp_anticheat.sql → coins_shop.sql → foco_xp.sql · foco
 tarefas: +2 XP a cada 5 min focados e a tarefa concluída no foco valendo o dobro. Sem ele o
 foco paga do mesmo jeito, só que pelo `award_xp` comum — dentro do teto de 150.
 
-`foco_cenas.sql` põe na loja os cinco ambientes pagos do Modo Foco (Correnteza 60 → Constelação
-480 moedas), comprados pela mesma `buy_item` do Escritório. Sem ele a vitrine e a prévia de 20 s
-funcionam; só a compra recusa, avisando qual arquivo rodar, e não cobra nada.
+`foco_cenas.sql` põe na loja os oito ambientes pagos do Modo Foco (Correnteza 60 → Sinapses
+600 moedas), comprados pela mesma `buy_item` do Escritório. Sem ele a vitrine e a prévia de 20 s
+funcionam; só a compra recusa, avisando qual arquivo rodar, e não cobra nada. É idempotente:
+ambiente novo entra rodando o arquivo de novo.
 
 **3. Copiloto de rotina**
 ```

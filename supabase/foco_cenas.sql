@@ -11,7 +11,10 @@ insert into public.shop_items (id, name, price, category) values
   ('foco-correnteza',   'Foco · Correnteza',   60,  'foco'),
   ('foco-formulas',     'Foco · Fórmulas',     120, 'foco'),
   ('foco-folego',       'Foco · Fôlego',       200, 'foco'),
+  ('foco-revoada',      'Foco · Revoada',      260, 'foco'),
   ('foco-buraco-negro', 'Foco · Buraco negro', 320, 'foco'),
-  ('foco-constelacao',  'Foco · Constelação',  480, 'foco')
+  ('foco-ferrofluido',  'Foco · Ferrofluido',  400, 'foco'),
+  ('foco-constelacao',  'Foco · Constelação',  480, 'foco'),
+  ('foco-sinapses',     'Foco · Sinapses',     600, 'foco')
 on conflict (id) do update
   set name = excluded.name, price = excluded.price, category = excluded.category;
