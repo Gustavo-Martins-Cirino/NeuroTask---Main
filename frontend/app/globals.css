@@ -498,6 +498,9 @@ html {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
 }
+/* Modo Foco em tela cheia: a página de trás não rola nem mostra a barra dela
+   (ficavam duas barras lado a lado com a do painel). Ver components/focus.tsx. */
+html[data-foco-aberto] { overflow: hidden; }
 html::-webkit-scrollbar { width: 8px; height: 8px; }
 html::-webkit-scrollbar-track { background: transparent; }
 html::-webkit-scrollbar-thumb {

@@ -33,8 +33,9 @@ function usaMovimentoReduzido() {
 }
 
 // Diálogo aberto trava o scroll do body (react-remove-scroll marca
-// data-scroll-locked). O Lenis precisa parar junto, senão continua tentando
-// rolar o que está travado.
+// data-scroll-locked), e o Modo Foco em tela cheia trava o da página
+// (data-foco-aberto no <html>). O Lenis precisa parar junto, senão continua
+// tentando rolar o que está travado.
 function PausaComDialogo() {
   const lenis = useLenis()
 
@@ -42,13 +43,16 @@ function PausaComDialogo() {
     if (!lenis) return
 
     const sincroniza = () => {
-      if (document.body.hasAttribute("data-scroll-locked")) lenis.stop()
+      const travado =
+        document.body.hasAttribute("data-scroll-locked") || document.documentElement.hasAttribute("data-foco-aberto")
+      if (travado) lenis.stop()
       else lenis.start()
     }
 
     sincroniza()
     const obs = new MutationObserver(sincroniza)
     obs.observe(document.body, { attributes: true, attributeFilter: ["data-scroll-locked"] })
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-foco-aberto"] })
     return () => obs.disconnect()
   }, [lenis])
 

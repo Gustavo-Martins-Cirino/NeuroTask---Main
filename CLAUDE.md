@@ -50,7 +50,8 @@ frontend/
 │   ├── focus.tsx             # Modo Foco (timer + minimizar p/ relógio flutuante + painéis)
 │   ├── sound-mixer.tsx       # Mixer: seções Sons/Músicas/Foco (ver public/sounds/README.md)
 │   ├── musica-youtube.tsx    # Reprodutor do YouTube no Foco: lista + mini reprodutor (API oficial do player)
-│   ├── foco-cenas/           # Os 8 ambientes PAGOS do Foco (um arquivo por cena, import dinâmico)
+│   ├── foco-cenas/           # Os 8 ambientes PAGOS do Foco (um arquivo por cena, import dinâmico;
+│   │                         # as Sinapses têm duas: GPU e a reserva na CPU)
 │   │                         # motor.ts: canvas + ticker único + cursor/roda + reduced-motion
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
 │   ├── voice-conversation.tsx# Conversa por voz ao vivo com a IA (Web Speech API)
@@ -196,8 +197,8 @@ supabase/                     # SQLs por feature, idempotentes, rodados à mão 
   com `frameloop="never"` — nunca reescrevendo a inscrição no ticker à mão, porque o
   vigia que vem junto é a metade que importa: sem alguém chamando `advance()`, a cena
   não fica lenta, congela. O tempo passa por `lib/frame-clock.ts` (o `advance()` quer
-  **segundos de cena**, não o instante do rAF). Canvas sem R3F (2D ou WebGL cru, como os
-  ambientes pagos do Foco) entra por `useMotorDaCena` (`components/foco-cenas/motor.ts`), que
+  **segundos de cena**, não o instante do rAF). Canvas sem R3F (2D, WebGL ou WebGL2 cru, como
+  os ambientes pagos do Foco) entra por `useMotorDaCena` (`components/foco-cenas/motor.ts`), que
   traz o mesmo vigia.
 - **Efeito de fundo prefere CSS a canvas.** A Neuro IA tem borda animada (`@property` +
   `conic-gradient`) e malha pastel em CSS puro; o único WebGL da página é a esfera. O
@@ -275,6 +276,9 @@ mensagens de hoje acabaram — subir de nível libera mais", não "a IA acabou".
 `focus.tsx` (montado global no AppShell). Timer, ambientes visuais, **minimizar** para um relógio
 flutuante (continua contando enquanto navega), painéis de **Sons** (mixer) e **Ambiente** que fecham
 ao clicar fora. Mixer com seções **Sons** (loop) · **Músicas** (crossfade, exclusivas) · **Foco** (ruído/binaural).
+**Em tela cheia, a página de trás trava**: `data-foco-aberto` no `<html>` (overflow escondido, e o
+Lenis para — `PausaComDialogo`), e o overlay é `data-lenis-prevent`. Sem isso o Lenis pegava a roda
+e rolava a página atrás do Foco em vez do painel aberto, com duas barras de rolagem lado a lado.
 
 **Música do YouTube** (`components/musica-youtube.tsx`): uma **lista** (miniatura, título, "tocando"),
 e o app manda no player pela **API oficial do YouTube** — carregada só no primeiro play, pelo domínio
@@ -316,10 +320,13 @@ em WebGL; a roda inclina o disco, o cursor gira), **Ferrofluido** 400 (metaballs
 coroa de espinhos em volta do cursor-ímã; a roda é a força do ímã, as gotas se fundem com o
 progresso), **Constelação** 480 (uma estrela acende a cada 5 min focados e a figura fecha no fim
 da sessão; a figura **contorna** a área do timer — `foraDoMiolo`, com teste) e **Sinapses** 600
-(Physarum na CPU: agentes que seguem o rastro e ligam os neurônios, que acendem com o foco; sinais
-correm pela rede). O Physarum é a cena mais cara de rodar: ângulo em **tabela de 256 rumos**
-(o seno/cosseno por agente custava 8,8 ms), 30 passos/s e grade com teto de células — ~25% de
-uma thread em 1080p; mexer nela pede medir de novo. Referências do pedido (Originkit, shadergradient,
+(Physarum: agentes que seguem o rastro e ligam os neurônios, que acendem com o foco; sinais correm
+pela rede). As Sinapses rodam **na placa de vídeo** (`sinapses-gpu.tsx`, WebGL2 + textura float
+como alvo: 640 mil agentes, grade na resolução da tela, ~3% da thread principal) com **qualidade
+adaptativa** — abaixo de ~40 quadros/s ela se refaz uma vez em modo leve (`data-qualidade="leve"`
+no canvas). Sem WebGL2/`EXT_color_buffer_float`, `sinapses.tsx` cai para a **reserva na CPU**
+(`sinapses-cpu.tsx`: tabela de 256 rumos — o seno/cosseno por agente custava 8,8 ms —, 30 passos/s,
+~25% de uma thread em 1080p). Mexer em qualquer uma pede medir de novo. Referências do pedido (Originkit, shadergradient,
 Lenis, three.js) foram **inspiração, reescritas** — nada colado. A compra é a mesma `buy_item` do
 Escritório (`supabase/foco_cenas.sql`, categoria `foco`, ids `foco-*`); o preço que vale é o do
 banco, e um teste confere que o da tela é igual. Antes de comprar dá para **experimentar 20 s**.

@@ -442,3 +442,18 @@ export function neuroniosAcesos(progresso: number, total = NEURONIOS_DA_REDE): n
   const base = Math.min(3, total)
   return Math.min(total, base + Math.floor(entre0e1(progresso) * (total - base + 0.999)))
 }
+
+// Qualidade adaptativa (Sinapses na placa de vídeo): a média móvel do tempo de
+// quadro decide se a cena se refaz em modo leve. Um engasgo solto não conta; uns
+// segundos abaixo de ~40 quadros/s, sim. Os primeiros segundos ficam de fora (é
+// quando o código da cena ainda está chegando).
+export const QUADRO_LENTO_S = 1 / 40
+
+export function mediaDoQuadro(media: number, dt: number): number {
+  if (!Number.isFinite(dt) || dt <= 0) return media
+  return media + (Math.min(dt, 0.1) - media) * 0.05
+}
+
+export function deveAliviar(media: number, tempo: number): boolean {
+  return tempo > 4 && media > QUADRO_LENTO_S
+}

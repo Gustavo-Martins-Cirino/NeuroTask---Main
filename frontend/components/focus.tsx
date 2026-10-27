@@ -370,6 +370,16 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
     })
   }, [open, focado])
 
+  // Em tela cheia, a página de trás não rola: a roda é do painel aberto (ou da
+  // cena), e a barra de rolagem da página some — eram duas barras lado a lado.
+  // O Lenis para junto (components/smooth-scroll, PausaComDialogo).
+  useEffect(() => {
+    if (!open || minimized) return
+    const raiz = document.documentElement
+    raiz.setAttribute("data-foco-aberto", "")
+    return () => raiz.removeAttribute("data-foco-aberto")
+  }, [open, minimized])
+
   // Fecha o painel (Sons / Ambiente) ao clicar fora dele
   useEffect(() => {
     if (panel === "none") return
@@ -596,6 +606,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-lenis-prevent
             className={cn("fixed inset-0 z-[100] flex flex-col items-center justify-center", amb.bg, txt, minimized && "hidden")}
           >
             {/* Fundo animado: fica atrás de tudo e some quando o Foco é
@@ -733,7 +744,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
               {/* Painel Ambiente */}
               <AnimatePresence>
                 {panel === "ambient" && (
-                  <motion.div initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.97 }} className={cn("max-h-[calc(100dvh-7rem)] w-72 overflow-y-auto rounded-2xl border p-4 shadow-xl", panelCls)}>
+                  <motion.div initial={{ opacity: 0, y: 10, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.97 }} className={cn("scrollbar-thin max-h-[calc(100dvh-7rem)] w-72 overflow-y-auto overscroll-contain rounded-2xl border p-4 shadow-xl", panelCls)}>
                     <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.ambiente}</p>
                     <div className="grid grid-cols-3 gap-2">
                       {AMBIENTS.map((a, i) => a.cena ? null : (
@@ -843,7 +854,7 @@ export function FocusProvider({ children }: { children: React.ReactNode }) {
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.mixerDeSons}</p>
                 <SoundMixer />
               </div>
-              <div className={cn("max-h-[calc(100dvh-7rem)] w-[min(92vw,640px)] overflow-y-auto rounded-2xl border p-4 shadow-xl", panelCls, panel === "youtube" ? "block" : "hidden")}>
+              <div className={cn("scrollbar-thin max-h-[calc(100dvh-7rem)] w-[min(92vw,640px)] overflow-y-auto overscroll-contain rounded-2xl border p-4 shadow-xl", panelCls, panel === "youtube" ? "block" : "hidden")}>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-70">{textos.musicaDoYoutube}</p>
                 <PainelMusica />
               </div>

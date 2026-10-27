@@ -36,11 +36,14 @@ export interface CenaMontada {
 }
 
 export interface OpcoesDoMotor {
-  tipo: "webgl" | "2d"
+  tipo: "webgl" | "webgl2" | "2d"
   /** Teto da densidade de pixels (shader de tela cheia fica bonito em 1). */
   dprMaximo?: number
   roda?: { inicial: number; porClique: number; min: number; max: number }
-  iniciar: (contexto: WebGLRenderingContext | CanvasRenderingContext2D, canvas: HTMLCanvasElement) => CenaMontada | null
+  iniciar: (
+    contexto: WebGLRenderingContext | WebGL2RenderingContext | CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+  ) => CenaMontada | null
 }
 
 /** Tempo fixo do quadro único de quem prefere menos movimento. */
@@ -54,10 +57,13 @@ export function useMotorDaCena(canvasRef: React.RefObject<HTMLCanvasElement | nu
     const canvas = canvasRef.current
     if (!canvas) return
     const o = opcoesRef.current
+    const atributos: WebGLContextAttributes = { alpha: false, antialias: false, depth: false, premultipliedAlpha: false }
     const contexto =
-      o.tipo === "webgl"
-        ? canvas.getContext("webgl", { alpha: false, antialias: false, depth: false, premultipliedAlpha: false })
-        : canvas.getContext("2d")
+      o.tipo === "2d"
+        ? canvas.getContext("2d")
+        : o.tipo === "webgl2"
+          ? canvas.getContext("webgl2", atributos)
+          : canvas.getContext("webgl", atributos)
     // Sem contexto (WebGL desligado, por exemplo), fica a cor de fundo da cena.
     if (!contexto) return
     const cena = o.iniciar(contexto, canvas)
@@ -177,14 +183,18 @@ export function useMotorDaCena(canvasRef: React.RefObject<HTMLCanvasElement | nu
       window.removeEventListener("wheel", aoRolar)
       cena.liberar?.()
       // Devolve a GPU na hora: trocar de ambiente várias vezes não acumula contextos.
-      if (o.tipo === "webgl") (contexto as WebGLRenderingContext).getExtension("WEBGL_lose_context")?.loseContext()
+      if (o.tipo !== "2d") (contexto as WebGLRenderingContext).getExtension("WEBGL_lose_context")?.loseContext()
     }
   }, [canvasRef])
 }
 
 // ---- Ajudas para as cenas em WebGL ----
 
-export function programa(gl: WebGLRenderingContext, vertice: string, fragmento: string): WebGLProgram | null {
+export function programa(
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  vertice: string,
+  fragmento: string,
+): WebGLProgram | null {
   const compila = (tipo: number, fonte: string) => {
     const s = gl.createShader(tipo)
     if (!s) return null

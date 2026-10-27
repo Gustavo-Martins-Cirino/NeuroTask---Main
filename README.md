@@ -54,7 +54,7 @@ tique atrasado não perder nem repetir bloco, e quando a tarefa concluída no fo
 `foco-cenas` (os ambientes pagos do Foco: o preço da tela é o MESMO do SQL, a respiração
 guiada, uma estrela a cada 5 min — e a figura da Constelação nunca passando por trás do timer —,
 o pôr do sol da Revoada que só desce, a grade das Sinapses que nunca passa do teto de células e
-os neurônios dela fora do miolo do timer),
+os neurônios dela fora do miolo do timer, e quando a rede na placa de vídeo passa para o modo leve),
 `auth-metodos` (quais botões de login aparecem, e qual foi o último usado),
 `enquete` (quando perguntar e quando ficar quieto — e que "agora não" cala a enquete
 inteira, não só a pergunta recusada),

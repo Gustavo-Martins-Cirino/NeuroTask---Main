@@ -70,9 +70,21 @@ repositório:
 > 60 quadros/s no computador e no celular (toque), com quadro parado em movimento reduzido, e no Foco
 > de verdade com conta descartável: vitrine, "Faltam N moedas", prévia e "Voltar".
 
-- [ ] **Rodar `supabase/foco_cenas.sql` no SQL Editor (passo do Gustavo)** — de novo, se já tinha
-      rodado: os três ambientes novos entram pelo mesmo arquivo. Depois, a compra de verdade com
-      uma conta descartável (cobrar 60 de 150, a Correnteza já no fundo).
+> **Sinapses na placa de vídeo, e a roda do painel de ambientes (26/10).** Dois pedidos do Gustavo.
+> (1) "Melhorar a qualidade das Sinapses, o melhor possível, para todos": a rede era simulada na CPU
+> numa grade de 4 px esticada na tela — daí o borrado. Agora roda em **WebGL2** (`sinapses-gpu.tsx`):
+> 640 mil agentes numa grade na resolução da tela, em quatro passes (anda, deposita, espalha, pinta),
+> com halo, névoa e núcleos quentes. *Medido:* a thread principal caiu de ~25% para **~3%**, e na
+> RX 580 daqui ficou em 60 quadros/s até em 5120×2880 a 2×. Para a placa fraca há **qualidade
+> adaptativa** (`deveAliviar`, com teste): sustentou menos de ~40 quadros/s, a rede se refaz uma vez
+> em modo leve — forçado num build de teste, desenhou certo. Sem WebGL2 com textura float, cai
+> para a versão antiga na CPU (`sinapses-cpu.tsx`), conferida com o WebGL2 negado no navegador.
+> (2) A roda sobre o painel de Ambiente rolava a página ATRÁS do Foco: o Lenis pega a roda na página
+> inteira e só a solta em diálogo, menu e áreas marcadas — e, parado, ele BLOQUEIA a roda. Agora o
+> Foco em tela cheia é `data-lenis-prevent`, trava a página (`data-foco-aberto` no `<html>`, o Lenis
+> para) e os painéis contêm a própria rolagem. Some também a segunda barra (a da página). *Medido no
+> Foco de verdade:* o painel rola, a página de trás fica parada (300 → 300), a barra de fora some,
+> e fechar o Foco devolve a rolagem. `foco_cenas.sql` conferido no banco: os oito itens, preços certos.
 
 > **Música do YouTube no Foco virou reprodutor de verdade (21/10).** Pedido do Gustavo, com uma
 > reclamação de quem testa: "não consigo parar a música". As causas eram três: o player era um

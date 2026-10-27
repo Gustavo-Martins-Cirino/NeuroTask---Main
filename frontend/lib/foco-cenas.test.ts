@@ -11,6 +11,7 @@ import {
   coesaoDasGotas,
   corHex,
   desenhoDaConstelacao,
+  deveAliviar,
   entardecer,
   estrelasAcesas,
   estrelasDaSessao,
@@ -18,6 +19,7 @@ import {
   giraARoda,
   gradeDaRede,
   jeitoDaRede,
+  mediaDoQuadro,
   moedasQueFaltam,
   NEURONIOS_DA_REDE,
   neuroniosAcesos,
@@ -227,6 +229,19 @@ describe("Sinapses: a rede", () => {
       expect(agora).toBeGreaterThanOrEqual(antes)
       antes = agora
     }
+  })
+
+  it("qualidade adaptativa: 60 quadros/s nunca alivia, 30 sustentados aliviam, um engasgo não", () => {
+    const roda = (fps: number, segundos: number, media = 1 / 60) => {
+      for (let i = 0; i < fps * segundos; i++) media = mediaDoQuadro(media, 1 / fps)
+      return media
+    }
+    expect(deveAliviar(roda(60, 30), 30)).toBe(false)
+    expect(deveAliviar(roda(30, 3), 10)).toBe(true)
+    expect(deveAliviar(roda(30, 3), 2)).toBe(false) // os primeiros segundos não contam
+    const engasgo = mediaDoQuadro(roda(60, 5), 0.5)
+    expect(deveAliviar(engasgo, 10)).toBe(false)
+    expect(mediaDoQuadro(0.02, Number.NaN)).toBe(0.02)
   })
 
   it("o ângulo vira rumo da tabela, nunca zero", () => {
