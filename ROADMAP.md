@@ -33,6 +33,20 @@ chega é o pior resultado possível.
 O que sobrou não é código, é **verificação** — e é a parte que não dá para fazer lendo o
 repositório:
 
+> **A prévia da loja do Escritório não some mais ao rolar (28/10).** Reclamação de quem testa: ao
+> olhar um item lá de baixo da loja, a pessoa rolava a página e a sala — onde a prévia aparece —
+> saía da tela. A coluna fixa ao lado da loja já tinha sido recusada (a sala ficava pequena), e o
+> filtro por categoria não bastou: numa categoria curta a página mal rola, mas o que some é o TOPO
+> da sala, onde ficam quadro, prateleira, janela e relógio. Agora, quando mais de 25% do topo passa
+> por baixo do cabeçalho, a sala vira uma **janela flutuante no canto** (o "mini player"), com a
+> prévia ao vivo, um botão para voltar à sala inteira e um X; ao subir, ela volta ao tamanho cheio.
+> É o mesmo canvas mudando de lugar, sem segunda cena 3D. A regra mora em `lib/office-janela.ts`
+> (com histerese, 6 testes). De quebra, no celular a prévia sumia ao soltar o dedo (o toque
+> dispara "saiu" logo depois): agora o toque fixa a prévia até tocar em outro item.
+> *Medido em build de produção, conta descartável, notebook 1366×768 e celular:* a janela aparece
+> ao rolar, mostra a prévia do último item, troca ao vivo de item, o X fecha, subir e descer a
+> devolve, e "ver a sala inteira" sobe até ela.
+
 > **Ambientes pagos no Modo Foco (26/10).** Pedido do Gustavo: modos de foco comprados com as
 > moedinhas, "quanto melhor, mais caro", inspirados nas referências que ele mandou (Fluid Field,
 > Formula Stream, Accretion Disc e Ribbon Glow do Originkit; shadergradient, Lenis, three.js) e

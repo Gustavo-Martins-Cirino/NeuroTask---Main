@@ -7,7 +7,9 @@ import { Header } from "@/components/header"
 import { AvatarEditor } from "@/components/avatar-editor"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil, Palette, Camera } from "lucide-react"
+import { Armchair, Coins, Check, Loader2, Sparkles, Eye, Pencil, Palette, Camera, Maximize2, X } from "lucide-react"
+import { useLenis } from "lenis/react"
+import { salaFlutua } from "@/lib/office-janela"
 import { useOfficeBg, setOfficeBg } from "@/hooks/use-office-bg"
 import { OFFICE_BG_OPTIONS, resolveOfficeBg, ehFundoPersonalizado, COR_PERSONALIZADA_PADRAO } from "@/lib/office-bg"
 import { composeSnapshot, shareOrDownload, snapshotFilename } from "@/lib/office-snapshot"
@@ -46,6 +48,9 @@ const CATEGORY_ORDER: ShopCategory[] = [
   "vida", "luz", "enfeite", "movel", "setup", "cadeira", "parede", "piso", "chapeu", "oculos",
 ]
 
+// O cabeçalho da tela é fixo e tem h-16 (components/header.tsx).
+const ALTURA_DO_CABECALHO = 64
+
 export default function OfficePage() {
   const traducao = useDicionario()
   const [loading, setLoading] = useState(true)
@@ -64,6 +69,56 @@ export default function OfficePage() {
   const { resolvedTheme } = useTheme()
   const sceneWrapRef = useRef<HTMLDivElement>(null)
   const [sharing, setSharing] = useState(false)
+
+  // A sala vira janela flutuante quando a loja toma a tela, para a prévia de um
+  // item lá de baixo continuar visível (lib/office-janela). É o MESMO canvas que
+  // muda de lugar — uma segunda cena 3D dobraria o peso. A âncora guarda a
+  // altura da sala na página, então nada pula quando ela sai do fluxo.
+  const ancoraRef = useRef<HTMLDivElement>(null)
+  const [flutua, setFlutua] = useState(false)
+  const flutuaRef = useRef(false)
+  const [alturaDaSala, setAlturaDaSala] = useState(0)
+  // Fechada pelo X, a janela só volta depois que a pessoa subir até a sala.
+  const [dispensada, setDispensada] = useState(false)
+  const lenis = useLenis()
+  useEffect(() => {
+    const ancora = ancoraRef.current
+    if (!ancora || loading) return
+    // Medido a cada rolagem (uma vez por quadro): o que conta é quanto do TOPO
+    // da sala passou por baixo do cabeçalho fixo, e um IntersectionObserver só
+    // avisa em degraus de fração visível.
+    let quadro = 0
+    const confere = () => {
+      quadro = 0
+      const r = ancora.getBoundingClientRect()
+      const agora = salaFlutua(r.top, r.height, ALTURA_DO_CABECALHO, flutuaRef.current)
+      if (agora === flutuaRef.current) return
+      if (agora) setAlturaDaSala(r.height)
+      else setDispensada(false)
+      flutuaRef.current = agora
+      setFlutua(agora)
+    }
+    const aoRolar = () => {
+      if (!quadro) quadro = requestAnimationFrame(confere)
+    }
+    confere()
+    window.addEventListener("scroll", aoRolar, { passive: true })
+    window.addEventListener("resize", aoRolar)
+    return () => {
+      cancelAnimationFrame(quadro)
+      window.removeEventListener("scroll", aoRolar)
+      window.removeEventListener("resize", aoRolar)
+    }
+  }, [loading])
+  const janela = flutua && !dispensada
+  const verSalaInteira = () => {
+    const ancora = ancoraRef.current
+    if (!ancora) return
+    // Sem descontar o cabeçalho fixo, o topo da sala ficaria por baixo dele.
+    const folga = ALTURA_DO_CABECALHO + 16
+    if (lenis) lenis.scrollTo(ancora, { offset: -folga })
+    else window.scrollTo({ top: ancora.getBoundingClientRect().top + window.scrollY - folga, behavior: "smooth" })
+  }
   // A sala comemora quando trabalho real rende XP — inclusive o que foi
   // concluído em outra tela pouco antes de abrir o Escritório.
   const celebrateNonce = useOfficeCelebration(!loading)
@@ -115,7 +170,7 @@ export default function OfficePage() {
     return s
   }, [owned])
 
-  // Prévia ao passar o mouse (ou segurar o dedo) num item da loja:
+  // Prévia ao passar o mouse (ou tocar, no celular) num item da loja:
   // renderiza a cena como se ele estivesse equipado
   const [previewId, setPreviewId] = useState<string | null>(null)
   const previewItem = previewId ? CATALOG.find((i) => i.id === previewId) : null
@@ -205,17 +260,25 @@ export default function OfficePage() {
             Ela já foi para uma coluna fixa à esquerda, com a loja ao lado, para
             a prévia não sair da tela ao rolar. O Gustavo recusou: partida ao
             meio, a sala fica pequena demais — e o Escritório é a recompensa do
-            app, não uma miniatura de apoio. O que resolvia o problema da prévia
-            resolve de outro jeito, sem encolher a cena: a loja é filtrada por
-            categoria e a maior delas cabe em quatro linhas, então rolar até o
-            fim quase não afasta a cena. */}
+            app, não uma miniatura de apoio. Filtrar a loja por categoria
+            encurtou a lista, mas não bastou: em tela baixa e no celular os
+            itens de baixo ainda empurravam a sala para fora. Por isso, quando a
+            loja toma a tela, a sala vira uma janela flutuante no canto (o
+            "mini player"), e volta ao tamanho cheio quando a pessoa sobe. */}
         <div className="mx-auto w-full max-w-5xl space-y-6">
           {/* Cena */}
+          <div ref={ancoraRef} style={janela ? { height: alturaDaSala } : undefined}>
           <motion.div
             ref={sceneWrapRef}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm"
+            className={cn(
+              "relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm",
+              // A janela: no celular, num canto acima da barra de navegação; no
+              // computador, no canto de baixo, sem cobrir a largura da loja.
+              janela &&
+                "fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-40 w-[62vw] max-w-[320px] shadow-2xl animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none md:bottom-6 md:right-6 md:w-[min(380px,32vw)] md:max-w-none"
+            )}
           >
             {loading ? (
               <div className="flex aspect-[480/340] items-center justify-center">
@@ -233,7 +296,29 @@ export default function OfficePage() {
                 className="block w-full"
               />
             )}
-            {!loading && (
+            {janela && (
+              <div className="absolute right-2 top-2 flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={verSalaInteira}
+                  title={traducao.escritorio.janelaFlutuante.verSalaInteira}
+                  aria-label={traducao.escritorio.janelaFlutuante.verSalaInteira}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/65"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDispensada(true)}
+                  title={traducao.escritorio.janelaFlutuante.fechar}
+                  aria-label={traducao.escritorio.janelaFlutuante.fechar}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/65"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+            {!loading && !janela && (
               <button
                 type="button"
                 onClick={handleShare}
@@ -251,14 +336,18 @@ export default function OfficePage() {
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
-                  className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm"
+                  className={cn(
+                    "absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm",
+                    // Na janela pequena o selo divide o topo com os dois botões.
+                    janela && "left-2 top-2 max-w-[calc(100%-5rem)]"
+                  )}
                 >
-                  <Eye className="h-3.5 w-3.5" />
-                  {traducao.escritorio.loja.previa(traducao.escritorio.loja.itens[previewItem.id].nome)}
+                  <Eye className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{traducao.escritorio.loja.previa(traducao.escritorio.loja.itens[previewItem.id].nome)}</span>
                 </motion.span>
               )}
             </AnimatePresence>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border/50 px-4 py-2.5">
+            <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border/50 px-4 py-2.5", janela && "hidden")}>
               {/* `basis-full` no celular: a linha já é apertada, e com as bolinhas
                   de cor maiores a frase era espremida até virar "8…". Ocupando a
                   largura toda ela cabe inteira, e as cores descem para a linha de
@@ -328,9 +417,11 @@ export default function OfficePage() {
               </button>
             </div>
           </motion.div>
+          </div>
 
-          {/* Loja */}
-          <div className="space-y-3">
+          {/* Loja. Com a sala flutuando, sobra espaço no fim para os últimos
+              itens poderem subir acima da janela. */}
+          <div className={cn("space-y-3", janela && "pb-44 md:pb-72")}>
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold">{traducao.escritorio.loja.titulo}</h2>
@@ -339,7 +430,10 @@ export default function OfficePage() {
                   <button
                     key={c}
                     type="button"
-                    onClick={() => setFilter(c)}
+                    onClick={() => {
+                      setFilter(c)
+                      setPreviewId(null)
+                    }}
                     className={cn(
                       "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:px-2.5 sm:py-0.5",
                       filter === c
@@ -368,8 +462,18 @@ export default function OfficePage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                    onPointerEnter={() => setPreviewId(item.id)}
-                    onPointerLeave={() => setPreviewId((cur) => (cur === item.id ? null : cur))}
+                    // Mouse: a prévia segue o ponteiro. Toque: o navegador manda
+                    // "saiu" logo ao soltar o dedo, e a prévia sumia antes de ser
+                    // vista — então no toque ela fica até tocar em outro item.
+                    onPointerEnter={(e) => {
+                      if (e.pointerType === "mouse") setPreviewId(item.id)
+                    }}
+                    onPointerLeave={(e) => {
+                      if (e.pointerType === "mouse") setPreviewId((cur) => (cur === item.id ? null : cur))
+                    }}
+                    onPointerDown={(e) => {
+                      if (e.pointerType !== "mouse") setPreviewId(item.id)
+                    }}
                     className={cn(
                       "flex flex-col gap-1.5 rounded-xl border p-3 transition-colors",
                       isEquipped ? "border-primary/40 bg-primary/5" : "border-border/50 bg-card hover:border-primary/30"

@@ -1273,6 +1273,8 @@ export interface Dicionario {
     editarAvatar: string
     carregando3d: string
     salvarCompartilharImagem: string
+    /** A sala vira janela flutuante quando a loja está na tela, para a prévia não sumir. */
+    janelaFlutuante: { verSalaInteira: string; fechar: string }
     abraParaGerarImagem: string
     /** Título que o Web Share nativo do celular mostra ao compartilhar a imagem. */
     tituloCompartilhamento: string
@@ -2511,6 +2513,7 @@ export const pt: Dicionario = {
     editarAvatar: "Editar avatar",
     carregando3d: "Carregando 3D…",
     salvarCompartilharImagem: "Salvar / compartilhar imagem do escritório",
+    janelaFlutuante: { verSalaInteira: "Ver a sala inteira", fechar: "Fechar a janela da sala" },
     abraParaGerarImagem: "Abra o escritório em 3D para gerar a imagem.",
     tituloCompartilhamento: "Meu escritório no NeuroTask 🏢",
     imagemBaixada: "Imagem do escritório baixada! 📸",
@@ -3807,6 +3810,7 @@ export const en: Dicionario = {
     editarAvatar: "Edit avatar",
     carregando3d: "Loading 3D…",
     salvarCompartilharImagem: "Save / share office image",
+    janelaFlutuante: { verSalaInteira: "Show the full office", fechar: "Close the office window" },
     abraParaGerarImagem: "Open the 3D office to generate the image.",
     tituloCompartilhamento: "My office on NeuroTask 🏢",
     imagemBaixada: "Office image downloaded! 📸",
