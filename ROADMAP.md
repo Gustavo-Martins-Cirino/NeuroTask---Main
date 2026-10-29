@@ -33,6 +33,19 @@ chega é o pior resultado possível.
 O que sobrou não é código, é **verificação** — e é a parte que não dá para fazer lendo o
 repositório:
 
+> **Corola, o nono ambiente pago do Foco (29/10).** A partir do "Corolla Gleam" do Originkit, que o
+> Gustavo colou como referência — reescrito, nada colado: um anel de 27 pétalas grossas de vidro
+> furta-cor girando devagar, de lado no alto e embaixo e de frente nas laterais. Cada pétala é um
+> retângulo na tela, e cada pixel resolve a seção da placa torcida por distância exata, então face,
+> chanfro e borda pegam luz cada um do seu jeito. A roda abre e fecha a corola, o cursor leva a luz
+> e acende as pétalas perto dele, e o vidro esquenta de cor conforme o foco avança. 360 moedas.
+> *Medido:* 60 quadros/s e ~3% da thread principal em 1080p, sem erro de JS, quadro parado com
+> movimento reduzido, celular a 60 quadros/s, e no Foco de verdade com conta descartável: vitrine,
+> "Faltam 210 moedas", prévia e "Voltar".
+
+- [ ] **Rodar `supabase/foco_cenas.sql` de novo (passo do Gustavo)** — a Corola entra pelo mesmo
+      arquivo. Sem isso ela aparece na vitrine e na prévia, mas a compra avisa qual SQL rodar.
+
 - [ ] **Escritório: a prévia de um item lá de baixo da loja sai da tela ao rolar.** Reclamação de
       quem testa: a sala, onde a prévia aparece, some (sobretudo o topo dela, onde ficam quadro,
       prateleira, janela e relógio). Duas saídas já foram **recusadas** pelo Gustavo: a coluna fixa

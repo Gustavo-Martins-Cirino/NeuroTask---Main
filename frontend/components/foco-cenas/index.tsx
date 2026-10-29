@@ -13,6 +13,7 @@ const CENAS: Record<IdCena, ComponentType<PropsDaCena>> = {
   folego: dynamic(() => import("./folego").then((m) => m.Folego), { ssr: false }),
   revoada: dynamic(() => import("./revoada").then((m) => m.Revoada), { ssr: false }),
   "buraco-negro": dynamic(() => import("./buraco-negro").then((m) => m.BuracoNegro), { ssr: false }),
+  corola: dynamic(() => import("./corola").then((m) => m.Corola), { ssr: false }),
   ferrofluido: dynamic(() => import("./ferrofluido").then((m) => m.Ferrofluido), { ssr: false }),
   constelacao: dynamic(() => import("./constelacao").then((m) => m.Constelacao), { ssr: false }),
   sinapses: dynamic(() => import("./sinapses").then((m) => m.Sinapses), { ssr: false }),

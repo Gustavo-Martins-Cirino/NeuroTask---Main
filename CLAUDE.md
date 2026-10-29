@@ -50,7 +50,7 @@ frontend/
 │   ├── focus.tsx             # Modo Foco (timer + minimizar p/ relógio flutuante + painéis)
 │   ├── sound-mixer.tsx       # Mixer: seções Sons/Músicas/Foco (ver public/sounds/README.md)
 │   ├── musica-youtube.tsx    # Reprodutor do YouTube no Foco: lista + mini reprodutor (API oficial do player)
-│   ├── foco-cenas/           # Os 8 ambientes PAGOS do Foco (um arquivo por cena, import dinâmico;
+│   ├── foco-cenas/           # Os 9 ambientes PAGOS do Foco (um arquivo por cena, import dinâmico;
 │   │                         # as Sinapses têm duas: GPU e a reserva na CPU)
 │   │                         # motor.ts: canvas + ticker único + cursor/roda + reduced-motion
 │   ├── reminder-notifier.tsx # Notificações de lembretes do dia (montado global no AppShell)
@@ -310,13 +310,16 @@ tarefas; sem o SQL, o cliente cai no `award_xp` comum. É **silencioso** (`XpUpd
 sem o toast genérico e sem festa no Escritório a cada 5 min — quem mostra é a própria tela do
 foco ("+6 XP neste foco", selo "XP em dobro" no botão de concluir).
 
-**Ambientes pagos** (`components/foco-cenas/` + `lib/foco-cenas.ts`): oito cenas vivas compradas
+**Ambientes pagos** (`components/foco-cenas/` + `lib/foco-cenas.ts`): nove cenas vivas compradas
 com moedas, mais caras quanto mais fazem — **Correnteza** 60 (fluido em shader, o cursor faz
 redemoinho), **Fórmulas** 120 (equações correndo; o cursor afasta, a roda muda a velocidade),
 **Fôlego** 200 (fitas de luz que respiram 4 s/6 s, com "inspire/solte"), **Revoada** 260 (3200
 estorninhos com as regras de Reynolds e teto de vizinhos; o cursor é o falcão, a roda junta ou
 espalha, e o sol se põe durante a sessão — `entardecer`), **Buraco negro** 320 (26 mil partículas
-em WebGL; a roda inclina o disco, o cursor gira), **Ferrofluido** 400 (metaballs em shader com a
+em WebGL; a roda inclina o disco, o cursor gira), **Corola** 360 (anel de 27 pétalas de vidro
+furta-cor em WebGL2; cada pixel resolve a seção da placa torcida — face, chanfro e borda — e a
+torção segue o ângulo, `torcaoDaPetala`; a roda abre e fecha, o cursor leva a luz, o vidro
+esquenta com o foco), **Ferrofluido** 400 (metaballs em shader com a
 coroa de espinhos em volta do cursor-ímã; a roda é a força do ímã, as gotas se fundem com o
 progresso), **Constelação** 480 (uma estrela acende a cada 5 min focados e a figura fecha no fim
 da sessão; a figura **contorna** a área do timer — `foraDoMiolo`, com teste) e **Sinapses** 600

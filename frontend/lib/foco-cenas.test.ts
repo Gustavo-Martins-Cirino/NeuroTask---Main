@@ -7,6 +7,7 @@ import {
   INSPIRA_S,
   agentesAtivos,
   aleatorioComSemente,
+  anguloDoVertical,
   cenaLiberada,
   coesaoDasGotas,
   corHex,
@@ -15,6 +16,7 @@ import {
   entardecer,
   estrelasAcesas,
   estrelasDaSessao,
+  filmeDaCorola,
   foraDoMiolo,
   giraARoda,
   gradeDaRede,
@@ -29,6 +31,7 @@ import {
   respiracao,
   rumosDoAngulo,
   suaviza,
+  torcaoDaPetala,
 } from "./foco-cenas"
 
 describe("catálogo", () => {
@@ -253,6 +256,45 @@ describe("Sinapses: a rede", () => {
     expect(pesoDoMiolo(0, 0)).toBe(1)
     expect(pesoDoMiolo(0.9, 0.9)).toBe(0)
     expect(pesoDoMiolo(0.2, 0.1, 0.8)).toBeGreaterThan(pesoDoMiolo(0.4, 0.3, 0.8))
+  })
+})
+
+describe("Corola: as pétalas de vidro", () => {
+  it("de lado no alto e embaixo, de frente nos lados, sem passar disso", () => {
+    expect(torcaoDaPetala(0)).toBe(0)
+    expect(torcaoDaPetala(Math.PI / 2)).toBeCloseTo(Math.PI / 2, 9)
+    expect(torcaoDaPetala(4)).toBeCloseTo(Math.PI / 2, 9)
+    expect(torcaoDaPetala(Number.NaN)).toBe(0)
+  })
+
+  it("a torção só cresce com o ângulo, e desacelera perto dos lados", () => {
+    let antes = -1
+    for (let a = 0; a <= Math.PI / 2 + 1e-9; a += Math.PI / 40) {
+      const t = torcaoDaPetala(a)
+      expect(t).toBeGreaterThan(antes)
+      antes = t
+    }
+    const comeco = torcaoDaPetala(0.1) - torcaoDaPetala(0)
+    const fim = torcaoDaPetala(Math.PI / 2) - torcaoDaPetala(Math.PI / 2 - 0.1)
+    expect(fim).toBeLessThan(comeco)
+  })
+
+  it("a roda fecha a corola: abertura 0 deixa todas de lado", () => {
+    expect(torcaoDaPetala(Math.PI / 2, 1.6, 0)).toBe(0)
+    expect(torcaoDaPetala(Math.PI / 2, 1.6, 0.5)).toBeCloseTo(Math.PI / 4, 9)
+  })
+
+  it("o ângulo até a vertical é o mesmo nos quatro quadrantes", () => {
+    expect(anguloDoVertical(0, 1)).toBe(0)
+    expect(anguloDoVertical(0, -1)).toBe(0)
+    expect(anguloDoVertical(1, 0)).toBeCloseTo(Math.PI / 2)
+    expect(anguloDoVertical(-0.5, 0.5)).toBeCloseTo(anguloDoVertical(0.5, -0.5))
+  })
+
+  it("o vidro esquenta com o foco, e só esquenta", () => {
+    expect(filmeDaCorola(0)).toBe(0)
+    expect(filmeDaCorola(1)).toBeCloseTo(0.45)
+    expect(filmeDaCorola(0.6)).toBeGreaterThan(filmeDaCorola(0.3))
   })
 })
 

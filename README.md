@@ -236,7 +236,7 @@ gamification.sql → xp_anticheat.sql → coins_shop.sql → foco_xp.sql · foco
 tarefas: +2 XP a cada 5 min focados e a tarefa concluída no foco valendo o dobro. Sem ele o
 foco paga do mesmo jeito, só que pelo `award_xp` comum — dentro do teto de 150.
 
-`foco_cenas.sql` põe na loja os oito ambientes pagos do Modo Foco (Correnteza 60 → Sinapses
+`foco_cenas.sql` põe na loja os nove ambientes pagos do Modo Foco (Correnteza 60 → Sinapses
 600 moedas), comprados pela mesma `buy_item` do Escritório. Sem ele a vitrine e a prévia de 20 s
 funcionam; só a compra recusa, avisando qual arquivo rodar, e não cobra nada. É idempotente:
 ambiente novo entra rodando o arquivo de novo.

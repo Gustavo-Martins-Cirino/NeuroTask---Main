@@ -20,6 +20,7 @@ export type IdCena =
   | "folego"
   | "revoada"
   | "buraco-negro"
+  | "corola"
   | "ferrofluido"
   | "constelacao"
   | "sinapses"
@@ -70,6 +71,13 @@ export const CENAS: CenaDoFoco[] = [
     preco: 320,
     fundo: "#000000",
     previa: "radial-gradient(circle at 50% 50%, #000 0 16%, rgba(255,217,160,0.9) 18%, rgba(255,95,0,0.55) 30%, transparent 58%), #000",
+  },
+  {
+    id: "corola",
+    itemId: "foco-corola",
+    preco: 360,
+    fundo: "#06040c",
+    previa: "radial-gradient(circle at 50% 50%, #06040c 0 14%, transparent 15%), repeating-conic-gradient(from 0deg, rgba(91,97,207,0.85) 0deg 6deg, rgba(181,31,102,0.8) 6deg 10deg, rgba(217,112,62,0.75) 10deg 13.3deg), radial-gradient(circle at 50% 50%, transparent 0 46%, #06040c 47%)",
   },
   {
     id: "ferrofluido",
@@ -456,4 +464,31 @@ export function mediaDoQuadro(media: number, dt: number): number {
 
 export function deveAliviar(media: number, tempo: number): boolean {
   return tempo > 4 && media > QUADRO_LENTO_S
+}
+
+// Corola: um anel de pétalas grossas de vidro. Cada uma gira em torno do próprio
+// eixo conforme o ângulo em que está: de lado (só a borda) no alto e embaixo,
+// de frente nas laterais. A torção segue o ângulo e desacelera perto dos lados,
+// para a pétala que passa por ali não dar tranco.
+
+/** Ângulo da pétala até a vertical mais próxima (0 no alto/embaixo, π/2 nos lados). */
+export function anguloDoVertical(ux: number, uy: number): number {
+  return Math.atan2(Math.abs(ux), Math.abs(uy))
+}
+
+/**
+ * Quanto a pétala está torcida (0 = de lado, π/2 = de frente), dado o ângulo até
+ * a vertical. `ganho` dá a curva: maior abre mais cedo. Chega exatamente a π/2
+ * nos lados, e `abertura` (0–1, a roda do mouse) fecha a corola inteira.
+ */
+export function torcaoDaPetala(anguloAteAVertical: number, ganho = 1.6, abertura = 1): number {
+  const meio = Math.PI / 2
+  const f = Math.min(1, Math.max(0, (Number.isFinite(anguloAteAVertical) ? anguloAteAVertical : 0) / meio))
+  const g = Math.max(0.05, ganho)
+  return meio * ((1 - Math.exp(-g * f)) / (1 - Math.exp(-g))) * entre0e1(abertura)
+}
+
+/** O vidro esquenta conforme o foco avança: deslocamento do filme, do frio ao quente. */
+export function filmeDaCorola(progresso: number): number {
+  return 0.45 * suave(0, 1, entre0e1(progresso))
 }
