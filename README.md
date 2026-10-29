@@ -99,7 +99,7 @@ partículas levando o mesmo TEMPO a 30, 60 ou 144 fps) e, no Escritório,
 `office-code-scroll` e `office-rain` (a gota nunca escapa do vão do vidro).
 
 O Escritório 3D tem um bloco à parte (`office-bg`, `office-camera`, `office-celebration`,
-`office-city`, `office-code-scroll`, `office-janela`, `office-rain`, `office-snapshot`, `office-typing` e
+`office-city`, `office-code-scroll`, `office-rain`, `office-snapshot`, `office-typing` e
 `office-model`). O `office-model` é de um tipo
 diferente: ele **mede a geometria** da cena — se a mão do boneco pousa no teclado, se o
 antebraço passa por cima da mesa. É o olho que falta, já que ninguém consegue ver um

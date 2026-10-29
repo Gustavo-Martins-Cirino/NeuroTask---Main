@@ -24,7 +24,7 @@ frontend/
 │   │   ├── notes/page.tsx    # Notas (rich text)
 │   │   ├── favorites/page.tsx
 │   │   ├── ai/page.tsx       # Chat de IA
-│   │   ├── office/page.tsx   # Escritório (loja cosmética com moedas; a sala flutua no canto ao rolar a loja)
+│   │   ├── office/page.tsx   # Escritório (loja cosmética com moedas)
 │   │   ├── friends/page.tsx  # Amigos (busca, ocupado/livre, visitar escritório)
 │   │   └── settings/page.tsx
 │   ├── api/
@@ -120,7 +120,6 @@ frontend/
 │   ├── avatar.ts             # I/O do retrato: bonequinho + envio/remoção da foto
 │   ├── office-celebration.ts # Comemoração 3D ao concluir (regra + animação, puro)
 │   ├── office-city.ts        # Fase do dia + paleta da vista da janela (puro)
-│   ├── office-janela.ts      # Quando a sala vira janela flutuante (prévia da loja visível ao rolar) (puro)
 │   ├── office-rain.ts        # Chuva no vidro: gotas + leitura do mixer (puro)
 │   ├── saudacao.ts           # Cumprimento pela hora + ritmo das letras (puro)
 │   ├── coin-flight.ts        # Curva da moeda até o contador de XP (puro)
